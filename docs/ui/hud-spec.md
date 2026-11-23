@@ -367,6 +367,22 @@ interface CraftView {
 
 **TO VERIFY.** Which camera modes SFC2 offers and their default keys.
 
+## 14. Mission surfaces and rule feedback
+
+These are the HUD parts that answer to the Mission API (`docs/missions`, merged in #1) and the rules module. Event names follow that doc. Placement is our own proposal, and SFC2's own placement is **TO VERIFY** against CE 2.670 (#37).
+
+**14a Briefing, debrief and hail panels (HTML).** These are three HTML components, drawn above the overlay canvas and fully reachable by keyboard and screen readers. Each one is driven by a `briefing`, `debrief` or `hail` event that carries a string key. We propose optional `speakerKey` and `portraitKey` fields too; those aren't in the merged Mission API yet and are an ask to Mission & Campaign. The text is looked up through the locale layer (14d). The portrait comes from the player's install through the asset pipeline (`asset-pipeline.md`). Where there is none, an original silhouette is used instead. A briefing pauses single-player play until it is dismissed. A hail never pauses: it docks beside the message log and times out into it. Debrief shows results from the mission runtime and never calculates its own score.
+
+**14b Objectives list (HTML).** This is a collapsible list with three states, active, complete and failed, and each state has both a colour and an icon (never colour alone). On `objectiveUpdated`, the list expands for about 4 s (120 ticks), highlights the changed row, then collapses again. Reduced-motion users get no animation, and the row is simply marked. Every change is also written to the message log (§12a) so that screen readers announce it.
+
+**14c Mission timer (overlay canvas).** `missionTimer` events drive a countdown near the message log. It counts in ticks and is shown as `mm:ss`, using 30 ticks per second. Only one timer is pinned at a time; if more are running, the one ending soonest is shown, and the others are listed in the objectives panel. During the last 10 s the timer pulses (a steady colour change when reduced motion is on) and raises a sound hook. Starting, pausing and expiring are also written to the message log.
+
+**14d Locale and strings.** English is the only locale at launch. Lookups fall back to English when a key is missing, and a key with no English string shows the raw key in a debug style, never a blank. The original game's strings are read from the player's own string tables at runtime and never committed. Our own strings live in the repo keyed the same way. Reason codes from the rules module (14e) are locale keys too.
+
+**14e Rule results.** Script and combat changes come back as `ruleResult { token, status: applied | clamped | rejected, reason, value }`. When the status is `applied`, nothing visible happens. When it is `clamped`, the affected gauge flashes once in the warn colour and shows the clamped value, and the reason is posted to the message log as a keyed `warn` line. When it is `rejected`, the control's pending state is cleared, the gauge flashes in the crit colour, and the reason is posted as a `warn` line. The `reason` string is the stable camelCase code from the registry in `docs/rules`, and we look it up as a locale key (14d). The HUD never writes into the sim; it only reports what the rules decided.
+
+**14f Spawned and placed objects.** `spawned { token, entityId }` events (and `placed` events for map objects, which come in the Mission & Campaign follow-up to #1) add the new entity to the sensor map (§6) and the target cycle (§4) on the tick they arrive. Ships and map objects share one id allocator, so the HUD keys everything by `entityId`. A newly spawned hostile raises an alert (§12b) only if the mission marks it as one.
+
 ---
 
 ## Proposed default keymap (summary)
@@ -391,7 +407,7 @@ All keys are **proposals**. SFC2's original defaults are **TO VERIFY** against C
 (Snapshot delivery and the HUD rendering surface are settled; see §0, "Agreed with Engine Lead".)
 
 1. The exact `HudEvent` list and payloads.
-2. Confirm the `Command` envelope and how rejected commands are reported back (so the HUD can clear "pending" state).
+2. Confirm the `Command` envelope. Rejected script and combat changes come back as `ruleResult` (§14e). Do plain player commands use the same path?
 3. Where does the fixed-point → display conversion live: shared `engine/units` or HUD-only?
 4. Will the provisional 30 Hz, uint16 heading and fixed-point rules be final in `docs/engine/determinism.md`?
 
