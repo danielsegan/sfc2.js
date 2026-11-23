@@ -37,8 +37,8 @@ flowchart LR
 
 Answered by the Engine Lead on 2026-11-23. These hold until the HUD contract in `docs/engine/` lands and supersedes them.
 
-1; same index as the engine model shields[0..5] (SFB #1..#6 = 0..5). On-screen lettering TO VERIFY
-2; same index as the engine model shields[0..5] (SFB #1..#6 = 0..5). On-screen lettering TO VERIFY
+1. **ViewModel per frame.** Each display frame the HUD receives one read-only `ViewModel`, built from the previous and current sim snapshots plus a blend factor `alpha` (0–1). **Gauges are not interpolated**: energy, shields, weapon charge, damage and counts show the *current* tick's values. **Only positions and headings blend.** Each frame also carries a list of **one-off events** (hits, alerts, system damage, and so on) that drive flashes and sound cues.
+2. **Rendering surfaces.** The tactical HUD draws on its **own 2D overlay canvas** above the three.js view, so original sprites stay **pixel-exact at whole-number scale steps**. **Menus, options, briefings, and anything text-heavy or accessibility-related are HTML.**
 
 ```ts
 interface ViewModel {
@@ -62,7 +62,7 @@ Common types:
 
 ```ts
 type ShipId = number; type Tick = number; type Fx = number; type Heading16 = number;
-type Facing = 0; same index as the engine model shields[0..5] (SFB #1..#6 = 0..5). On-screen lettering TO VERIFY
+type Facing = 0|1|2|3|4|5;            // 0 = forward, clockwise; same index as the engine model shields[0..5] (SFB #1..#6 = 0..5); on-screen lettering TO VERIFY
 interface Command { kind: string; ship: ShipId; issuedAtTick: Tick; payload: unknown }
 ```
 
@@ -390,10 +390,10 @@ All keys are **proposals**. SFC2's original defaults are **TO VERIFY** against C
 **Engine Lead**
 (Snapshot delivery and the HUD rendering surface are settled; see §0, "Agreed with Engine Lead".)
 
-1; same index as the engine model shields[0..5] (SFB #1..#6 = 0..5). On-screen lettering TO VERIFY
-2; same index as the engine model shields[0..5] (SFB #1..#6 = 0..5). On-screen lettering TO VERIFY
-3; same index as the engine model shields[0..5] (SFB #1..#6 = 0..5). On-screen lettering TO VERIFY
-4; same index as the engine model shields[0..5] (SFB #1..#6 = 0..5). On-screen lettering TO VERIFY
+1. The exact `HudEvent` list and payloads.
+2. Confirm the `Command` envelope and how rejected commands are reported back (so the HUD can clear "pending" state).
+3. Where does the fixed-point → display conversion live: shared `engine/units` or HUD-only?
+4. Will the provisional 30 Hz, uint16 heading and fixed-point rules be final in `docs/engine/determinism.md`?
 
 **Combat Systems Designer**
 5. Energy period and starvation order on overdraw.
@@ -403,7 +403,7 @@ All keys are **proposals**. SFC2's original defaults are **TO VERIFY** against C
 9. Weapon hold-charge rules and overload range limits the HUD should warn about.
 
 **Asset & Formats Engineer**
-1; same index as the engine model shields[0..5] (SFB #1..#6 = 0..5). On-screen lettering TO VERIFY
+10. Do per-ship HUD icons and silhouettes exist in `sprites.q3`, and how are they keyed to shiplist entries?
 
 **Daniel**
-1; same index as the engine model shields[0..5] (SFB #1..#6 = 0..5). On-screen lettering TO VERIFY
+11. Default keymap: our modern proposal, or the SFC2 originals as the default?
