@@ -16,8 +16,9 @@ This is a design doc only. No runtime code lands before Phase 4.
 > cloud agents (nothing here depends on it). **Out of scope:** the standalone *Orion Pirates* game (2001)
 > and its content, which sits in [Possible later](#16-possible-later-backlog).
 
-> **Data verification status: unverified.** Wintermute is installing CE 2.670 ([#37](https://github.com/danielsegan/sfc2-browser-edition/issues/37)) on the `sfc2-ci` VM, but
-> nothing has been checked against it yet. Every claim in this doc about the mission list, the empire
+> **Data verification status: unverified.** CE 2.670 ([#37](https://github.com/danielsegan/sfc2-browser-edition/issues/37)) is now installed on the `sfc2-ci` VM
+> (without the 2.679 patch), but the mission roster hasn't been checked against it yet; that waits on a
+> manifest-based check. Every claim in this doc about the mission list, the empire
 > roster, Orion content, or any game behaviour that depends on installed data is **unverified** until it
 > has been checked against the CE 2.670 install on `sfc2-ci`. Taldren's released EAW Scripting API R1.3 and
 > EAW mission sources remain valid **API and design references**; claims about them are verified against
@@ -416,7 +417,15 @@ Ships are spawned by a **ship key: race + short class name** from the CE 2.670 s
 `{ race, className }` (Asset & Formats decision, [PR #38](https://github.com/danielsegan/sfc2-browser-edition/pull/38)). The key comes from the player's own
 `shiplist.txt` as parsed by the Asset & Formats parser and is validated at load. **Unverified:** that race +
 short class name is unique across the whole CE 2.670 shiplist. The PR #38 checklist confirms this, and the
-parser flags any duplicates as diagnostics. Spawning is token-based (4.3).
+parser flags any duplicates as `duplicateClassKey` diagnostics. Spawning is token-based (4.3).
+
+**Strings in files, integers in the sim** (Engine Lead, pending the `docs/engine/` contracts, #21 and
+#37). At load, the loader converts each `{ race, className }` key to a **small integer class id**, assigned
+in **sorted string order** so every peer gets the same mapping. The sim and replays store **only the
+integer**; mission files and `requestSpawn` keep the string key. **Duplicate keys** are reported in the
+load diagnostics and **block multiplayer sessions**. The diagnostic is `duplicateClassKey`, severity `error`, with the
+race, className and shiplist row numbers involved as details. Codes are stable camelCase and add-only, and
+are defined in `docs/engine/data-loader.md` (Engine Lead).
 
 **Shield facings** (studio convention, matching `docs/ui/hud-spec.md` in PR #39 and Combat's rules): the
 engine model's `shields` is an array indexed **0 to 5, where 0 is the front facing and the indices go
@@ -785,7 +794,7 @@ with a scripted twist, such as one from the Mirak folder, exercises most of the 
    the VM, not files committed to the repo), briefings by key, victory preset, prestige table.
 4. **Write the script** for what data can't express, using the state-machine layer so each original state
    has a clear counterpart.
-5. **Validate against the player's data** with the loader's validation step (unknown or duplicate ship keys, bad cells).
+5. **Validate against the player's data** with the loader's validation step (unknown ship keys, `duplicateClassKey`, bad cells).
 6. **Black-box comparison.** Play the original under Wine on the VM and record observable outcomes:
    which events happen, rough timings, victory level for a handful of scripted playthroughs. Compare with
    ours. Exact tick timings won't match; outcomes and ordering should.
@@ -823,7 +832,9 @@ These are kept strictly apart (Asset & Formats Engineer):
 - The Asset & Formats importer validates these files and returns **`{ data, diagnostics }`**: `data` is
   the typed scenario (or `null` if it can't be used), and `diagnostics` is a list of
   `{ severity: "error" | "warning" | "info", path, code, message }` entries (for example an unknown ship
-  ship key, a ship key that matches more than one shiplist entry, an off-map cell or a missing string key). The loader refuses to start a mission with any
+  key, a ship key that matches more than one shiplist entry (`duplicateClassKey`, severity `error`), an off-map cell or
+  a missing string key). Diagnostic codes are stable camelCase and add-only; the engine's codes are
+  defined in `docs/engine/data-loader.md`. The loader refuses to start a mission with any
   `error` diagnostic and shows the list to the author.
 - Test fixtures in the repo are synthetic files we write ourselves.
 
@@ -859,7 +870,8 @@ against the CE 2.670 install on `sfc2-ci`:
 | Mirak | expected | Has its own source folder in the public EAW scripts |
 | Orion (EAW faction) | **not yet verified** | The plan lists an Orion campaign. In the EAW API R1.3 headers Orion is an NPC race. Whether CE 2.670 has an Orion campaign or only Orion ships and races is not yet verified |
 
-**The roster still has to be confirmed against the CE 2.670 install on `sfc2-ci`**, including which
+**The roster still has to be confirmed against the CE 2.670 install on `sfc2-ci`** (installed, without the
+2.679 patch; the check will be manifest-based), including which
 campaigns ship, how many missions each has, and the Orion question above. Until that's done, the Phase 5
 estimate stays provisional.
 
@@ -977,7 +989,7 @@ throws). Still open: items 1 to 4 above, plus the full reason-code list in `docs
 ### Asset & Formats Engineer
 
 Answered: the ship key is race + short class name from the CE 2.670 shiplist ([PR #38](https://github.com/danielsegan/sfc2-browser-edition/pull/38)); uniqueness is
-unverified until the PR #38 checklist confirms it, and the parser flags duplicates. Still open:
+unverified until the PR #38 checklist confirms it, and the parser flags duplicates as `duplicateClassKey`. Still open:
 
 1. Where mission text lives in the installed data (if anywhere outside compiled `.scr` files), and the
    string-table format.
@@ -989,9 +1001,9 @@ unverified until the PR #38 checklist confirms it, and the parser flags duplicat
 
 ### Producer
 
-1. **Confirming the CE 2.670 install on `sfc2-ci`** is ready (Wintermute is installing it). Until it has
-   been checked, every roster and mission-inventory claim stays unverified and the pilot choice is
-   provisional.
+1. **The manifest-based roster check** against CE 2.670 on `sfc2-ci` (installed, without the 2.679
+   patch). Until it's done, every roster and mission-inventory claim stays unverified and the pilot choice
+   is provisional.
 2. Which **pilot mission** for Phase 4, and which empire's campaign is the "first campaign" exit target.
 3. Whether a `docs/missions/` folder and `ports/` notes need a CODEOWNERS entry.
 4. Phase placement of the scenario editor (Phase 8 or a later stretch).
