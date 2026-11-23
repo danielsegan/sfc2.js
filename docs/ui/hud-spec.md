@@ -173,7 +173,7 @@ interface WeaponView {
 }
 ```
 
-**Drawing.** A list of weapon chips grouped by fire group. Each chip shows family icon, label, a charge bar (`ticksDone/ticksNeeded`, label "12/30 t" or a fraction, per the provisional contract), and a mode badge. The selected weapon or group draws its arcs on the sensor map (6) and as a ground-plane fan in the 3D view.
+**Drawing.** A list of weapon chips grouped by fire group. Each chip shows family icon, label, a charge bar (`ticksDone/ticksNeeded`, label "12/30 t" or a fraction, per the provisional contract), and a mode badge. The selected weapon or group draws its arcs on the sensor map (6) and as a ground-plane fan in the 3D view. In shiplist heavy slots 1–10, Arc cells holding `1`, `2` or `3` are not firing arcs (working theory: drone reload counts). The HUD draws no arc for those slots and shows reloads only once Combat's table marks the weapon as reload-counted. **TO VERIFY**. See `asset-pipeline.md` §3a.
 
 **States.** Ready (normal, single pulse); charging (charging blue, filling); holding a charge (warning outline, and a hold cost line in energy if the rules have one, **TO VERIFY**); overload armed (warning, "OVL" badge); damaged/destroyed (damage, cross-hatch); no power (disabled); out of arc / out of range (disabled tint, dashed arc).
 
