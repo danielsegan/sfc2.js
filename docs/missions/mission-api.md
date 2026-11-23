@@ -244,11 +244,27 @@ That gives:
   same commands) and host-authoritative servers;
 - an easy place to validate and reject bad commands (unknown ship class, off-map position).
 
-**Combat state goes through the rules module** (Combat Systems Designer). Every mission command that
-changes combat state, such as damaging or repairing systems, setting shields or energy, or ordering AI
-ships, is applied through the rules module's own entry points, never by editing ship state directly. That
-way the same damage-allocation and energy rules apply whether the change came from a weapon, a player or
-a mission. The mission runtime only translates commands into those calls; it owns no combat logic.
+**Combat state goes through the rules module** (Combat Systems Designer, pending the rules spec in `docs/rules/`, backlog #24). Missions call the **same rules entry points as
+weapons and the player**, queued like any command and applied in the next tick's input phase. They never
+edit ship state directly, and the mission runtime owns no combat logic.
+
+| Command | Rules behaviour |
+| --- | --- |
+| `damageSystem(ship, system, boxes)` | Goes through normal damage allocation, so armor and the damage chart apply |
+| `damageShield(ship, facing, points)` | Takes points off one shield facing |
+| `repairSystem(ship, system, boxes)` | Capped at the ship's original box count |
+| `setShields(ship, facing, value)` | Clamped to the ship data |
+| `setEnergy(ship, allocation)` | Clamped to the ship data |
+| AI orders (6.6) | Go through the AI captain's order queue, not straight into movement |
+
+**Every command returns a token, and results come back as events.** That covers every call that changes
+the sim (ships, AI orders, teams, map objects, objectives, text and UI output). Mission-local bookkeeping
+that never reaches the sim (timers, triggers, campaign variables, the state-machine layer) returns plain
+ids or nothing. Nothing comes back to the script right
+away. On the next tick after a command is applied, the sim emits a `ruleResult` event with the command
+token, a status of `applied`, `clamped` or `rejected`, a reason code (for example `noSuchSystem`,
+`shipDestroyed`, `outOfRange`) and the value actually applied. **Rejection never throws.** Reason codes
+are stable strings so they can double as localization keys (6.12).
 
 **Spawning is token-based** (Engine Lead, pending the mission-runtime contract in `docs/engine/`). `ships.requestSpawn(...)` returns a **spawn token**, not an entity id.
 When the sim applies the spawn (in T+1's input phase) it takes the **lowest free entity index with a
@@ -278,7 +294,8 @@ load ─► validate ─► setup ─► briefing ─► start ─► running (p
 
 ### 5.1 Engine hook points
 
-These wait on the Engine Lead's mission-runtime contract in `docs/engine/`, which isn't on `main` yet. Four
+These wait on the Engine Lead's mission-runtime contract in `docs/engine/`, which isn't on `main` yet
+(sim core work is backlog #21; architecture changes go through decision issue #8). Four
 now have working answers from the Engine Lead, pending that contract; the rest are still placeholders. When
 the contract lands, this section gets replaced by a link and the names change to match.
 
@@ -289,7 +306,7 @@ the contract lands, this section gets replaced by a link and the names change to
 | `ENGINE_HOOK: entityIds` | Answered (Engine Lead, pending the mission-runtime contract in `docs/engine/`) | `requestSpawn` returns a token; the sim takes the lowest free entity index with a bumped generation; `spawned {token, entityId}` arrives the next tick (4.3) |
 | `ENGINE_HOOK: missionView` | Answered (Engine Lead, pending the mission-runtime contract in `docs/engine/`) | Read-only query API over the current tick's state, iterated in entity-id order; no copied snapshot (6.2) |
 | `ENGINE_HOOK: eventSource` | Placeholder | How sim events (death, damage, capture, disengage, proximity, orbit, tractor, transport, system and stores changes) reach the mission, and in what order |
-| `ENGINE_HOOK: rulesEntryPoints` | Placeholder (with Combat) | The rules module entry points mission commands call for damage, repair, shields, energy and AI orders (4.3) |
+| `ENGINE_HOOK: rulesEntryPoints` | Answered (Combat Systems Designer, pending the rules spec in `docs/rules/`, backlog #24) | Same entry points as weapons and the player; `damageSystem`, `damageShield`, `repairSystem`, `setShields`, `setEnergy`, AI orders via the captain's order queue; results arrive as `ruleResult` events (4.3) |
 | `ENGINE_HOOK: rngStreams` | Placeholder | How `ctx.rng("mission")` is seeded and isolated from other streams |
 | `ENGINE_HOOK: frameEvents` | Placeholder (with UI) | The engine's per-frame event list that carries typed UI events such as `objectiveUpdated`, `missionTimer` and `hail` (6.10) |
 | `ENGINE_HOOK: audioCue` | Placeholder | How a mission requests a sound or voice line (with Audio) |
@@ -377,9 +394,9 @@ type EmpireId = "federation" | "klingon" | "romulan" | "lyran" | "hydran" | "gor
               | "orion" | "monster" | (string & {});   // open for mods; roster still to confirm (section 10)
 
 interface TeamApi {
-  create(def: { id: TeamId; empire: EmpireId; control: "human" | "ai"; tag?: string; name?: TextRef }): TeamId;
+  create(def: { id: TeamId; empire: EmpireId; control: "human" | "ai"; tag?: string; name?: TextRef }): CommandToken;
   setRelation(a: TeamId, b: TeamId, rel: "allied" | "friendly" | "neutral" | "hostile" | "war",
-              opts?: { goal?: "ignore" | "cripple" | "capture" | "destroy"; mutual?: boolean }): void;
+              opts?: { goal?: "ignore" | "cripple" | "capture" | "destroy"; mutual?: boolean }): CommandToken;
   relation(a: TeamId, b: TeamId): Relation;
   ships(team: TeamId, filter?: ShipFilter): ShipHandle[];   // stable order by entity id
   status(team: TeamId): "active" | "defeated" | "disengaged" | "left";
@@ -410,17 +427,21 @@ interface ShipApi {
   pickByBudget(def: { empire: EmpireId; bpv: number; roles?: ShipRole[] }): ShipClassKey[];  // FMSE "ships by BPV"
   byTag(tag: string): ShipHandle | undefined;   // resolves once the ship has spawned
   get(h: ShipHandle): ShipView;            // read-only query over this tick's state
-  destroy(h: ShipHandle, opts?: { silent?: boolean }): void;
-  setTeam(h: ShipHandle, team: TeamId): void;
-  // Combat-state changes: queued, then applied through the rules module's entry points (4.3)
-  damageSystem(h: ShipHandle, system: SystemKey, amount: number): void;
-  repairSystem(h: ShipHandle, system: SystemKey, amount: number): void;
-  setShields(h: ShipHandle, facing: ShieldFacing, strength: number): void;
-  setEnergy(h: ShipHandle, allocation: Partial<EnergyAllocation>): void;
-  addStores(h: ShipHandle, item: StoresItem, amount: number): void;
-  setTargetable(h: ShipHandle, on: boolean): void;
+  // Every command is queued (applied in T+1's input phase) and returns a token; the outcome arrives as a
+  // `ruleResult` event on the following tick. Nothing throws on rejection.
+  destroy(h: ShipHandle, opts?: { silent?: boolean }): CommandToken;
+  setTeam(h: ShipHandle, team: TeamId): CommandToken;
+  // Combat-state changes go through the rules module's entry points (4.3)
+  damageSystem(h: ShipHandle, system: SystemKey, boxes: number): CommandToken;   // normal damage allocation
+  damageShield(h: ShipHandle, facing: ShieldFacing, points: number): CommandToken;
+  repairSystem(h: ShipHandle, system: SystemKey, boxes: number): CommandToken;   // capped at original boxes
+  setShields(h: ShipHandle, facing: ShieldFacing, value: number): CommandToken;  // clamped to ship data
+  setEnergy(h: ShipHandle, allocation: Partial<EnergyAllocation>): CommandToken; // clamped to ship data
+  addStores(h: ShipHandle, item: StoresItem, amount: number): CommandToken;
+  setTargetable(h: ShipHandle, on: boolean): CommandToken;
 }
-type SpawnToken = number;                  // unique per mission run, assigned in issue order
+type CommandToken = number;                // unique per mission run, assigned in issue order
+type SpawnToken = CommandToken;            // spawns use the same token sequence
 
 interface ShipView {
   readonly id: ShipHandle; readonly team: TeamId; readonly originalTeam: TeamId; readonly empire: EmpireId;
@@ -439,20 +460,21 @@ module's entry points like every other combat-state change (4.3). Priorities mir
 
 ```ts
 interface AiApi {
-  target(ship: ShipHandle, target: ShipHandle, priority?: Priority): void;
-  clear(ship: ShipHandle): void;
-  moveTo(ship: ShipHandle, at: MapPoint, priority?: Priority): void;
-  patrol(ship: ShipHandle, points: MapPoint[], detectRange: Distance, priority?: Priority): void;
-  defend(ship: ShipHandle, protectee: ShipHandle, threatRadius: Distance, followRadius: Distance, priority?: Priority): void;
-  follow(ship: ShipHandle, leader: ShipHandle, priority?: Priority): void;
-  disengage(ship: ShipHandle, method: "warp" | "mapEdge" | "any", priority?: Priority): void;
-  tractor(ship: ShipHandle, target: ShipHandle, to: MapPoint, priority?: Priority): void;
-  cloak(ship: ShipHandle, on: boolean): void;
-  probe(ship: ShipHandle, target: ShipHandle): void;
-  setControl(ship: ShipHandle, mode: "ai" | "player"): void;
-  officer(ship: ShipHandle, officer: OfficerKey, aiEnabled: boolean): void;
+  target(ship: ShipHandle, target: ShipHandle, priority?: Priority): CommandToken;
+  clear(ship: ShipHandle): CommandToken;
+  moveTo(ship: ShipHandle, at: MapPoint, priority?: Priority): CommandToken;
+  patrol(ship: ShipHandle, points: MapPoint[], detectRange: Distance, priority?: Priority): CommandToken;
+  defend(ship: ShipHandle, protectee: ShipHandle, threatRadius: Distance, followRadius: Distance, priority?: Priority): CommandToken;
+  follow(ship: ShipHandle, leader: ShipHandle, priority?: Priority): CommandToken;
+  disengage(ship: ShipHandle, method: "warp" | "mapEdge" | "any", priority?: Priority): CommandToken;
+  tractor(ship: ShipHandle, target: ShipHandle, to: MapPoint, priority?: Priority): CommandToken;
+  cloak(ship: ShipHandle, on: boolean): CommandToken;
+  probe(ship: ShipHandle, target: ShipHandle): CommandToken;
+  setControl(ship: ShipHandle, mode: "ai" | "player"): CommandToken;
+  officer(ship: ShipHandle, officer: OfficerKey, aiEnabled: boolean): CommandToken;
 }
 type Priority = "low" | "normal" | "high" | "override";
+// Orders are queued into the AI captain's order queue, not applied straight to movement (4.3).
 ```
 
 ### 6.7 Triggers and timers
@@ -464,7 +486,7 @@ interface TimerApi {
   after(ticks: Tick, id: string): TimerId;          // fires once -> on.timer({ id })
   every(ticks: Tick, id: string): TimerId;          // repeating
   cancel(id: TimerId): void;
-  countdown(ticks: Tick, opts?: { label?: TextRef; team?: TeamId }): void;   // emits `missionTimer` UI events (6.10)
+  countdown(ticks: Tick, opts?: { label?: TextRef; team?: TeamId }): CommandToken;   // emits `missionTimer` UI events (6.10)
 }
 
 interface TriggerApi {
@@ -477,6 +499,9 @@ interface TriggerApi {
 
 type MissionEvent =
   | { kind: "spawned"; token: SpawnToken; entityId: ShipHandle }
+  | { kind: "placed"; token: CommandToken; objectId: MapObjectHandle }
+  | { kind: "ruleResult"; token: CommandToken; status: "applied" | "clamped" | "rejected";
+      reason?: RuleReason; applied?: number }      // value actually applied (e.g. boxes, points)
   | { kind: "shipDestroyed"; ship: ShipHandle; by?: ShipHandle }
   | { kind: "shipCaptured"; ship: ShipHandle; by: TeamId }
   | { kind: "shipDisengaged"; ship: ShipHandle }
@@ -494,6 +519,8 @@ type MissionEvent =
   | { kind: "playerLeft"; team: TeamId }
   | { kind: "objective"; id: string; state: ObjectiveState };
 ```
+
+type RuleReason = "noSuchSystem" | "shipDestroyed" | "outOfRange" | (string & {});  // stable strings; full list in docs/rules/ (#24)
 
 Event ordering within a tick (proposal): by event kind in a fixed table order, then by entity id, then by
 issue order. The final rule belongs in the engine contract (`ENGINE_HOOK: eventSource`).
@@ -515,11 +542,11 @@ interface MapApi {
     | { kind: "pulsar" | "sun" | "wormhole" | "fissure"; at: MapPoint }
     | { kind: "minefield"; area: MapArea; team: TeamId; mineType: MineKey; count: number }
     | { kind: "beacon"; at: MapPoint; label?: TextRef; visibleTo?: TeamId[] }
-  ): MapObjectHandle;
-  remove(h: MapObjectHandle): void;
+  ): CommandToken;                                   // object id arrives in a `placed { token, objectId }` event
+  remove(h: MapObjectHandle): CommandToken;
   distance(a: MapPoint | ShipHandle | MapObjectHandle, b: MapPoint | ShipHandle | MapObjectHandle): Distance;
-  marker(team: TeamId, at: MapPoint | ShipHandle | null): void;   // goal indicator; null clears
-  icon(kind: string, at: MapPoint): void;                          // map-screen icon
+  marker(team: TeamId, at: MapPoint | ShipHandle | null): CommandToken;   // goal indicator; null clears
+  icon(kind: string, at: MapPoint): CommandToken;                          // map-screen icon
 }
 type MapPoint = { cell: [col: number, row: number] } | { pos: [x: Fixed, y: Fixed] };
 ```
@@ -533,8 +560,8 @@ Static map layout should normally live in the scenario data, not in code (sectio
 
 ```ts
 interface ObjectiveApi {
-  add(def: { id: string; team: TeamId; text: TextRef; kind: "primary" | "secondary" | "hidden" }): void;
-  set(id: string, state: "active" | "complete" | "failed"): void;   // emits an `objectiveUpdated` UI event
+  add(def: { id: string; team: TeamId; text: TextRef; kind: "primary" | "secondary" | "hidden" }): CommandToken;
+  set(id: string, state: "active" | "complete" | "failed"): CommandToken;   // emits an `objectiveUpdated` UI event
   get(id: string): ObjectiveState;
 }
 
@@ -569,11 +596,11 @@ level live in the scenario so they can be ported exactly.
 
 ```ts
 interface TextApi {
-  say(def: { to: TeamId | "all"; text: TextRef; from?: ShipHandle; channel?: "mission" | "comm" | "chatter" }): void;  // emits `hail`
-  commButton(def: { ship: ShipHandle; team: TeamId; id: string; label: TextRef }): void;
-  clearCommButton(ship: ShipHandle, id: string): void;
-  debrief(team: TeamId, text: TextRef): void;
-  voice(cue: AudioCueKey): void;                   // through the audio hook
+  say(def: { to: TeamId | "all"; text: TextRef; from?: ShipHandle; channel?: "mission" | "comm" | "chatter" }): CommandToken;  // emits `hail`
+  commButton(def: { ship: ShipHandle; team: TeamId; id: string; label: TextRef }): CommandToken;
+  clearCommButton(ship: ShipHandle, id: string): CommandToken;
+  debrief(team: TeamId, text: TextRef): CommandToken;
+  voice(cue: AudioCueKey): CommandToken;                   // through the audio hook
 }
 type TextRef = { key: string; args?: Record<string, string | number> };  // never raw game strings in code
 
@@ -601,6 +628,17 @@ HTML**, not on the HUD canvas, per the Engine Lead's HUD contract; the HTML laye
 (following SFC2's EAW HUD look), escaping and localization. Missions can't inject markup. UI events are
 outputs only: they never feed back into the sim, so they aren't part of the determinism hash. How keys
 resolve to text is in 6.12.
+
+**Objectives and timer display** (UI & Art Director; details in `docs/ui/hud-spec.md`):
+
+- **Objectives** are a compact HTML list, collapsed by default. On `objectiveUpdated` it expands for about
+  4 seconds with the changed line highlighted. Each line is a string key plus a state of `active`,
+  `complete` or `failed`, and every state has both a colour and an icon (never colour alone).
+- **`missionTimer`** counts in ticks; the HUD shows it as mm:ss on the overlay canvas. Only one timer is
+  pinned at a time; any others appear in the objectives list. In the last 10 seconds the pinned timer
+  pulses and plays a sound cue (cue id from the Audio & Netcode QA Lead).
+- Both also go through the **message log for screen readers**.
+- Where the original game placed these on screen is **TO VERIFY** against EAW 2.036.
 
 **Panels** (UI & Art Director). The briefing, debrief and hail panels are HTML components owned by the
 UI & Art Director and specced in `docs/ui/hud-spec.md`. Each takes a string key plus optional **speaker**
@@ -634,6 +672,9 @@ that subscribed, in actor-registration order.
 
 ### 6.12 String tables and localization
 
+- **Stable strings.** Mission string keys and rule reason codes are stable strings that never get
+  renamed casually, so they can double as localization keys (for example a `ruleResult` reason
+  `outOfRange` can map to `common.rule.outOfRange`).
 - **Keys, not text.** Every player-visible string a mission uses is a `TextRef { key, args }`. Keys are
   namespaced by mission id, for example `mission.example-patrol.briefing.federation` or
   `mission.example-patrol.hail.ambush`. Shared strings (empire names, ship roles, victory levels) live
@@ -676,7 +717,7 @@ Only rows verified against the public SFC2:EAW API R1.3 headers are listed. "Obs
 | `tShipInfo::mPatrol`, `mDefendEntity`, `mFollowEntity`, `mDisengage`, `mTractorEntity`, `mCloak`, `mFireProbe` | `ai.patrol`, `ai.defend`, `ai.follow`, `ai.disengage`, `ai.tractor`, `ai.cloak`, `ai.probe` | Priority enum mirrors `eAIPriority` |
 | `tShipInfo::mSetShipAIControlled`, `mSetShipPlayerControlled` | `ai.setControl` | |
 | `tShipInfo::mChangeAIOfficerState` | `ai.officer` | |
-| `tShipInfo::mSetSystemHealthFromOrig` / `FromCurr` | `ships.damageSystem` / `ships.repairSystem` | Through the rules module; amounts are integers |
+| `tShipInfo::mSetSystemHealthFromOrig` / `FromCurr` | `ships.damageSystem` / `ships.repairSystem` | Through the rules module in boxes; outcome via `ruleResult`. Taldren set percentages, so ports convert to boxes |
 | `tShipInfo::mAddItemToStores` etc. | `ships.addStores` | |
 | `tShipInfo::mSetTargetable` | `ships.setTargetable` | |
 | `tShipInfo::mDestroyShip`, `mDestroyShipSilently` | `ships.destroy(h, { silent })` | |
@@ -853,13 +894,15 @@ without API changes.
 
 ## 13. Determinism and replay testing
 
-- **Replay harness** (with the Audio & Netcode QA Lead): run scenario + seed + input log headless, compare
+- **Replay harness** (with the Audio & Netcode QA Lead; backlog #25, replay and hash checks): run scenario + seed + input log headless, compare
   the final state hash and a per-N-tick hash trail with the expected values.
 - **Mission-specific checks:** the slot-255 command stream the mission produced is part of the hash, so a mission
   that behaves differently on another machine fails fast and points at the tick.
 - **Cross-environment runs:** CI runs replays in at least two JS engines (for example V8 via Node and
   SpiderMonkey or JavaScriptCore) to catch engine-dependent behaviour, once the Engine Lead confirms the
   sim itself is engine-independent.
+- **Rule-result checks:** a mission that issues rejected or clamped commands gets the same `ruleResult`
+  events on every peer, and never throws.
 - **Spawn-id checks:** tests that run the same scenario with different amounts of script work per tick
   and assert identical entity ids, since ids must never depend on script timing.
 - **Budget checks:** dev-build tests that a mission over its operation budget fails loudly.
@@ -910,8 +953,10 @@ Still open:
 2. The AI order set and priorities missions can rely on (6.6), and which orders are hard overrides.
 3. Damage event severity buckets for `shipDamaged`, and which system/stores changes should raise events.
 4. Capture and disengage semantics that victory presets depend on.
-5. The **rules module entry points** mission commands should call for damaging and repairing systems,
-   setting shields and energy, and AI orders, and what a call returns when the rules reject it.
+Answered (pending the rules spec in `docs/rules/`, #24): the rules entry points missions call
+(`damageSystem`, `damageShield`, `repairSystem`, `setShields`, `setEnergy`, AI orders via the captain's
+order queue) and the `ruleResult` event (token, applied/clamped/rejected, reason code, applied value; never
+throws). Still open: items 1 to 4 above, plus the full reason-code list in `docs/rules/`.
 
 ### Asset & Formats Engineer
 
@@ -931,26 +976,28 @@ Still open:
 2. Which **pilot mission** for Phase 4, and which empire's campaign is the "first campaign" exit target.
 3. Whether a `docs/missions/` folder and `ports/` notes need a CODEOWNERS entry.
 4. Phase placement of the scenario editor (Phase 8 or a later stretch).
-5. File the Phase 4 issues for: runtime sandbox, scenario format, state-machine layer, victory presets,
-   campaign graph, replay harness, pilot port.
+5. **There is no Phase 4 issue yet.** File the Phase 4 issues for: runtime sandbox, scenario format,
+   state-machine layer, victory presets, campaign graph, mission replay tests, pilot port. Related existing
+   backlog: #21 sim core, #24 rules spec, #25 replay and hash checks, #8 decision issue for architecture
+   changes.
 
 ### UI & Art Director
 
-Answered: the briefing, debrief and hail panels are UI-owned HTML components specced in
+Answered: objectives and timer display (6.10, details in `docs/ui/hud-spec.md`; original placement TO
+VERIFY). Also answered: the briefing, debrief and hail panels are UI-owned HTML components specced in
 `docs/ui/hud-spec.md`; each takes a string key plus optional speaker and portrait keys; portraits come from
 the player's install with an original silhouette as fallback; English only at launch with English fallback
 for every key; original game strings are read from the player's string tables at runtime and never
-committed. Still open:
-
-1. How `missionTimer` and `objectiveUpdated` are shown (in `docs/ui/hud-spec.md`).
+committed. Nothing left open for UI & Art in this doc beyond verifying original placement.
 
 ### Audio & Netcode QA Lead
 
 1. **Release-build** behaviour when a mission goes over its operation budget (dev builds error out), for
    example aborting that handler for the tick and logging it. Your call. The Engine Lead's constraint: the
    budget counts operations so every peer hits the limit at the same point, and the behaviour must be
-   deterministic with nothing varying by machine.
-2. Whether slot-255 mission commands go in the replay log or are regenerated (proposal: regenerated and
+   deterministic with nothing varying by machine. The answer will come as a comment on PR #1.
+2. The sound cue id for the pinned timer's last 10 seconds.
+3. Whether slot-255 mission commands go in the replay log or are regenerated (proposal: regenerated and
    hashed).
 
 ### Daniel
