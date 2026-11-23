@@ -73,7 +73,7 @@ Metadata only, from the inventory on `formats/inventory-ce2670` at [`04a70f5`](h
 
 **ftrlist `UI` column.** Probably the fighter icon key (**TO VERIFY**). The column is present in the CE 2.670 header ([ftrlist inventory](https://github.com/danielsegan/sfc2.js/blob/04a70f5/docs/formats/inventory/shiplist-ftrlist-ce-2.670.md#L1031)). See hud-spec §11 (shuttles, fighters, PFs) and open question 10 (how HUD icons are keyed).
 
-**HUD weapon panel.** In shiplist heavy slots 1–10, Arc cells holding `1`, `2` or `3` are not firing arcs ([numeric arc codes](https://github.com/danielsegan/sfc2.js/blob/04a70f5/docs/formats/inventory/shiplist-ftrlist-ce-2.670.md#L335)). The working theory is that they are drone reload counts, per the loader rule that an Arc cell is read according to the weapon in that slot. The HUD draws no firing arc for those slots, and shows reloads only once Combat's mapping table marks the weapon as reload-counted. **TO VERIFY**.
+**HUD weapon panel.** The no-firing-arc rule is keyed on weapon code, not on heavy slots. The `reloadCounted` set is `DroA`, `DroB`, `DroC`, `DroF`, `DroG`, `ADD6` and `ADD12`, matched exactly as in `docs/engine/data-loader.md` (Engine Lead's PR #55). For those racks the Arc cell is a whole-number count, the rack draws no firing arc, and the HUD shows the count next to the rack. **TO VERIFY** only whether that count means reloads or rack capacity, and why ADD racks always show 1. Fighter drones `DroI` and `DroVI` keep `ALL` as a normal arc. A numeric Arc on any other weapon, or a letter or empty cell on a `reloadCounted` rack, is the loader's `unknownArc` diagnostic, shown via the `loader.unknownArc` locale key (hud-spec §3 and §14d).
 
 ## 4. Texture and self-illumination conventions for the renderer
 
