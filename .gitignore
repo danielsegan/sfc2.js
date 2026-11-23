@@ -1,0 +1,74 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+.npm/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json.bak
+
+# Build and test output
+dist/
+build/
+out/
+coverage/
+target/
+.next/
+.cache/
+.turbo/
+.parcel-cache/
+*.tsbuildinfo
+*.map
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Logs and temp
+*.log
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# Editors and IDEs
+.idea/
+.vscode/
+*.iml
+
+# Official SFC2 game files, installers, and dumps — never commit these.
+# The CI script tools/check-no-game-files.sh is the source of truth for
+# the blocked extension and path list; keep this file in loose agreement.
+*.exe
+*.dll
+*.mod
+*.sprite
+*.mvm
+*.wav
+*.mp3
+*.bik
+*.mpg
+*.mpeg
+*.tga
+*.bmp
+*.gf
+*.scs
+*.dat
+*.sav
+*.scr
+*.q3
+*.msi
+*.iso
+
+# Likely install / rip locations
+assets/original/
+**/Starfleet Command II*/
+**/Starfleet Command 2*/
+**/Starfleet Command II */
+**/SFC2CE*/
+**/SFC2/
+**/Empires at War*/

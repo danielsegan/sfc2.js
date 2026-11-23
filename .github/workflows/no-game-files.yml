@@ -1,0 +1,15 @@
+name: No game files
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check-no-game-files:
+    name: Block original game files and large binaries
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Run asset and large-file check
+        run: bash tools/check-no-game-files.sh

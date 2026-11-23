@@ -1,0 +1,7 @@
+# Allowlist of in-repo synthetic fixtures that we created ourselves.
+# One repository-relative path per line. Lines starting with # and blank
+# lines are ignored. Paths must match git ls-files output exactly.
+#
+# Do not list anything copied from a Starfleet Command 2 install.
+# Keep fixtures small; this list exists so original-looking extensions
+# we invented for tests (for example a tiny hand-made .bmp) can pass CI.
