@@ -859,10 +859,15 @@ These are kept strictly apart (Asset & Formats Engineer):
   { "map": { "mapBounds": { "minX": 0, "minY": 0, "maxX": 100, "maxY": 100 }, "objects": [] } }
   ```
 
-  (Field names and numbers are illustrative.) Out-of-bounds or non-integer values raise a diagnostic with
-  `source: "mission"`, for example `{ code: "badMapBounds", source: "mission", severity: "error" }`, with
-  `location.field` pointing at the offending value. What counts as out of bounds depends on the committed
-  scale.
+  (Field names and numbers are illustrative.)
+
+  **Range rule (Combat):** each `mapBounds` axis value must satisfy **|v| <= 32767 range units**, so 16.16
+  positions fit in an int32 and squared distances fit in an i64. A value outside that range, or a
+  non-integer, emits `{ code: "badMapBounds", source: "mission", severity: "error" }`, with `location.field`
+  pointing at the offending value.
+
+  For context only, not as a limit on bounds: the provisional longest weapon range is **75 range units**,
+  the Star Fleet Battles long-range phaser band, pending playtest.
 
   Positions (ships, map objects, bounds) come **only from our own mission files**. They are never
   extracted from CE `.scr` modules.
