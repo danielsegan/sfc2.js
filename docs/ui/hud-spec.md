@@ -1,10 +1,10 @@
 # Tactical HUD spec
 
-Status: draft v0.1. Reference: SFC2's own EaW HUD, baseline EaW 2.036 + unofficial 2.037 patch, built from the player's own `sprites.q3` GUI art wherever possible, with original fallback art (see `asset-pipeline.md`). Visual tokens are in `style-guide.md`; scaling, gamepad and accessibility are in `modern-ux.md`.
+Status: draft v0.1. Reference: SFC2's own HUD, baseline Community Edition (CE) 2.670, built from the player's own `sprites.q3` GUI art wherever possible, with original fallback art (see `asset-pipeline.md`). Visual tokens are in `style-guide.md`; scaling, gamepad and accessibility are in `modern-ux.md`.
 
 Scope per plan.md ("Roadmap"): Phase 2 needs components 1–3 and a basic 4, 7 and 12 ("Energy, six shields, arcs, phasers and heavy weapons"). Phase 3 needs the rest ("EW, overloads, boarding, tractors, cloaks, mines, fighters, PFs").
 
-**TO VERIFY** marks behaviour we believe SFC2 has but have not yet checked against EaW 2.036/2.037 running under Wine. These items are checks, not claims. The Combat Systems Designer's `docs/rules` is the authority on rules. This spec only says how the HUD shows them.
+**TO VERIFY** marks behaviour we believe SFC2 has but have not yet checked against CE 2.670 running under Wine. These items are checks, not claims. The Combat Systems Designer's `docs/rules` is the authority on rules. This spec only says how the HUD shows them.
 
 ---
 
@@ -371,7 +371,7 @@ interface CraftView {
 
 ## Proposed default keymap (summary)
 
-All keys are **proposals**. SFC2's original defaults are **TO VERIFY** against EaW 2.036/2.037, and we may offer a "classic" profile that matches them. Everything is rebindable (`modern-ux.md`).
+All keys are **proposals**. SFC2's original defaults are **TO VERIFY** against CE 2.670, and we may offer a "classic" profile that matches them. Everything is rebindable (`modern-ux.md`).
 
 | Area | Keys |
 | --- | --- |

@@ -21,10 +21,10 @@ This folder holds the visual and interaction design for the tactical HUD, the me
 
 ## Reference build (Daniel's decisions, 2026-11-23)
 
-- **Version baseline:** *Star Trek: Starfleet Command II: Empires at War*, **official patch 2.036 plus the unofficial 2.037 patch** (written as **EaW 2.036/2.037** in these docs).
-- **HUD reference:** the HUD and menus follow SFC2's own EaW HUD. There is one reference skin; no alternate skin is designed here (a possible future one is a single item under Open questions).
+- **Version baseline:** *Star Trek: Starfleet Command II* **Community Edition 2.670**, from the CE installer Daniel owns (written as **CE 2.670** in these docs; changed from EaW 2.036 + unofficial 2.037 on 2026-11-23).
+- **HUD reference:** the HUD and menus follow SFC2's own HUD. There is one reference skin; no alternate skin is designed here (a possible future one is a single item under Open questions).
 - **Art source:** the HUD is built from the player's own `sprites.q3` GUI art wherever possible; every fallback is original project art.
-- **TO VERIFY** in these docs means: check against an EaW 2.036/2.037 install running under Wine. Each one is a check to make, not a claim.
+- **TO VERIFY** in these docs means: check against a CE 2.670 install running under Wine. Each one is a check to make, not a claim.
 
 These decisions postdate `docs/plan.md`, which still lists the name, language and game version as open. The Producer owns updating the plan.
 
@@ -53,8 +53,8 @@ Decided by Daniel on 2026-11-23 (after plan.md was written):
 | Decision | Effect on these docs |
 | --- | --- |
 | **Language: TypeScript** | Interfaces in these docs are TypeScript and are intended to become real `.ts` types once the Engine Lead confirms field names. |
-| **Version baseline: EaW 2.036 + unofficial 2.037** | All TO VERIFY items are checked against EaW 2.036/2.037. |
-| **HUD follows SFC2's own EaW HUD** | Single reference skin. |
+| **Version baseline: CE 2.670** | All TO VERIFY items are checked against CE 2.670. |
+| **HUD follows SFC2's own HUD** | Single reference skin. |
 | **Project name: SFC2.js** | Used in prose and UI text (title screen, window title, About). Repo name and paths are unchanged. |
 
 Still open: **Cursor cloud agents** (plan.md, "Open decisions for Daniel"). It doesn't affect the UI docs. (Hosting tooling is also listed in plan.md; GitHub is in use and nothing here depends on it.)

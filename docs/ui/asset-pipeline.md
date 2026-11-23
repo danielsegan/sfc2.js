@@ -1,6 +1,6 @@
 # UI and art asset pipeline
 
-Status: draft v0.1. Baseline: EaW 2.036 + unofficial 2.037 patch. Owner: UI & Art Director, with the Asset & Formats Engineer (parsers and importer) and the Engine Lead (renderer). Follows `docs/LEGAL.md`: players bring their own files; nothing original is committed or shipped.
+Status: draft v0.1. Baseline: Community Edition (CE) 2.670. Owner: UI & Art Director, with the Asset & Formats Engineer (parsers and importer) and the Engine Lead (renderer). Follows `docs/LEGAL.md`: players bring their own files; nothing original is committed or shipped.
 
 ## 1. Sources, in priority order
 
@@ -42,7 +42,7 @@ interface SlotBinding {
 ```
 
 - The **original bindings** (which `sprites.q3` entry and sub-rectangle fills which slot) are data that point into the player's own files. Whether this mapping table may live in the repo is a question for the Producer (it contains file names and coordinates only, no art). Until answered, keep it in a JSON file the importer builds by inspection on the player's machine, plus a reviewed table in `docs/formats/` written from clean-room observation.
-- Chrome that the original draws as one bitmap (a whole console background) maps to one slot, and our layout cuts it with nine-slice insets for wide modes. Where a slice would distort the original art, wide mode switches that panel to fallback chrome. **TO VERIFY** per panel against EaW 2.036/2.037.
+- Chrome that the original draws as one bitmap (a whole console background) maps to one slot, and our layout cuts it with nine-slice insets for wide modes. Where a slice would distort the original art, wide mode switches that panel to fallback chrome. **TO VERIFY** per panel against CE 2.670.
 - Missing or failing slots fall back **per slot**, not all or nothing. A debug overlay (`?hudDebug=1`) shows each slot's source (original / fallback / HD).
 
 ## 2a. Where sprites are drawn (Agreed with Engine Lead, pending docs/engine HUD contract)
@@ -55,8 +55,8 @@ interface SlotBinding {
 
 | Need | Detail |
 | --- | --- |
-| `sprites.q3` reader | List entries; decode each to RGBA (`ImageBitmap` or `Uint8ClampedArray` + width and height); expose sub-frames or animation frames if the format has them. Entry naming and palette handling: **TO VERIFY** against EaW 2.036/2.037, documented in `docs/formats/sprites-q3.md`. |
-| BMP decoder | 8-bit palettised and 24-bit, with the colour-key / transparent colour convention the original uses (**TO VERIFY** against EaW 2.036/2.037: magenta, black, or palette index 0?). Output premultiplied RGBA. |
+| `sprites.q3` reader | List entries; decode each to RGBA (`ImageBitmap` or `Uint8ClampedArray` + width and height); expose sub-frames or animation frames if the format has them. Entry naming and palette handling: **TO VERIFY** against CE 2.670, documented in `docs/formats/sprites-q3.md`. |
+| BMP decoder | 8-bit palettised and 24-bit, with the colour-key / transparent colour convention the original uses (**TO VERIFY** against CE 2.670: magenta, black, or palette index 0?). Output premultiplied RGBA. |
 | Fonts | If the original UI fonts are bitmap sheets, a glyph-metrics reader. Otherwise we use our open fonts (style-guide §3). |
 | Inventory | A list of GUI entries with sizes so we can build the slot binding table without screenshots in the repo. |
 | Validation | Reports missing or unexpected entries so the HUD can log "using fallback for N slots". |
@@ -69,7 +69,7 @@ What the renderer needs from the importer for ships, bases and terrain (Phase 1 
 | --- | --- |
 | Colour space | Base textures are sRGB; self-illum maps are sRGB on load and converted to linear for emissive. |
 | Alpha | Premultiplied after decode. Colour-key pixels become alpha 0. |
-| Self-illum pairing | The importer resolves which file is the self-illum map for each base texture (naming rule **TO VERIFY** against EaW 2.036/2.037, e.g. a suffix) and returns `{ base, selfIllum? }` per material. |
+| Self-illum pairing | The importer resolves which file is the self-illum map for each base texture (naming rule **TO VERIFY** against CE 2.670, e.g. a suffix) and returns `{ base, selfIllum? }` per material. |
 | Self-illum semantics | Black = unlit; brightness = emission strength. Period tier: add unlit on top of the lit base. HD tier: `emissive` × `emissiveIntensity`, bloom threshold tuned so only self-illum areas bloom. |
 | UV origin | Normalised to three.js convention (origin bottom-left) in the importer, not in shaders. |
 | Mipmaps | Generated at load for 3D textures; never for HUD sprites. |

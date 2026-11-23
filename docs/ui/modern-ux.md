@@ -1,6 +1,6 @@
 # Modern UX
 
-Status: draft v0.1. These are layers on top of SFC2's own EaW HUD (baseline EaW 2.036 + unofficial 2.037 patch). Defaults keep the original feel; everything here is switchable. Several items are listed under the plan's "Stretch" row ("HD rendering, smarter AI, controller support, ultrawide HUD") and its Phase 8 ("Mod loader, HD upgrades, controller, Tauri release"). Scaling, rebinding and the basic accessibility settings are needed earlier, by Phase 3, because they're cheap to build in and expensive to retrofit.
+Status: draft v0.1. These are layers on top of SFC2's own HUD (baseline Community Edition (CE) 2.670). Defaults keep the original feel; everything here is switchable. Several items are listed under the plan's "Stretch" row ("HD rendering, smarter AI, controller support, ultrawide HUD") and its Phase 8 ("Mod loader, HD upgrades, controller, Tauri release"). Scaling, rebinding and the basic accessibility settings are needed earlier, by Phase 3, because they're cheap to build in and expensive to retrofit.
 
 ## 1. Resolution scaling and UI scale
 
@@ -58,7 +58,7 @@ Uses the browser Gamepad API (and the same API inside Tauri's webview). Standard
 ## 4. Rebinding
 
 - Every command in `hud-spec.md` is an **action id** (for example `weapons.fireGroup.1`). Bindings map inputs → action ids; the HUD never hard-codes keys.
-- Profiles: **Modern** (default proposal), **Classic** (SFC2 original defaults, built once those are verified against EaW 2.036/2.037), user profiles. Export and import as JSON.
+- Profiles: **Modern** (default proposal), **Classic** (SFC2 original defaults, built once those are verified against CE 2.670), user profiles. Export and import as JSON.
 - Conflict detection with a "swap" prompt; chord support (`Ctrl/Shift/Alt`); separate keyboard and gamepad maps.
 - Browser-reserved keys (`Ctrl+W`, `Ctrl+T`, `F5`, `F11` etc.) can't be bound in the web build; the Tauri build may allow more. The UI marks reserved keys.
 - Keys use `KeyboardEvent.code` (physical position) so AZERTY and QWERTZ layouts work, with labels shown via `navigator.keyboard.getLayoutMap()` where available.
