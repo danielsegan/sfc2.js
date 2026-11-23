@@ -1,6 +1,6 @@
 # Style guide — tactical HUD, menus and the 3D space look
 
-Status: draft v0.1. The reference is SFC2 itself (Empires at War), the only skin designed here (README, "Reference build"). The Period look is built from the player's own `sprites.q3` GUI art wherever possible. Everything described as "like the original" is a description in our own words, to be checked against the player's install (**TO VERIFY**). No original art is reproduced here.
+Status: draft v0.1. The reference is SFC2's own EaW HUD, baseline EaW 2.036 + unofficial 2.037 patch, the only skin designed here (README, "Reference build"). The Period look is built from the player's own `sprites.q3` GUI art wherever possible. Everything described as "like the original" is a description in our own words, to be checked against EaW 2.036/2.037 (**TO VERIFY**). No original art is reproduced here.
 
 Two visual tiers run through this whole guide:
 
@@ -61,7 +61,7 @@ Open-licensed fonts only, self-hosted with the web app (no CDN calls), with the 
 | Body / log | **Inter** | SIL Open Font License 1.1 | Message log, tooltips, briefings |
 | Accessibility alt | **Atkinson Hyperlegible** | SIL Open Font License 1.1 | Swapped in for Inter and Saira when "legible font" is on |
 
-Scale (logical px at UI scale 1.0): 10 (micro, tick labels), 12 (readouts), 14 (body), 16 (headers), 20 (menu items), 28 (menu titles). Minimum rendered size is 11 physical px; the UI scale clamps to keep it there. In Period tier, bitmap fonts from the player's install may be used if the Asset & Formats Engineer can parse them (**TO VERIFY** whether the original fonts are bitmaps inside the GUI archives).
+Scale (logical px at UI scale 1.0): 10 (micro, tick labels), 12 (readouts), 14 (body), 16 (headers), 20 (menu items), 28 (menu titles). Minimum rendered size is 11 physical px; the UI scale clamps to keep it there. In Period tier, bitmap fonts from the player's install may be used if the Asset & Formats Engineer can parse them (**TO VERIFY** against EaW 2.036/2.037 whether the original fonts are bitmaps inside the GUI archives).
 
 ## 4. Color tokens
 
@@ -103,7 +103,7 @@ Empire roster per plan.md ("Vision and scope"), to be confirmed against installe
 | Mirak | `--emp-mir` | `#C46A2E` | `#3A3A5A` |
 | Orion Pirates | `--emp-ori` | `#9B6BD1` | `#2E2E2E` |
 
-Orion cartels may need sub-accents if the install defines them (**TO VERIFY**). Accent colors are only for chrome tint, the panel top strip and the player's ship marker. They never carry state meaning.
+Orion cartels may need sub-accents if the data defines them (**TO VERIFY** against EaW 2.036/2.037). Accent colors are only for chrome tint, the panel top strip and the player's ship marker. They never carry state meaning.
 
 ## 5. Iconography
 
@@ -142,7 +142,7 @@ The HUD raises named UI events. The Audio & Netcode QA Lead maps them to the pla
 | `hud.target.locked`, `hud.target.lost` | Target change |
 | `hud.comms.message` | Log message with a voice cue |
 
-Voice and alert cues in the original (bridge-officer style call-outs) are **TO VERIFY** in `sounds.txt` and handled by Audio.
+Voice and alert cues in the original (bridge-officer style call-outs) are **TO VERIFY** in EaW 2.036/2.037's `sounds.txt` and handled by Audio.
 
 ---
 
@@ -163,7 +163,7 @@ Self-illum must read correctly at the Phase 1 exit ("Every ship in `shiplist.txt
 
 ### 8.2 Weapon VFX per family
 
-All VFX are ours: procedural or our own textures. Colors per family follow the general feel of the originals (**TO VERIFY** each in the install). Empire variants, such as different phaser colours, come from data where the install defines them.
+All VFX are ours: procedural or our own textures. Colors per family follow the general feel of the originals (**TO VERIFY** each against EaW 2.036/2.037). Empire variants, such as different phaser colours, come from data where the install defines them.
 
 | Family | Period | HD addition |
 | --- | --- | --- |

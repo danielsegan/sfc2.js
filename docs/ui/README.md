@@ -19,9 +19,14 @@ This folder holds the visual and interaction design for the tactical HUD, the me
 - **Phases** (plan.md, "Roadmap"): the HUD is a Phase 3 deliverable ("All weapons and systems, fleets, AI, HUD, sound"). Phase 2 ("Tactical duel") needs a minimal HUD for energy, six shields and arcs. Phase 1's exit ("Every ship in `shiplist.txt` loads and spins with textures and self-illum") is the first thing the material conventions in this folder must support. HD upgrades and controller support land in Phase 8 ("Mod loader, HD upgrades, controller, Tauri release"); the plan's "Stretch" row lists "HD rendering, smarter AI, controller support, ultrawide HUD".
 - **Architecture** (plan.md, "Architecture"): "Rendering, UI and audio only read sim state". The HUD lives in `web/` ("Browser application and HUD", `web/README.md`); the renderer lives in `engine/`.
 
-## Reference build (Daniel's direction, 2026-11-23)
+## Reference build (Daniel's decisions, 2026-11-23)
 
-The HUD and menus are modelled on **SFC2 itself (Empires at War)**. There is one reference skin and no alternate skin is designed in these docs (a possible future one is listed under Open questions only). The HUD is built from the player's own `sprites.q3` GUI art wherever possible; every fallback is original project art. Which Community Edition build is the reference (2.670 or 2.679) is still **open** (plan.md, "Open decisions for Daniel"), so every "as in SFC2" layout claim in these docs is marked TO VERIFY against the player's install.
+- **Version baseline:** *Star Trek: Starfleet Command II: Empires at War*, **official patch 2.036 plus the unofficial 2.037 patch** (written as **EaW 2.036/2.037** in these docs).
+- **HUD reference:** the HUD and menus follow SFC2's own EaW HUD. There is one reference skin; no alternate skin is designed here (a possible future one is a single item under Open questions).
+- **Art source:** the HUD is built from the player's own `sprites.q3` GUI art wherever possible; every fallback is original project art.
+- **TO VERIFY** in these docs means: check against an EaW 2.036/2.037 install running under Wine. Each one is a check to make, not a claim.
+
+These decisions postdate `docs/plan.md`, which still lists language and game version as open. The Producer owns updating the plan.
 
 ## Principles
 
@@ -41,15 +46,21 @@ The HUD and menus are modelled on **SFC2 itself (Empires at War)**. There is one
 - Clean-room: we observe the original game as a black box under Wine and use published manuals and community format notes. We never use or reference decompiled code.
 - `tools/check-no-game-files.sh` blocks `.bmp`, `.q3`, `.tga`, `.mod`, `.wav` and other asset types in CI. Our own art goes in as SVG, PNG or KTX2 and must stay under the 1 MB per-file limit, or go through the allowlist with Producer sign-off.
 
-## Open decisions this folder does not lock in
+## Decided vs still open
 
-These belong to Daniel (plan.md, "Open decisions for Daniel"). The docs use neutral wording:
+Decided by Daniel on 2026-11-23 (after plan.md was written):
+
+| Decision | Effect on these docs |
+| --- | --- |
+| **Language: TypeScript** | Interfaces in these docs are TypeScript and are intended to become real `.ts` types once the Engine Lead confirms field names. |
+| **Version baseline: EaW 2.036 + unofficial 2.037** | All TO VERIFY items are checked against EaW 2.036/2.037. |
+| **HUD follows SFC2's own EaW HUD** | Single reference skin. |
+
+Still open (plan.md, "Open decisions for Daniel"). The docs use neutral wording:
 
 | Decision | How these docs handle it |
 | --- | --- |
 | Project / game name | Called "the game" or "SFC2 Browser Edition (working title)". No title art or logo yet. |
-| JavaScript or TypeScript | Interfaces are written in TypeScript-style notation only for readability. They work as JSDoc typedefs too. |
-| CE 2.670 or 2.679 | Every layout fact is TO VERIFY against the chosen build. |
 | Cursor cloud agents | Doesn't affect the UI docs. |
 | Hosting tooling (GitHub / Cursor Origin) | Doesn't affect the UI docs. |
 

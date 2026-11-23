@@ -1,10 +1,10 @@
 # Tactical HUD spec
 
-Status: draft v0.1. Reference: SFC2 itself (Empires at War), built from the player's own `sprites.q3` GUI art wherever possible, with original fallback art (see `asset-pipeline.md`). Visual tokens are in `style-guide.md`; scaling, gamepad and accessibility are in `modern-ux.md`.
+Status: draft v0.1. Reference: SFC2's own EaW HUD, baseline EaW 2.036 + unofficial 2.037 patch, built from the player's own `sprites.q3` GUI art wherever possible, with original fallback art (see `asset-pipeline.md`). Visual tokens are in `style-guide.md`; scaling, gamepad and accessibility are in `modern-ux.md`.
 
 Scope per plan.md ("Roadmap"): Phase 2 needs components 1–3 and a basic 4, 7 and 12 ("Energy, six shields, arcs, phasers and heavy weapons"). Phase 3 needs the rest ("EW, overloads, boarding, tractors, cloaks, mines, fighters, PFs").
 
-**TO VERIFY** marks behaviour we believe SFC2 has but have not yet checked against the player's install running under Wine. These items are checks, not claims. The Combat Systems Designer's `docs/rules` is the authority on rules. This spec only says how the HUD shows them.
+**TO VERIFY** marks behaviour we believe SFC2 has but have not yet checked against EaW 2.036/2.037 running under Wine. These items are checks, not claims. The Combat Systems Designer's `docs/rules` is the authority on rules. This spec only says how the HUD shows them.
 
 ---
 
@@ -15,7 +15,7 @@ These are the Engine Lead's working answers. They stay **provisional until `docs
 | Rule | Consequence for the HUD |
 | --- | --- |
 | The sim runs at a **fixed 30 Hz**; energy and charging are counted in **whole ticks** | Charge bars show ticks, or a fraction of the charge time. Never wall-clock seconds as the source. Seconds are only a derived label (ticks / 30). |
-| **Fixed-point math only** in the sim | The HUD converts fixed-point to display units in one place (`hud/units.ts|js`). Rounding happens only for display. |
+| **Fixed-point math only** in the sim | The HUD converts fixed-point to display units in one place (`hud/units.ts`). Rounding happens only for display. |
 | **Distance unit is one swappable constant** | All range labels go through a single `toDisplayRange()` helper. No hard-coded unit names in components. |
 | **Headings are uint16**, 65536 per full circle | `deg = h * 360 / 65536`. Arcs and shield facings use the same conversion. |
 | Randomness only from **named seeded streams** | The HUD never draws from sim streams. Presentation jitter (debris, flicker) uses its own unseeded RNG. |
@@ -31,7 +31,7 @@ flowchart LR
   Comps -->|ui events| Audio[Audio cue mapper]
 ```
 
-Field names below are **proposals for the Engine Lead to confirm**. They're written in TypeScript-style notation for readability only; the JS/TS choice is still open (plan.md, "Open decisions for Daniel"). `Fx` means a fixed-point number; `Tick` means an integer tick count; `Heading16` means a uint16 heading.
+Field names below are **proposals for the Engine Lead to confirm**. They're written in TypeScript, which Daniel chose as the project language on 2026-11-23, and should become real `.ts` types once confirmed. `Fx` means a fixed-point number; `Tick` means an integer tick count; `Heading16` means a uint16 heading.
 
 Common types:
 
@@ -346,7 +346,7 @@ interface CraftView {
 
 ## Proposed default keymap (summary)
 
-All keys are **proposals**. SFC2's original defaults are **TO VERIFY** in the install, and we may offer a "classic" profile that matches them. Everything is rebindable (`modern-ux.md`).
+All keys are **proposals**. SFC2's original defaults are **TO VERIFY** against EaW 2.036/2.037, and we may offer a "classic" profile that matches them. Everything is rebindable (`modern-ux.md`).
 
 | Area | Keys |
 | --- | --- |
