@@ -4,15 +4,13 @@ Status: **draft**. Owner: Mission & Campaign Designer. Milestone: Phase 4 (Missi
 
 This roster lists the mission and campaign files in the reference build, SFC2 Community Edition 2.670, and
 tracks porting progress for each one. It is built **only** from the metadata in Asset & Formats' inventory,
-[`docs/formats/inventory/missions-ce-2.670.md`](../formats/inventory/missions-ce-2.670.md) (from draft PR
-[#46](https://github.com/danielsegan/sfc2.js/pull/46), commit `04a70f5`; pinned copy:
-[link](https://github.com/danielsegan/sfc2.js/blob/04a70f5/docs/formats/inventory/missions-ce-2.670.md)). That inventory was generated on the private `sfc2-ci` runner at
+[`docs/formats/inventory/missions-ce-2.670.md`](https://github.com/danielsegan/sfc2.js/blob/35dbbbd606831a72d8f9515fcae490eba9d48362/docs/formats/inventory/missions-ce-2.670.md)
+(branch `formats/inventory-ce2670`, PR [#46](https://github.com/danielsegan/sfc2.js/pull/46), commit `35dbbbd`). That inventory was generated on the private `sfc2-ci` runner at
 `2026-11-23T21:34:01Z` UTC.
 
 > **Clean-room and data rules.** Only file names, folder paths, sizes and counts from the inventory appear
 > here. sha256 hashes stay in the inventory and aren't repeated. No file contents, mission text or titles
-> beyond the file names, no game files, and nothing from SFC2-decomp. The relative link above resolves once
-> #46 lands on `main`.
+> beyond the file names, no game files, and nothing from SFC2-decomp.
 
 > **What the names do and don't tell us.** Grouping below is by **file-name prefix and name tokens only**
 > (for example `ISC_`, `Mir_`, `Conquest Fed`). It's not confirmed which campaign uses which `.scr`, what
