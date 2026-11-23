@@ -11,12 +11,12 @@ This is a design doc only. No runtime code lands before Phase 4.
 
 > **Decisions this doc follows (made by Daniel):** the project is named **SFC2.js** (the repo name and
 > paths stay `sfc2-browser-edition`); the language is **TypeScript**; the reference game for mission and
-> campaign content is **SFC2 Community Edition (CE) 2.670** (this replaced an earlier EAW 2.036 + 2.037
+> campaign content is **SFC2 Community Edition (CE) 2.670** ([#37](https://github.com/danielsegan/sfc2-browser-edition/issues/37)) (this replaced an earlier EAW 2.036 + 2.037
 > baseline); the HUD models the SFC2 HUD. **Still open:** whether studio bots use Cursor
 > cloud agents (nothing here depends on it). **Out of scope:** the standalone *Orion Pirates* game (2001)
 > and its content, which sits in [Possible later](#16-possible-later-backlog).
 
-> **Data verification status: unverified.** Wintermute is installing CE 2.670 on the `sfc2-ci` VM, but
+> **Data verification status: unverified.** Wintermute is installing CE 2.670 ([#37](https://github.com/danielsegan/sfc2-browser-edition/issues/37)) on the `sfc2-ci` VM, but
 > nothing has been checked against it yet. Every claim in this doc about the mission list, the empire
 > roster, Orion content, or any game behaviour that depends on installed data is **unverified** until it
 > has been checked against the CE 2.670 install on `sfc2-ci`. Taldren's released EAW Scripting API R1.3 and
@@ -62,7 +62,7 @@ This is a design doc only. No runtime code lands before Phase 4.
 
 What follows is **observed** in Taldren's public SFC2:EAW API Release 1.3 (readme dated 2 July 2002) and
 the public EAW mission sources. They are used as API and design references. Our reference build is
-**CE 2.670**. **Not verified:** how closely CE 2.670's missions, campaigns and behaviour still match what
+**CE 2.670** ([#37](https://github.com/danielsegan/sfc2-browser-edition/issues/37)). **Not verified:** how closely CE 2.670's missions, campaigns and behaviour still match what
 API R1.3 and the released EAW sources describe. That gets checked against the CE 2.670 install on
 `sfc2-ci` before porting starts. Where something is inferred rather than read directly, it says so.
 
