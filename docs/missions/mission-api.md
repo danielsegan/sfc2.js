@@ -156,10 +156,10 @@ That's the shape of our data-first format (section 9).
 ## 3. What we replace it with
 
 ```
-Scenario (data, JSON-like)  ─┐
+Scenario (JSON + schema)    ─┐
                              ├─► Mission runtime (sandbox) ──commands──► Sim core (fixed tick)
-Mission script (JS/TS)      ─┘          ▲                                      │
-                                        └───────── events + read-only views ◄──┘
+Mission script (TypeScript) ─┘          ▲                                      │
+                                        └───────── events + read-only queries ◄─┘
                                                        │
 Campaign layer ◄── MissionResult (victory, prestige, flags, fleet) ──┘
 ```
@@ -168,8 +168,8 @@ Campaign layer ◄── MissionResult (victory, prestige, flags, fleet) ──�
   missions should fit entirely in data.
 - A **mission script** is optional code that handles events and issues commands for anything data can't
   express. It mirrors Taldren's actor/state model so a port reads like the original.
-- The **mission runtime** hosts both in a sandbox, feeds it events once per tick, and turns its calls into
-  **commands** the sim applies at a defined point in the next tick. That matches the plan's architecture:
+- The **mission runtime** hosts both in a sandbox on the sim thread, feeds it events once per tick, and
+  turns its calls into **commands** the sim applies in the next tick's input phase (4.3). That matches the plan's architecture:
   "Mission runtime ──events──► Sim core".
 - The **campaign layer** (outside the mission) owns persistence, picks the next mission and passes in a
   start context, the equivalent of `tDynaverseScriptInfo`.
@@ -207,39 +207,52 @@ Missions must not:
 
 ### 4.2 Sandbox
 
-Proposal: run mission code in a **dedicated Web Worker** with a frozen, minimal global scope, and evaluate
-the mission module inside an **SES (Secure ECMAScript) Compartment** (`lockdown()` + `Compartment`) so the
-only globals are the ones we pass in. In the Tauri shell and on headless servers the same bundle runs in a
-worker thread.
+Mission code runs **on the sim thread, synchronously inside the AI/mission phase of each tick**, with
+SES-style isolation (a locked-down realm and a Compartment whose only globals are the ones we pass in).
+There is **no Web Worker** (Engine Lead, pending the mission-runtime contract in `docs/engine/`). The earlier Worker proposal is dropped. The same setup runs in the
+browser, the Tauri shell and on headless servers.
 
-- No DOM, network (`fetch`, `WebSocket`), storage (`localStorage`, IndexedDB), `importScripts`, `eval` of
-  strings, or clocks. SES lockdown also freezes intrinsics, so a mission can't patch `Array.prototype`
-  behind other code's back.
-- The worker talks to the sim over a message channel. Each tick: the sim posts the tick number, the event
-  batch and a read-only snapshot (or a cheap delta) of what the mission is allowed to see; the mission
-  posts back a command list. The sim never waits on the mission beyond a budget.
-- **Budget.** A per-tick instruction or time budget (the time budget is measured by the host, never visible
-  to the mission). Overrunning it is a mission fault: the mission is suspended, the battle continues under
-  normal AI, and the fault is logged. A time budget can't be part of the deterministic result, so the
-  fault policy must be identical on every peer (open question for Audio & Netcode QA).
-- **Alternative under consideration:** run the mission synchronously on the sim thread inside the same SES
-  Compartment, no worker. This is simpler and has zero latency, at the cost of isolation from long-running
-  loops. Engine Lead decides (section 15).
+- No DOM, network (`fetch`, `WebSocket`), storage (`localStorage`, IndexedDB), dynamic `import`, `eval` of
+  strings, or clocks. Lockdown also freezes intrinsics, so a mission can't patch `Array.prototype` behind
+  other code's back.
+- Each tick the runtime calls the mission's handlers for that tick's events, then `tick` if the mission
+  asked for it. Handlers read through the query API (6.2) and write by queuing commands (4.3). Nothing
+  crosses a thread or message channel.
+- **Budget.** The per-tick budget counts **operations or API calls, never wall-clock time**, so it is the
+  same on every machine (Engine Lead, pending the mission-runtime contract in `docs/engine/`). Going over it is an **error in dev builds, never a silent skip**: the dev
+  build stops the mission with a report naming the tick and handler. What a release build does on overrun
+  (end the mission as a fault, hand the battle to normal AI, or something else) still has to be decided,
+  and must be identical on every lockstep peer (open question, section 15).
+- How operations are counted (instrumented API calls only, or a transform that also counts loop
+  iterations) is part of the Engine Lead's contract.
 
 ### 4.3 Commands, not mutations
 
-Missions never mutate sim state directly. Every API call that changes the world appends a command to the
-tick's command list, for example `{ t: "spawnShip", teamId, shipClass, at, facing, tag }`. The sim applies
-mission commands at a fixed point in the tick (proposal: after input and AI orders, before movement), in
-the order they were issued. That gives:
+Missions never mutate sim state directly. Every API call that changes the world queues a command, for
+example `{ t: "spawnShip", team, shipClass, at, facing, tag, token }`. The ordering rule (Engine Lead, pending the mission-runtime contract in `docs/engine/`):
+
+- Commands a script issues during tick **T** apply in tick **T+1's input phase**.
+- Mission commands use **command slot 255** and are sorted by **(tick, slot, seq)**, so they apply **after
+  all player slots** for that tick. `seq` is the order the mission issued them in.
+
+That gives:
 
 - a single, loggable stream that replays exactly;
 - the same path for single player, lockstep multiplayer (every peer runs the mission and must produce the
   same commands) and host-authoritative servers;
 - an easy place to validate and reject bad commands (unknown ship class, off-map position).
 
-Spawned entities get ids the mission can use immediately: the runtime reserves ids deterministically when
-the command is issued, so `spawnShip` can return a handle in the same tick.
+**Combat state goes through the rules module** (Combat Systems Designer). Every mission command that
+changes combat state, such as damaging or repairing systems, setting shields or energy, or ordering AI
+ships, is applied through the rules module's own entry points, never by editing ship state directly. That
+way the same damage-allocation and energy rules apply whether the change came from a weapon, a player or
+a mission. The mission runtime only translates commands into those calls; it owns no combat logic.
+
+**Spawning is token-based** (Engine Lead, pending the mission-runtime contract in `docs/engine/`). `ships.requestSpawn(...)` returns a **spawn token**, not an entity id.
+When the sim applies the spawn (in T+1's input phase) it takes the **lowest free entity index with a
+bumped generation**. On the following tick the mission receives a `spawned { token, entityId }` event and
+can use the ship from then on. Entity ids never depend on script timing. In short: request in T, applied
+in T+1, `spawned` delivered in T+2.
 
 ---
 
@@ -256,27 +269,28 @@ load ─► validate ─► setup ─► briefing ─► start ─► running (p
 | **setup** | `onSetup(ctx, start)`: build teams, relations, map objects and ships from the start context | `mScriptSpecs`, `mInitializeStart`, `mSetupTeam`, `mCreateShipsForTeam` |
 | **briefing** | Show briefing text by player race; nothing ticks yet | `mDefineBriefings`, `mBriefingText` |
 | **start** | `onStart(ctx)` at tick 0 of the battle | `mStartMission`, `mBeginMission` |
-| **running** | Events dispatched in deterministic order, then `onTick(ctx)` if the mission asked for it | `tState` handlers, `mOnTimedInterval` |
+| **running** | Inside the AI/mission phase of each tick: events dispatched in deterministic order, then `onTick(ctx)` if the mission asked for it | `tState` handlers, `mOnTimedInterval` |
 | **end** | Mission calls `ctx.end(...)` or the victory preset fires; the end pause runs in ticks | `mCheckForMissionEnd`, `kTimerEndGamePause` |
 | **scoring** | Victory level per team, prestige, bonus prestige, debriefing lines, campaign flags | `mCalcVictoryStatus`, `mGetPrestigePoints`, `tMissionScheduler` |
 | **teardown** | Drop timers and handlers, freeze the result, destroy the sandbox | `mCleanUpActors` |
 
-### 5.1 Engine hook points: placeholders
+### 5.1 Engine hook points
 
-The hooks below are **placeholders**. They wait on the Engine Lead's mission-runtime contract in
-`docs/engine/` (not yet posted at the time of writing; there is no `docs/engine/` folder on `main`). When
-that contract lands, this section gets replaced by a link and the names change to match.
+These wait on the Engine Lead's mission-runtime contract in `docs/engine/`, which isn't on `main` yet. Four
+now have working answers from the Engine Lead, pending that contract; the rest are still placeholders. When
+the contract lands, this section gets replaced by a link and the names change to match.
 
-| Placeholder | Needed from the engine |
-| --- | --- |
-| `ENGINE_HOOK: tickPhase` | Where in the tick mission commands are applied, and where events are collected |
-| `ENGINE_HOOK: eventSource` | How sim events (death, damage, capture, disengage, proximity, orbit, tractor, transport, system and stores changes) reach the mission, and in what order |
-| `ENGINE_HOOK: entityIds` | How spawned entity ids are allocated deterministically |
-| `ENGINE_HOOK: missionView` | The read-only state the mission can query (positions, damage, systems, stores) and how it's snapshotted |
-| `ENGINE_HOOK: aiOrders` | The AI order interface the mission calls into (owned with Combat) |
-| `ENGINE_HOOK: rngStreams` | How `ctx.rng("mission")` is seeded and isolated from other streams |
-| `ENGINE_HOOK: hudChannel` | How countdowns, goal markers and comm buttons reach the HUD canvas, and how briefing, dialogue and debriefing text reach the HTML text layer (per the HUD contract, with UI) |
-| `ENGINE_HOOK: audioCue` | How a mission requests a sound or voice line (with Audio) |
+| Hook | Status | Answer or what's needed |
+| --- | --- | --- |
+| `ENGINE_HOOK: tickPhase` | Answered (Engine Lead, pending the mission-runtime contract in `docs/engine/`) | Script runs in the AI/mission phase of tick T; its commands apply in T+1's input phase, slot 255, sorted by (tick, slot, seq) after all player slots (4.3) |
+| `ENGINE_HOOK: sandbox` | Answered (Engine Lead, pending the mission-runtime contract in `docs/engine/`) | Same thread, synchronous, SES-style isolation, no Worker; budget counts operations or calls, never wall-clock time; overrun is an error in dev builds (4.2) |
+| `ENGINE_HOOK: entityIds` | Answered (Engine Lead, pending the mission-runtime contract in `docs/engine/`) | `requestSpawn` returns a token; the sim takes the lowest free entity index with a bumped generation; `spawned {token, entityId}` arrives the next tick (4.3) |
+| `ENGINE_HOOK: missionView` | Answered (Engine Lead, pending the mission-runtime contract in `docs/engine/`) | Read-only query API over the current tick's state, iterated in entity-id order; no copied snapshot (6.2) |
+| `ENGINE_HOOK: eventSource` | Placeholder | How sim events (death, damage, capture, disengage, proximity, orbit, tractor, transport, system and stores changes) reach the mission, and in what order |
+| `ENGINE_HOOK: rulesEntryPoints` | Placeholder (with Combat) | The rules module entry points mission commands call for damage, repair, shields, energy and AI orders (4.3) |
+| `ENGINE_HOOK: rngStreams` | Placeholder | How `ctx.rng("mission")` is seeded and isolated from other streams |
+| `ENGINE_HOOK: frameEvents` | Placeholder (with UI) | The engine's per-frame event list that carries typed UI events such as `objectiveUpdated`, `missionTimer` and `hail` (6.10) |
+| `ENGINE_HOOK: audioCue` | Placeholder | How a mission requests a sound or voice line (with Audio) |
 
 ---
 
@@ -329,6 +343,11 @@ interface Rng { int(min: number, max: number): number; chance(numerator: number,
 type Tick = number;                       // integer
 ```
 
+**Reads** (Engine Lead, pending the mission-runtime contract in `docs/engine/`): every getter (`ships.get`, `teams.ships`, `map.distance`, ...) is a **read-only query over
+the current tick's state**, not a copied snapshot. Anything that returns several entities iterates in
+**entity-id order**. A mission sees state as of the start of its phase in the current tick, and its own
+queued commands don't show up in reads until they've been applied.
+
 ### 6.3 Start context (campaign → mission)
 
 ```ts
@@ -368,12 +387,12 @@ interface TeamApi {
 ### 6.5 Ships
 
 Ships are spawned by **shiplist id**, i.e. the class key from the player's own `shiplist.txt` as parsed by
-the Asset & Formats parser. The exact key (class name column, hull type, or both) is an open question for
+the Asset & Formats parser. Spawning is token-based (4.3). The exact key (class name column, hull type, or both) is an open question for
 Asset & Formats.
 
 ```ts
 interface ShipApi {
-  spawn(def: {
+  requestSpawn(def: {
     team: TeamId;
     shipClass: ShipClassKey;               // from the player's shiplist; validated at load
     at: MapPoint;                          // grid cell or fixed-point position
@@ -385,16 +404,21 @@ interface ShipApi {
     stores?: Partial<StoresLoadout>;
     targetable?: boolean;
     playerControlled?: boolean;
-  }): ShipHandle;
+  }): SpawnToken;                          // ship id arrives later in a `spawned { token, entityId }` event
   pickByBudget(def: { empire: EmpireId; bpv: number; roles?: ShipRole[] }): ShipClassKey[];  // FMSE "ships by BPV"
-  byTag(tag: string): ShipHandle | undefined;
-  get(h: ShipHandle): ShipView;            // read-only snapshot for this tick
+  byTag(tag: string): ShipHandle | undefined;   // resolves once the ship has spawned
+  get(h: ShipHandle): ShipView;            // read-only query over this tick's state
   destroy(h: ShipHandle, opts?: { silent?: boolean }): void;
   setTeam(h: ShipHandle, team: TeamId): void;
-  setSystemHealth(h: ShipHandle, system: SystemKey, percent: Percent): void;
+  // Combat-state changes: queued, then applied through the rules module's entry points (4.3)
+  damageSystem(h: ShipHandle, system: SystemKey, amount: number): void;
+  repairSystem(h: ShipHandle, system: SystemKey, amount: number): void;
+  setShields(h: ShipHandle, facing: ShieldFacing, strength: number): void;
+  setEnergy(h: ShipHandle, allocation: Partial<EnergyAllocation>): void;
   addStores(h: ShipHandle, item: StoresItem, amount: number): void;
   setTargetable(h: ShipHandle, on: boolean): void;
 }
+type SpawnToken = number;                  // unique per mission run, assigned in issue order
 
 interface ShipView {
   readonly id: ShipHandle; readonly team: TeamId; readonly originalTeam: TeamId; readonly empire: EmpireId;
@@ -407,7 +431,8 @@ interface ShipView {
 
 ### 6.6 AI orders
 
-Missions give **orders**; how a captain carries them out is Combat's AI. Priorities mirror the observed
+Missions give **orders**; how a captain carries them out is Combat's AI. Orders go through the rules
+module's entry points like every other combat-state change (4.3). Priorities mirror the observed
 `eAIPriority` idea.
 
 ```ts
@@ -437,7 +462,7 @@ interface TimerApi {
   after(ticks: Tick, id: string): TimerId;          // fires once -> on.timer({ id })
   every(ticks: Tick, id: string): TimerId;          // repeating
   cancel(id: TimerId): void;
-  countdown(ticks: Tick, opts?: { label?: TextRef; team?: TeamId }): void;   // on-screen countdown (HUD)
+  countdown(ticks: Tick, opts?: { label?: TextRef; team?: TeamId }): void;   // emits `missionTimer` UI events (6.10)
 }
 
 interface TriggerApi {
@@ -449,6 +474,7 @@ interface TriggerApi {
 }
 
 type MissionEvent =
+  | { kind: "spawned"; token: SpawnToken; entityId: ShipHandle }
   | { kind: "shipDestroyed"; ship: ShipHandle; by?: ShipHandle }
   | { kind: "shipCaptured"; ship: ShipHandle; by: TeamId }
   | { kind: "shipDisengaged"; ship: ShipHandle }
@@ -468,7 +494,7 @@ type MissionEvent =
 ```
 
 Event ordering within a tick (proposal): by event kind in a fixed table order, then by entity id, then by
-issue order. The final rule belongs in the engine contract.
+issue order. The final rule belongs in the engine contract (`ENGINE_HOOK: eventSource`).
 
 ### 6.8 Map objects
 
@@ -506,7 +532,7 @@ Static map layout should normally live in the scenario data, not in code (sectio
 ```ts
 interface ObjectiveApi {
   add(def: { id: string; team: TeamId; text: TextRef; kind: "primary" | "secondary" | "hidden" }): void;
-  set(id: string, state: "active" | "complete" | "failed"): void;
+  set(id: string, state: "active" | "complete" | "failed"): void;   // emits an `objectiveUpdated` UI event
   get(id: string): ObjectiveState;
 }
 
@@ -541,7 +567,7 @@ level live in the scenario so they can be ported exactly.
 
 ```ts
 interface TextApi {
-  say(def: { to: TeamId | "all"; text: TextRef; from?: ShipHandle; channel?: "mission" | "comm" | "chatter" }): void;
+  say(def: { to: TeamId | "all"; text: TextRef; from?: ShipHandle; channel?: "mission" | "comm" | "chatter" }): void;  // emits `hail`
   commButton(def: { ship: ShipHandle; team: TeamId; id: string; label: TextRef }): void;
   clearCommButton(ship: ShipHandle, id: string): void;
   debrief(team: TeamId, text: TextRef): void;
@@ -556,13 +582,23 @@ interface CampaignVarsApi {
 type CampaignValue = number | string | boolean;    // integers only for numbers
 ```
 
-Briefing, dialogue, comm and debriefing text **renders in HTML, not on the HUD canvas**, per the Engine
-Lead's HUD contract. The mission only emits text keys and arguments; the HTML layer owns layout, styling
-(following SFC2's EAW HUD look), escaping and localisation. Missions can't inject markup.
+**UI events** (UI & Art Director). Objective changes, timers and in-mission hails go out on the engine's
+**per-frame event list as typed events**, for example:
 
-Text is always a key. For ported missions, the key resolves either to text in the player's installed game
-data (if the original keeps it there) or to a string table we write ourselves. We don't paste Taldren
-mission text into the repo.
+```ts
+type MissionUiEvent =
+  | { type: "objectiveUpdated"; id: string; team: TeamId; state: ObjectiveState; text: TextRef }
+  | { type: "missionTimer"; id: string; team?: TeamId; remainingTicks: Tick; label?: TextRef }
+  | { type: "hail"; to: TeamId | "all"; from?: ShipHandle; channel: "mission" | "comm" | "chatter"; text: TextRef }
+  | { type: "briefing"; empire: EmpireId; text: TextRef }
+  | { type: "debrief"; team: TeamId; text: TextRef };
+```
+
+They carry **string keys** (`TextRef`), never baked-in text. Briefings and hails render in **localizable
+HTML**, not on the HUD canvas, per the Engine Lead's HUD contract; the HTML layer owns layout, styling
+(following SFC2's EAW HUD look), escaping and localization. Missions can't inject markup. UI events are
+outputs only: they never feed back into the sim, so they aren't part of the determinism hash. How keys
+resolve to text is in 6.12.
 
 Persistence handoff: the mission never writes saves. It returns `MissionResult`; the campaign layer
 validates it and decides what to persist.
@@ -588,6 +624,27 @@ A Taldren team class with its base state becomes one `actor` with a state map; a
 becomes another; the victory condition becomes an actor too. Events go to the current state of each actor
 that subscribed, in actor-registration order.
 
+### 6.12 String tables and localization
+
+- **Keys, not text.** Every player-visible string a mission uses is a `TextRef { key, args }`. Keys are
+  namespaced by mission id, for example `mission.example-patrol.briefing.federation` or
+  `mission.example-patrol.hail.ambush`. Shared strings (empire names, ship roles, victory levels) live
+  under `common.*`.
+- **String tables are JSON**, one file per locale per mission (or campaign): `strings/<locale>.json`,
+  mapping key → ICU-style message with named arguments (`{shipName}`, plural rules). `en` is the
+  reference locale; other locales fall back to `en`, then to the key itself so missing strings are visible
+  in testing.
+- **Validation.** The importer (9.1) checks that every key a scenario or script references exists in the
+  reference locale and that arguments match. Missing keys are diagnostics, not crashes.
+- **Rendering.** The HTML layer resolves keys at display time using the player's chosen locale, escapes
+  arguments, and applies the EAW-style formatting. Missions never see resolved text, so changing locale
+  can't change sim behaviour or replays.
+- **Original text.** For ported missions, keys can resolve to text in the player's installed game data (if
+  the original keeps it there; unverified until we have an EAW 2.036 copy) or to an original string table
+  we write. We don't paste Taldren mission text into the repo.
+- **Per-race briefings** (as in Taldren's per-race briefing arrays) become separate keys per empire.
+- Which i18n library formats messages is an implementation choice for Phase 4, kept out of this doc.
+
 ---
 
 ## 7. Mapping: Taldren concepts → our API
@@ -603,13 +660,13 @@ Only rows verified against the public SFC2:EAW API R1.3 headers are listed. "Obs
 | `tDynaverseScriptInfo` fields (player race, team, allies, enemies, date, sector, fleet, previous victory) | `StartContext` | Fleet state passes in and out explicitly |
 | `tMissionInfo::mSetupTeam` / `tTeamInfo::mSetTeamInfoData` | `teams.create` | |
 | `tMissionInfo::mSetTeamRelations`, `eTeamRelationship`, `eTargetGoals` | `teams.setRelation(..., { goal, mutual })` | Same five relations and four goals |
-| `tTeamInfo::mCreateShipsForTeam`, `mCreateNewShip` | `ships.spawn` | By shiplist class key |
+| `tTeamInfo::mCreateShipsForTeam`, `mCreateNewShip` | `ships.requestSpawn` + `spawned` event | By shiplist class key; token-based |
 | `tShipInfo::mSetCustomID` / `mGetCustomID` | `tag` + `ships.byTag` | String tags instead of ints |
 | `tShipInfo::mSetShipTarget`, `mRemoveTargets`, `mClearCommands` | `ai.target`, `ai.clear` | |
 | `tShipInfo::mPatrol`, `mDefendEntity`, `mFollowEntity`, `mDisengage`, `mTractorEntity`, `mCloak`, `mFireProbe` | `ai.patrol`, `ai.defend`, `ai.follow`, `ai.disengage`, `ai.tractor`, `ai.cloak`, `ai.probe` | Priority enum mirrors `eAIPriority` |
 | `tShipInfo::mSetShipAIControlled`, `mSetShipPlayerControlled` | `ai.setControl` | |
 | `tShipInfo::mChangeAIOfficerState` | `ai.officer` | |
-| `tShipInfo::mSetSystemHealthFromOrig` / `FromCurr` | `ships.setSystemHealth` | Percent becomes integer |
+| `tShipInfo::mSetSystemHealthFromOrig` / `FromCurr` | `ships.damageSystem` / `ships.repairSystem` | Through the rules module; amounts are integers |
 | `tShipInfo::mAddItemToStores` etc. | `ships.addStores` | |
 | `tShipInfo::mSetTargetable` | `ships.setTargetable` | |
 | `tShipInfo::mDestroyShip`, `mDestroyShipSilently` | `ships.destroy(h, { silent })` | |
@@ -619,9 +676,9 @@ Only rows verified against the public SFC2:EAW API R1.3 headers are listed. "Obs
 | `tState::mOnDeath`, `mOnCapture`, `mOnDisengaged`, `mOnDamage`, ... | `StateHandlers.on.*` | |
 | `tActor::mGotoState`, `tState::mBeginState` / `mEndState` | `state.goto`, `enter` / `exit` | |
 | `mSetTimedInterval` (`kTimerSecondsSet`, `kTimerTurnsSet`) | `timers.after` / `timers.every` in ticks | Seconds × 30; turns need a tick length |
-| `kTimerCountdownSet` / `kTimerCountdownAdjust` | `timers.countdown` | |
+| `kTimerCountdownSet` / `kTimerCountdownAdjust` | `timers.countdown` → `missionTimer` UI event | |
 | `kTimerEndGamePause` | `EndRequest.pauseTicks` | |
-| `tMissionInfo::mDisplayMessage` | `text.say` | Text by key, rendered in the HTML text layer |
+| `tMissionInfo::mDisplayMessage` | `text.say` → `hail` UI event | String key, rendered in localizable HTML |
 | `tShipInfo::mSetCommButton` / `mClearCommButton` | `text.commButton` / `text.clearCommButton` | |
 | `tMissionInfo::mAddToDebriefingList` | `text.debrief` | |
 | `tScript::mDefineBriefings` | scenario `briefings` by empire | |
@@ -677,8 +734,7 @@ test is green twice in a row on two machines.
 
 ## 9. FMSE-style authoring and the future scenario editor
 
-- **Data-first scenario format** (JSON or JSON5; schema in `docs/missions/scenario.schema.json` later).
-  It covers what FMSE covers: title, playable empires, up to N teams with ships, relations and AI goals,
+- **Data-first scenario format** (our own JSON format with a schema; see 9.1). It covers what FMSE covers: title, playable empires, up to N teams with ships, relations and AI goals,
   map grid with objects, text keys (briefing, start message, chatter, victory and debriefing lines),
   multiplayer flags, victory preset and prestige. A scenario with no script is a complete mission.
 - **Script hooks** attach to a scenario for anything beyond presets.
@@ -686,9 +742,32 @@ test is green twice in a row on two machines.
   map grid painter, team and relation editor, ship picker by class or BPV budget fed from the player's
   shiplist, text editor, and a "play from here" button. It should warn about overlaps the way FMSE warns
   about planet crash.
-- **`.fms` import:** a later, optional tool to convert FMSE project files into our scenario format. This
-  depends on the `.fms` format being documented clean-room by Asset & Formats; nothing about it is known
-  yet beyond the manual saying the file exists.
+- **`.fms` import:** a later tool to convert FMSE project files into our format (9.1, format b).
+
+### 9.1 Two mission file formats
+
+These are kept strictly apart (Asset & Formats Engineer):
+
+**(a) Our own mission files: JSON with a schema.**
+- The Mission & Campaign Designer owns the schema (planned at `docs/missions/mission.schema.json`, JSON
+  Schema, versioned with `schemaVersion`). It covers scenario metadata, teams, relations, ships by
+  shiplist key, map, objectives, victory preset, prestige table, string-table references and the optional
+  script entry.
+- The Asset & Formats importer validates these files and returns **`{ data, diagnostics }`**: `data` is
+  the typed scenario (or `null` if it can't be used), and `diagnostics` is a list of
+  `{ severity: "error" | "warning" | "info", path, code, message }` entries (for example an unknown ship
+  class key, an off-map cell or a missing string key). The loader refuses to start a mission with any
+  `error` diagnostic and shows the list to the author.
+- Test fixtures in the repo are synthetic files we write ourselves.
+
+**(b) Original community FMSE `.fms` files: a separate reverse-engineering job.**
+- Owned by Asset & Formats, done clean-room, and **not yet reviewed**: nobody has looked inside a `.fms`
+  file yet. All we know comes from the FMSE manual (the editor saves a `.fms` project next to the compiled
+  `.scr`).
+- Once the format is documented in `docs/formats/`, its fields get mapped onto schema (a) and a converter
+  produces our JSON plus diagnostics. Until then nothing in the schema depends on `.fms`.
+- `.fms` files are community files the player owns; they're loaded from the player's disk and never
+  committed.
 
 ---
 
@@ -742,13 +821,17 @@ without API changes.
 
 ## 12. Mod safety
 
-- Missions run in the sandbox (4.2) with no ambient authority: no network, storage, DOM or clock.
+- Missions run in the same-thread SES-style sandbox (4.2) with no ambient authority: no network, storage,
+  DOM or clock.
 - Capabilities are explicit: a mission manifest lists the API areas it uses; the loader refuses unknown
   capabilities and shows them to the player before loading a third-party mission.
 - **Data validation** at load: every ship class, empire, text key and audio cue must resolve against the
   player's data or the mod's own declared data.
 - **Resource caps:** max entities spawned, max timers and triggers, max commands per tick, max message
-  length, per-tick budget. Hitting a cap is a deterministic, logged fault.
+  length, and the per-tick operation budget. Hitting a cap is deterministic: an error in dev builds, and
+  the release-build policy is an open question (section 15).
+- **Combat integrity:** mission commands can only change combat state through the rules module's entry
+  points (4.3), so a mod can't bypass damage allocation or energy rules.
 - **Integrity for multiplayer:** all peers hash the mission bundle and scenario; mismatches block the
   match. Lockstep peers must run byte-identical mission code.
 - **No game files in mods we ship.** Community packs the player owns are loaded from the player's disk,
@@ -762,11 +845,15 @@ without API changes.
 
 - **Replay harness** (with the Audio & Netcode QA Lead): run scenario + seed + input log headless, compare
   the final state hash and a per-N-tick hash trail with the expected values.
-- **Mission-specific checks:** the command stream the mission produced is part of the hash, so a mission
+- **Mission-specific checks:** the slot-255 command stream the mission produced is part of the hash, so a mission
   that behaves differently on another machine fails fast and points at the tick.
 - **Cross-environment runs:** CI runs replays in at least two JS engines (for example V8 via Node and
   SpiderMonkey or JavaScriptCore) to catch engine-dependent behaviour, once the Engine Lead confirms the
   sim itself is engine-independent.
+- **Spawn-id checks:** tests that run the same scenario with different amounts of script work per tick
+  and assert identical entity ids, since ids must never depend on script timing.
+- **Budget checks:** dev-build tests that a mission over its operation budget fails loudly.
+- **Importer tests:** synthetic mission JSON files, valid and broken, with expected diagnostics.
 - **Fuzzing:** random input logs against each scenario to check that missions never throw, never exceed
   caps, and always reach an end state or a timeout.
 - **Lint rules** for mission code: ban `Date`, `Math.random`, timers, `for...in` over untrusted objects,
@@ -791,17 +878,21 @@ without API changes.
 
 ### Engine Lead
 
-1. **Mission-runtime contract in `docs/engine/`:** the hook points in 5.1 (tick phase, event source and
-   ordering, entity ids, read-only view, AI order interface, RNG streams, HUD and audio channels).
-2. **Worker vs same-thread SES Compartment** for the sandbox, and how the per-tick budget is enforced
-   deterministically.
-3. **Fixed-point types exposed to missions:** one `Fixed` type with helpers, or plain integers in the
+Answered, pending the mission-runtime contract in `docs/engine/`: when commands apply (T+1 input phase,
+slot 255), the sandbox (same thread, SES-style, no Worker, operation budget), spawn ids (token, lowest free
+index with bumped generation, `spawned` next tick), and reads (query API in entity-id order, no snapshot).
+Still open:
+
+1. **The contract itself** in `docs/engine/`, so the answers above and the remaining hooks in 5.1 can be
+   linked instead of restated.
+2. **Event source and ordering** within a tick (`ENGINE_HOOK: eventSource`).
+3. **How operations are counted** for the budget (API calls only, or also loop iterations through a code
+   transform), and the default budget per tick.
+4. **Fixed-point types exposed to missions:** one `Fixed` type with helpers, or plain integers in the
    swappable distance unit? Can mission code use floats at all?
-4. **Command application point** in the tick, and whether a spawned entity is visible to other systems in
-   the same tick or the next.
-5. **Snapshot vs query API** for mission reads (cost of snapshotting per tick vs synchronous queries).
-6. **Confirm the RNG stream API:** is `ctx.rng("mission")` per mission instance, and how is it derived
-   from the match seed?
+5. **RNG stream API:** is `ctx.rng("mission")` per mission instance, and how is it derived from the match
+   seed?
+6. **Per-frame event list:** the exact shape of `objectiveUpdated`, `missionTimer` and `hail` (with UI).
 
 ### Combat Systems Designer
 
@@ -809,6 +900,8 @@ without API changes.
 2. The AI order set and priorities missions can rely on (6.6), and which orders are hard overrides.
 3. Damage event severity buckets for `shipDamaged`, and which system/stores changes should raise events.
 4. Capture and disengage semantics that victory presets depend on.
+5. The **rules module entry points** mission commands should call for damaging and repairing systems,
+   setting shields and energy, and AI orders, and what a call returns when the rules reject it.
 
 ### Asset & Formats Engineer
 
@@ -817,7 +910,9 @@ without API changes.
 2. Where mission text lives in the installed data (if anywhere outside compiled `.scr` files), and the
    string-table format.
 3. Once a copy exists: whether the EAW 2.036 + 2.037 reference install contains mission metadata we can read (mission lists, campaign tables), and what the 2.037 patch changed.
-4. Feasibility of a clean-room `.fms` (FMSE project) reader, later.
+4. The `{ data, diagnostics }` importer contract for our mission JSON (9.1a): diagnostic codes and
+   severities.
+5. The `.fms` reverse-engineering job (9.1b): not yet reviewed; when it can be scheduled.
 
 ### Producer
 
@@ -829,10 +924,18 @@ without API changes.
 5. File the Phase 4 issues for: runtime sandbox, scenario format, state-machine layer, victory presets,
    campaign graph, replay harness, pilot port.
 
+### UI & Art Director
+
+1. Layout and styling of the HTML briefing and hail panels in the EAW look, and how `missionTimer` and
+   `objectiveUpdated` are shown.
+2. Locale list and fallback behaviour for the string tables (6.12).
+
 ### Audio & Netcode QA Lead
 
-1. Fault policy for a mission that blows its budget, so all lockstep peers behave the same.
-2. Whether mission commands go in the replay log or are regenerated (proposal: regenerated and hashed).
+1. **Release-build** policy for a mission that goes over its operation budget (dev builds error out), so
+   all lockstep peers behave the same.
+2. Whether slot-255 mission commands go in the replay log or are regenerated (proposal: regenerated and
+   hashed).
 
 ### Daniel
 
