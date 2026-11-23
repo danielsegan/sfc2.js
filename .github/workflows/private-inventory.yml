@@ -2,19 +2,25 @@
 #
 # Runs only on the sfc2-ci self-hosted runner, which has read access to
 # /srv/sfc2/reference/2.670/ and /srv/sfc2/extracted/2.670/.
-# workflow_dispatch only — never on push/pull_request, so a fork or a
-# public runner cannot start it.
+# workflow_dispatch only — never on push, pull_request or schedule, so a
+# fork or a public runner cannot start it.
+#
+# Dispatch this workflow with --ref formats/inventory-ce2670 (or another
+# branch that contains tools/inventory). A dispatch against main stops
+# cleanly after checkout if those tools are not present, and does not
+# read the private data trees.
 #
 # This workflow never commits (and never writes to main). It prints a
-# metadata-only summary to the job log and uploads JSON/MD artifacts.
-# See tools/inventory/README.md for how to copy those artifacts onto
-# the formats/inventory-ce2670 branch after review.
+# metadata-only summary to the job log (paths, sizes, hashes, counts,
+# header names) and uploads JSON/MD artifacts. It must not echo game
+# file contents or table data rows. See tools/inventory/README.md on
+# the inventory branch for how to copy artifacts onto that branch
+# after review.
 name: Private CE 2.670 inventory
 
 on:
   workflow_dispatch:
 
-# Least privilege: read the repo, upload artifacts. No contents:write.
 permissions:
   contents: read
 
@@ -36,6 +42,17 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Require inventory tools on this ref
+        run: |
+          set -euo pipefail
+          if [[ ! -f tools/inventory/inventory.py ]]; then
+            echo "tools/inventory/inventory.py is not on this ref ($(git rev-parse --abbrev-ref HEAD) @ $(git rev-parse --short HEAD))."
+            echo "Dispatch with --ref formats/inventory-ce2670 (or another branch that has the tools)."
+            echo "A dispatch against main is expected to stop here until that branch is merged."
+            exit 1
+          fi
+          echo "tools present: tools/inventory/inventory.py"
+
       - name: Confirm private data is present (paths only)
         run: |
           set -euo pipefail
@@ -48,7 +65,7 @@ jobs:
             fi
           done
 
-      - name: Run inventory (metadata only)
+      - name: Run inventory (metadata only; do not print outputs or source files)
         run: |
           set -euo pipefail
           python3 --version
@@ -69,7 +86,7 @@ jobs:
             docs/formats/inventory/missions-ce-2.670.md
             docs/formats/inventory/observations-ce-2.670.json
           if-no-files-found: error
-          retention-days: 30
+          retention-days: 7
 
   verify-shiplist-ftrlist:
     name: Verify shiplist and ftrlist
@@ -78,6 +95,17 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+
+      - name: Require inventory tools on this ref
+        run: |
+          set -euo pipefail
+          if [[ ! -f tools/inventory/inventory.py ]]; then
+            echo "tools/inventory/inventory.py is not on this ref ($(git rev-parse --abbrev-ref HEAD) @ $(git rev-parse --short HEAD))."
+            echo "Dispatch with --ref formats/inventory-ce2670 (or another branch that has the tools)."
+            echo "A dispatch against main is expected to stop here until that branch is merged."
+            exit 1
+          fi
+          echo "tools present: tools/inventory/inventory.py"
 
       - name: Confirm private data is present (paths only)
         run: |
@@ -91,7 +119,7 @@ jobs:
             fi
           done
 
-      - name: Verify shiplist and ftrlist (metadata only)
+      - name: Verify shiplist and ftrlist (metadata only; do not print outputs or source files)
         run: |
           set -euo pipefail
           python3 --version
@@ -109,4 +137,4 @@ jobs:
             docs/formats/inventory/shiplist-ftrlist-ce-2.670.json
             docs/formats/inventory/shiplist-ftrlist-ce-2.670.md
           if-no-files-found: error
-          retention-days: 30
+          retention-days: 7
