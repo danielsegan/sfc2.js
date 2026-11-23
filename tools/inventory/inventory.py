@@ -29,8 +29,11 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import struct
 import sys
+import zipfile
 from collections import Counter, defaultdict
+from decimal import Decimal, InvalidOperation
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -230,21 +233,57 @@ def _is_preamble_marker_line(line: str) -> bool:
 
 
 def _looks_like_column_header_line(line: str, delimiter: str) -> bool:
-    if _is_comment_or_instruction_line(line, delimiter) or _is_preamble_marker_line(line):
-        return False
+    return bool(_header_line_verdict(line, delimiter)["accepted"])
+
+
+def _line_cell_stats(line: str, delimiter: str) -> tuple[list[str], list[str], int]:
     cells = [c.strip() for c in split_line(line, delimiter)]
     nonempty = [c for c in cells if c]
+    max_len = max((len(c) for c in nonempty), default=0)
+    return cells, nonempty, max_len
+
+
+def _header_line_verdict(line: str, delimiter: str) -> dict[str, Any]:
+    """Decide whether a line is a column-header row.
+
+    The returned dict is metadata only: accepted, reason, nonemptyCount,
+    maxCellLength. It never includes cell text.
+    """
+    if _is_comment_or_instruction_line(line, delimiter):
+        return {
+            "accepted": False,
+            "reason": "comment-or-instruction",
+            "nonemptyCount": None,
+            "maxCellLength": None,
+        }
+    if _is_preamble_marker_line(line):
+        return {
+            "accepted": False,
+            "reason": "preamble-marker",
+            "nonemptyCount": None,
+            "maxCellLength": None,
+        }
+    _cells, nonempty, max_len = _line_cell_stats(line, delimiter)
+    base: dict[str, Any] = {"nonemptyCount": len(nonempty), "maxCellLength": max_len}
     if not nonempty:
-        return False
+        return {**base, "accepted": False, "reason": "empty"}
+    first = nonempty[0]
+    # A Race header is accepted even when some labels are long.
+    if first.casefold() == "race":
+        return {**base, "accepted": True, "reason": "first-cell-race"}
     if len(nonempty) == 1:
-        return bool(_SINGLE_HEADER_VOCAB_RE.match(nonempty[0]))
-    # Long sentences are instructions, not column labels.
-    if any(len(c) > 48 or c.count(" ") >= 4 for c in nonempty):
-        return False
+        ok = bool(_SINGLE_HEADER_VOCAB_RE.match(first))
+        return {**base, "accepted": ok, "reason": "single-vocab" if ok else "single-non-vocab"}
     numeric = sum(1 for c in nonempty if _is_numeric_token(c))
     if numeric * 2 >= len(nonempty):
-        return False
-    return True
+        return {**base, "accepted": False, "reason": "mostly-numeric"}
+    # Relaxed long-label rule: reject only when most nonempty cells look like
+    # sentences, not when a single header label is long.
+    sentence_like = sum(1 for c in nonempty if len(c) > 64 or c.count(" ") >= 6)
+    if sentence_like * 2 >= len(nonempty):
+        return {**base, "accepted": False, "reason": "mostly-sentence-like"}
+    return {**base, "accepted": True, "reason": "column-labels"}
+
 
 
 def _slot_number_from_header(name: str) -> int | None:
@@ -595,6 +634,9 @@ class TableMeta:
     headerLine: int
     headerRowCount: int
     hasBom: bool
+    dataColumnCountMin: int | None = None
+    dataColumnCountMax: int | None = None
+    headerRejection: dict[str, Any] | None = None
 
 
 def sniff_text_prefix(data: bytes) -> tuple[str, bool, str]:
@@ -666,7 +708,12 @@ def split_line(line: str, delimiter: str) -> list[str]:
     return [line]
 
 
-def inspect_table_file(path: Path, root: Path | None, digest: str | None = None) -> TableMeta:
+def inspect_table_file(
+    path: Path,
+    root: Path | None,
+    digest: str | None = None,
+    log: MetadataLog | None = None,
+) -> TableMeta:
     data = path.read_bytes()
     encoding, has_bom, text = sniff_text_prefix(data)
     if text.endswith("\r\n"):
@@ -677,41 +724,97 @@ def inspect_table_file(path: Path, root: Path | None, digest: str | None = None)
         body = text
     raw_lines = re.split(r"\r\n|\n|\r", body)
     line_endings = detect_line_endings(text)
+    rel = relpath(path, root)
 
-    def _empty_meta(delimiter: str = "unknown", header_names: list[str] | None = None, header_line: int = 0, header_row_count: int = 0, row_count: int = 0) -> TableMeta:
+    def _data_widths(start: int, delimiter: str) -> tuple[int | None, int | None, str]:
+        widths: list[int] = []
+        used = delimiter
+        for line in raw_lines[start:]:
+            if not line.strip():
+                continue
+            if _is_preamble_marker_line(line) or _is_comment_or_instruction_line(line, detect_delimiter(line)):
+                continue
+            delim = detect_delimiter(line)
+            if used == "unknown" and delim != "unknown":
+                used = delim
+            widths.append(len(split_line(line, used if used != "unknown" else delim)))
+        if not widths:
+            return None, None, used
+        return min(widths), max(widths), used
+
+    def _empty_meta(
+        delimiter: str = "unknown",
+        header_names: list[str] | None = None,
+        header_line: int = 0,
+        header_row_count: int = 0,
+        row_count: int = 0,
+        width_min: int | None = None,
+        width_max: int | None = None,
+        rejection: dict[str, Any] | None = None,
+    ) -> TableMeta:
         names = header_names or []
         return TableMeta(
-            path=relpath(path, root),
+            path=rel,
             size=len(data),
             sha256=digest or _sha256_bytes(data),
             encoding=encoding,
             lineEndings=line_endings,
             delimiter=delimiter,
             headerNames=names,
-            columnCount=len(names),
+            columnCount=len(names) if names else (width_max or 0),
             rowCount=row_count,
             headerLine=header_line,
             headerRowCount=header_row_count,
             hasBom=has_bom,
+            dataColumnCountMin=width_min,
+            dataColumnCountMax=width_max,
+            headerRejection=rejection,
         )
 
     header_idx = None
     delimiter = "unknown"
+    rejection: dict[str, Any] | None = None
     for i, line in enumerate(raw_lines):
         if not line.strip():
             continue
         delim = detect_delimiter(line)
         if _is_preamble_marker_line(line) or _is_comment_or_instruction_line(line, delim):
             continue
-        if _looks_like_column_header_line(line, delim):
+        verdict = _header_line_verdict(line, delim)
+        if verdict["accepted"]:
             header_idx = i
             delimiter = delim
             break
-        # A non-comment, non-header line means data has started; no header.
+        rejection = {
+            "line": i + 1,
+            "nonemptyCount": verdict["nonemptyCount"],
+            "maxCellLength": verdict["maxCellLength"],
+            "reason": verdict["reason"],
+        }
+        if log is not None:
+            log.info(
+                f"header candidate rejected: path={rel} line={rejection['line']} "
+                f"nonemptyCells={rejection['nonemptyCount']} "
+                f"maxCellLength={rejection['maxCellLength']} reason={rejection['reason']}"
+            )
+        # A non-comment, non-header line means data has started; do not invent a header.
         break
     if header_idx is None:
-        row_count = sum(1 for line in raw_lines if line.strip() and not _is_preamble_marker_line(line) and not _is_comment_or_instruction_line(line, detect_delimiter(line)))
-        return _empty_meta(row_count=row_count)
+        row_count = sum(
+            1
+            for line in raw_lines
+            if line.strip()
+            and not _is_preamble_marker_line(line)
+            and not _is_comment_or_instruction_line(line, detect_delimiter(line))
+        )
+        width_min, width_max, used = _data_widths(0, "unknown")
+        return _empty_meta(
+            delimiter=used,
+            row_count=row_count,
+            width_min=width_min,
+            width_max=width_max,
+            rejection=rejection,
+        )
 
     header_line = raw_lines[header_idx]
     if delimiter == "unknown":
@@ -728,8 +831,9 @@ def inspect_table_file(path: Path, root: Path | None, digest: str | None = None)
         header_row_count += 1
         first_data += 1
     row_count = sum(1 for line in raw_lines[first_data:] if line.strip())
+    width_min, width_max, _used = _data_widths(first_data, delimiter)
     return TableMeta(
-        path=relpath(path, root),
+        path=rel,
         size=len(data),
         sha256=digest or _sha256_bytes(data),
         encoding=encoding,
@@ -741,7 +845,11 @@ def inspect_table_file(path: Path, root: Path | None, digest: str | None = None)
         headerLine=header_idx + 1,
         headerRowCount=header_row_count,
         hasBom=has_bom,
+        dataColumnCountMin=width_min,
+        dataColumnCountMax=width_max,
+        headerRejection=None,
     )
+
 
 
 def table_meta_dict(meta: TableMeta) -> dict[str, Any]:
@@ -758,6 +866,9 @@ def table_meta_dict(meta: TableMeta) -> dict[str, Any]:
         "headerLine": meta.headerLine,
         "headerRowCount": meta.headerRowCount,
         "hasBom": meta.hasBom,
+        "dataColumnCountMin": meta.dataColumnCountMin,
+        "dataColumnCountMax": meta.dataColumnCountMax,
+        "headerRejection": meta.headerRejection,
     }
 
 def find_columns(headers: Sequence[str], pattern: re.Pattern[str]) -> list[int]:
@@ -858,6 +969,78 @@ class SpecVerification:
     hullTokens: list[str]
     columnSelection: dict[str, Any]
     sourcePath: str | None
+    raceRowCounts: list[dict[str, Any]]
+    numericColumnStats: list[dict[str, Any]]
+
+
+
+def _decimal_places_of(token: str) -> int | None:
+    """Return decimal-place count if token is a base-10 number, else None."""
+    t = token.strip()
+    if not t:
+        return None
+    if re.fullmatch(r"[+-]?\d+", t):
+        return 0
+    m = re.fullmatch(r"[+-]?\d+\.(\d+)", t)
+    if m:
+        return len(m.group(1))
+    m = re.fullmatch(r"[+-]?\.(\d+)", t)
+    if m:
+        return len(m.group(1))
+    return None
+
+
+def _numeric_column_stats(
+    headers: Sequence[str],
+    column_values: dict[int, list[str]],
+    data_row_total: int,
+) -> list[dict[str, Any]]:
+    """Min, max and max decimal places for columns whose nonempty cells are all numeric.
+
+    Aggregates only; individual cell values are not logged or returned except as min/max.
+    """
+    width = max([len(headers), *column_values.keys(), -1]) + (1 if column_values or headers else 0)
+    # width: if headers has 36 and values only use 0..35, max(key)+1 is enough
+    if headers:
+        width = max(width, len(headers))
+    if column_values:
+        width = max(width, max(column_values) + 1)
+    stats: list[dict[str, Any]] = []
+    for ci in range(width):
+        values = column_values.get(ci) or []
+        if not values:
+            continue
+        places = [_decimal_places_of(v) for v in values]
+        if any(p is None for p in places):
+            continue
+        numbers = []
+        for v in values:
+            try:
+                numbers.append(Decimal(v))
+            except InvalidOperation:
+                numbers = []
+                break
+        if not numbers:
+            continue
+        lo, hi = min(numbers), max(numbers)
+        max_places = max(places)
+        def _emit(n: Decimal):
+            if max_places == 0:
+                return int(n)
+            return float(n)
+        name = headers[ci] if ci < len(headers) and str(headers[ci]).strip() else f"col{ci}"
+        stats.append(
+            {
+                "column": name,
+                "columnIndex": ci,
+                "min": _emit(lo),
+                "max": _emit(hi),
+                "maxDecimalPlaces": max_places,
+                "numericRowCount": len(values),
+                "emptyRowCount": max(0, data_row_total - len(values)),
+            }
+        )
+    return stats
 
 
 def verify_spec_tables(
@@ -882,7 +1065,7 @@ def verify_spec_tables(
             "exists": True,
         }
         copy_infos.append(info)
-        meta = inspect_table_file(path, root, digest=digest)
+        meta = inspect_table_file(path, root, digest=digest, log=log)
         tables.append(meta)
         data = path.read_bytes()
         _, _, text = sniff_text_prefix(data)
@@ -917,6 +1100,8 @@ def verify_spec_tables(
         hullTokens=[],
         columnSelection={},
         sourcePath=None,
+        raceRowCounts=[],
+        numericColumnStats=[],
     )
     if not tables:
         return empty
@@ -954,6 +1139,9 @@ def verify_spec_tables(
     pf_rows = 0
     weapon_slot_of = {i: _slot_band(_slot_number_from_header(headers[i])) for i in weapon_info["weaponColumns"]}
     arc_slot_of = {i: _slot_band(_slot_number_from_header(headers[i])) for i in weapon_info["arcColumns"]}
+    # Per-column raw nonempty cells for numeric-stat detection (aggregates only).
+    column_values: dict[int, list[str]] = defaultdict(list)
+    data_row_total = 0
 
     def _tally(rows_map: dict, occ_map: dict, code: str, line_no: int, band: str) -> None:
         rows_map[code]["all"].add(line_no)
@@ -969,6 +1157,11 @@ def verify_spec_tables(
         if _is_comment_or_instruction_line(line, delimiter):
             continue
         cells = split_line(line, delimiter)
+        data_row_total += 1
+        for ci, raw in enumerate(cells):
+            val = raw.strip()
+            if val:
+                column_values[ci].append(val)
         race = _cell(cells, race_idx)
         class_name = _cell(cells, class_idx)
         hull = _cell(cells, hull_idx)
@@ -1150,8 +1343,27 @@ def verify_spec_tables(
     else:
         log.info(f"{label} arc columns: not identified from headers")
 
-    log.info(f"{label} distinct race tokens ({len(race_tokens)}): {json.dumps(sorted(race_tokens))}")
+    race_row_counts = [
+        {"race": name, "rows": race_tokens[name]}
+        for name in sorted(race_tokens)
+    ]
+    log.info(
+        f"{label} distinct race tokens ({len(race_tokens)}): "
+        + json.dumps([{"race": r["race"], "rows": r["rows"]} for r in race_row_counts], ensure_ascii=True)
+    )
     log.info(f"{label} distinct hull tokens ({len(hull_tokens)}): {json.dumps(sorted(hull_tokens))}")
+
+    numeric_stats = _numeric_column_stats(headers, column_values, data_row_total)
+    if numeric_stats:
+        log.info(f"{label} numeric columns: {len(numeric_stats)}")
+        for item in numeric_stats:
+            log.info(
+                f"{label} numeric column {item['column']!s} index={item['columnIndex']} "
+                f"min={item['min']} max={item['max']} maxDecimalPlaces={item['maxDecimalPlaces']} "
+                f"numericRows={item['numericRowCount']} emptyRows={item['emptyRowCount']}"
+            )
+    else:
+        log.info(f"{label} numeric columns: none identified")
 
     return SpecVerification(
         copies=copy_infos,
@@ -1165,6 +1377,8 @@ def verify_spec_tables(
         hullTokens=sorted(hull_tokens),
         columnSelection=col_sel,
         sourcePath=source_path,
+        raceRowCounts=race_row_counts,
+        numericColumnStats=numeric_stats,
     )
 
 
@@ -1215,7 +1429,7 @@ def inspect_extensionless_tables(
         rec: dict[str, Any] = {"path": f.path, "size": f.size, "sha256": f.sha256}
         if is_mostly_text(probe):
             text_count += 1
-            meta = inspect_table_file(path, extracted_root, digest=f.sha256)
+            meta = inspect_table_file(path, extracted_root, digest=f.sha256, log=log)
             rec.update(
                 {
                     "kind": "text-table" if meta.headerNames else "text",
@@ -1225,6 +1439,9 @@ def inspect_extensionless_tables(
                     "headerNames": meta.headerNames,
                     "columnCount": meta.columnCount,
                     "rowCount": meta.rowCount,
+                    "dataColumnCountMin": meta.dataColumnCountMin,
+                    "dataColumnCountMax": meta.dataColumnCountMax,
+                    "headerRejection": meta.headerRejection,
                 }
             )
             if meta.headerNames:
@@ -1254,6 +1471,42 @@ def inspect_extensionless_tables(
             f"extensionless sizes: min={size_summary['min']} max={size_summary['max']} "
             f"total={size_summary['total']} mean={size_summary['mean']}"
         )
+
+    # Layouts by observed column counts. Do not invent header names when none
+    # were identified; still report delimiter and min/max column counts.
+    column_layouts: dict[tuple[Any, ...], list[str]] = defaultdict(list)
+    for e in entries:
+        if e.get("kind") not in {"text", "text-table"}:
+            continue
+        has_header = bool(e.get("headerNames"))
+        key = (
+            has_header,
+            e.get("delimiter") or "unknown",
+            e.get("columnCount") or 0,
+            e.get("dataColumnCountMin"),
+            e.get("dataColumnCountMax"),
+        )
+        column_layouts[key].append(e["path"])
+    layout_rows = []
+    for key, sig_paths in sorted(column_layouts.items(), key=lambda kv: -len(kv[1])):
+        has_header, delim, col, wmin, wmax = key
+        layout_rows.append(
+            {
+                "headerIdentified": has_header,
+                "delimiter": delim,
+                "columnCount": col,
+                "dataColumnCountMin": wmin,
+                "dataColumnCountMax": wmax,
+                "fileCount": len(sig_paths),
+                "pathExamples": sig_paths[:5],
+            }
+        )
+        log.info(
+            f"extensionless column layout headerIdentified={has_header} delimiter={delim} "
+            f"columnCount={col} dataColumnCountMin={wmin} dataColumnCountMax={wmax} "
+            f"files={len(sig_paths)}"
+        )
+
     return {
         "count": len(entries),
         "textCount": text_count,
@@ -1270,6 +1523,7 @@ def inspect_extensionless_tables(
             }
             for sig, sig_paths in sorted(header_signatures.items(), key=lambda kv: -len(kv[1]))
         ],
+        "columnLayouts": layout_rows,
         "files": [
             {
                 "path": e["path"],
@@ -1277,6 +1531,9 @@ def inspect_extensionless_tables(
                 "sha256": e["sha256"],
                 "kind": e.get("kind"),
                 "columnCount": e.get("columnCount"),
+                "dataColumnCountMin": e.get("dataColumnCountMin"),
+                "dataColumnCountMax": e.get("dataColumnCountMax"),
+                "headerIdentified": bool(e.get("headerNames")),
             }
             for e in entries
         ],
@@ -1504,6 +1761,83 @@ def _update_coord_stats(
             stats.smallestNonzeroStep = local_step
             stats.smallestNonzeroStepPath = path
 
+def inspect_q3_archive(path: Path, root: Path | None, log: MetadataLog, label: str) -> dict[str, Any]:
+    """Inspect a .q3 archive directory only (no payload bytes).
+
+    Identifies a ZIP directory (including PK-style packs) or a Quake PACK
+    directory. If neither is present, reports the format as unidentified
+    and records only magic bytes, path, size and hash.
+    """
+    size = path.stat().st_size
+    rec: dict[str, Any] = {
+        "path": relpath(path, root),
+        "size": size,
+        "sha256": file_sha256(path),
+        "format": "unidentified",
+        "entryCount": None,
+        "entries": None,
+        "note": None,
+    }
+    with path.open("rb") as fh:
+        magic = fh.read(16)
+    rec["magicHex"] = magic_hex(magic)
+    rec["magicAscii"] = ascii_magic(magic)
+
+    if magic.startswith(b"PK"):
+        try:
+            with zipfile.ZipFile(path, "r") as zf:
+                infos = zf.infolist()
+            rec["format"] = "zip"
+            rec["entryCount"] = len(infos)
+            rec["entries"] = [
+                {"name": info.filename, "size": info.file_size, "compressedSize": info.compress_size}
+                for info in infos
+            ]
+            rec["note"] = "ZIP central directory only; no payload bytes were read."
+        except zipfile.BadZipFile:
+            rec["note"] = "PK magic present but the ZIP directory is not readable."
+        log.info(
+            f"{label} q3 path={rec['path']} format={rec['format']} size={size} "
+            f"entryCount={rec['entryCount']}"
+        )
+        return rec
+
+    if magic.startswith(b"PACK") and size >= 12:
+        try:
+            with path.open("rb") as fh:
+                header = fh.read(12)
+            _sig, dir_off, dir_size = struct.unpack("<4sII", header)
+            if dir_off + dir_size <= size and dir_size % 64 == 0:
+                with path.open("rb") as fh:
+                    fh.seek(dir_off)
+                    directory = fh.read(dir_size)
+                entries = []
+                for i in range(0, dir_size, 64):
+                    name_b, _off, ent_size = struct.unpack("<56sII", directory[i : i + 64])
+                    name = name_b.split(b"\x00", 1)[0].decode("latin-1", errors="replace")
+                    entries.append({"name": name, "size": ent_size})
+                rec["format"] = "pak"
+                rec["entryCount"] = len(entries)
+                rec["entries"] = entries
+                rec["note"] = "PACK directory only; no payload bytes were read."
+            else:
+                rec["note"] = "PACK magic present but the directory offset/size is not usable."
+        except (OSError, struct.error):
+            rec["note"] = "PACK magic present but the directory could not be parsed."
+        log.info(
+            f"{label} q3 path={rec['path']} format={rec['format']} size={size} "
+            f"entryCount={rec['entryCount']}"
+        )
+        return rec
+
+    rec["note"] = "No identifiable archive directory (not ZIP or PACK)."
+    log.info(
+        f"{label} q3 path={rec['path']} format=unidentified size={size} "
+        f"magicHex={rec['magicHex']}"
+    )
+    return rec
+
+
 def find_q3(root: Path, log: MetadataLog, label: str) -> list[dict[str, Any]]:
     found: list[dict[str, Any]] = []
     if not root.exists():
@@ -1511,7 +1845,7 @@ def find_q3(root: Path, log: MetadataLog, label: str) -> list[dict[str, Any]]:
         return found
     for p in _walk_files(root):
         if p.suffix.lower() == ".q3" or p.name.lower().endswith(".q3"):
-            found.append({"path": relpath(p, root), "size": p.stat().st_size, "sha256": file_sha256(p)})
+            found.append(inspect_q3_archive(p, root, log, label))
     log.info(
         f"{label} *.q3 count={len(found)}"
         + ("" if not found else " paths=" + json.dumps([f["path"] for f in found]))
@@ -1519,13 +1853,54 @@ def find_q3(root: Path, log: MetadataLog, label: str) -> list[dict[str, Any]]:
     return found
 
 
-def bmp_patterns(files: Sequence[FileMeta], log: MetadataLog) -> dict[str, Any]:
+BMP_COMPRESSION_NAMES = {
+    0: "BI_RGB",
+    1: "BI_RLE8",
+    2: "BI_RLE4",
+    3: "BI_BITFIELDS",
+    4: "BI_JPEG",
+    5: "BI_PNG",
+}
+
+# Self-illum pair: stem ends in _<token>i where token starts with a digit (e.g. _1i, _512ai).
+ILLUM_NI_STEM_RE = re.compile(r"^(?P<base>.*)_(?P<token>[0-9][0-9A-Za-z]*)i$", re.IGNORECASE)
+
+
+def parse_bmp_file_header(path: Path) -> dict[str, Any] | None:
+    """Read BITMAPFILEHEADER + BITMAPINFOHEADER only. No pixel bytes."""
+    try:
+        with path.open("rb") as fh:
+            head = fh.read(54)
+    except OSError:
+        return None
+    if len(head) < 26 or head[0:2] != b"BM":
+        return {"readable": False, "reason": "not-bmp-or-truncated"}
+    if len(head) < 54:
+        return {"readable": False, "reason": "header-truncated"}
+    _type, _size, _res1, _res2, _off = struct.unpack_from("<2sIHHI", head, 0)
+    info_size, width, height, planes, bit_count, compression = struct.unpack_from("<IiiHHI", head, 14)
+    return {
+        "readable": True,
+        "infoHeaderSize": info_size,
+        "width": width,
+        "height": height,
+        "planes": planes,
+        "bitCount": bit_count,
+        "compression": compression,
+        "compressionName": BMP_COMPRESSION_NAMES.get(compression, f"unknown-{compression}"),
+    }
+
+
+def bmp_patterns(files: Sequence[FileMeta], log: MetadataLog, extracted_root: Path | None = None) -> dict[str, Any]:
     bmps = [f for f in files if ext_of(f.path) == ".bmp"]
     by_folder: Counter[str] = Counter()
     suffix_counts: Counter[str] = Counter()
     illum_counts: Counter[str] = Counter()
     gui_folders: Counter[str] = Counter()
     model_folder_count = 0
+    by_path = {f.path.replace("\\", "/"): f for f in bmps}
+    by_path_l = {p.lower(): p for p in by_path}
+
     for f in bmps:
         parent = str(Path(f.path).parent).replace("\\", "/")
         by_folder[parent] += 1
@@ -1541,6 +1916,7 @@ def bmp_patterns(files: Sequence[FileMeta], log: MetadataLog) -> dict[str, Any]:
         illum = ILLUM_SUFFIX_RE.search(stem)
         if illum:
             illum_counts[illum.group(0)] += 1
+
     log.info(
         f"BMP count={len(bmps)} folders={len(by_folder)} "
         f"modelFolderBmps={model_folder_count} nonModelFolderBmps={sum(gui_folders.values())}"
@@ -1556,6 +1932,91 @@ def bmp_patterns(files: Sequence[FileMeta], log: MetadataLog) -> dict[str, Any]:
         log.info(f"BMP non-model/GUI folder: path={folder} count={cnt}")
     if len(gui_folders) > 40:
         log.info(f"BMP non-model/GUI folders truncated in log: totalFolders={len(gui_folders)}")
+
+    # _<n>i pairs: header-only compare of bit depth, compression, width, height.
+    pair_summary: dict[str, Any] = {
+        "pattern": "_<n>i",
+        "illumCount": 0,
+        "pairedCount": 0,
+        "missingBaseCount": 0,
+        "unreadableHeaderCount": 0,
+        "depthMatches": 0,
+        "depthDiffers": 0,
+        "dimensionMatches": 0,
+        "dimensionDiffers": 0,
+        "bitCountHistogram": {},
+        "differingPairs": [],
+    }
+    if extracted_root is not None:
+        illum_files = []
+        for f in bmps:
+            stem = Path(f.path).stem
+            m = ILLUM_NI_STEM_RE.match(stem)
+            if m:
+                illum_files.append((f, m.group("base"), m.group("token")))
+        pair_summary["illumCount"] = len(illum_files)
+        bit_hist: Counter[str] = Counter()
+        for f, base_stem, token in illum_files:
+            parent = str(Path(f.path).parent).replace("\\", "/")
+            ext = Path(f.path).suffix
+            base_rel = f"{parent}/{base_stem}_{token}{ext}" if parent != "." else f"{base_stem}_{token}{ext}"
+            base_key = by_path_l.get(base_rel.replace("\\", "/").lower())
+            illum_abs = extracted_root / f.path
+            illum_hdr = parse_bmp_file_header(illum_abs) if illum_abs.is_file() else None
+            if not illum_hdr or not illum_hdr.get("readable"):
+                pair_summary["unreadableHeaderCount"] += 1
+                continue
+            bit_hist[str(illum_hdr["bitCount"])] += 1
+            if not base_key:
+                pair_summary["missingBaseCount"] += 1
+                continue
+            base_abs = extracted_root / base_key
+            base_hdr = parse_bmp_file_header(base_abs) if base_abs.is_file() else None
+            if not base_hdr or not base_hdr.get("readable"):
+                pair_summary["unreadableHeaderCount"] += 1
+                continue
+            pair_summary["pairedCount"] += 1
+            depth_match = illum_hdr["bitCount"] == base_hdr["bitCount"]
+            dim_match = (
+                illum_hdr["width"] == base_hdr["width"]
+                and abs(illum_hdr["height"]) == abs(base_hdr["height"])
+            )
+            if depth_match:
+                pair_summary["depthMatches"] += 1
+            else:
+                pair_summary["depthDiffers"] += 1
+                pair_summary["differingPairs"].append(
+                    {
+                        "illumPath": f.path,
+                        "basePath": base_key,
+                        "illum": {
+                            "bitCount": illum_hdr["bitCount"],
+                            "compression": illum_hdr["compression"],
+                            "compressionName": illum_hdr["compressionName"],
+                            "width": illum_hdr["width"],
+                            "height": illum_hdr["height"],
+                        },
+                        "base": {
+                            "bitCount": base_hdr["bitCount"],
+                            "compression": base_hdr["compression"],
+                            "compressionName": base_hdr["compressionName"],
+                            "width": base_hdr["width"],
+                            "height": base_hdr["height"],
+                        },
+                    }
+                )
+            if dim_match:
+                pair_summary["dimensionMatches"] += 1
+            else:
+                pair_summary["dimensionDiffers"] += 1
+        pair_summary["bitCountHistogram"] = dict(bit_hist.most_common())
+        log.info(
+            f"BMP _<n>i pairs: illum={pair_summary['illumCount']} paired={pair_summary['pairedCount']} "
+            f"missingBase={pair_summary['missingBaseCount']} unreadable={pair_summary['unreadableHeaderCount']} "
+            f"depthMatches={pair_summary['depthMatches']} depthDiffers={pair_summary['depthDiffers']} "
+            f"dimensionMatches={pair_summary['dimensionMatches']} dimensionDiffers={pair_summary['dimensionDiffers']}"
+        )
+
     return {
         "bmpCount": len(bmps),
         "folderCount": len(by_folder),
@@ -1567,7 +2028,9 @@ def bmp_patterns(files: Sequence[FileMeta], log: MetadataLog) -> dict[str, Any]:
         "allFolders": [{"path": p, "count": n} for p, n in sorted(by_folder.items(), key=lambda kv: (-kv[1], kv[0]))],
         "underscoreSuffixCounts": dict(suffix_counts.most_common()),
         "selfIlluminationPatterns": dict(illum_counts.most_common()),
+        "illumPairs": pair_summary,
     }
+
 
 
 def bft_report(files: Sequence[FileMeta], log: MetadataLog) -> dict[str, Any]:
@@ -1661,6 +2124,24 @@ def write_json(path: Path, data: Any) -> None:
 
 def _md_escape(text: str) -> str:
     return text.replace("|", "\\|")
+
+
+
+def _write_q3_md(a, archives: list[dict[str, Any]]) -> None:
+    for e in archives:
+        a(
+            f"  - `{_md_escape(e['path'])}` size={e['size']} sha256=`{e['sha256']}` "
+            f"format=`{e.get('format') or 'unidentified'}` entryCount={e.get('entryCount')}"
+        )
+        if e.get("note"):
+            a(f"    - {e['note']}")
+        if e.get("entries"):
+            a("")
+            a("    | Entry name | Size |")
+            a("    | --- | ---: |")
+            for ent in e["entries"]:
+                a(f"    | `{_md_escape(ent['name'])}` | {ent['size']} |")
+            a("")
 
 
 def write_inventory_markdown(
@@ -1762,11 +2243,9 @@ def write_inventory_markdown(
     a("## `*.q3` archives")
     a("")
     a(f"- Extracted tree: {len(q3_extracted)} file(s)")
-    for e in q3_extracted:
-        a(f"  - `{e['path']}` size={e['size']} sha256=`{e['sha256']}`")
+    _write_q3_md(a, q3_extracted)
     a(f"- Reference tree: {len(q3_reference)} file(s)")
-    for e in q3_reference:
-        a(f"  - `{e['path']}` size={e['size']} sha256=`{e['sha256']}`")
+    _write_q3_md(a, q3_reference)
     if not q3_extracted and not q3_reference:
         a("- No `*.q3` file was found in either tree. GUI art, if present, is listed under BMP folders below.")
     a("")
@@ -1794,6 +2273,31 @@ def write_inventory_markdown(
         for pat, n in pats.items():
             a(f"| `{_md_escape(str(pat))}` | {n} |")
     a("")
+    pairs = bmp.get("illumPairs") or {}
+    a("### BMP `_<n>i` self-illumination pairs (header only, no pixel reads)")
+    a("")
+    a(f"- Illum files matching `_<n>i`: {pairs.get('illumCount', 0)}")
+    a(f"- Paired with a base texture (`_<n>`): {pairs.get('pairedCount', 0)}")
+    a(f"- Missing base: {pairs.get('missingBaseCount', 0)}")
+    a(f"- Unreadable BMP header: {pairs.get('unreadableHeaderCount', 0)}")
+    a(f"- Bit-depth matches: {pairs.get('depthMatches', 0)}; differs: {pairs.get('depthDiffers', 0)}")
+    a(f"- Width/height matches: {pairs.get('dimensionMatches', 0)}; differs: {pairs.get('dimensionDiffers', 0)}")
+    if pairs.get("bitCountHistogram"):
+        a("- Illum `biBitCount` histogram: " + ", ".join(f"{k}={v}" for k, v in pairs["bitCountHistogram"].items()))
+    a("")
+    if pairs.get("differingPairs"):
+        a("Pairs whose `biBitCount` differs (path and header fields only):")
+        a("")
+        a("| Illum | Base | Illum bitCount | Base bitCount | Illum WxH | Base WxH | Compression |")
+        a("| --- | --- | ---: | ---: | --- | --- | --- |")
+        for p in pairs["differingPairs"]:
+            ih, bh = p["illum"], p["base"]
+            a(
+                f"| `{_md_escape(p['illumPath'])}` | `{_md_escape(p['basePath'])}` | "
+                f"{ih['bitCount']} | {bh['bitCount']} | {ih['width']}x{ih['height']} | "
+                f"{bh['width']}x{bh['height']} | {ih.get('compressionName')}/{bh.get('compressionName')} |"
+            )
+        a("")
     a("## `.bft` files (path and size only)")
     a("")
     a(f"Count: {bft.get('count')}. {bft.get('note')}")
@@ -1823,7 +2327,21 @@ def write_inventory_markdown(
     for layout in extensionless.get("distinctHeaderLayouts") or []:
         names = ", ".join(f"`{h}`" for h in layout["headerNames"])
         a(f"- Layout used by {layout['fileCount']} file(s), {layout['columnCount']} columns. Header names: {names}")
+    if not extensionless.get("distinctHeaderLayouts"):
+        a("- No column-header row was identified in these files (none invented).")
     a("")
+    if extensionless.get("columnLayouts"):
+        a("Column-count layouts (including files with no header):")
+        a("")
+        a("| Header? | Delimiter | Columns | Data cols min | Data cols max | Files |")
+        a("| --- | --- | ---: | ---: | ---: | ---: |")
+        for layout in extensionless["columnLayouts"]:
+            a(
+                f"| {layout.get('headerIdentified')} | `{layout.get('delimiter')}` | "
+                f"{layout.get('columnCount')} | {layout.get('dataColumnCountMin')} | "
+                f"{layout.get('dataColumnCountMax')} | {layout.get('fileCount')} |"
+            )
+        a("")
     a("## `.gf` structure")
     a("")
     _write_probe_md(a, gf)
@@ -1908,7 +2426,9 @@ def write_verify_markdown(
     a("## GUI art: `*.q3` and `.bft`")
     a("")
     a(f"- `*.q3` in extracted tree: {len(q3_extracted)}")
+    _write_q3_md(a, q3_extracted)
     a(f"- `*.q3` in reference tree: {len(q3_reference)}")
+    _write_q3_md(a, q3_reference)
     if not q3_extracted and not q3_reference:
         a("- No `*.q3` archive exists in either tree.")
     a(f"- `.bft` files: {bft.get('count')} (path and size only).")
@@ -2007,6 +2527,28 @@ def _write_spec_md(a, label: str, spec: SpecVerification) -> None:
     a("- Races: " + ", ".join(f"`{t}`" for t in spec.raceTokens))
     a("- Hull types: " + ", ".join(f"`{t}`" for t in spec.hullTokens))
     a("")
+    if spec.raceRowCounts:
+        a("Race column values (row counts):")
+        a("")
+        a("| Race | Rows |")
+        a("| --- | ---: |")
+        for item in spec.raceRowCounts:
+            a(f"| `{_md_escape(str(item['race']))}` | {item['rows']} |")
+        a("")
+    if spec.numericColumnStats:
+        a("### Numeric column stats (private-run artifact only; do not commit)")
+        a("")
+        a("Min, max and maximum decimal places for columns whose nonempty cells are all numeric. No per-row values.")
+        a("")
+        a("| Column | Index | Min | Max | Max decimal places | Numeric rows | Empty rows |")
+        a("| --- | ---: | ---: | ---: | ---: | ---: | ---: |")
+        for item in spec.numericColumnStats:
+            a(
+                f"| `{_md_escape(str(item['column']))}` | {item['columnIndex']} | "
+                f"{item['min']} | {item['max']} | {item['maxDecimalPlaces']} | "
+                f"{item['numericRowCount']} | {item['emptyRowCount']} |"
+            )
+        a("")
     if label == "shiplist" or spec.weaponCodes or spec.arcCodes:
         a("### Weapon and arc codes (vocabulary, with row counts)")
         a("")
@@ -2129,7 +2671,7 @@ def cmd_inventory(args: argparse.Namespace, log: MetadataLog) -> int:
     readme = parse_readme_structure(args.readme, log)
     q3_ex = find_q3(extracted, log, "extracted")
     q3_ref = find_q3(args.reference, log, "reference")
-    bmp = bmp_patterns(files, log)
+    bmp = bmp_patterns(files, log, extracted)
     bft = bft_report(files, log)
     extensionless_meta = interesting.get("extensionless") or []
     extensionless = inspect_extensionless_tables(
@@ -2223,6 +2765,8 @@ def _spec_to_dict(spec: SpecVerification) -> dict[str, Any]:
         "raceTokens": spec.raceTokens,
         "hullTokens": spec.hullTokens,
         "columnSelection": spec.columnSelection,
+        "raceRowCounts": spec.raceRowCounts,
+        "numericColumnStats": spec.numericColumnStats,
     }
 
 

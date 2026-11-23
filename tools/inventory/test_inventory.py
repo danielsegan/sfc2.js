@@ -8,12 +8,14 @@ are created in a tmp directory and never committed.
 from __future__ import annotations
 
 import hashlib
+import struct
 import io
 import json
 import shutil
 import subprocess
 import sys
 import tempfile
+import zipfile
 import unittest
 from pathlib import Path
 
@@ -23,6 +25,44 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import inventory as inv  # noqa: E402
 
 FIXTURES = ROOT / "tools" / "fixtures" / "inventory"
+
+
+
+def synth_bmp(width: int, height: int, bit_count: int, compression: int = 0) -> bytes:
+    """Minimal valid BMP file header + zeroed pixels. No copied game art."""
+    if bit_count == 8:
+        row = (width + 3) & ~3
+        payload = bytes(256 * 4) + bytes(row * max(abs(height), 1))
+        off = 14 + 40 + 256 * 4
+    elif bit_count == 16:
+        row = (width * 2 + 3) & ~3
+        payload = bytes(row * max(abs(height), 1))
+        off = 14 + 40
+    else:
+        bpp = max(bit_count // 8, 1)
+        row = (width * bpp + 3) & ~3
+        payload = bytes(row * max(abs(height), 1))
+        off = 14 + 40
+    pixel_len = len(payload) - (256 * 4 if bit_count == 8 else 0)
+    file_size = off + pixel_len
+    return (
+        struct.pack("<2sIHHI", b"BM", file_size, 0, 0, off)
+        + struct.pack(
+            "<IiiHHIIiiII",
+            40,
+            width,
+            height,
+            1,
+            bit_count,
+            compression,
+            pixel_len,
+            0,
+            0,
+            0,
+            0,
+        )
+        + payload
+    )
 
 
 def sha(data: bytes) -> str:
@@ -52,10 +92,16 @@ class InventoryTests(unittest.TestCase):
         entries = list(manifest["files"])
 
         # Temporary game-looking files used only in this test run.
-        add_file(cls.extracted, "Assets/Models/test_ca01/test_ca01.bmp", b"BM-SYNTH-TEX", entries)
-        add_file(cls.extracted, "Assets/Models/test_ca01/test_ca01_i.bmp", b"BM-SYNTH-ILLUM", entries)
-        add_file(cls.extracted, "Assets/Models/test_ca01/test_ca01_illum.bmp", b"BM-SYNTH-ILLUM2", entries)
-        add_file(cls.extracted, "Assets/GUI/Menus/button.bmp", b"BM-SYNTH-GUI", entries)
+        add_file(cls.extracted, "Assets/Models/test_ca01/test_ca01.bmp", synth_bmp(2, 2, 24), entries)
+        add_file(cls.extracted, "Assets/Models/test_ca01/test_ca01_i.bmp", synth_bmp(2, 2, 24), entries)
+        add_file(cls.extracted, "Assets/Models/test_ca01/test_ca01_illum.bmp", synth_bmp(2, 2, 24), entries)
+        add_file(cls.extracted, "Assets/GUI/Menus/button.bmp", synth_bmp(4, 4, 24), entries)
+        # _<n>i self-illum pairs for header-only bit-depth comparison.
+        add_file(cls.extracted, "Assets/Models/test_ca01/test_ca01_1.bmp", synth_bmp(8, 8, 24), entries)
+        add_file(cls.extracted, "Assets/Models/test_ca01/test_ca01_1i.bmp", synth_bmp(8, 8, 24), entries)
+        add_file(cls.extracted, "Assets/Models/test_ca01/test_ca01_2.bmp", synth_bmp(8, 8, 24), entries)
+        add_file(cls.extracted, "Assets/Models/test_ca01/test_ca01_2i.bmp", synth_bmp(8, 8, 16), entries)
+        add_file(cls.extracted, "Assets/Models/test_ca01/test_ca01_3i.bmp", synth_bmp(4, 4, 24), entries)
         add_file(cls.extracted, "Assets/Sounds/test_beep.wav", b"RIFF-SYNTH-WAV", entries)
         add_file(cls.extracted, "Assets/Missions/Federation/TEST_MISSION.scr", b"MZ-SYNTH-SCR", entries)
         add_file(cls.extracted, "Assets/Missions/Klingon/TEST_MAP.mct", b"Name\tX\tY\nA\t100.5\t-50\nB\t100\t-50\n", entries)
@@ -122,6 +168,15 @@ class InventoryTests(unittest.TestCase):
         self.assertTrue(any("illum" in k.lower() or k.lower().endswith("i") or "_i" in k.lower() for k in pats), pats)
         gui_folders = {e["path"] for e in observations["bmp"]["guiOrNonModelFolders"]}
         self.assertTrue(any("GUI" in p or "gui" in p.lower() for p in gui_folders), gui_folders)
+        pairs = observations["bmp"]["illumPairs"]
+        self.assertEqual(pairs["illumCount"], 3)
+        self.assertEqual(pairs["pairedCount"], 2)
+        self.assertEqual(pairs["missingBaseCount"], 1)
+        self.assertEqual(pairs["depthMatches"], 1)
+        self.assertEqual(pairs["depthDiffers"], 1)
+        self.assertEqual(len(pairs["differingPairs"]), 1)
+        self.assertEqual(pairs["differingPairs"][0]["illum"]["bitCount"], 16)
+        self.assertEqual(pairs["differingPairs"][0]["base"]["bitCount"], 24)
         # Extensionless tables share headers
         extl = observations["extensionless"]
         self.assertEqual(extl["count"], 2)
@@ -234,6 +289,15 @@ class InventoryTests(unittest.TestCase):
         self.assertTrue(fl["uniqueness"]["unique"])
         self.assertEqual(fl["uniqueness"]["duplicateKeyCount"], 0)
         self.assertEqual(fl["diagnostics"], [])
+        speed = next(s for s in fl["numericColumnStats"] if s["column"] == "Speed")
+        self.assertEqual(speed["min"], 17)
+        self.assertEqual(speed["max"], 26)
+        self.assertEqual(speed["maxDecimalPlaces"], 0)
+        # Default shiplist has no all-numeric columns (weapon codes are vocabulary).
+        race_counts = {r["race"]: r["rows"] for r in sl["raceRowCounts"]}
+        self.assertEqual(race_counts["Federation"], 2)
+        self.assertEqual(race_counts["Klingon"], 2)
+        self.assertEqual(race_counts["Hydran"], 1)
         # ftrlist Type/Ship Class exist; Race + Ship Class should be unique
         md = (self.out / "shiplist-ftrlist-ce-2.670.md").read_text(encoding="utf-8")
         self.assertIn("code=duplicateClassKey", md)
@@ -451,6 +515,125 @@ class InventoryTests(unittest.TestCase):
                 # Three or more tab fields that look like a ship row should not appear.
                 if line.count("\t") >= 2 and "TEST-CA-01" in line and "Ph1" in line:
                     self.fail(f"log appears to contain a data row: {line!r}")
+
+
+
+    def test_race_header_accepted_with_long_label(self) -> None:
+        """A first nonempty cell of Race wins even when another label is long."""
+        path = self.tmpdir / "long-header-shiplist.txt"
+        long_label = "X" * 80
+        # Invented header only; the long token is not a data row.
+        path.write_bytes(
+            (
+                "\tSYNTHETIC FIXTURE ONLY. Keep the first column blank to write a comment.\t\t\t\r\n"
+                f"Race\tHull Type\tClass\t{long_label}\r\n"
+                "Federation\tCA\tTEST-CA-01\t1\r\n"
+            ).encode("ascii")
+        )
+        buf = io.StringIO()
+        log = inv.MetadataLog(stream=buf)
+        meta = inv.inspect_table_file(path, self.tmpdir, log=log)
+        self.assertEqual(meta.headerLine, 2)
+        self.assertEqual(meta.headerNames[0], "Race")
+        self.assertEqual(meta.headerNames[3], long_label)
+        self.assertEqual(meta.columnCount, 4)
+        self.assertIsNone(meta.headerRejection)
+        self.assertNotIn(long_label, "\n".join(log.lines))
+
+    def test_header_rejection_log_has_no_cell_text(self) -> None:
+        path = self.tmpdir / "no-header-table.txt"
+        sentinel = "SENTINEL_REJECT_CELL_QK7"
+        path.write_bytes(
+            (
+                "\tSYNTHETIC FIXTURE ONLY. Keep the first column blank to write a comment.\t\t\r\n"
+                f"12\t34\t56\t{sentinel}\r\n"
+                "13\t35\t57\t0\r\n"
+            ).encode("ascii")
+        )
+        buf = io.StringIO()
+        log = inv.MetadataLog(stream=buf)
+        meta = inv.inspect_table_file(path, self.tmpdir, log=log)
+        self.assertEqual(meta.headerNames, [])
+        self.assertIsNotNone(meta.headerRejection)
+        self.assertEqual(meta.headerRejection["line"], 2)
+        self.assertEqual(meta.headerRejection["reason"], "mostly-numeric")
+        self.assertIn("nonemptyCells", " ".join(log.lines) + str(meta.headerRejection))
+        joined = "\n".join(log.lines)
+        self.assertNotIn(sentinel, joined)
+        self.assertNotIn(sentinel, json.dumps(meta.headerRejection))
+        self.assertIn("header candidate rejected:", joined)
+        self.assertIn("reason=mostly-numeric", joined)
+        self.assertGreaterEqual(meta.dataColumnCountMin or 0, 4)
+        self.assertGreaterEqual(meta.columnCount, 4)
+
+    def test_weapon_group_without_header_reports_column_counts(self) -> None:
+        side = self.tmpdir / "wg-nohdr"
+        side.mkdir()
+        path = side / "NOHDR"
+        path.write_bytes("<0\nPh1\t1\t3\nPhG\t2\t4\n".encode("ascii"))
+        buf = io.StringIO()
+        log = inv.MetadataLog(stream=buf)
+        meta = inv.FileMeta(path="NOHDR", size=path.stat().st_size, sha256=inv.file_sha256(path))
+        result = inv.inspect_extensionless_tables([meta], side, log)
+        self.assertEqual(result["count"], 1)
+        self.assertEqual(result["distinctHeaderLayouts"], [])
+        self.assertFalse(result["files"][0]["headerIdentified"])
+        self.assertGreaterEqual(result["files"][0]["columnCount"], 3)
+        self.assertEqual(result["columnLayouts"][0]["headerIdentified"], False)
+        self.assertEqual(result["columnLayouts"][0]["columnCount"], 3)
+        self.assertNotIn("Ph1", "\n".join(log.lines))
+
+    def test_q3_zip_directory_lists_entry_names(self) -> None:
+        side = self.tmpdir / "q3-tree"
+        if side.exists():
+            shutil.rmtree(side)
+        sprites = side / "Assets" / "Sprites"
+        sprites.mkdir(parents=True)
+        q3 = sprites / "sprites.q3"
+        with zipfile.ZipFile(q3, "w") as zf:
+            zf.writestr("synthetic/test_icon.bin", b"SYNTH-Q3-ENTRY")
+            zf.writestr("synthetic/test_frame.bin", b"XX")
+        buf = io.StringIO()
+        log = inv.MetadataLog(stream=buf)
+        found = inv.find_q3(side, log, "extracted")
+        self.assertEqual(len(found), 1)
+        rec = found[0]
+        self.assertEqual(rec["format"], "zip")
+        self.assertEqual(rec["entryCount"], 2)
+        names = {e["name"]: e["size"] for e in rec["entries"]}
+        self.assertEqual(names["synthetic/test_icon.bin"], 14)
+        self.assertEqual(names["synthetic/test_frame.bin"], 2)
+        # Directory metadata only: the payload must not be dumped to the log.
+        self.assertNotIn("SYNTH-Q3-ENTRY", "\n".join(log.lines))
+
+    def test_numeric_stats_include_speed_and_decimals(self) -> None:
+        side = self.tmpdir / "numeric-side"
+        if side.exists():
+            shutil.rmtree(side)
+        side.mkdir()
+        path = side / "shiplist.txt"
+        path.write_bytes(
+            (
+                "Race\tHull Type\tClass\tBPV\tMove Cost\r\n"
+                "Federation\tCA\tTEST-CA-01\t101\t0.75\r\n"
+                "Klingon\tFF\tTEST-FF-02\t42\t0.40\r\n"
+            ).encode("ascii")
+        )
+        buf = io.StringIO()
+        log = inv.MetadataLog(stream=buf)
+        meta = inv.FileMeta(path="shiplist.txt", size=path.stat().st_size, sha256=inv.file_sha256(path))
+        result = inv.verify_spec_tables("shiplist", [(path, meta)], side, log)
+        by_col = {s["column"]: s for s in result.numericColumnStats}
+        self.assertEqual(by_col["BPV"]["min"], 42)
+        self.assertEqual(by_col["BPV"]["max"], 101)
+        self.assertEqual(by_col["BPV"]["maxDecimalPlaces"], 0)
+        self.assertEqual(by_col["Move Cost"]["min"], 0.4)
+        self.assertEqual(by_col["Move Cost"]["max"], 0.75)
+        self.assertEqual(by_col["Move Cost"]["maxDecimalPlaces"], 2)
+        self.assertEqual({r["race"]: r["rows"] for r in result.raceRowCounts}, {"Federation": 1, "Klingon": 1})
+        # Aggregates only: do not log the raw numeric cells as a data row.
+        self.assertNotIn("101\t0.75", "\n".join(log.lines))
+
 
 
 if __name__ == "__main__":
