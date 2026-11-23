@@ -1,12 +1,12 @@
-# Starfleet Command 2: Browser Edition — Studio & Project Plan
+# SFC2.js — Studio & Project Plan
 
-A clean-room browser engine for *Star Trek: Starfleet Command 2*, built to full-game parity by a new AI studio. This plan covers scope, the team, architecture, a phased roadmap with risks, and the decisions Daniel needs to make.
+A clean-room browser engine for *Star Trek: Starfleet Command 2*, built to full-game parity by a new AI studio. The project name is **SFC2.js**. This plan covers scope, the team, architecture, a phased roadmap with risks, and recorded decisions.
 
 This document is the committed source of truth for the plan (also published as a canvas). Keep it current as the project evolves.
 
 ## Vision and scope
 
-Rebuild the whole of SFC2 as a modern web and desktop app, not just a demo. Like Glenn332's Empire at War Browser Edition, the engine is new code (three.js, plain JS modules, AssemblyScript/WASM for hot paths, a Tauri desktop shell, a Cloudflare multiplayer lobby, GPL-3.0). It loads the player's own installed game files and ships none of them.
+Rebuild the whole of SFC2 as a modern web and desktop app, not just a demo. Like Glenn332's Empire at War Browser Edition, the engine is new TypeScript code (three.js renderer, TypeScript for all engine modules, AssemblyScript or Rust WASM for hot paths, a Tauri desktop shell, a Cloudflare multiplayer lobby, GPL-3.0). It loads the player's own installed game files and ships none of them. The reference baseline is *Star Fleet Command 2* Community Edition 2.670, from Daniel's legally owned installer.
 
 | Area | Parity target | Source material |
 | --- | --- | --- |
@@ -17,9 +17,9 @@ Rebuild the whole of SFC2 as a modern web and desktop app, not just a demo. Like
 | Mods | Shiplist mods, OP and EAW ship packs, FMSE-style custom missions | Community packs the user owns |
 | Stretch | HD rendering, smarter AI, controller support, ultrawide HUD | Our own work |
 
-The empire roster above is SFC2: Empires at War's as Daniel's install should show it; Phase 0 confirms it against the installed mission and shiplist data.
+The empire roster above is SFC2: Empires at War's as Daniel's Community Edition 2.670 install should show it; Phase 0 confirms it against the installed mission and shiplist data.
 
-> **Legal posture.** Star Trek is Paramount's IP. This is a non-commercial fan engine. It ships no game assets, needs a legal SFC2 install, and is a clean-room build: we don't take code from the SFC2-decomp project.
+> **Legal posture.** Star Trek is Paramount's IP. This is a non-commercial fan engine. It ships no game assets, needs a legal SFC2 install, and is a clean-room build: we don't take code from the SFC2-decomp project. Players bring their own game files; original assets are never committed. Community Edition 2.670 is the project's reference baseline.
 
 ## The studio
 
@@ -31,11 +31,11 @@ A new group chat, "SFC2 Browser Edition Studio", set up like the Eaten By Kitten
 | Engine Lead | Build a fast, deterministic engine | Architecture, three.js renderer, fixed-timestep sim core, WASM hot paths, Tauri shell, code review | Engine core, renderer, perf budgets, ADRs | Combat, UI, Netcode |
 | Asset & Formats Engineer | Read every original file format, cleanly | Format specs, parsers (`shiplist`, `ftrlist`, `.mod`, BMP, `sounds.txt`, `sprites.q3`), importer, data pipeline | `/tools` parsers, format docs, asset importer, ship viewer data | Engine, Art, Audio, Missions |
 | Combat Systems Designer | Make battles play like SFC2 | SFB rules: energy allocation, six shields, arcs, EW, overloads, hit-and-run, boarding, tractors, cloaks, mines, fighters and PFs; tactical AI | Rules spec, combat sim, AI captains, balance tests | Engine, Missions, QA |
-| Mission & Campaign Designer | Bring back every campaign and the Conquest map | JS Mission API, porting Taldren's mission sources, campaign flow, Dynaverse-style map | Mission runtime, eight-plus campaigns, Conquest mode | Combat, Netcode, Audio |
+| Mission & Campaign Designer | Bring back every campaign and the Conquest map | TypeScript Mission API, porting Taldren's mission sources, campaign flow, Dynaverse-style map | Mission runtime, eight-plus campaigns, Conquest mode | Combat, Netcode, Audio |
 | UI & Art Director | Make it look like SFC2, then better | Period-accurate HUD and menus, rendering look (self-illum, effects), HD upgrades, controller layouts | HUD, menus, shader and effects style guide | Engine, Formats |
 | Audio & Netcode QA Lead | Make it sound right and stay in sync | Sound pipeline from `sounds.txt` and WAV, music, lockstep multiplayer, lobby, desync and regression testing | Audio system, lobby server, MP protocol, test suites | Engine, Missions, Producer |
 
-> **Wintermute (infra).** Provides a Proxmox dev and CI VM, the Wine install that extracts assets, test and lobby servers, GitHub repo security (branch protection, secrets, Dependabot), and backups. Wintermute isn't a studio member that writes game code.
+> **Wintermute (infra).** Provides a Proxmox dev and CI VM (`sfc2-ci`), the Wine install that extracts assets, test and lobby servers, GitHub repo security (branch protection, secrets, Dependabot), and backups. Wintermute isn't a studio member that writes game code.
 
 ## Architecture
 
@@ -53,19 +53,20 @@ Netcode          ──inputs──►  Sim core
 
 - The sim core never reads the clock or random numbers directly: a seeded RNG and fixed ticks make it replayable and lockstep-ready from day one.
 - Rendering, UI and audio only read sim state, so the same sim runs headless for AI training, tests and servers.
-- Missions run as sandboxed JS against an API modelled on Taldren's Mission API, which also becomes the modding surface.
+- Missions run as sandboxed TypeScript against an API modelled on Taldren's Mission API, which also becomes the modding surface.
+- Diagnostics use the shared shape `{ code, source, severity, details?, location? }`. Codes are flat camelCase and add-only. The single registry is `docs/engine/diagnostics.md`, owned by the Engine Lead.
 
 ## Repository
 
 | | |
 | --- | --- |
-| Where | Private GitHub repo `danielsegan/sfc2-browser-edition` |
+| Where | Private GitHub repo [`danielsegan/sfc2.js`](https://github.com/danielsegan/sfc2.js) |
 | License | GPL-3.0 from the first commit; going public is a release-time decision |
 | Plan | This plan is committed as `docs/plan.md` and kept current there |
 
 ```
-sfc2-browser-edition/
-├── docs/          plan.md, gdd.md, formats/ (one spec per file type), rules/ (SFB rules spec), adr/
+sfc2.js/
+├── docs/          plan.md, gdd.md, formats/ (one spec per file type), rules/ (SFB rules spec), adr/, engine/ (diagnostics registry)
 ├── engine/        sim core, renderer, mission runtime, AI, audio, netcode
 ├── tools/         parsers, extractors, asset inventory scripts
 ├── web/           browser app and HUD
@@ -76,7 +77,11 @@ sfc2-browser-edition/
 └── .gitignore     blocks *.mod, *.bmp, *.wav, *.scr, *.q3, game folders and installers
 ```
 
-> **Never commit original game files.** The `.gitignore` and a CI check both reject game assets. Tests use synthetic fixtures, and real-data tests run only on the private CI VM against the local install.
+> **Never commit original game files.** The `.gitignore` and a CI check both reject game assets. Tests use synthetic fixtures. Private game data stays only on the private CI VM `sfc2-ci` and is scanned by the dispatch-only workflow `.github/workflows/private-inventory.yml` (merged via #47). Only metadata (names, counts, hashes) leaves the VM. Real-data tests run only on that VM against the local install.
+
+### Process
+
+Studio members open PRs as needed without asking Daniel. The Producer merges a PR once its "Block original game files and large binaries" check is green and its author posts a final head SHA. All merges are squash merges. Cursor cloud agents are approved (see issue #11).
 
 ## Roadmap
 
@@ -84,7 +89,7 @@ Durations assume AI-assisted pace like the EaW project, with Daniel reviewing at
 
 | Phase | Goal | Exit criteria | Estimate |
 | --- | --- | --- | --- |
-| 0 Setup | Private repo, CI, legal posture, CE installed under Wine, asset inventory | Repo live with layout, CI green, asset-blocking check working, `docs/plan.md` committed, inventory of every file type | 1–2 weeks |
+| 0 Setup | Private repo, CI, legal posture, CE 2.670 installed under Wine, asset inventory | Repo live with layout, CI green, asset-blocking check working, `docs/plan.md` committed, inventory of every file type | 1–2 weeks |
 | 1 Asset pipeline | Parsers, importer, ship viewer | Every ship in `shiplist.txt` loads and spins with textures and self-illum | 2–4 weeks |
 | 2 Tactical duel | One ship against one, core SFB rules | Energy, six shields, arcs, phasers and heavy weapons; deterministic replay passes | 4–6 weeks |
 | 3 Full skirmish | All weapons and systems, fleets, AI, HUD, sound | Six-ship skirmish with every empire; EW, overloads, boarding, tractors, cloaks, mines, fighters, PFs | 8–12 weeks |
@@ -108,18 +113,25 @@ Durations assume AI-assisted pace like the EaW project, with Daniel reviewing at
 | Scope creep | High | Phase exit criteria, stretch work held until Phase 8, Producer owns the cut list |
 | AI bots drifting | Medium | Short ADRs, CODEOWNERS review, CI as the gatekeeper |
 
-## Open decisions for Daniel
+## Decisions
 
-These remain open. Do not treat any option below as decided until Daniel records a choice.
+Recorded items below are decided. Do not reopen one without Daniel. Only the still-open item remains a choice.
 
-- **Project name.** Repo name `sfc2-browser-edition` is in use; a game title can come later.
+### Recorded
+
+- **Project name.** SFC2.js. The repository is [`danielsegan/sfc2.js`](https://github.com/danielsegan/sfc2.js).
+- **Language.** TypeScript for all engine modules, including the three.js renderer. WASM hot paths (AssemblyScript or Rust) remain allowed.
+- **Game version.** *Star Fleet Command 2* Community Edition 2.670 (Daniel's legally owned installer) is the reference baseline. Players bring their own files; original assets are never committed.
+- **Pull requests and cloud agents.** Team members open PRs as needed without asking Daniel. The Producer merges a PR once its "Block original game files and large binaries" check is green and its author posts a final head SHA. Merges are squash merges. Cursor cloud agents are approved ([issue #11](https://github.com/danielsegan/sfc2.js/issues/11)).
+- **Private data.** Original game files stay only on the private CI VM `sfc2-ci`, scanned by the dispatch-only workflow `.github/workflows/private-inventory.yml` (merged via #47). Only metadata (names, counts, hashes) leaves the VM.
+- **Diagnostics.** Shared shape `{ code, source, severity, details?, location? }`; flat camelCase add-only codes; single registry at `docs/engine/diagnostics.md`, owned by the Engine Lead.
+
+### Still open
+
 - **Hosting tooling.** GitHub was chosen for the repo; Cursor Origin could still mirror it or host CI.
-- **JavaScript or TypeScript.** EaW uses plain JS; TypeScript is recommended for a codebase this big written by several bots.
-- **Game version.** Community Edition 2.670 (the installer in Dropbox) or 2.679 as the reference build.
-- **Cursor cloud agents.** Whether studio bots hand coding tasks to cloud agents that open PRs against the repo.
 
 ### Next steps
 
-1. **Approve the roster and plan.** Then the studio bots and group chat get created.
-2. **Phase 0 kickoff.** Wintermute creates the private repo and CI VM and installs CE under Wine.
-3. **Phase 1 begins.** Asset & Formats Engineer starts the parsers.
+1. **Keep the plan current** as further decisions land.
+2. **Finish Phase 0.** Complete the private asset inventory on `sfc2-ci` and the remaining setup exit criteria.
+3. **Phase 1 begins.** Asset & Formats Engineer continues the parsers once inventory metadata is in hand.
