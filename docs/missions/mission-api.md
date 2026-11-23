@@ -1,4 +1,4 @@
-# Mission API design (draft)
+# SFC2.js Mission API design (draft)
 
 Status: **draft for review**. Owner: Mission & Campaign Designer. Milestone: Phase 4 (Missions).
 This is a design doc only. No runtime code lands before Phase 4.
@@ -9,10 +9,18 @@ This is a design doc only. No runtime code lands before Phase 4.
 > does not cite, the SFC2-decomp project or any other decompilation. Taldren identifiers appear only as
 > short names in mapping tables. No Taldren code is copied here, and no game files are committed.
 
-> **Open decisions are not locked in.** Code below is *TypeScript-shaped* because it reads well as an
-> interface sketch. Whether the project uses TypeScript or JavaScript is still Daniel's call. The same
-> goes for the project name, the CE 2.670 vs 2.679 baseline, and whether studio bots use Cursor cloud
-> agents. Nothing in this doc decides any of those.
+> **Decisions this doc follows (made by Daniel):** the project is named **SFC2.js** (the repo name and
+> paths stay `sfc2-browser-edition`); the language is **TypeScript**; the reference game for mission and
+> campaign content is **SFC2: Empires at War, official 2.036 plus the unofficial 2.037 patch** (not the
+> Community Edition); the HUD follows SFC2's own EAW HUD. **Still open:** whether studio bots use Cursor
+> cloud agents (nothing here depends on it). **Out of scope:** the standalone *Orion Pirates* game (2001)
+> and its content, which sits in [Possible later](#16-possible-later-backlog).
+
+> **Data verification status: unverified.** Nobody on the project has an EAW 2.036 + 2.037 copy yet. Every
+> claim in this doc about the empire roster, the mission and campaign inventory, or anything else that
+> depends on installed game data is **unverified** until that copy exists and has been checked on the
+> private VM. Claims about Taldren's *public API headers and released sources* are verified against those
+> archives only, which are not the same thing as the reference install.
 
 ---
 
@@ -20,7 +28,7 @@ This is a design doc only. No runtime code lands before Phase 4.
 
 ### Goals
 
-1. **Run every original campaign and mission type in the browser** (campaign, unique campaign, tutorial,
+1. **Run every original EAW campaign and mission type in SFC2.js** (campaign, unique campaign, tutorial,
    historical, skirmish and multiplayer scripts) on a new, sandboxed, deterministic mission runtime.
 2. **Mirror Taldren's Mission API concepts closely enough that porting is mechanical.** The risk register
    entry is "Mission API shim that mirrors Taldren's, port one campaign end to end before scaling". The
@@ -44,14 +52,18 @@ This is a design doc only. No runtime code lands before Phase 4.
 - Designing combat rules, AI captain behaviour or the HUD. Those belong to Combat, Engine and UI. This API
   only issues orders and reads state through their interfaces.
 - Defining the engine's internal hook points. Those belong to the Engine Lead (section 5.1).
-- Choosing the language, project name, baseline build or cloud-agent use.
+- Orion Pirates (the standalone 2001 game): its campaigns, missions, factions and API are out of scope
+  (see section 16, Possible later). This is separate from the Orion faction inside EAW (section 10).
 
 ---
 
 ## 2. How SFC2 missions worked originally
 
 What follows is **observed** in Taldren's public SFC2:EAW API Release 1.3 (readme dated 2 July 2002) and
-the public EAW mission sources. Where something is inferred rather than read directly, it says so.
+the public EAW mission sources. Our reference build is EAW 2.036 plus the unofficial 2.037 patch. **Not
+verified:** which game build API R1.3 and the released mission sources match exactly, and what the 2.037
+patch changed in mission or campaign behaviour. Both get checked against the reference install on the
+private VM before porting starts. Where something is inferred rather than read directly, it says so.
 
 ### 2.1 Build and packaging
 
@@ -65,7 +77,8 @@ the public EAW mission sources. Where something is inferred rather than read dir
 - The API ships three templates: a bare-bones script, a single-player campaign script and a multiplayer
   script (`Tem_Standard`, `Tem_Single`, `Tem_Multi`), plus two Visual Studio add-ins for generating script
   and object boilerplate.
-- A separate SFC:OP API (R2.2) exists for Orion Pirates. We have **not** reviewed it for this draft.
+- A separate SFC:OP API (R2.2) exists for Orion Pirates. Orion Pirates is out of scope, so we have
+  **not** reviewed it.
 
 **Why that can't run in the browser:** the `.scr` is native x86 code compiled against the game's own
 memory layout and host callbacks. A browser can't load it, and emulating it would mean emulating the host,
@@ -93,7 +106,7 @@ Taldren's API is an **actor/state-machine** design:
 | Prestige | `mGetPrestigePoints`, `mGetBonusPrestige` | Prestige awarded per victory level |
 | Campaign handoff | `tMissionScheduler`, `mScheduleNextMission` | Victory level, prestige, bonus prestige, next mission title and score, medal, campaign event (retire / lost) |
 | Relations | `eTeamRelationship`, `eTargetGoals` | Allied, friendly, neutral, hostile, at war; goals ignore, cripple, capture, destroy |
-| Races | `eRaceName` | Federation, Klingon, Romulan, Lyran, Hydran, Gorn, ISC, Mirak are the playable races; Orion and Monster are NPC races in this EAW API |
+| Races | `eRaceName` | In the API R1.3 headers, Federation, Klingon, Romulan, Lyran, Hydran, Gorn, ISC, Mirak are playable races; Orion and Monster are NPC races. How this shows up in EAW 2.036 data is **unverified** |
 | Map objects | `eMapObjectType`, `mCreateMapObject`, `mAddMapIcon` | Nebula, black hole, fissure, Organian, pulsar, wormhole, sun, planet, asteroid, dust cloud, bases, ship start and end points |
 | Maps | `MissionMaps.cpp`, `mGetNextMapLine`, `mASCIIOverrides` | Maps defined as ASCII grids with a character legend (start points, end points, planet types, asteroids, black holes, ...) |
 | Text | `MissionText.cpp`, `mDefineBriefings`, `mDisplayMessage`, `mAddToDebriefingList` | Briefings per race, in-mission messages, debriefings |
@@ -112,8 +125,9 @@ The public EAW source tree has folders for `ISC`, `Mirak`, `Meta` (generic missi
 raid and escort, base assault and defense, monster, scan), `Unique`, `Bonus`, `Historical`, `Multiplayer`,
 `Skirmish`, `Tutorial`, `Template` and a few others. **Inferred, not verified:** the Federation, Klingon,
 Romulan, Lyran, Hydran and Gorn campaigns appear to be mostly built from the generic `Meta` missions plus
-`Unique` story missions, while the expansion empires (ISC, Mirak) have their own folders. This has to be
-confirmed against the installed campaign data on the private VM before Phase 5 is estimated.
+`Unique` story missions, while the expansion empires (ISC, Mirak) have their own folders. This whole
+inventory is **unverified**: it comes from the released source archive, not from an EAW 2.036 + 2.037
+install, and has to be checked against that install on the private VM before Phase 5 is estimated.
 
 ### 2.4 FMSE (observed from its manual)
 
@@ -261,7 +275,7 @@ that contract lands, this section gets replaced by a link and the names change t
 | `ENGINE_HOOK: missionView` | The read-only state the mission can query (positions, damage, systems, stores) and how it's snapshotted |
 | `ENGINE_HOOK: aiOrders` | The AI order interface the mission calls into (owned with Combat) |
 | `ENGINE_HOOK: rngStreams` | How `ctx.rng("mission")` is seeded and isolated from other streams |
-| `ENGINE_HOOK: hudChannel` | How messages, comm buttons, countdowns, goal markers and briefings reach the HUD (with UI) |
+| `ENGINE_HOOK: hudChannel` | How countdowns, goal markers and comm buttons reach the HUD canvas, and how briefing, dialogue and debriefing text reach the HTML text layer (per the HUD contract, with UI) |
 | `ENGINE_HOOK: audioCue` | How a mission requests a sound or voice line (with Audio) |
 
 ---
@@ -269,7 +283,7 @@ that contract lands, this section gets replaced by a link and the names change t
 ## 6. API surface sketches (our proposal)
 
 Everything in this section is **our proposal**, not Taldren's API. Names are illustrative and will change
-to match the engine contract. Types are TypeScript-shaped; TS vs JS is undecided.
+to match the engine contract. SFC2.js is written in TypeScript, so these are TypeScript interfaces.
 
 ### 6.1 Module shape
 
@@ -542,6 +556,10 @@ interface CampaignVarsApi {
 type CampaignValue = number | string | boolean;    // integers only for numbers
 ```
 
+Briefing, dialogue, comm and debriefing text **renders in HTML, not on the HUD canvas**, per the Engine
+Lead's HUD contract. The mission only emits text keys and arguments; the HTML layer owns layout, styling
+(following SFC2's EAW HUD look), escaping and localisation. Missions can't inject markup.
+
 Text is always a key. For ported missions, the key resolves either to text in the player's installed game
 data (if the original keeps it there) or to a string table we write ourselves. We don't paste Taldren
 mission text into the repo.
@@ -603,7 +621,7 @@ Only rows verified against the public SFC2:EAW API R1.3 headers are listed. "Obs
 | `mSetTimedInterval` (`kTimerSecondsSet`, `kTimerTurnsSet`) | `timers.after` / `timers.every` in ticks | Seconds × 30; turns need a tick length |
 | `kTimerCountdownSet` / `kTimerCountdownAdjust` | `timers.countdown` | |
 | `kTimerEndGamePause` | `EndRequest.pauseTicks` | |
-| `tMissionInfo::mDisplayMessage` | `text.say` | Text by key |
+| `tMissionInfo::mDisplayMessage` | `text.say` | Text by key, rendered in the HTML text layer |
 | `tShipInfo::mSetCommButton` / `mClearCommButton` | `text.commButton` / `text.clearCommButton` | |
 | `tMissionInfo::mAddToDebriefingList` | `text.debrief` | |
 | `tScript::mDefineBriefings` | scenario `briefings` by empire | |
@@ -632,7 +650,7 @@ R1.3. The OP API R2.2 is not reviewed at all.
 Proposal for the Phase 4 pilot. The pilot mission is TBD (section 15); a small unique campaign mission
 with a scripted twist, such as one from the Mirak folder, exercises most of the API.
 
-1. **Pick and inventory.** On the private VM, list the mission's script folder from the public sources and
+1. **Pick and inventory.** On the private VM (once an EAW 2.036 + 2.037 copy is there), list the mission's script folder from the public sources and
    find which game data it depends on (ship classes, text, map). Record it in a short port note under
    `docs/missions/ports/<mission-id>.md` (behaviour summary only; no code or text pasted).
 2. **Write a behaviour spec.** In plain language: teams and relations, starting ships, map, each state and
@@ -680,30 +698,28 @@ Proposal: one **campaign graph** per empire, as data. Nodes are missions (unique
 generic mission templates); edges are conditions on the previous `MissionResult` and campaign variables.
 The campaign layer owns the player's fleet, prestige, rank, date and variables between missions.
 
-Empires (from `docs/plan.md`, matching the playable races in the EAW API's race enum):
+Empires (from `docs/plan.md` and the API R1.3 race enum). **Every row is unverified** until an EAW
+2.036 + 2.037 copy has been checked:
 
-| Empire | Campaign | Notes |
+| Empire | Campaign (unverified) | Notes |
 | --- | --- | --- |
-| Federation | yes | Inferred to be mostly generic `Meta` missions plus unique missions |
-| Klingon | yes | As above |
-| Romulan | yes | As above |
-| Lyran | yes | As above |
-| Hydran | yes | As above |
-| Gorn | yes | As above |
-| ISC | yes | Has its own source folder in the public EAW scripts |
-| Mirak | yes | Has its own source folder in the public EAW scripts |
-| Orion Pirates | per plan | In the EAW API, Orion is an **NPC** race, not playable. Playable Orion content is an Orion Pirates (OP) feature |
+| Federation | expected | Inferred to be mostly generic `Meta` missions plus unique missions |
+| Klingon | expected | As above |
+| Romulan | expected | As above |
+| Lyran | expected | As above |
+| Hydran | expected | As above |
+| Gorn | expected | As above |
+| ISC | expected | Has its own source folder in the public EAW scripts |
+| Mirak | expected | Has its own source folder in the public EAW scripts |
+| Orion (EAW faction) | **not yet verified** | The plan lists an Orion campaign. In the EAW API R1.3 headers Orion is an NPC race. Whether EAW 2.036 has an Orion campaign or only Orion ships and races is not yet verified |
 
-**The roster still has to be confirmed against Daniel's installed data on the private VM.** Daniel's copy
-is the Community Edition installer; which campaigns it ships, and whether its Orion content is EAW-era NPC
-content or OP-era playable content, needs checking there.
+**The roster still has to be confirmed against the reference EAW 2.036 + 2.037 install on the private VM**,
+including which campaigns ship, how many missions each has, and the Orion question above. Nobody has that
+copy yet, so the Phase 5 estimate stays provisional.
 
-**Scope question for Daniel (not decided here):** the first build target is Empires at War 2.0.x (CE 2.670
-vs 2.679 still open), and Orion Pirates is the primary HUD/menu reference with EAW as an alternate skin.
-That leaves open whether **OP-specific campaign and mission content** (the playable Orion cartels and other
-OP-era empires and missions) is in scope, and if so in which phase. This doc treats the EAW roster as the
-Phase 4 to 5 baseline and keeps the empire id open-ended so OP content can be added without API changes,
-but it doesn't decide the scope.
+The standalone *Orion Pirates* game (2001), with its playable Orion cartels and OP-era content, is **out of
+scope** (section 16). The empire id stays an open string so that later work, or mods, can add empires
+without API changes.
 
 ---
 
@@ -800,15 +816,17 @@ but it doesn't decide the scope.
    duplicate names across empires are handled.
 2. Where mission text lives in the installed data (if anywhere outside compiled `.scr` files), and the
    string-table format.
-3. Whether the installed CE data contains mission metadata we can read (mission lists, campaign tables).
+3. Once a copy exists: whether the EAW 2.036 + 2.037 reference install contains mission metadata we can read (mission lists, campaign tables), and what the 2.037 patch changed.
 4. Feasibility of a clean-room `.fms` (FMSE project) reader, later.
 
 ### Producer
 
-1. Which **pilot mission** for Phase 4, and which empire's campaign is the "first campaign" exit target.
-2. Whether a `docs/missions/` folder and `ports/` notes need a CODEOWNERS entry.
-3. Phase placement of the scenario editor (Phase 8 or a later stretch).
-4. File the Phase 4 issues for: runtime sandbox, scenario format, state-machine layer, victory presets,
+1. **Getting an EAW 2.036 + 2.037 reference copy** onto the private VM (with Wintermute). Until then, every
+   roster and mission-inventory claim stays unverified and the pilot choice is provisional.
+2. Which **pilot mission** for Phase 4, and which empire's campaign is the "first campaign" exit target.
+3. Whether a `docs/missions/` folder and `ports/` notes need a CODEOWNERS entry.
+4. Phase placement of the scenario editor (Phase 8 or a later stretch).
+5. File the Phase 4 issues for: runtime sandbox, scenario format, state-machine layer, victory presets,
    campaign graph, replay harness, pilot port.
 
 ### Audio & Netcode QA Lead
@@ -818,11 +836,22 @@ but it doesn't decide the scope.
 
 ### Daniel
 
-1. **TypeScript or JavaScript** for the engine and the mission API (this doc uses TS-shaped sketches only).
-2. **CE 2.670 or 2.679** as the baseline build (first target is EAW 2.0.x either way).
-3. **OP-specific campaign and mission content:** in scope or not, and in which phase (section 10).
-4. Whether third-party missions should be allowed in multiplayer at all, or only in single player at first.
-5. Project name and Cursor cloud agents are still open; nothing here depends on them.
+1. Whether third-party missions should be allowed in multiplayer at all, or only in single player at first.
+2. Cursor cloud agents are still open; nothing in this doc depends on that decision.
+   (Decided and reflected here: name SFC2.js, TypeScript, EAW 2.036 + 2.037 reference, EAW HUD;
+   Orion Pirates out of scope per the Producer's scope update.)
+
+---
+
+## 16. Possible later (backlog)
+
+Not in scope. Listed so the API doesn't paint us into a corner, not as a commitment.
+
+- **Orion Pirates (standalone 2001 game) content:** its campaigns, missions, playable Orion cartels and
+  OP-era empires, and the OP Mission API R2.2. The open-ended empire id, the capability manifest and
+  `apiVersion` are meant to make this addable later without breaking EAW missions.
+- **`.fms` (FMSE project) import**, if a clean-room format description becomes feasible.
+- **Community mission packs** (EAW-era) as a mod-loading test bed, loaded from the player's own disk.
 
 ---
 
