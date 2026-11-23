@@ -23,18 +23,19 @@ Public documentation of this file is thin, and much thinner than for `shiplist.t
 ## 2. File location and role
 
 - Path (unverified for CE 2.670): `<install>/Assets/Specs/ftrlist.txt`, plus a `MetaAssets` copy that campaign play reads (F1, F2, F7). Resolve case-insensitively.
-- Role (unverified): per-type fighter definitions that carriers in `shiplist.txt` load into their fighter bays. Whether PFs are here, in `shiplist.txt`, or split between the two is open: F5 suggests PF availability is in the ship list.
+- Role (unverified): per-type fighter definitions that carriers in `shiplist.txt` load into their fighter bays.
+- **PFs (decided with Combat, provisional):** PFs use the full ship model with entity class `'pf'`, so they are expected as rows in `shiplist.txt` (F5 points the same way). If CE 2.670 also lists PFs here, the parser still reads them and the loader decides. Fighters are a lighter entity built from this file.
 - Relation to `shiplist.txt` (unknown): a fighter type may need a matching `FTR` row in `shiplist.txt` (for model, hull boxes, size class), with `ftrlist.txt` adding fighter-only data, or `ftrlist.txt` may be self-contained. This is the most important thing to settle on `sfc2-ci`.
 
 ## 3. Encoding and layout
 
-Same expectations and parsing rules as [`shiplist.md` §3](shiplist.md#3-encoding-and-layout): single-byte Windows text, TAB-delimited, header row(s) of labels, empty cells allowed, header-driven column mapping, unknown columns kept in `extra`, raw cells kept. Confidence: **unverified** (F6 shows it is a ShipEdit text table; everything else is assumed by analogy with the ship list).
+Same expectations and parsing rules as [`shiplist.md` §3](shiplist.md#3-encoding-and-layout), including **parser output keys = raw file header names** and values as written (no scaling, no renaming, exact weapon/arc strings): single-byte Windows text, TAB-delimited, header row(s) of labels, empty cells allowed, header-driven column mapping, unknown columns kept in `extra`, raw cells kept. Confidence: **unverified** (F6 shows it is a ShipEdit text table; everything else is assumed by analogy with the ship list).
 
-Diagnostic codes use the `ftrlist/` prefix with the same meanings as the ship list (`ftrlist/empty-file`, `ftrlist/no-header`, `ftrlist/ragged-row`, `ftrlist/bad-number`, `ftrlist/duplicate-type`, `ftrlist/multiple-header-rows`, `ftrlist/specs-metaassets-differ`).
+Diagnostic codes are the same stable camelCase codes as the ship list, with the same meanings (`emptyFile`, `noHeader`, `raggedRow`, `badNumber`, `duplicateFighterType`, `multipleHeaderRows`, `specsMetaassetsDiffer`).
 
 ## 4. Field table
 
-No public source gives the column order, so **no column indices are proposed**. The parser must be header-driven. The fields below are what a fighter needs for SFC2-style play, written as proposals to check against the real header.
+No public source gives the column order, so **no column indices are proposed**. The parser must be header-driven and keys its output by the raw header names. The camelCase names below are the **proposed engine-model mapping** (owned by Engine Lead and Combat), built from the Combat Systems Designer's fighter wishlist. **They remain a wishlist until verified** against the CE 2.670 header.
 
 | # | Proposed field | Type | Units | Meaning | Confidence (source) |
 | --- | --- | --- | --- | --- | --- |
@@ -43,43 +44,43 @@ No public source gives the column order, so **no column indices are proposed**. 
 | — | `shipClassRef` | string (shiplist `className`), may be absent | — | Link to an `FTR` row in `shiplist.txt`, if the game splits data across files. | unknown |
 | — | `yearFirstAvailable` | integer | game year index | First year the type is issued. | unverified (F5, OP+) |
 | — | `yearLastAvailable` | integer | game year index | Last year issued (999 used as "never retired" in OP+). | unverified (F5, OP+) |
-| — | `speed` | number | speed units | Maximum speed. | unknown |
-| — | `damageCapacity` | number | damage points | Damage the fighter absorbs before destruction. | unknown |
-| — | `weapons[]` (`count`, `weapon`, `arc`) | repeated group | as in shiplist hardpoints | Weapon fit. Number of slots unknown. | unknown |
+| — | `speed` | number | speed units | Maximum speed. | unknown (wishlist) |
+| — | `turnMode` | enum string | — | Turn class, same tokens as shiplist if present. | unknown (wishlist) |
+| — | `damagePoints` | number | damage points | Damage the fighter absorbs before destruction. | unknown (wishlist) |
+| — | `weapons[]` (`slotIndex`, `weapon`, `arc`, `load`, `reload`) | repeated group | as in shiplist hardpoints | Weapon fit with arcs, shots loaded and reload. Weapon/arc keys are exact CE strings. Number of slots unknown. | unknown (wishlist) |
 | — | `droneLoad` | integer | drones | Drones carried by drone-armed fighters, if separate from `weapons[]`. | unknown |
-| — | `ecm` / `chaff` | number | — | Electronic-warfare or chaff capability, if present. | unknown |
+| — | `ecm` | number | ECM points | ECM, if the file has it. | unknown (wishlist) |
+| — | bay / launch data: `carrier`, `count`, `rearmTime` | mixed | —, fighters, turns or seconds | Which carrier bays hold the type, how many, and rearm time. May come partly from `shiplist.txt` fighter-bay columns. | unknown (wishlist) |
 | — | `bpv` / `cost` | number | points / prestige | Value of one fighter, for BPV totals and replacement costs. | unknown |
 | — | `geometry` | string (relative path) | — | Model path, if not taken from a shiplist row. | unknown |
 | — | `uiKey` / icon | string | — | Icon or HUD key. | unknown |
 | — | `isPf` / category | enum | — | Fighter vs PF vs other craft, if the file mixes them. | unknown |
 
-**Totals:** 14 proposed field definitions. 0 documented, 2 unverified (`yearFirstAvailable`, `yearLastAvailable`, from an OP mod note), 12 unknown. File-level facts (location, TAB table, `MetaAssets` copy, size ~12 KB in EaW) are unverified and listed in sections 1–3.
+**Totals:** 16 proposed field definitions. 0 documented, 2 unverified (`yearFirstAvailable`, `yearLastAvailable`, from an OP mod note), 14 unknown (of which the Combat wishlist covers speed, turn mode, damage points, weapons, ECM and bay/launch data). File-level facts (location, TAB table, `MetaAssets` copy, size ~12 KB in EaW) are unverified and listed in sections 1–3.
 
 ## 5. Proposed data model (sketch, not code in this PR)
+
+**Parser output** (keys are raw header names):
 
 ```ts
 interface Ftrlist {
   headerRows: string[][];
-  columns: string[];
-  fighters: FighterSpec[];
+  columns: string[];                          // raw header names, in file order
+  rows: FtrlistRow[];
 }
 
-interface FighterSpec {
+interface FtrlistRow {
   line: number;
-  race: string | null;
-  typeName: string;
-  shipClassRef: string | null;
-  yearFirstAvailable: number | null;
-  yearLastAvailable: number | null;
-  speed: number | null;
-  damageCapacity: number | null;
-  weapons: Array<{ count: number; weapon: string; arc: string } | null>;
-  extra: Record<string, string>;   // every column we have not mapped yet
+  fields: Record<string, string | number>;    // key = raw header name; values as written
+  weapons: Array<{ slotIndex: number; weapon: string | null; arc: string | null;
+                   load: number | null; reload: number | null }>; // only if weapon groups are found
   raw: string[];
 }
 ```
 
-Fields default to `null` (not 0) because we don't yet know which columns exist; `null` means "column absent", 0 means "file says zero".
+The engine loader maps `fields` to a lightweight `Fighter` entity (`speed`, `turnMode`, `damagePoints`, `weapons`, `ecm`, bay/launch data) once the real headers are known. PFs do not use this entity; they are ships with class `'pf'`.
+
+In the engine model, absent columns become `null` (not 0): `null` means "column absent", 0 means "file says zero".
 
 ## 6. Version differences (all unverified)
 
@@ -95,23 +96,23 @@ Fields default to `null` (not 0) because we don't yet know which columns exist; 
 
 | ID | Code | Severity | Rule |
 | --- | --- | --- | --- |
-| W1 | `ftrlist/empty-file` | error | No non-empty lines. |
-| W2 | `ftrlist/no-header` | error | No header row. Unlike the ship list, there is no index fallback because no column order is documented. Rows are kept raw in `extra` keyed `col<N>`. |
-| W3 | `ftrlist/ragged-row` | warning | Cell count differs from header. |
-| W4 | `ftrlist/duplicate-type` | error | Two rows share a `typeName`. |
-| W5 | `ftrlist/bad-number` | warning | Numeric cell fails to parse. |
-| W6 | `ftrlist/unknown-race`, `ftrlist/unknown-weapon` | warning | Token outside the known lists (shared with shiplist). |
-| W7 | `ftrlist/year-order` | warning | First year after last year. |
-| W8 | `ftrlist/missing-ship-ref` | warning | Cross-file (importer-level): `shipClassRef` names no shiplist row, or a carrier bay references a fighter type that does not exist. |
-| W9 | `ftrlist/specs-metaassets-differ` | warning | Importer-level: the two copies differ. |
+| W1 | `emptyFile` | error | No non-empty lines. |
+| W2 | `noHeader` | error | No header row. Unlike the ship list, there is no index fallback because no column order is documented. Rows are kept raw in `extra` keyed `col<N>`. |
+| W3 | `raggedRow` | warning | Cell count differs from header. |
+| W4 | `duplicateFighterType` | error | Two rows share a `typeName`. |
+| W5 | `badNumber` | warning | Numeric cell fails to parse. |
+| W6 | `unknownRace`, `unknownWeapon` | warning | Token outside the known lists (shared with shiplist). |
+| W7 | `yearOrder` | warning | First year after last year. |
+| W8 | `missingShipRef` | warning | Cross-file (importer-level): `shipClassRef` names no shiplist row, or a carrier bay references a fighter type that does not exist. |
+| W9 | `specsMetaassetsDiffer` | warning | Importer-level: the two copies differ. |
 
 ## 8. Open questions
 
-### For the Combat Systems Designer
-1. **Fighter model in the rules.** Which fighter stats does the sim need (speed, damage capacity, weapons and their arcs, drones, chaff/ECM, endurance, reload time on the carrier)? Your list sets the field names here.
-2. **Carriers.** How does a carrier pick its fighter type: by race and year, by an explicit link, or by mission/loadout choice? (The ship list only gives counts per bay.)
-3. **PFs.** Do you want PFs as ships (shiplist rows with a PF hull type, launched from tenders) or as a fighter subclass? Recorded data will follow whatever the CE files do; the rules model may differ.
-4. **Weapon codes on fighters.** Same vocabulary as ship hardpoints, or fighter-specific codes (e.g. fighter-sized drones or phasers)?
+### Answered by the Combat Systems Designer (provisional until CE 2.670 headers are seen)
+1. ~~Fighter stats~~ **Answered (wishlist):** speed, turn mode, damage points, weapons with arcs, load and reload, ECM if present, and bay/launch data (carrier, count, rearm time). These stay a wishlist until verified.
+2. ~~Carriers~~ **Partly answered:** bay/launch data is part of the wishlist. Whether the link is explicit, by race and year, or by loadout must be observed in CE 2.670.
+3. ~~PFs~~ **Answered:** PFs use the full ship model with entity class `'pf'`. Fighters are a lighter entity.
+4. ~~Weapon codes on fighters~~ **Answered:** canonical keys are the exact CE file strings, the mapping table lives in `docs/rules`, and we don't invent codes.
 
 ### For observation on `sfc2-ci` (CE 2.670)
 5. Header text, column count and order; any comment or version lines.
