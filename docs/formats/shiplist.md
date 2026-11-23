@@ -44,11 +44,13 @@ Status: **spec draft, nothing verified.** Reference build is **SFC2 Community Ed
 
 1. Decode, split into lines, drop a trailing empty line.
 2. **Header detection.** Treat the first non-empty line as the header if its first cell equals `Race` case-insensitively, or more generally if most of its cells are non-numeric. If more than one header-like line precedes the data, keep all of them in `data.headerRows` and emit `shiplist/multiple-header-rows` (info). CE 2.670's actual header count is unknown.
-3. **Column mapping.** Map cells to fields by normalized header label (lower-case, trim, collapse spaces, drop a trailing `_`). Labels we do not know go into `row.extra[label]`. If there is no header, fall back to the proposed index order in section 4 and emit `shiplist/no-header` (warning).
+3. **Column keys.** Output keys are the raw header names exactly as written, so known and unknown columns are treated alike. For lookups (race, class name, hardpoint groups, spawn key) the parser matches headers after normalizing them (lower-case, trim, collapse spaces, drop a trailing `_`). If there is no header, it falls back to the proposed index order in section 4, uses `col<N>` keys and emits `shiplist/no-header` (warning).
 4. Each row produces a `ShipSpec` even if fields fail to parse. Bad cells become `NaN`-free defaults plus a diagnostic that carries line and column.
 5. Keep the raw cell array per row (`row.raw`) so we can diff against the real file on `sfc2-ci` and round-trip mods.
 
 ## 4. Field table
+
+**Parser output vs engine model (agreed with Combat, provisional until CE 2.670 headers are seen).** The parser's output keys are the **raw file header names** exactly as written (e.g. `Move Cost`), so a row round-trips without a rename table. The camelCase names in the "Proposed field" column below are the **proposed engine-model mapping**, owned by the Engine Lead and Combat Systems Designer, and are grouped as in section 5.2. They are documented here so the loader has one place to read them from.
 
 Column indices are **proposed only**. They follow the left-to-right order of the SFC1 file as S1 walks through it. CE 2.670 almost certainly adds, renames or reorders columns, which is why the parser maps by header label. Field names are our own camelCase proposals, and the Combat Systems Designer should confirm the rules-facing ones (see section 8).
 
@@ -92,26 +94,30 @@ Units: "file units" means the number exactly as written. The data-model layer co
 
 | # | Proposed field | Type | Units | Meaning | Confidence (source) |
 | --- | --- | --- | --- | --- | --- |
-| 19 | `shieldFront` | number | file shield units | Shield 1 (forward facing). S1 says the game doubles file values in play. | unverified (S1) |
-| 20 | `shieldFrontSides` | number | file shield units | Shared value for facings 2 and 6. | unverified (S1) |
-| 21 | `shieldRearSides` | number | file shield units | Shared value for facings 3 and 5. | unverified (S1) |
-| 22 | `shieldRear` | number | file shield units | Shield 4 (aft facing). | unverified (S1) |
+| 19 | `shields[0]` | number | file shield units | Front facing. S1 says the game doubles file values in play; the factor lives in the docs/rules scale table. | unverified (S1) |
+| 20 | `shields[1]` and `shields[5]` | number | file shield units | One file value shared by front-right and front-left. | unverified (S1) |
+| 21 | `shields[2]` and `shields[4]` | number | file shield units | One file value shared by rear-right and rear-left. | unverified (S1) |
+| 22 | `shields[3]` | number | file shield units | Rear facing. | unverified (S1) |
 | 23 | `shieldTotal` | number | file shield units | Sum over all six facings, stored in the file. Checked by rule V8. | unverified (S1) |
+
+Engine shields are an array indexed 0–5, 0 = front, going clockwise (matches the HUD spec). SFB shield #n = index n−1.
 | 24 | `cloakCost` | number, empty = none | energy | Energy to run a cloak. Empty means no cloak. | unverified (S1) |
 
 ### 4.5 Weapon hardpoints (repeated group)
 
 | # | Proposed field | Type | Units | Meaning | Confidence (source) |
 | --- | --- | --- | --- | --- | --- |
-| 25 + 3k (k = 0..24) | `hardpoints[k].count` | integer 0–4 | shots stored or mounts | How many shots the mount stores (S1 says above 4 crashes SFC1). | unverified (S1) |
+| 25 + 3k (k = 0..24) | `hardpoints[k].count` (with `slotIndex` = k) | integer 0–4 | shots stored or mounts | How many shots the mount stores (S1 says above 4 crashes SFC1). | unverified (S1) |
 | 26 + 3k | `hardpoints[k].weapon` | enum string, empty = unused | — | Weapon code, e.g. `Ph1`–`Ph4`, `PhG`, `Phot`, `Dis1`–`Dis4`, `PlaF`/`PlaG`/`PlaS`/`PlaR`, `DroA`… `DroG`, `ESG`, `Fus`, `HB` in SFC1. CE adds more (e.g. PPD, fast-load variants). Full CE list unknown. | unverified (S1) |
-| 27 + 3k | `hardpoints[k].arc` | string | arc code, or count for drones | Firing arc code (`FA`, `FH`, `FX`, `RA`, `L`, `R`, `LS`, `RS`, `ALL`, `FLLX`, `FRRX` …, plus `SFBL`, `SFBR`, `RLP`, `RRP` named in S4). For drone racks S1 says this cell holds the number of reloads instead. | unverified (S1, S4) |
+| 27 + 3k | `hardpoints[k].arc` | string | arc code, or count for drones | Firing arc code (`FA`, `FH`, `FX`, `RA`, `L`, `R`, `LS`, `RS`, `ALL`, `FLLX`, `FRRX` …, plus `SFBL`, `SFBR`, `RLP`, `RRP` named in S4). For drone racks S1 says this cell holds the number of reloads instead; the parser then also fills a separate `reloads` field. | unverified (S1, S4) |
 
 25 slots × 3 cells = 75 columns.
 
-**Parser contract for hardpoints (decided with the Engine Lead).** The parser always returns all 25 slots in file order (`null` for an empty slot) with raw file values: no ×2 for shields or side warp, no compaction, and no "slots 11–25 feed the phaser capacitor" rule. The Engine Lead's data loader compacts slots and converts numbers to fixed-point. The doubling and capacitor rules live in the rules module (Combat Systems Designer). See section 5.1.
+**Parser contract for hardpoints (agreed with the Engine Lead and Combat).** The parser always emits all 25 slots in file order, **including empty ones**, each with its `slotIndex` (0–24) so a row round-trips exactly. Values stay as written: no ×2 for shields or side warp, no compaction, and no capacitor rule. The engine loader compacts slots but keeps `slotIndex`, and converts to fixed-point. ×2 scale factors live in one table in `docs/rules`, applied by the engine loader. See section 5.1.
 
-S1 says slots 1–10 hold heavy weapons and slots 11–25 hold phasers, and that only slots 11–25 feed the phaser capacitor. Slot meaning also depends on the UI hardpoint layout picked by `uiKey` (and on `sprites.q3` in CE, per S4). Whether CE 2.670 still has exactly 25 slots is unknown.
+**Weapon and arc codes.** Canonical keys are the exact CE file strings. The parser does not rename or invent codes. The mapping from those strings to rules behaviour is a table in `docs/rules` (Combat). Example codes below come from S1 (SFC1) and only illustrate the shape.
+
+S1 says slots 1–10 hold heavy weapons and slots 11–25 hold phasers, and that only slots 11–25 feed the phaser capacitor. For us that is a **rules-side, unverified hypothesis**, not parser behaviour. Slot meaning also depends on the UI hardpoint layout picked by `uiKey` (and on `sprites.q3` in CE, per S4). Whether CE 2.670 still has exactly 25 slots is unknown.
 
 ### 4.6 Probes, mines and drone support
 
@@ -231,38 +237,52 @@ These are the fields that name or select a ship's art. Anything marked **TO VERI
 
 | Layer | Owner | Does | Does not |
 | --- | --- | --- | --- |
-| Parser (`parseShiplist`) | Asset & Formats | Returns every row and every column as the file has it: all 25 hardpoint slots, raw numbers in file units, unknown columns in `extra`, raw cells in `raw`. | Doubling shields or side warp, compacting slots, the phaser-capacitor slot rule, fixed-point. |
-| Data loader | Engine Lead | Compacts hardpoints to a weapon list with slot indices, converts to sim units and fixed-point, builds the spawn-key index. | Game rules. |
-| Rules module | Combat Systems Designer | Shield ×2, side-warp ×2, which slots feed the phaser capacitor, and other SFB rules. | File parsing. |
+| Parser (`parseShiplist`) | Asset & Formats | Returns every row keyed by raw header names, values as written; all 25 hardpoint slots including empty ones, with `slotIndex`; drone-rack `reloads`; raw cells in `raw`. | Renaming to camelCase, scale factors, compacting slots, the capacitor hypothesis, fixed-point. |
+| Engine loader | Engine Lead | Maps raw headers to the engine model (5.2), applies the ×2 scale factors from the single `docs/rules` table, compacts hardpoints keeping `slotIndex`, converts to fixed-point, builds the spawn-key index. | Game rules beyond the scale table. |
+| Rules module | Combat Systems Designer | Owns the scale table and code-mapping table in `docs/rules`, the slot 11–25 capacitor hypothesis, and all SFB rules. | File parsing. |
 
+
+**Parser output** (keys are raw header names):
 
 ```ts
 interface Shiplist {
   headerRows: string[][];        // raw header line(s)
-  columns: string[];             // normalized labels, in file order
-  ships: ShipSpec[];             // in file order
+  columns: string[];             // raw header names, in file order
+  rows: ShiplistRow[];           // in file order
 }
 
-interface ShipSpec {
+interface ShiplistRow {
   line: number;                  // 1-based source line
   spawnKey: string;              // `${race}:${className}`, see section 4.11
-  race: string; hullType: string; className: string;
-  bpv: number; specialRole: string | null;
-  yearFirstAvailable: number; yearLastAvailable: number;
-  sizeClass: number; turnMode: string; moveCost: number;
-  hetChance: number; hetBreakdown: number; stealth: number;
-  crew: { regular: number; boardingBase: number; boardingMax: number;
-          deck: number; total: number; min: number };
-  shields: { front: number; frontSides: number; rearSides: number; rear: number;
-             total: number };          // raw file units; ×2 is applied in the rules module
-  cloakCost: number | null;
-  hardpoints: Array<{ slot: number; count: number; weapon: string; arc: string } | null>; // always length 25, raw
-  // ... remaining groups as in section 4, same names
-  geometry: string | null; uiKey: string | null;
-  extra: Record<string, string>; // unknown columns, keyed by label
-  raw: string[];                 // original cells
+  fields: Record<string, string | number>; // key = raw header name; numeric cells parsed, never scaled
+  hardpoints: HardpointSlot[];   // always 25 entries, empty slots included
+  raw: string[];                 // original cells, for exact round-trip
+}
+
+interface HardpointSlot {
+  slotIndex: number;             // 0..24, file order
+  count: number | null;          // as written
+  weapon: string | null;         // exact CE file string, never renamed
+  arc: string | null;            // exact CE file string
+  reloads: number | null;        // drone racks only (arc cell holds a count)
 }
 ```
+
+### 5.2 Proposed engine-model mapping (owned by Engine Lead and Combat)
+
+Provisional until the CE 2.670 headers are observed. The engine loader builds this from `ShiplistRow.fields`; the parser does not.
+
+| Engine group | Keys | From file fields (section 4) |
+| --- | --- | --- |
+| `power` | `warp`, `impulse`, `apr`, `battery`, `batteryCapacity` | Side warp + centre warp (side-warp ×2 comes from the `docs/rules` scale table), impulse, APR, battery. |
+| `movement` | `moveCost`, `turnMode` (proposed extras: `acceleration`, `hetChance`, `hetBreakdown`, `sizeClass`) | 4.2, 4.9 |
+| `shields` | array indexed 0–5, 0 = front, clockwise (matches the HUD spec) | 4.4. The two shared file values each fan out to two indices. SFB shield #n = index n−1. |
+| `systems` | flat map of box counts: `hull` (fwd/centre/aft), `armor`, `cargo`, `barracks`, `repair`, `bridge`, `security`, `labs`, `transporters`, `tractors`, `mechTractors`, `specialSensors`, `sensors`, `scanners`, `damageControl`, `probes`, `shuttleBays`, `excessDamage` … | 4.6–4.9 |
+| `crew` | `crewUnits`, `boardingParties` (proposed extras: base/max, deck crews, min crew) | 4.3 |
+| `weapons` | compacted hardpoints, each keeping `slotIndex`, `weapon`, `arc`, `count`, `reloads` | 4.5 |
+| identity | `spawnKey`, `race`, `hullType`, `className`, `bpv`, years, `cost`, refit link | 4.1, 4.9 |
+| art | `geometry`, `uiKey` | 4.12 |
+| entity class | `'ship'` or `'pf'` (PFs use the full ship model) | `hullType`; the CE PF token is TO VERIFY |
 
 ## 6. Version differences (all unverified)
 
@@ -288,7 +308,7 @@ Errors keep the row but mark it unusable for spawning. Warnings keep it usable.
 | V5 | `shiplist/bad-number` | warning | A numeric field does not parse; default 0 and keep the raw cell. |
 | V6 | `shiplist/unknown-race`, `shiplist/unknown-hull-type`, `shiplist/unknown-turn-mode`, `shiplist/unknown-weapon`, `shiplist/unknown-arc` | warning | Value outside the known token list. The lists start from S1 and grow from CE 2.670 observation. |
 | V7 | `shiplist/hardpoint-count-range` | warning | Hardpoint count outside 0–4, or a count with an empty weapon code (or the reverse). |
-| V8 | `shiplist/shield-total-mismatch` | info | `shieldTotal` ≠ front + 2×frontSides + 2×rearSides + rear. |
+| V8 | `shiplist/shield-total-mismatch` | info | `shieldTotal` ≠ the sum of `shields[0..5]` (the four file values, with the two shared ones counted twice). |
 | V9 | `shiplist/crew-total-mismatch` | info | `totalCrew` disagrees with the S1 formula. |
 | V10 | `shiplist/year-order` | warning | `yearFirstAvailable` > `yearLastAvailable`. |
 | V11 | `shiplist/missing-refit-base` | warning | `refitBaseClass` names no row. |
@@ -299,14 +319,14 @@ Errors keep the row but mark it unusable for spawning. Warnings keep it usable.
 
 ## 8. Open questions
 
-### For the Combat Systems Designer
-1. **Rules-facing names.** Please confirm or rename: `moveCost`, `hetChance`, `hetBreakdown`, `warpSide` / `warpCenter` / `impulse` / `apr` / `battery`, `shieldFront` / `shieldFrontSides` / `shieldRearSides` / `shieldRear`, `cloakCost`, `damageControl`, `extraDamage`, and the system box names in 4.8. Should energy sources be a nested `power` object?
-2. **Doubling (decided).** The parser returns raw file values; the rules module owns shield ×2 and side-warp ×2. Please confirm the exact formulas once you have checked the CE manual.
-3. **Hardpoints (decided).** The parser keeps all 25 slots raw; the Engine Lead's loader compacts them; the slot 11–25 phaser-capacitor rule lives in the rules module. Open for you: confirm that rule still holds in CE 2.670.
-4. **Weapon and arc vocabulary.** We need the full CE weapon code list (PPD, fast-load photons/disruptors, plasma variants, drone rack types) and arc codes, with your canonical enum names, so V6 can be strict.
-5. **Drone racks.** S1 says the arc cell holds reloads for drone racks. Should the data model split this into `reloads` for drone weapons?
-6. **Stealth.** Does CE 2.670 honour the stealth column (it was broken in EaW until 2.037)? Treat it as rules-ignored until we observe it?
-7. **Fighters and PFs.** Are fighters/PFs given by `fighterBays[]` here plus type rows in `ftrlist.txt`, or by `FTR`/PF rows in this file? See [ftrlist.md](ftrlist.md).
+### Answered by the Combat Systems Designer (provisional until CE 2.670 headers are seen)
+1. ~~Rules-facing names~~ **Answered.** Parser output keys are the raw file header names. The engine model uses camelCase nested groups (`power`, `movement`, `shields`, `systems`, `crew`), documented as the proposed mapping in 5.2.
+2. ~~Doubling~~ **Answered.** The parser keeps values as written. ×2 scale factors live in one table in `docs/rules` and the engine loader applies them.
+3. ~~Hardpoints~~ **Answered.** The parser emits all 25 slots, empty ones included, with `slotIndex` for round-trip. The engine compacts and keeps `slotIndex`. The slot 11–25 capacitor rule is a rules-side, unverified hypothesis.
+4. ~~Weapon and arc vocabulary~~ **Answered.** Canonical keys are the exact CE file strings. The mapping table lives in `docs/rules`. We don't invent codes.
+5. ~~Drone racks~~ **Answered.** Drone-rack reloads get their own field (`HardpointSlot.reloads`).
+6. **Stealth.** Still open: treat as rules-ignored until observed working in CE 2.670.
+7. ~~Fighters and PFs~~ **Answered.** PFs use the full ship model with entity class `'pf'` (rows in this file). Fighters are a lighter entity; see [ftrlist.md](ftrlist.md).
 
 ### For observation on `sfc2-ci` (CE 2.670)
 8. Exact header text and number of header rows; full column count; columns beyond S1 (PF, flag bridge, emergency bridge, aux control, probe launchers …).
