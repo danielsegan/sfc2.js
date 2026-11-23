@@ -1,7 +1,7 @@
 # `shiplist.txt`: ship specification table
 
 Issue: [#13](https://github.com/danielsegan/sfc2.js/issues/13) · Milestone: Phase 1: Asset pipeline · Owner: Asset & Formats Engineer
-Status: **spec draft, partially verified against CE 2.670.** Reference build is **SFC2 Community Edition 2.670** ([#37](https://github.com/danielsegan/sfc2.js/issues/37)). Claims marked **verified (CE 2.670)** were checked by private inventory run [45269125770](https://github.com/danielsegan/sfc2.js/actions/runs/45269125770) on `sfc2-ci` (tools commit `2ef5fa2`). Other statements stay unverified. No ship data rows are reproduced here.
+Status: **spec draft, partially verified against CE 2.670.** Reference build is **SFC2 Community Edition 2.670** ([#37](https://github.com/danielsegan/sfc2.js/issues/37)). Claims marked **verified (CE 2.670)** were checked by private inventory runs [45269125770](https://github.com/danielsegan/sfc2.js/actions/runs/45269125770) (`2ef5fa2`) and [45270940650](https://github.com/danielsegan/sfc2.js/actions/runs/45270940650) (`b53379e`) on `sfc2-ci`. Other statements stay unverified. No ship data rows are reproduced here.
 
 > Clean-room note. This spec is written only from public community documentation and forum posts cited below, plus our own design choices. It does not use, cite or derive from SFC2-decomp or any other decompilation or disassembly. No real ship rows or weapon tables are reproduced here. All example names and numbers are invented (`TEST-CA-01` etc.).
 
@@ -108,7 +108,7 @@ Engine shields are an array indexed 0–5, 0 = front, going clockwise (matches t
 | # | Proposed field | Type | Units | Meaning | Confidence (source) |
 | --- | --- | --- | --- | --- | --- |
 | 25 + 3k (k = 0..24) | `hardpoints[k].count` (with `slotIndex` = k) | integer 0–4 | shots stored or mounts | How many shots the mount stores (S1 says above 4 crashes SFC1). | unverified (S1) |
-| 26 + 3k | `hardpoints[k].weapon` | enum string, empty = unused | — | Weapon code, e.g. `Ph1`–`Ph4`, `PhG`, `Phot`, `Dis1`–`Dis4`, `PlaF`/`PlaG`/`PlaS`/`PlaR`, `DroA`… `DroG`, `ESG`, `Fus`, `HB` in SFC1. Columns named `Weapon 11`–`Weapon 25` in CE 2.670 contain `Ph1`, `Ph2`, `Ph3`, `Ph4` and `PhG` only (slot band 11–25). Codes in `Heavy Weapon 1`–`10` were not collected by that header-name pattern, so this is not a complete CE vocabulary. | **verified (CE 2.670)** (slots 11–25 phaser codes only); heavy-weapon codes still unverified |
+| 26 + 3k | `hardpoints[k].weapon` | enum string, empty = unused | — | Weapon code, e.g. `Ph1`–`Ph4`, `PhG`, `Phot`, `Dis1`–`Dis4`, `PlaF`/`PlaG`/`PlaS`/`PlaR`, `DroA`… `DroG`, `ESG`, `Fus`, `HB` in SFC1. After pairing `Num` / `Heavy Weapon N` or `Weapon N` / `Arc`, CE 2.670 slots 11–25 contain `Ph1`, `Ph2`, `Ph3`, `Ph4` and `PhG` (plus 5 rows / 7 occurrences of `Ph3` in slots 1–10). Slots 1–10 contain the heavy-weapon vocabulary (`Phot`, `Dis1`–`Dis4`, `PlaF`/`PLaF`, `PlaG`/`PLaG`, `PlaS`/`PLaS`, `PlaR`/`PLaR`, `PlaD`, `PlaI`, `DroA`/`DroB`/`DroC`/`DroF`/`DroG`, `ESG`, `Fus`, `HB`, `PPD`, `ADD6`, `ADD12`). The file keeps distinct capitalizations such as `PlaF` and `PLaF`. Full list and row counts are in [shiplist-ftrlist-ce-2.670.md](inventory/shiplist-ftrlist-ce-2.670.md). | **verified (CE 2.670)** |
 | 27 + 3k | `hardpoints[k].arc` | string | arc code, or count for drones | Firing arc code (`FA`, `FH`, `FX`, `RA`, `L`, `R`, `LS`, `RS`, `ALL`, `FLLX`, `FRRX` …, plus `SFBL`, `SFBR`, `RLP`, `RRP` named in S4). For drone racks S1 says this cell holds the number of reloads instead; the parser then also fills a separate `reloads` field. | unverified (S1, S4) |
 
 25 slots × 3 cells = 75 columns.
@@ -117,7 +117,7 @@ Engine shields are an array indexed 0–5, 0 = front, going clockwise (matches t
 
 **Weapon and arc codes.** Canonical keys are the exact CE file strings. The parser does not rename or invent codes. The mapping from those strings to rules behaviour is a table in `docs/rules` (Combat). Example codes below come from S1 (SFC1) and only illustrate the shape.
 
-S1 says slots 1–10 hold heavy weapons and slots 11–25 hold phasers, and that only slots 11–25 feed the phaser capacitor. The **header layout** in CE 2.670 matches 25 slots (`Heavy Weapon 1`–`10` then `Weapon 11`–`25`). The capacitor rule remains a **rules-side, unverified hypothesis**, not parser behaviour. Slot meaning also depends on the UI hardpoint layout picked by `uiKey` (and on `sprites.q3` in CE, per S4).
+S1 says slots 1–10 hold heavy weapons and slots 11–25 hold phasers, and that only slots 11–25 feed the phaser capacitor. The **header layout** in CE 2.670 matches 25 slots (`Heavy Weapon 1`–`10` then `Weapon 11`–`25`), each grouped as `Num`, weapon, `Arc`. Unlabeled `Arc` columns inherit the adjacent weapon's slot number. Numeric values `1`, `2` and `3` appear in those `Arc` cells on slots 1–10 only (not in `Num` columns, so pairing is not swapped); that matches the S1 note that drone-rack reload counts can be written in the arc cell. The capacitor rule remains a **rules-side, unverified hypothesis**, not parser behaviour. Slot meaning also depends on the UI hardpoint layout picked by `uiKey` (and on `sprites.q3` in CE, per S4).
 
 ### 4.6 Probes, mines and drone support
 

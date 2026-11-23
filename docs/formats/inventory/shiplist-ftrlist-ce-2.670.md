@@ -2,7 +2,7 @@
 
 Observed on `sfc2-ci`. Metadata only: no data rows.
 
-- Generated (UTC): `2026-11-23T21:23:19Z`
+- Generated (UTC): `2026-11-23T21:33:55Z`
 
 ## shiplist
 
@@ -259,7 +259,7 @@ Race column values (row counts):
 
 ### Weapon and arc codes (vocabulary, with row counts)
 
-Empty cells are omitted. `rows` is the number of data rows that use the code at least once; `occurrences` is the number of filled slot cells. Slot ranges 1–10 and 11–25 are taken from the numeric suffix on the weapon/arc header name.
+Empty cells are omitted. `rows` is the number of data rows that use the code at least once; `occurrences` is the number of filled slot cells.
 
 Weapon codes:
 
@@ -267,42 +267,223 @@ Weapon codes:
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | `Ph4` | 335 | 1869 | 0 | 0 | 335 | 1869 |
 | `Ph1` | 618 | 1800 | 0 | 0 | 618 | 1800 |
-| `Ph3` | 626 | 1393 | 0 | 0 | 626 | 1393 |
+| `Ph3` | 629 | 1400 | 5 | 7 | 626 | 1393 |
 | `Ph2` | 267 | 600 | 0 | 0 | 267 | 600 |
+| `Dis4` | 80 | 272 | 80 | 272 | 0 | 0 |
+| `Phot` | 102 | 263 | 102 | 263 | 0 | 0 |
+| `DroB` | 159 | 241 | 159 | 241 | 0 | 0 |
 | `PhG` | 110 | 224 | 0 | 0 | 110 | 224 |
+| `Dis3` | 127 | 212 | 127 | 212 | 0 | 0 |
+| `PLaF` | 84 | 162 | 84 | 162 | 0 | 0 |
+| `Fus` | 79 | 147 | 79 | 147 | 0 | 0 |
+| `ADD12` | 130 | 132 | 130 | 132 | 0 | 0 |
+| `PlaF` | 79 | 131 | 79 | 131 | 0 | 0 |
+| `HB` | 66 | 126 | 66 | 126 | 0 | 0 |
+| `ESG` | 88 | 125 | 88 | 125 | 0 | 0 |
+| `ADD6` | 101 | 105 | 101 | 105 | 0 | 0 |
+| `DroC` | 71 | 101 | 71 | 101 | 0 | 0 |
+| `PlaS` | 47 | 100 | 47 | 100 | 0 | 0 |
+| `PlaR` | 27 | 98 | 27 | 98 | 0 | 0 |
+| `Dis2` | 58 | 97 | 58 | 97 | 0 | 0 |
+| `PLaS` | 48 | 90 | 48 | 90 | 0 | 0 |
+| `DroA` | 50 | 89 | 50 | 89 | 0 | 0 |
+| `DroG` | 67 | 87 | 67 | 87 | 0 | 0 |
+| `PPD` | 38 | 81 | 38 | 81 | 0 | 0 |
+| `PlaG` | 29 | 51 | 29 | 51 | 0 | 0 |
+| `PLaG` | 37 | 49 | 37 | 49 | 0 | 0 |
+| `Dis1` | 31 | 48 | 31 | 48 | 0 | 0 |
+| `PlaD` | 25 | 47 | 25 | 47 | 0 | 0 |
+| `PlaI` | 21 | 44 | 21 | 44 | 0 | 0 |
+| `PLaR` | 27 | 31 | 27 | 31 | 0 | 0 |
+| `DroF` | 10 | 13 | 10 | 13 | 0 | 0 |
 
 Arc codes:
 
 | Code | Rows | Occurrences | Rows 1–10 | Occ. 1–10 | Rows 11–25 | Occ. 11–25 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| `RS` | 742 | 1157 | 0 | 0 | 0 | 0 |
-| `LS` | 738 | 1151 | 0 | 0 | 0 | 0 |
-| `ALL` | 549 | 919 | 0 | 0 | 0 | 0 |
-| `FA` | 444 | 794 | 0 | 0 | 0 | 0 |
-| `FX` | 331 | 552 | 0 | 0 | 0 | 0 |
-| `FH` | 370 | 493 | 0 | 0 | 0 | 0 |
-| `FAL` | 417 | 453 | 0 | 0 | 0 | 0 |
-| `FAR` | 417 | 436 | 0 | 0 | 0 | 0 |
-| `RX` | 222 | 406 | 0 | 0 | 0 | 0 |
-| `1` | 272 | 383 | 0 | 0 | 0 | 0 |
-| `2` | 163 | 280 | 0 | 0 | 0 | 0 |
-| `RH` | 216 | 275 | 0 | 0 | 0 | 0 |
-| `LLR` | 128 | 146 | 0 | 0 | 0 | 0 |
-| `RRR` | 126 | 144 | 0 | 0 | 0 | 0 |
-| `LP` | 127 | 141 | 0 | 0 | 0 | 0 |
-| `RP` | 126 | 140 | 0 | 0 | 0 | 0 |
-| `RAR` | 115 | 138 | 0 | 0 | 0 | 0 |
-| `RAL` | 115 | 136 | 0 | 0 | 0 | 0 |
-| `LW` | 86 | 131 | 0 | 0 | 0 | 0 |
-| `RW` | 86 | 131 | 0 | 0 | 0 | 0 |
-| `3` | 73 | 105 | 0 | 0 | 0 | 0 |
-| `RA` | 73 | 98 | 0 | 0 | 0 | 0 |
-| `FLL` | 63 | 71 | 0 | 0 | 0 | 0 |
-| `FRR` | 61 | 69 | 0 | 0 | 0 | 0 |
-| `FHL` | 22 | 22 | 0 | 0 | 0 | 0 |
-| `FHR` | 22 | 22 | 0 | 0 | 0 | 0 |
-| `FLLX` | 21 | 21 | 0 | 0 | 0 | 0 |
-| `FRRX` | 21 | 21 | 0 | 0 | 0 | 0 |
+| `RS` | 742 | 1157 | 117 | 182 | 669 | 975 |
+| `LS` | 738 | 1151 | 114 | 178 | 667 | 973 |
+| `ALL` | 549 | 919 | 196 | 290 | 477 | 629 |
+| `FA` | 444 | 794 | 388 | 660 | 119 | 134 |
+| `FX` | 331 | 552 | 88 | 108 | 298 | 444 |
+| `FH` | 370 | 493 | 96 | 151 | 299 | 342 |
+| `FAL` | 417 | 453 | 44 | 44 | 409 | 409 |
+| `FAR` | 417 | 436 | 27 | 27 | 409 | 409 |
+| `RX` | 222 | 406 | 45 | 60 | 215 | 346 |
+| `1` | 272 | 383 | 272 | 383 | 0 | 0 |
+| `2` | 163 | 280 | 163 | 280 | 0 | 0 |
+| `RH` | 216 | 275 | 25 | 44 | 210 | 231 |
+| `LLR` | 128 | 146 | 24 | 25 | 104 | 121 |
+| `RRR` | 126 | 144 | 22 | 23 | 104 | 121 |
+| `LP` | 127 | 141 | 112 | 126 | 15 | 15 |
+| `RP` | 126 | 140 | 111 | 125 | 15 | 15 |
+| `RAR` | 115 | 138 | 0 | 0 | 115 | 138 |
+| `RAL` | 115 | 136 | 17 | 17 | 115 | 119 |
+| `LW` | 86 | 131 | 0 | 0 | 86 | 131 |
+| `RW` | 86 | 131 | 0 | 0 | 86 | 131 |
+| `3` | 73 | 105 | 73 | 105 | 0 | 0 |
+| `RA` | 73 | 98 | 12 | 15 | 65 | 83 |
+| `FLL` | 63 | 71 | 34 | 34 | 35 | 37 |
+| `FRR` | 61 | 69 | 32 | 32 | 35 | 37 |
+| `FHL` | 22 | 22 | 20 | 20 | 2 | 2 |
+| `FHR` | 22 | 22 | 20 | 20 | 2 | 2 |
+| `FLLX` | 21 | 21 | 0 | 0 | 21 | 21 |
+| `FRRX` | 21 | 21 | 0 | 0 | 21 | 21 |
+
+Slot ranges 1–10 and 11–25 use a numeric suffix on the header when present, otherwise the slot of the paired weapon column (`Num` / `Heavy Weapon N` or `Weapon N` / `Arc`).
+
+Numeric arc codes `1`, `2`, `3` (per-column sources; used to check Num/Arc pairing):
+
+| Code | Column index | Header | Slot | Rows | Occurrences |
+| --- | ---: | --- | ---: | ---: | ---: |
+| `1` | 28 | `Arc` | 1 | 16 | 16 |
+| `1` | 31 | `Arc` | 2 | 18 | 18 |
+| `1` | 34 | `Arc` | 3 | 58 | 58 |
+| `1` | 37 | `Arc` | 4 | 54 | 54 |
+| `1` | 40 | `Arc` | 5 | 34 | 34 |
+| `1` | 43 | `Arc` | 6 | 8 | 8 |
+| `1` | 46 | `Arc` | 7 | 66 | 66 |
+| `1` | 49 | `Arc` | 8 | 21 | 21 |
+| `1` | 52 | `Arc` | 9 | 95 | 95 |
+| `1` | 55 | `Arc` | 10 | 13 | 13 |
+| `2` | 28 | `Arc` | 1 | 37 | 37 |
+| `2` | 31 | `Arc` | 2 | 34 | 34 |
+| `2` | 34 | `Arc` | 3 | 50 | 50 |
+| `2` | 37 | `Arc` | 4 | 34 | 34 |
+| `2` | 40 | `Arc` | 5 | 8 | 8 |
+| `2` | 43 | `Arc` | 6 | 7 | 7 |
+| `2` | 46 | `Arc` | 7 | 96 | 96 |
+| `2` | 49 | `Arc` | 8 | 12 | 12 |
+| `2` | 52 | `Arc` | 9 | 2 | 2 |
+| `3` | 28 | `Arc` | 1 | 2 | 2 |
+| `3` | 31 | `Arc` | 2 | 3 | 3 |
+| `3` | 34 | `Arc` | 3 | 4 | 4 |
+| `3` | 37 | `Arc` | 4 | 3 | 3 |
+| `3` | 46 | `Arc` | 7 | 64 | 64 |
+| `3` | 49 | `Arc` | 8 | 20 | 20 |
+| `3` | 52 | `Arc` | 9 | 7 | 7 |
+| `3` | 55 | `Arc` | 10 | 2 | 2 |
+
+Per-slot arc counts for weapon slots 1–10 (after Num/Arc pairing):
+
+| Slot | Weapon column | Weapon header | Arc column | Arc header | Arc code | Rows | Occurrences |
+| ---: | ---: | --- | ---: | --- | --- | ---: | ---: |
+| 1 | 27 | `Heavy Weapon 1` | 28 | `Arc` | `FA` | 235 | 235 |
+| 1 | 27 | `Heavy Weapon 1` | 28 | `Arc` | `ALL` | 102 | 102 |
+| 1 | 27 | `Heavy Weapon 1` | 28 | `Arc` | `FH` | 88 | 88 |
+| 1 | 27 | `Heavy Weapon 1` | 28 | `Arc` | `FX` | 86 | 86 |
+| 1 | 27 | `Heavy Weapon 1` | 28 | `Arc` | `2` | 37 | 37 |
+| 1 | 27 | `Heavy Weapon 1` | 28 | `Arc` | `1` | 16 | 16 |
+| 1 | 27 | `Heavy Weapon 1` | 28 | `Arc` | `FAL` | 16 | 16 |
+| 1 | 27 | `Heavy Weapon 1` | 28 | `Arc` | `FLL` | 8 | 8 |
+| 1 | 27 | `Heavy Weapon 1` | 28 | `Arc` | `FHR` | 6 | 6 |
+| 1 | 27 | `Heavy Weapon 1` | 28 | `Arc` | `LS` | 4 | 4 |
+| 1 | 27 | `Heavy Weapon 1` | 28 | `Arc` | `RA` | 3 | 3 |
+| 1 | 27 | `Heavy Weapon 1` | 28 | `Arc` | `3` | 2 | 2 |
+| 1 | 27 | `Heavy Weapon 1` | 28 | `Arc` | `RS` | 1 | 1 |
+| 2 | 30 | `Heavy Weapon 2` | 31 | `Arc` | `FA` | 97 | 97 |
+| 2 | 30 | `Heavy Weapon 2` | 31 | `Arc` | `RS` | 72 | 72 |
+| 2 | 30 | `Heavy Weapon 2` | 31 | `Arc` | `FH` | 40 | 40 |
+| 2 | 30 | `Heavy Weapon 2` | 31 | `Arc` | `2` | 34 | 34 |
+| 2 | 30 | `Heavy Weapon 2` | 31 | `Arc` | `ALL` | 24 | 24 |
+| 2 | 30 | `Heavy Weapon 2` | 31 | `Arc` | `1` | 18 | 18 |
+| 2 | 30 | `Heavy Weapon 2` | 31 | `Arc` | `FAR` | 16 | 16 |
+| 2 | 30 | `Heavy Weapon 2` | 31 | `Arc` | `FRR` | 9 | 9 |
+| 2 | 30 | `Heavy Weapon 2` | 31 | `Arc` | `FHL` | 6 | 6 |
+| 2 | 30 | `Heavy Weapon 2` | 31 | `Arc` | `RA` | 6 | 6 |
+| 2 | 30 | `Heavy Weapon 2` | 31 | `Arc` | `3` | 3 | 3 |
+| 2 | 30 | `Heavy Weapon 2` | 31 | `Arc` | `LLR` | 2 | 2 |
+| 2 | 30 | `Heavy Weapon 2` | 31 | `Arc` | `LS` | 1 | 1 |
+| 2 | 30 | `Heavy Weapon 2` | 31 | `Arc` | `RP` | 1 | 1 |
+| 3 | 33 | `Heavy Weapon 3` | 34 | `Arc` | `FA` | 169 | 169 |
+| 3 | 33 | `Heavy Weapon 3` | 34 | `Arc` | `RS` | 59 | 59 |
+| 3 | 33 | `Heavy Weapon 3` | 34 | `Arc` | `1` | 58 | 58 |
+| 3 | 33 | `Heavy Weapon 3` | 34 | `Arc` | `2` | 50 | 50 |
+| 3 | 33 | `Heavy Weapon 3` | 34 | `Arc` | `RP` | 37 | 37 |
+| 3 | 33 | `Heavy Weapon 3` | 34 | `Arc` | `LS` | 26 | 26 |
+| 3 | 33 | `Heavy Weapon 3` | 34 | `Arc` | `LP` | 16 | 16 |
+| 3 | 33 | `Heavy Weapon 3` | 34 | `Arc` | `FHR` | 14 | 14 |
+| 3 | 33 | `Heavy Weapon 3` | 34 | `Arc` | `FH` | 11 | 11 |
+| 3 | 33 | `Heavy Weapon 3` | 34 | `Arc` | `ALL` | 6 | 6 |
+| 3 | 33 | `Heavy Weapon 3` | 34 | `Arc` | `FAR` | 5 | 5 |
+| 3 | 33 | `Heavy Weapon 3` | 34 | `Arc` | `FRR` | 5 | 5 |
+| 3 | 33 | `Heavy Weapon 3` | 34 | `Arc` | `3` | 4 | 4 |
+| 3 | 33 | `Heavy Weapon 3` | 34 | `Arc` | `FLL` | 3 | 3 |
+| 3 | 33 | `Heavy Weapon 3` | 34 | `Arc` | `RX` | 2 | 2 |
+| 4 | 36 | `Heavy Weapon 4` | 37 | `Arc` | `FA` | 129 | 129 |
+| 4 | 36 | `Heavy Weapon 4` | 37 | `Arc` | `1` | 54 | 54 |
+| 4 | 36 | `Heavy Weapon 4` | 37 | `Arc` | `RX` | 43 | 43 |
+| 4 | 36 | `Heavy Weapon 4` | 37 | `Arc` | `LP` | 39 | 39 |
+| 4 | 36 | `Heavy Weapon 4` | 37 | `Arc` | `2` | 34 | 34 |
+| 4 | 36 | `Heavy Weapon 4` | 37 | `Arc` | `RS` | 19 | 19 |
+| 4 | 36 | `Heavy Weapon 4` | 37 | `Arc` | `FHL` | 14 | 14 |
+| 4 | 36 | `Heavy Weapon 4` | 37 | `Arc` | `ALL` | 12 | 12 |
+| 4 | 36 | `Heavy Weapon 4` | 37 | `Arc` | `FH` | 8 | 8 |
+| 4 | 36 | `Heavy Weapon 4` | 37 | `Arc` | `FAL` | 5 | 5 |
+| 4 | 36 | `Heavy Weapon 4` | 37 | `Arc` | `FLL` | 5 | 5 |
+| 4 | 36 | `Heavy Weapon 4` | 37 | `Arc` | `3` | 3 | 3 |
+| 4 | 36 | `Heavy Weapon 4` | 37 | `Arc` | `FX` | 2 | 2 |
+| 5 | 39 | `Heavy Weapon 5` | 40 | `Arc` | `RP` | 79 | 79 |
+| 5 | 39 | `Heavy Weapon 5` | 40 | `Arc` | `LS` | 40 | 40 |
+| 5 | 39 | `Heavy Weapon 5` | 40 | `Arc` | `1` | 34 | 34 |
+| 5 | 39 | `Heavy Weapon 5` | 40 | `Arc` | `RH` | 22 | 22 |
+| 5 | 39 | `Heavy Weapon 5` | 40 | `Arc` | `RS` | 13 | 13 |
+| 5 | 39 | `Heavy Weapon 5` | 40 | `Arc` | `FA` | 10 | 10 |
+| 5 | 39 | `Heavy Weapon 5` | 40 | `Arc` | `2` | 8 | 8 |
+| 5 | 39 | `Heavy Weapon 5` | 40 | `Arc` | `FAR` | 6 | 6 |
+| 5 | 39 | `Heavy Weapon 5` | 40 | `Arc` | `FH` | 4 | 4 |
+| 5 | 39 | `Heavy Weapon 5` | 40 | `Arc` | `ALL` | 3 | 3 |
+| 5 | 39 | `Heavy Weapon 5` | 40 | `Arc` | `RA` | 3 | 3 |
+| 5 | 39 | `Heavy Weapon 5` | 40 | `Arc` | `FRR` | 2 | 2 |
+| 6 | 42 | `Heavy Weapon 6` | 43 | `Arc` | `ALL` | 70 | 70 |
+| 6 | 42 | `Heavy Weapon 6` | 43 | `Arc` | `LP` | 65 | 65 |
+| 6 | 42 | `Heavy Weapon 6` | 43 | `Arc` | `LS` | 53 | 53 |
+| 6 | 42 | `Heavy Weapon 6` | 43 | `Arc` | `RH` | 19 | 19 |
+| 6 | 42 | `Heavy Weapon 6` | 43 | `Arc` | `1` | 8 | 8 |
+| 6 | 42 | `Heavy Weapon 6` | 43 | `Arc` | `RP` | 8 | 8 |
+| 6 | 42 | `Heavy Weapon 6` | 43 | `Arc` | `2` | 7 | 7 |
+| 6 | 42 | `Heavy Weapon 6` | 43 | `Arc` | `FAL` | 6 | 6 |
+| 6 | 42 | `Heavy Weapon 6` | 43 | `Arc` | `FA` | 5 | 5 |
+| 6 | 42 | `Heavy Weapon 6` | 43 | `Arc` | `RS` | 4 | 4 |
+| 6 | 42 | `Heavy Weapon 6` | 43 | `Arc` | `FLL` | 2 | 2 |
+| 7 | 45 | `Heavy Weapon 7` | 46 | `Arc` | `2` | 96 | 96 |
+| 7 | 45 | `Heavy Weapon 7` | 46 | `Arc` | `1` | 66 | 66 |
+| 7 | 45 | `Heavy Weapon 7` | 46 | `Arc` | `3` | 64 | 64 |
+| 7 | 45 | `Heavy Weapon 7` | 46 | `Arc` | `ALL` | 40 | 40 |
+| 7 | 45 | `Heavy Weapon 7` | 46 | `Arc` | `LS` | 24 | 24 |
+| 7 | 45 | `Heavy Weapon 7` | 46 | `Arc` | `LLR` | 22 | 22 |
+| 7 | 45 | `Heavy Weapon 7` | 46 | `Arc` | `FRR` | 16 | 16 |
+| 7 | 45 | `Heavy Weapon 7` | 46 | `Arc` | `LP` | 6 | 6 |
+| 7 | 45 | `Heavy Weapon 7` | 46 | `Arc` | `RS` | 5 | 5 |
+| 7 | 45 | `Heavy Weapon 7` | 46 | `Arc` | `RA` | 3 | 3 |
+| 7 | 45 | `Heavy Weapon 7` | 46 | `Arc` | `RH` | 2 | 2 |
+| 7 | 45 | `Heavy Weapon 7` | 46 | `Arc` | `FA` | 1 | 1 |
+| 8 | 48 | `Heavy Weapon 8` | 49 | `Arc` | `LS` | 23 | 23 |
+| 8 | 48 | `Heavy Weapon 8` | 49 | `Arc` | `RRR` | 22 | 22 |
+| 8 | 48 | `Heavy Weapon 8` | 49 | `Arc` | `1` | 21 | 21 |
+| 8 | 48 | `Heavy Weapon 8` | 49 | `Arc` | `3` | 20 | 20 |
+| 8 | 48 | `Heavy Weapon 8` | 49 | `Arc` | `FX` | 20 | 20 |
+| 8 | 48 | `Heavy Weapon 8` | 49 | `Arc` | `FLL` | 16 | 16 |
+| 8 | 48 | `Heavy Weapon 8` | 49 | `Arc` | `ALL` | 13 | 13 |
+| 8 | 48 | `Heavy Weapon 8` | 49 | `Arc` | `2` | 12 | 12 |
+| 8 | 48 | `Heavy Weapon 8` | 49 | `Arc` | `RS` | 3 | 3 |
+| 8 | 48 | `Heavy Weapon 8` | 49 | `Arc` | `FA` | 1 | 1 |
+| 9 | 51 | `Heavy Weapon 9` | 52 | `Arc` | `1` | 95 | 95 |
+| 9 | 51 | `Heavy Weapon 9` | 52 | `Arc` | `ALL` | 20 | 20 |
+| 9 | 51 | `Heavy Weapon 9` | 52 | `Arc` | `FAL` | 17 | 17 |
+| 9 | 51 | `Heavy Weapon 9` | 52 | `Arc` | `FA` | 13 | 13 |
+| 9 | 51 | `Heavy Weapon 9` | 52 | `Arc` | `3` | 7 | 7 |
+| 9 | 51 | `Heavy Weapon 9` | 52 | `Arc` | `RS` | 6 | 6 |
+| 9 | 51 | `Heavy Weapon 9` | 52 | `Arc` | `2` | 2 | 2 |
+| 9 | 51 | `Heavy Weapon 9` | 52 | `Arc` | `LLR` | 1 | 1 |
+| 9 | 51 | `Heavy Weapon 9` | 52 | `Arc` | `LS` | 1 | 1 |
+| 9 | 51 | `Heavy Weapon 9` | 52 | `Arc` | `RH` | 1 | 1 |
+| 10 | 54 | `Heavy Weapon 10` | 55 | `Arc` | `RAL` | 17 | 17 |
+| 10 | 54 | `Heavy Weapon 10` | 55 | `Arc` | `RX` | 15 | 15 |
+| 10 | 54 | `Heavy Weapon 10` | 55 | `Arc` | `1` | 13 | 13 |
+| 10 | 54 | `Heavy Weapon 10` | 55 | `Arc` | `LS` | 6 | 6 |
+| 10 | 54 | `Heavy Weapon 10` | 55 | `Arc` | `3` | 2 | 2 |
+| 10 | 54 | `Heavy Weapon 10` | 55 | `Arc` | `RRR` | 1 | 1 |
 
 ### Column selection
 
@@ -317,6 +498,16 @@ Arc codes:
   "weaponArc": {
     "method": "header-name-patterns",
     "weaponColumns": [
+      27,
+      30,
+      33,
+      36,
+      39,
+      42,
+      45,
+      48,
+      51,
+      54,
       57,
       60,
       63,
@@ -388,6 +579,16 @@ Arc codes:
       98
     ],
     "weaponColumnNames": [
+      "Heavy Weapon 1",
+      "Heavy Weapon 2",
+      "Heavy Weapon 3",
+      "Heavy Weapon 4",
+      "Heavy Weapon 5",
+      "Heavy Weapon 6",
+      "Heavy Weapon 7",
+      "Heavy Weapon 8",
+      "Heavy Weapon 9",
+      "Heavy Weapon 10",
       "Weapon 11",
       "Weapon 12",
       "Weapon 13",
@@ -430,7 +631,342 @@ Arc codes:
       "Arc",
       "Arc",
       "Arc"
-    ]
+    ],
+    "countColumnNames": [
+      "Num",
+      "Num",
+      "Num",
+      "Num",
+      "Num",
+      "Num",
+      "Num",
+      "Num",
+      "Num",
+      "Num",
+      "Num",
+      "Num",
+      "Num",
+      "Num",
+      "Num",
+      "Num",
+      "Num",
+      "Num",
+      "Num",
+      "Num",
+      "Num",
+      "Num",
+      "Num",
+      "Num",
+      "Num"
+    ],
+    "slotPairs": [
+      {
+        "slot": 1,
+        "weaponColumnIndex": 27,
+        "weaponColumnName": "Heavy Weapon 1",
+        "arcColumnIndex": 28,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 26,
+        "countColumnName": "Num"
+      },
+      {
+        "slot": 2,
+        "weaponColumnIndex": 30,
+        "weaponColumnName": "Heavy Weapon 2",
+        "arcColumnIndex": 31,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 29,
+        "countColumnName": "Num"
+      },
+      {
+        "slot": 3,
+        "weaponColumnIndex": 33,
+        "weaponColumnName": "Heavy Weapon 3",
+        "arcColumnIndex": 34,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 32,
+        "countColumnName": "Num"
+      },
+      {
+        "slot": 4,
+        "weaponColumnIndex": 36,
+        "weaponColumnName": "Heavy Weapon 4",
+        "arcColumnIndex": 37,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 35,
+        "countColumnName": "Num"
+      },
+      {
+        "slot": 5,
+        "weaponColumnIndex": 39,
+        "weaponColumnName": "Heavy Weapon 5",
+        "arcColumnIndex": 40,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 38,
+        "countColumnName": "Num"
+      },
+      {
+        "slot": 6,
+        "weaponColumnIndex": 42,
+        "weaponColumnName": "Heavy Weapon 6",
+        "arcColumnIndex": 43,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 41,
+        "countColumnName": "Num"
+      },
+      {
+        "slot": 7,
+        "weaponColumnIndex": 45,
+        "weaponColumnName": "Heavy Weapon 7",
+        "arcColumnIndex": 46,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 44,
+        "countColumnName": "Num"
+      },
+      {
+        "slot": 8,
+        "weaponColumnIndex": 48,
+        "weaponColumnName": "Heavy Weapon 8",
+        "arcColumnIndex": 49,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 47,
+        "countColumnName": "Num"
+      },
+      {
+        "slot": 9,
+        "weaponColumnIndex": 51,
+        "weaponColumnName": "Heavy Weapon 9",
+        "arcColumnIndex": 52,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 50,
+        "countColumnName": "Num"
+      },
+      {
+        "slot": 10,
+        "weaponColumnIndex": 54,
+        "weaponColumnName": "Heavy Weapon 10",
+        "arcColumnIndex": 55,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 53,
+        "countColumnName": "Num"
+      },
+      {
+        "slot": 11,
+        "weaponColumnIndex": 57,
+        "weaponColumnName": "Weapon 11",
+        "arcColumnIndex": 58,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 56,
+        "countColumnName": "Num"
+      },
+      {
+        "slot": 12,
+        "weaponColumnIndex": 60,
+        "weaponColumnName": "Weapon 12",
+        "arcColumnIndex": 61,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 59,
+        "countColumnName": "Num"
+      },
+      {
+        "slot": 13,
+        "weaponColumnIndex": 63,
+        "weaponColumnName": "Weapon 13",
+        "arcColumnIndex": 64,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 62,
+        "countColumnName": "Num"
+      },
+      {
+        "slot": 14,
+        "weaponColumnIndex": 66,
+        "weaponColumnName": "Weapon 14",
+        "arcColumnIndex": 67,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 65,
+        "countColumnName": "Num"
+      },
+      {
+        "slot": 15,
+        "weaponColumnIndex": 69,
+        "weaponColumnName": "Weapon 15",
+        "arcColumnIndex": 70,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 68,
+        "countColumnName": "Num"
+      },
+      {
+        "slot": 16,
+        "weaponColumnIndex": 72,
+        "weaponColumnName": "Weapon 16",
+        "arcColumnIndex": 73,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 71,
+        "countColumnName": "Num"
+      },
+      {
+        "slot": 17,
+        "weaponColumnIndex": 75,
+        "weaponColumnName": "Weapon 17",
+        "arcColumnIndex": 76,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 74,
+        "countColumnName": "Num"
+      },
+      {
+        "slot": 18,
+        "weaponColumnIndex": 78,
+        "weaponColumnName": "Weapon 18",
+        "arcColumnIndex": 79,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 77,
+        "countColumnName": "Num"
+      },
+      {
+        "slot": 19,
+        "weaponColumnIndex": 81,
+        "weaponColumnName": "Weapon 19",
+        "arcColumnIndex": 82,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 80,
+        "countColumnName": "Num"
+      },
+      {
+        "slot": 20,
+        "weaponColumnIndex": 84,
+        "weaponColumnName": "Weapon 20",
+        "arcColumnIndex": 85,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 83,
+        "countColumnName": "Num"
+      },
+      {
+        "slot": 21,
+        "weaponColumnIndex": 87,
+        "weaponColumnName": "Weapon 21",
+        "arcColumnIndex": 88,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 86,
+        "countColumnName": "Num"
+      },
+      {
+        "slot": 22,
+        "weaponColumnIndex": 90,
+        "weaponColumnName": "Weapon 22",
+        "arcColumnIndex": 91,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 89,
+        "countColumnName": "Num"
+      },
+      {
+        "slot": 23,
+        "weaponColumnIndex": 93,
+        "weaponColumnName": "Weapon 23",
+        "arcColumnIndex": 94,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 92,
+        "countColumnName": "Num"
+      },
+      {
+        "slot": 24,
+        "weaponColumnIndex": 96,
+        "weaponColumnName": "Weapon 24",
+        "arcColumnIndex": 97,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 95,
+        "countColumnName": "Num"
+      },
+      {
+        "slot": 25,
+        "weaponColumnIndex": 99,
+        "weaponColumnName": "Weapon 25",
+        "arcColumnIndex": 100,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 98,
+        "countColumnName": "Num"
+      }
+    ],
+    "weaponSlotOf": {
+      "27": 1,
+      "30": 2,
+      "33": 3,
+      "36": 4,
+      "39": 5,
+      "42": 6,
+      "45": 7,
+      "48": 8,
+      "51": 9,
+      "54": 10,
+      "57": 11,
+      "60": 12,
+      "63": 13,
+      "66": 14,
+      "69": 15,
+      "72": 16,
+      "75": 17,
+      "78": 18,
+      "81": 19,
+      "84": 20,
+      "87": 21,
+      "90": 22,
+      "93": 23,
+      "96": 24,
+      "99": 25
+    },
+    "arcSlotOf": {
+      "28": 1,
+      "31": 2,
+      "34": 3,
+      "37": 4,
+      "40": 5,
+      "43": 6,
+      "46": 7,
+      "49": 8,
+      "52": 9,
+      "55": 10,
+      "58": 11,
+      "61": 12,
+      "64": 13,
+      "67": 14,
+      "70": 15,
+      "73": 16,
+      "76": 17,
+      "79": 18,
+      "82": 19,
+      "85": 20,
+      "88": 21,
+      "91": 22,
+      "94": 23,
+      "97": 24,
+      "100": 25
+    },
+    "countSlotOf": {
+      "26": 1,
+      "29": 2,
+      "32": 3,
+      "35": 4,
+      "38": 5,
+      "41": 6,
+      "44": 7,
+      "47": 8,
+      "50": 9,
+      "53": 10,
+      "56": 11,
+      "59": 12,
+      "62": 13,
+      "65": 14,
+      "68": 15,
+      "71": 16,
+      "74": 17,
+      "77": 18,
+      "80": 19,
+      "83": 20,
+      "86": 21,
+      "89": 22,
+      "92": 23,
+      "95": 24,
+      "98": 25
+    }
   }
 }
 ```
@@ -534,7 +1070,7 @@ Race column values (row counts):
 
 ### Weapon and arc codes (vocabulary, with row counts)
 
-Empty cells are omitted. `rows` is the number of data rows that use the code at least once; `occurrences` is the number of filled slot cells. Slot ranges 1–10 and 11–25 are taken from the numeric suffix on the weapon/arc header name.
+Empty cells are omitted. `rows` is the number of data rows that use the code at least once; `occurrences` is the number of filled slot cells.
 
 Weapon codes:
 
@@ -554,13 +1090,44 @@ Arc codes:
 
 | Code | Rows | Occurrences | Rows 1–10 | Occ. 1–10 | Rows 11–25 | Occ. 11–25 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| `FH` | 64 | 101 | 0 | 0 | 0 | 0 |
-| `ALL` | 37 | 39 | 0 | 0 | 0 | 0 |
-| `FX` | 19 | 20 | 0 | 0 | 0 | 0 |
-| `RX` | 9 | 9 | 0 | 0 | 0 | 0 |
-| `RA` | 3 | 3 | 0 | 0 | 0 | 0 |
-| `LS` | 1 | 1 | 0 | 0 | 0 | 0 |
-| `RS` | 1 | 1 | 0 | 0 | 0 | 0 |
+| `FH` | 64 | 101 | 64 | 101 | 0 | 0 |
+| `ALL` | 37 | 39 | 37 | 39 | 0 | 0 |
+| `FX` | 19 | 20 | 19 | 20 | 0 | 0 |
+| `RX` | 9 | 9 | 9 | 9 | 0 | 0 |
+| `RA` | 3 | 3 | 3 | 3 | 0 | 0 |
+| `LS` | 1 | 1 | 1 | 1 | 0 | 0 |
+| `RS` | 1 | 1 | 1 | 1 | 0 | 0 |
+
+Slot ranges 1–10 and 11–25 use a numeric suffix on the header when present, otherwise the slot of the paired weapon column (`Num` / `Heavy Weapon N` or `Weapon N` / `Arc`).
+
+Numeric arc codes `1`, `2`, `3` (per-column sources; used to check Num/Arc pairing):
+
+| Code | Column index | Header | Slot | Rows | Occurrences |
+| --- | ---: | --- | ---: | ---: | ---: |
+| `1` | — | *(not observed)* | | 0 | 0 |
+| `2` | — | *(not observed)* | | 0 | 0 |
+| `3` | — | *(not observed)* | | 0 | 0 |
+
+Per-slot arc counts for weapon slots 1–10 (after Num/Arc pairing):
+
+| Slot | Weapon column | Weapon header | Arc column | Arc header | Arc code | Rows | Occurrences |
+| ---: | ---: | --- | ---: | --- | --- | ---: | ---: |
+| 1 | 4 | `Weapon1` | 5 | `Arc` | `FH` | 58 | 58 |
+| 1 | 4 | `Weapon1` | 5 | `Arc` | `FX` | 14 | 14 |
+| 1 | 4 | `Weapon1` | 5 | `Arc` | `ALL` | 9 | 9 |
+| 2 | 8 | `Weapon2` | 9 | `Arc` | `FH` | 31 | 31 |
+| 2 | 8 | `Weapon2` | 9 | `Arc` | `ALL` | 19 | 19 |
+| 2 | 8 | `Weapon2` | 9 | `Arc` | `RX` | 5 | 5 |
+| 2 | 8 | `Weapon2` | 9 | `Arc` | `FX` | 1 | 1 |
+| 2 | 8 | `Weapon2` | 9 | `Arc` | `LS` | 1 | 1 |
+| 3 | 12 | `Weapon3` | 13 | `Arc` | `FH` | 12 | 12 |
+| 3 | 12 | `Weapon3` | 13 | `Arc` | `ALL` | 11 | 11 |
+| 3 | 12 | `Weapon3` | 13 | `Arc` | `FX` | 5 | 5 |
+| 3 | 12 | `Weapon3` | 13 | `Arc` | `RX` | 4 | 4 |
+| 3 | 12 | `Weapon3` | 13 | `Arc` | `RA` | 3 | 3 |
+| 3 | 12 | `Weapon3` | 13 | `Arc` | `RS` | 1 | 1 |
+| 4 | 16 | `Weapon4` | 17 | `Arc` | *(none)* | | |
+| 5 | 20 | `Weapon5` | 21 | `Arc` | *(none)* | | |
 
 ### Column selection
 
@@ -613,7 +1180,87 @@ Arc codes:
       "Arc",
       "Arc",
       "Arc"
-    ]
+    ],
+    "countColumnNames": [
+      "Num",
+      "Shots",
+      "Num",
+      "Shots",
+      "Num",
+      "Shots",
+      "Num",
+      "Shots",
+      "Num",
+      "Shots"
+    ],
+    "slotPairs": [
+      {
+        "slot": 1,
+        "weaponColumnIndex": 4,
+        "weaponColumnName": "Weapon1",
+        "arcColumnIndex": 5,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 3,
+        "countColumnName": "Num"
+      },
+      {
+        "slot": 2,
+        "weaponColumnIndex": 8,
+        "weaponColumnName": "Weapon2",
+        "arcColumnIndex": 9,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 7,
+        "countColumnName": "Num"
+      },
+      {
+        "slot": 3,
+        "weaponColumnIndex": 12,
+        "weaponColumnName": "Weapon3",
+        "arcColumnIndex": 13,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 11,
+        "countColumnName": "Num"
+      },
+      {
+        "slot": 4,
+        "weaponColumnIndex": 16,
+        "weaponColumnName": "Weapon4",
+        "arcColumnIndex": 17,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 15,
+        "countColumnName": "Num"
+      },
+      {
+        "slot": 5,
+        "weaponColumnIndex": 20,
+        "weaponColumnName": "Weapon5",
+        "arcColumnIndex": 21,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 19,
+        "countColumnName": "Num"
+      }
+    ],
+    "weaponSlotOf": {
+      "4": 1,
+      "8": 2,
+      "12": 3,
+      "16": 4,
+      "20": 5
+    },
+    "arcSlotOf": {
+      "5": 1,
+      "9": 2,
+      "13": 3,
+      "17": 4,
+      "21": 5
+    },
+    "countSlotOf": {
+      "3": 1,
+      "7": 2,
+      "11": 3,
+      "15": 4,
+      "19": 5
+    }
   }
 }
 ```

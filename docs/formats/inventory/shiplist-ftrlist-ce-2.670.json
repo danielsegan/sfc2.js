@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "build": "CE 2.670",
   "observedOn": "sfc2-ci",
-  "generatedAt": "2026-11-23T21:23:19Z",
+  "generatedAt": "2026-11-23T21:33:55Z",
   "extractedRoot": "/srv/sfc2/extracted/2.670",
   "referenceRoot": "/srv/sfc2/reference/2.670",
   "manifestPath": "/srv/sfc2/extracted/2.670/manifest.json",
@@ -283,11 +283,11 @@
       },
       {
         "code": "Ph3",
-        "rows": 626,
-        "occurrences": 1393,
+        "rows": 629,
+        "occurrences": 1400,
         "slots1to10": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 5,
+          "occurrences": 7
         },
         "slots11to25": {
           "rows": 626,
@@ -308,6 +308,45 @@
         }
       },
       {
+        "code": "Dis4",
+        "rows": 80,
+        "occurrences": 272,
+        "slots1to10": {
+          "rows": 80,
+          "occurrences": 272
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "Phot",
+        "rows": 102,
+        "occurrences": 263,
+        "slots1to10": {
+          "rows": 102,
+          "occurrences": 263
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "DroB",
+        "rows": 159,
+        "occurrences": 241,
+        "slots1to10": {
+          "rows": 159,
+          "occurrences": 241
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
         "code": "PhG",
         "rows": 110,
         "occurrences": 224,
@@ -319,6 +358,305 @@
           "rows": 110,
           "occurrences": 224
         }
+      },
+      {
+        "code": "Dis3",
+        "rows": 127,
+        "occurrences": 212,
+        "slots1to10": {
+          "rows": 127,
+          "occurrences": 212
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "PLaF",
+        "rows": 84,
+        "occurrences": 162,
+        "slots1to10": {
+          "rows": 84,
+          "occurrences": 162
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "Fus",
+        "rows": 79,
+        "occurrences": 147,
+        "slots1to10": {
+          "rows": 79,
+          "occurrences": 147
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "ADD12",
+        "rows": 130,
+        "occurrences": 132,
+        "slots1to10": {
+          "rows": 130,
+          "occurrences": 132
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "PlaF",
+        "rows": 79,
+        "occurrences": 131,
+        "slots1to10": {
+          "rows": 79,
+          "occurrences": 131
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "HB",
+        "rows": 66,
+        "occurrences": 126,
+        "slots1to10": {
+          "rows": 66,
+          "occurrences": 126
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "ESG",
+        "rows": 88,
+        "occurrences": 125,
+        "slots1to10": {
+          "rows": 88,
+          "occurrences": 125
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "ADD6",
+        "rows": 101,
+        "occurrences": 105,
+        "slots1to10": {
+          "rows": 101,
+          "occurrences": 105
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "DroC",
+        "rows": 71,
+        "occurrences": 101,
+        "slots1to10": {
+          "rows": 71,
+          "occurrences": 101
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "PlaS",
+        "rows": 47,
+        "occurrences": 100,
+        "slots1to10": {
+          "rows": 47,
+          "occurrences": 100
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "PlaR",
+        "rows": 27,
+        "occurrences": 98,
+        "slots1to10": {
+          "rows": 27,
+          "occurrences": 98
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "Dis2",
+        "rows": 58,
+        "occurrences": 97,
+        "slots1to10": {
+          "rows": 58,
+          "occurrences": 97
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "PLaS",
+        "rows": 48,
+        "occurrences": 90,
+        "slots1to10": {
+          "rows": 48,
+          "occurrences": 90
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "DroA",
+        "rows": 50,
+        "occurrences": 89,
+        "slots1to10": {
+          "rows": 50,
+          "occurrences": 89
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "DroG",
+        "rows": 67,
+        "occurrences": 87,
+        "slots1to10": {
+          "rows": 67,
+          "occurrences": 87
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "PPD",
+        "rows": 38,
+        "occurrences": 81,
+        "slots1to10": {
+          "rows": 38,
+          "occurrences": 81
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "PlaG",
+        "rows": 29,
+        "occurrences": 51,
+        "slots1to10": {
+          "rows": 29,
+          "occurrences": 51
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "PLaG",
+        "rows": 37,
+        "occurrences": 49,
+        "slots1to10": {
+          "rows": 37,
+          "occurrences": 49
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "Dis1",
+        "rows": 31,
+        "occurrences": 48,
+        "slots1to10": {
+          "rows": 31,
+          "occurrences": 48
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "PlaD",
+        "rows": 25,
+        "occurrences": 47,
+        "slots1to10": {
+          "rows": 25,
+          "occurrences": 47
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "PlaI",
+        "rows": 21,
+        "occurrences": 44,
+        "slots1to10": {
+          "rows": 21,
+          "occurrences": 44
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "PLaR",
+        "rows": 27,
+        "occurrences": 31,
+        "slots1to10": {
+          "rows": 27,
+          "occurrences": 31
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "DroF",
+        "rows": 10,
+        "occurrences": 13,
+        "slots1to10": {
+          "rows": 10,
+          "occurrences": 13
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
       }
     ],
     "arcCodes": [
@@ -327,12 +665,12 @@
         "rows": 742,
         "occurrences": 1157,
         "slots1to10": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 117,
+          "occurrences": 182
         },
         "slots11to25": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 669,
+          "occurrences": 975
         }
       },
       {
@@ -340,12 +678,12 @@
         "rows": 738,
         "occurrences": 1151,
         "slots1to10": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 114,
+          "occurrences": 178
         },
         "slots11to25": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 667,
+          "occurrences": 973
         }
       },
       {
@@ -353,12 +691,12 @@
         "rows": 549,
         "occurrences": 919,
         "slots1to10": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 196,
+          "occurrences": 290
         },
         "slots11to25": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 477,
+          "occurrences": 629
         }
       },
       {
@@ -366,12 +704,12 @@
         "rows": 444,
         "occurrences": 794,
         "slots1to10": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 388,
+          "occurrences": 660
         },
         "slots11to25": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 119,
+          "occurrences": 134
         }
       },
       {
@@ -379,12 +717,12 @@
         "rows": 331,
         "occurrences": 552,
         "slots1to10": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 88,
+          "occurrences": 108
         },
         "slots11to25": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 298,
+          "occurrences": 444
         }
       },
       {
@@ -392,12 +730,12 @@
         "rows": 370,
         "occurrences": 493,
         "slots1to10": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 96,
+          "occurrences": 151
         },
         "slots11to25": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 299,
+          "occurrences": 342
         }
       },
       {
@@ -405,12 +743,12 @@
         "rows": 417,
         "occurrences": 453,
         "slots1to10": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 44,
+          "occurrences": 44
         },
         "slots11to25": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 409,
+          "occurrences": 409
         }
       },
       {
@@ -418,12 +756,12 @@
         "rows": 417,
         "occurrences": 436,
         "slots1to10": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 27,
+          "occurrences": 27
         },
         "slots11to25": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 409,
+          "occurrences": 409
         }
       },
       {
@@ -431,12 +769,12 @@
         "rows": 222,
         "occurrences": 406,
         "slots1to10": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 45,
+          "occurrences": 60
         },
         "slots11to25": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 215,
+          "occurrences": 346
         }
       },
       {
@@ -444,8 +782,8 @@
         "rows": 272,
         "occurrences": 383,
         "slots1to10": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 272,
+          "occurrences": 383
         },
         "slots11to25": {
           "rows": 0,
@@ -457,8 +795,8 @@
         "rows": 163,
         "occurrences": 280,
         "slots1to10": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 163,
+          "occurrences": 280
         },
         "slots11to25": {
           "rows": 0,
@@ -470,12 +808,12 @@
         "rows": 216,
         "occurrences": 275,
         "slots1to10": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 25,
+          "occurrences": 44
         },
         "slots11to25": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 210,
+          "occurrences": 231
         }
       },
       {
@@ -483,12 +821,12 @@
         "rows": 128,
         "occurrences": 146,
         "slots1to10": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 24,
+          "occurrences": 25
         },
         "slots11to25": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 104,
+          "occurrences": 121
         }
       },
       {
@@ -496,12 +834,12 @@
         "rows": 126,
         "occurrences": 144,
         "slots1to10": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 22,
+          "occurrences": 23
         },
         "slots11to25": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 104,
+          "occurrences": 121
         }
       },
       {
@@ -509,12 +847,12 @@
         "rows": 127,
         "occurrences": 141,
         "slots1to10": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 112,
+          "occurrences": 126
         },
         "slots11to25": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 15,
+          "occurrences": 15
         }
       },
       {
@@ -522,12 +860,12 @@
         "rows": 126,
         "occurrences": 140,
         "slots1to10": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 111,
+          "occurrences": 125
         },
         "slots11to25": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 15,
+          "occurrences": 15
         }
       },
       {
@@ -539,8 +877,8 @@
           "occurrences": 0
         },
         "slots11to25": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 115,
+          "occurrences": 138
         }
       },
       {
@@ -548,12 +886,12 @@
         "rows": 115,
         "occurrences": 136,
         "slots1to10": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 17,
+          "occurrences": 17
         },
         "slots11to25": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 115,
+          "occurrences": 119
         }
       },
       {
@@ -565,8 +903,8 @@
           "occurrences": 0
         },
         "slots11to25": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 86,
+          "occurrences": 131
         }
       },
       {
@@ -578,8 +916,8 @@
           "occurrences": 0
         },
         "slots11to25": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 86,
+          "occurrences": 131
         }
       },
       {
@@ -587,8 +925,8 @@
         "rows": 73,
         "occurrences": 105,
         "slots1to10": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 73,
+          "occurrences": 105
         },
         "slots11to25": {
           "rows": 0,
@@ -600,12 +938,12 @@
         "rows": 73,
         "occurrences": 98,
         "slots1to10": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 12,
+          "occurrences": 15
         },
         "slots11to25": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 65,
+          "occurrences": 83
         }
       },
       {
@@ -613,12 +951,12 @@
         "rows": 63,
         "occurrences": 71,
         "slots1to10": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 34,
+          "occurrences": 34
         },
         "slots11to25": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 35,
+          "occurrences": 37
         }
       },
       {
@@ -626,12 +964,12 @@
         "rows": 61,
         "occurrences": 69,
         "slots1to10": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 32,
+          "occurrences": 32
         },
         "slots11to25": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 35,
+          "occurrences": 37
         }
       },
       {
@@ -639,12 +977,12 @@
         "rows": 22,
         "occurrences": 22,
         "slots1to10": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 20,
+          "occurrences": 20
         },
         "slots11to25": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 2,
+          "occurrences": 2
         }
       },
       {
@@ -652,12 +990,12 @@
         "rows": 22,
         "occurrences": 22,
         "slots1to10": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 20,
+          "occurrences": 20
         },
         "slots11to25": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 2,
+          "occurrences": 2
         }
       },
       {
@@ -669,8 +1007,8 @@
           "occurrences": 0
         },
         "slots11to25": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 21,
+          "occurrences": 21
         }
       },
       {
@@ -682,8 +1020,8 @@
           "occurrences": 0
         },
         "slots11to25": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 21,
+          "occurrences": 21
         }
       }
     ],
@@ -737,6 +1075,16 @@
       "weaponArc": {
         "method": "header-name-patterns",
         "weaponColumns": [
+          27,
+          30,
+          33,
+          36,
+          39,
+          42,
+          45,
+          48,
+          51,
+          54,
           57,
           60,
           63,
@@ -808,6 +1156,16 @@
           98
         ],
         "weaponColumnNames": [
+          "Heavy Weapon 1",
+          "Heavy Weapon 2",
+          "Heavy Weapon 3",
+          "Heavy Weapon 4",
+          "Heavy Weapon 5",
+          "Heavy Weapon 6",
+          "Heavy Weapon 7",
+          "Heavy Weapon 8",
+          "Heavy Weapon 9",
+          "Heavy Weapon 10",
           "Weapon 11",
           "Weapon 12",
           "Weapon 13",
@@ -850,7 +1208,342 @@
           "Arc",
           "Arc",
           "Arc"
-        ]
+        ],
+        "countColumnNames": [
+          "Num",
+          "Num",
+          "Num",
+          "Num",
+          "Num",
+          "Num",
+          "Num",
+          "Num",
+          "Num",
+          "Num",
+          "Num",
+          "Num",
+          "Num",
+          "Num",
+          "Num",
+          "Num",
+          "Num",
+          "Num",
+          "Num",
+          "Num",
+          "Num",
+          "Num",
+          "Num",
+          "Num",
+          "Num"
+        ],
+        "slotPairs": [
+          {
+            "slot": 1,
+            "weaponColumnIndex": 27,
+            "weaponColumnName": "Heavy Weapon 1",
+            "arcColumnIndex": 28,
+            "arcColumnName": "Arc",
+            "countColumnIndex": 26,
+            "countColumnName": "Num"
+          },
+          {
+            "slot": 2,
+            "weaponColumnIndex": 30,
+            "weaponColumnName": "Heavy Weapon 2",
+            "arcColumnIndex": 31,
+            "arcColumnName": "Arc",
+            "countColumnIndex": 29,
+            "countColumnName": "Num"
+          },
+          {
+            "slot": 3,
+            "weaponColumnIndex": 33,
+            "weaponColumnName": "Heavy Weapon 3",
+            "arcColumnIndex": 34,
+            "arcColumnName": "Arc",
+            "countColumnIndex": 32,
+            "countColumnName": "Num"
+          },
+          {
+            "slot": 4,
+            "weaponColumnIndex": 36,
+            "weaponColumnName": "Heavy Weapon 4",
+            "arcColumnIndex": 37,
+            "arcColumnName": "Arc",
+            "countColumnIndex": 35,
+            "countColumnName": "Num"
+          },
+          {
+            "slot": 5,
+            "weaponColumnIndex": 39,
+            "weaponColumnName": "Heavy Weapon 5",
+            "arcColumnIndex": 40,
+            "arcColumnName": "Arc",
+            "countColumnIndex": 38,
+            "countColumnName": "Num"
+          },
+          {
+            "slot": 6,
+            "weaponColumnIndex": 42,
+            "weaponColumnName": "Heavy Weapon 6",
+            "arcColumnIndex": 43,
+            "arcColumnName": "Arc",
+            "countColumnIndex": 41,
+            "countColumnName": "Num"
+          },
+          {
+            "slot": 7,
+            "weaponColumnIndex": 45,
+            "weaponColumnName": "Heavy Weapon 7",
+            "arcColumnIndex": 46,
+            "arcColumnName": "Arc",
+            "countColumnIndex": 44,
+            "countColumnName": "Num"
+          },
+          {
+            "slot": 8,
+            "weaponColumnIndex": 48,
+            "weaponColumnName": "Heavy Weapon 8",
+            "arcColumnIndex": 49,
+            "arcColumnName": "Arc",
+            "countColumnIndex": 47,
+            "countColumnName": "Num"
+          },
+          {
+            "slot": 9,
+            "weaponColumnIndex": 51,
+            "weaponColumnName": "Heavy Weapon 9",
+            "arcColumnIndex": 52,
+            "arcColumnName": "Arc",
+            "countColumnIndex": 50,
+            "countColumnName": "Num"
+          },
+          {
+            "slot": 10,
+            "weaponColumnIndex": 54,
+            "weaponColumnName": "Heavy Weapon 10",
+            "arcColumnIndex": 55,
+            "arcColumnName": "Arc",
+            "countColumnIndex": 53,
+            "countColumnName": "Num"
+          },
+          {
+            "slot": 11,
+            "weaponColumnIndex": 57,
+            "weaponColumnName": "Weapon 11",
+            "arcColumnIndex": 58,
+            "arcColumnName": "Arc",
+            "countColumnIndex": 56,
+            "countColumnName": "Num"
+          },
+          {
+            "slot": 12,
+            "weaponColumnIndex": 60,
+            "weaponColumnName": "Weapon 12",
+            "arcColumnIndex": 61,
+            "arcColumnName": "Arc",
+            "countColumnIndex": 59,
+            "countColumnName": "Num"
+          },
+          {
+            "slot": 13,
+            "weaponColumnIndex": 63,
+            "weaponColumnName": "Weapon 13",
+            "arcColumnIndex": 64,
+            "arcColumnName": "Arc",
+            "countColumnIndex": 62,
+            "countColumnName": "Num"
+          },
+          {
+            "slot": 14,
+            "weaponColumnIndex": 66,
+            "weaponColumnName": "Weapon 14",
+            "arcColumnIndex": 67,
+            "arcColumnName": "Arc",
+            "countColumnIndex": 65,
+            "countColumnName": "Num"
+          },
+          {
+            "slot": 15,
+            "weaponColumnIndex": 69,
+            "weaponColumnName": "Weapon 15",
+            "arcColumnIndex": 70,
+            "arcColumnName": "Arc",
+            "countColumnIndex": 68,
+            "countColumnName": "Num"
+          },
+          {
+            "slot": 16,
+            "weaponColumnIndex": 72,
+            "weaponColumnName": "Weapon 16",
+            "arcColumnIndex": 73,
+            "arcColumnName": "Arc",
+            "countColumnIndex": 71,
+            "countColumnName": "Num"
+          },
+          {
+            "slot": 17,
+            "weaponColumnIndex": 75,
+            "weaponColumnName": "Weapon 17",
+            "arcColumnIndex": 76,
+            "arcColumnName": "Arc",
+            "countColumnIndex": 74,
+            "countColumnName": "Num"
+          },
+          {
+            "slot": 18,
+            "weaponColumnIndex": 78,
+            "weaponColumnName": "Weapon 18",
+            "arcColumnIndex": 79,
+            "arcColumnName": "Arc",
+            "countColumnIndex": 77,
+            "countColumnName": "Num"
+          },
+          {
+            "slot": 19,
+            "weaponColumnIndex": 81,
+            "weaponColumnName": "Weapon 19",
+            "arcColumnIndex": 82,
+            "arcColumnName": "Arc",
+            "countColumnIndex": 80,
+            "countColumnName": "Num"
+          },
+          {
+            "slot": 20,
+            "weaponColumnIndex": 84,
+            "weaponColumnName": "Weapon 20",
+            "arcColumnIndex": 85,
+            "arcColumnName": "Arc",
+            "countColumnIndex": 83,
+            "countColumnName": "Num"
+          },
+          {
+            "slot": 21,
+            "weaponColumnIndex": 87,
+            "weaponColumnName": "Weapon 21",
+            "arcColumnIndex": 88,
+            "arcColumnName": "Arc",
+            "countColumnIndex": 86,
+            "countColumnName": "Num"
+          },
+          {
+            "slot": 22,
+            "weaponColumnIndex": 90,
+            "weaponColumnName": "Weapon 22",
+            "arcColumnIndex": 91,
+            "arcColumnName": "Arc",
+            "countColumnIndex": 89,
+            "countColumnName": "Num"
+          },
+          {
+            "slot": 23,
+            "weaponColumnIndex": 93,
+            "weaponColumnName": "Weapon 23",
+            "arcColumnIndex": 94,
+            "arcColumnName": "Arc",
+            "countColumnIndex": 92,
+            "countColumnName": "Num"
+          },
+          {
+            "slot": 24,
+            "weaponColumnIndex": 96,
+            "weaponColumnName": "Weapon 24",
+            "arcColumnIndex": 97,
+            "arcColumnName": "Arc",
+            "countColumnIndex": 95,
+            "countColumnName": "Num"
+          },
+          {
+            "slot": 25,
+            "weaponColumnIndex": 99,
+            "weaponColumnName": "Weapon 25",
+            "arcColumnIndex": 100,
+            "arcColumnName": "Arc",
+            "countColumnIndex": 98,
+            "countColumnName": "Num"
+          }
+        ],
+        "weaponSlotOf": {
+          "27": 1,
+          "30": 2,
+          "33": 3,
+          "36": 4,
+          "39": 5,
+          "42": 6,
+          "45": 7,
+          "48": 8,
+          "51": 9,
+          "54": 10,
+          "57": 11,
+          "60": 12,
+          "63": 13,
+          "66": 14,
+          "69": 15,
+          "72": 16,
+          "75": 17,
+          "78": 18,
+          "81": 19,
+          "84": 20,
+          "87": 21,
+          "90": 22,
+          "93": 23,
+          "96": 24,
+          "99": 25
+        },
+        "arcSlotOf": {
+          "28": 1,
+          "31": 2,
+          "34": 3,
+          "37": 4,
+          "40": 5,
+          "43": 6,
+          "46": 7,
+          "49": 8,
+          "52": 9,
+          "55": 10,
+          "58": 11,
+          "61": 12,
+          "64": 13,
+          "67": 14,
+          "70": 15,
+          "73": 16,
+          "76": 17,
+          "79": 18,
+          "82": 19,
+          "85": 20,
+          "88": 21,
+          "91": 22,
+          "94": 23,
+          "97": 24,
+          "100": 25
+        },
+        "countSlotOf": {
+          "26": 1,
+          "29": 2,
+          "32": 3,
+          "35": 4,
+          "38": 5,
+          "41": 6,
+          "44": 7,
+          "47": 8,
+          "50": 9,
+          "53": 10,
+          "56": 11,
+          "59": 12,
+          "62": 13,
+          "65": 14,
+          "68": 15,
+          "71": 16,
+          "74": 17,
+          "77": 18,
+          "80": 19,
+          "83": 20,
+          "86": 21,
+          "89": 22,
+          "92": 23,
+          "95": 24,
+          "98": 25
+        }
       }
     },
     "raceRowCounts": [
@@ -897,6 +1590,910 @@
       {
         "race": "Romulan",
         "rows": 153
+      }
+    ],
+    "numericArcCodeSources": [
+      {
+        "code": "1",
+        "rows": 272,
+        "occurrences": 383,
+        "columns": [
+          {
+            "columnIndex": 28,
+            "headerName": "Arc",
+            "slot": 1,
+            "rows": 16,
+            "occurrences": 16
+          },
+          {
+            "columnIndex": 31,
+            "headerName": "Arc",
+            "slot": 2,
+            "rows": 18,
+            "occurrences": 18
+          },
+          {
+            "columnIndex": 34,
+            "headerName": "Arc",
+            "slot": 3,
+            "rows": 58,
+            "occurrences": 58
+          },
+          {
+            "columnIndex": 37,
+            "headerName": "Arc",
+            "slot": 4,
+            "rows": 54,
+            "occurrences": 54
+          },
+          {
+            "columnIndex": 40,
+            "headerName": "Arc",
+            "slot": 5,
+            "rows": 34,
+            "occurrences": 34
+          },
+          {
+            "columnIndex": 43,
+            "headerName": "Arc",
+            "slot": 6,
+            "rows": 8,
+            "occurrences": 8
+          },
+          {
+            "columnIndex": 46,
+            "headerName": "Arc",
+            "slot": 7,
+            "rows": 66,
+            "occurrences": 66
+          },
+          {
+            "columnIndex": 49,
+            "headerName": "Arc",
+            "slot": 8,
+            "rows": 21,
+            "occurrences": 21
+          },
+          {
+            "columnIndex": 52,
+            "headerName": "Arc",
+            "slot": 9,
+            "rows": 95,
+            "occurrences": 95
+          },
+          {
+            "columnIndex": 55,
+            "headerName": "Arc",
+            "slot": 10,
+            "rows": 13,
+            "occurrences": 13
+          }
+        ]
+      },
+      {
+        "code": "2",
+        "rows": 163,
+        "occurrences": 280,
+        "columns": [
+          {
+            "columnIndex": 28,
+            "headerName": "Arc",
+            "slot": 1,
+            "rows": 37,
+            "occurrences": 37
+          },
+          {
+            "columnIndex": 31,
+            "headerName": "Arc",
+            "slot": 2,
+            "rows": 34,
+            "occurrences": 34
+          },
+          {
+            "columnIndex": 34,
+            "headerName": "Arc",
+            "slot": 3,
+            "rows": 50,
+            "occurrences": 50
+          },
+          {
+            "columnIndex": 37,
+            "headerName": "Arc",
+            "slot": 4,
+            "rows": 34,
+            "occurrences": 34
+          },
+          {
+            "columnIndex": 40,
+            "headerName": "Arc",
+            "slot": 5,
+            "rows": 8,
+            "occurrences": 8
+          },
+          {
+            "columnIndex": 43,
+            "headerName": "Arc",
+            "slot": 6,
+            "rows": 7,
+            "occurrences": 7
+          },
+          {
+            "columnIndex": 46,
+            "headerName": "Arc",
+            "slot": 7,
+            "rows": 96,
+            "occurrences": 96
+          },
+          {
+            "columnIndex": 49,
+            "headerName": "Arc",
+            "slot": 8,
+            "rows": 12,
+            "occurrences": 12
+          },
+          {
+            "columnIndex": 52,
+            "headerName": "Arc",
+            "slot": 9,
+            "rows": 2,
+            "occurrences": 2
+          }
+        ]
+      },
+      {
+        "code": "3",
+        "rows": 73,
+        "occurrences": 105,
+        "columns": [
+          {
+            "columnIndex": 28,
+            "headerName": "Arc",
+            "slot": 1,
+            "rows": 2,
+            "occurrences": 2
+          },
+          {
+            "columnIndex": 31,
+            "headerName": "Arc",
+            "slot": 2,
+            "rows": 3,
+            "occurrences": 3
+          },
+          {
+            "columnIndex": 34,
+            "headerName": "Arc",
+            "slot": 3,
+            "rows": 4,
+            "occurrences": 4
+          },
+          {
+            "columnIndex": 37,
+            "headerName": "Arc",
+            "slot": 4,
+            "rows": 3,
+            "occurrences": 3
+          },
+          {
+            "columnIndex": 46,
+            "headerName": "Arc",
+            "slot": 7,
+            "rows": 64,
+            "occurrences": 64
+          },
+          {
+            "columnIndex": 49,
+            "headerName": "Arc",
+            "slot": 8,
+            "rows": 20,
+            "occurrences": 20
+          },
+          {
+            "columnIndex": 52,
+            "headerName": "Arc",
+            "slot": 9,
+            "rows": 7,
+            "occurrences": 7
+          },
+          {
+            "columnIndex": 55,
+            "headerName": "Arc",
+            "slot": 10,
+            "rows": 2,
+            "occurrences": 2
+          }
+        ]
+      }
+    ],
+    "heavyWeaponSlotArcs": [
+      {
+        "slot": 1,
+        "weaponColumnIndex": 27,
+        "weaponColumnName": "Heavy Weapon 1",
+        "arcColumnIndex": 28,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 26,
+        "countColumnName": "Num",
+        "codes": [
+          {
+            "code": "FA",
+            "rows": 235,
+            "occurrences": 235
+          },
+          {
+            "code": "ALL",
+            "rows": 102,
+            "occurrences": 102
+          },
+          {
+            "code": "FH",
+            "rows": 88,
+            "occurrences": 88
+          },
+          {
+            "code": "FX",
+            "rows": 86,
+            "occurrences": 86
+          },
+          {
+            "code": "2",
+            "rows": 37,
+            "occurrences": 37
+          },
+          {
+            "code": "1",
+            "rows": 16,
+            "occurrences": 16
+          },
+          {
+            "code": "FAL",
+            "rows": 16,
+            "occurrences": 16
+          },
+          {
+            "code": "FLL",
+            "rows": 8,
+            "occurrences": 8
+          },
+          {
+            "code": "FHR",
+            "rows": 6,
+            "occurrences": 6
+          },
+          {
+            "code": "LS",
+            "rows": 4,
+            "occurrences": 4
+          },
+          {
+            "code": "RA",
+            "rows": 3,
+            "occurrences": 3
+          },
+          {
+            "code": "3",
+            "rows": 2,
+            "occurrences": 2
+          },
+          {
+            "code": "RS",
+            "rows": 1,
+            "occurrences": 1
+          }
+        ]
+      },
+      {
+        "slot": 2,
+        "weaponColumnIndex": 30,
+        "weaponColumnName": "Heavy Weapon 2",
+        "arcColumnIndex": 31,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 29,
+        "countColumnName": "Num",
+        "codes": [
+          {
+            "code": "FA",
+            "rows": 97,
+            "occurrences": 97
+          },
+          {
+            "code": "RS",
+            "rows": 72,
+            "occurrences": 72
+          },
+          {
+            "code": "FH",
+            "rows": 40,
+            "occurrences": 40
+          },
+          {
+            "code": "2",
+            "rows": 34,
+            "occurrences": 34
+          },
+          {
+            "code": "ALL",
+            "rows": 24,
+            "occurrences": 24
+          },
+          {
+            "code": "1",
+            "rows": 18,
+            "occurrences": 18
+          },
+          {
+            "code": "FAR",
+            "rows": 16,
+            "occurrences": 16
+          },
+          {
+            "code": "FRR",
+            "rows": 9,
+            "occurrences": 9
+          },
+          {
+            "code": "FHL",
+            "rows": 6,
+            "occurrences": 6
+          },
+          {
+            "code": "RA",
+            "rows": 6,
+            "occurrences": 6
+          },
+          {
+            "code": "3",
+            "rows": 3,
+            "occurrences": 3
+          },
+          {
+            "code": "LLR",
+            "rows": 2,
+            "occurrences": 2
+          },
+          {
+            "code": "LS",
+            "rows": 1,
+            "occurrences": 1
+          },
+          {
+            "code": "RP",
+            "rows": 1,
+            "occurrences": 1
+          }
+        ]
+      },
+      {
+        "slot": 3,
+        "weaponColumnIndex": 33,
+        "weaponColumnName": "Heavy Weapon 3",
+        "arcColumnIndex": 34,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 32,
+        "countColumnName": "Num",
+        "codes": [
+          {
+            "code": "FA",
+            "rows": 169,
+            "occurrences": 169
+          },
+          {
+            "code": "RS",
+            "rows": 59,
+            "occurrences": 59
+          },
+          {
+            "code": "1",
+            "rows": 58,
+            "occurrences": 58
+          },
+          {
+            "code": "2",
+            "rows": 50,
+            "occurrences": 50
+          },
+          {
+            "code": "RP",
+            "rows": 37,
+            "occurrences": 37
+          },
+          {
+            "code": "LS",
+            "rows": 26,
+            "occurrences": 26
+          },
+          {
+            "code": "LP",
+            "rows": 16,
+            "occurrences": 16
+          },
+          {
+            "code": "FHR",
+            "rows": 14,
+            "occurrences": 14
+          },
+          {
+            "code": "FH",
+            "rows": 11,
+            "occurrences": 11
+          },
+          {
+            "code": "ALL",
+            "rows": 6,
+            "occurrences": 6
+          },
+          {
+            "code": "FAR",
+            "rows": 5,
+            "occurrences": 5
+          },
+          {
+            "code": "FRR",
+            "rows": 5,
+            "occurrences": 5
+          },
+          {
+            "code": "3",
+            "rows": 4,
+            "occurrences": 4
+          },
+          {
+            "code": "FLL",
+            "rows": 3,
+            "occurrences": 3
+          },
+          {
+            "code": "RX",
+            "rows": 2,
+            "occurrences": 2
+          }
+        ]
+      },
+      {
+        "slot": 4,
+        "weaponColumnIndex": 36,
+        "weaponColumnName": "Heavy Weapon 4",
+        "arcColumnIndex": 37,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 35,
+        "countColumnName": "Num",
+        "codes": [
+          {
+            "code": "FA",
+            "rows": 129,
+            "occurrences": 129
+          },
+          {
+            "code": "1",
+            "rows": 54,
+            "occurrences": 54
+          },
+          {
+            "code": "RX",
+            "rows": 43,
+            "occurrences": 43
+          },
+          {
+            "code": "LP",
+            "rows": 39,
+            "occurrences": 39
+          },
+          {
+            "code": "2",
+            "rows": 34,
+            "occurrences": 34
+          },
+          {
+            "code": "RS",
+            "rows": 19,
+            "occurrences": 19
+          },
+          {
+            "code": "FHL",
+            "rows": 14,
+            "occurrences": 14
+          },
+          {
+            "code": "ALL",
+            "rows": 12,
+            "occurrences": 12
+          },
+          {
+            "code": "FH",
+            "rows": 8,
+            "occurrences": 8
+          },
+          {
+            "code": "FAL",
+            "rows": 5,
+            "occurrences": 5
+          },
+          {
+            "code": "FLL",
+            "rows": 5,
+            "occurrences": 5
+          },
+          {
+            "code": "3",
+            "rows": 3,
+            "occurrences": 3
+          },
+          {
+            "code": "FX",
+            "rows": 2,
+            "occurrences": 2
+          }
+        ]
+      },
+      {
+        "slot": 5,
+        "weaponColumnIndex": 39,
+        "weaponColumnName": "Heavy Weapon 5",
+        "arcColumnIndex": 40,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 38,
+        "countColumnName": "Num",
+        "codes": [
+          {
+            "code": "RP",
+            "rows": 79,
+            "occurrences": 79
+          },
+          {
+            "code": "LS",
+            "rows": 40,
+            "occurrences": 40
+          },
+          {
+            "code": "1",
+            "rows": 34,
+            "occurrences": 34
+          },
+          {
+            "code": "RH",
+            "rows": 22,
+            "occurrences": 22
+          },
+          {
+            "code": "RS",
+            "rows": 13,
+            "occurrences": 13
+          },
+          {
+            "code": "FA",
+            "rows": 10,
+            "occurrences": 10
+          },
+          {
+            "code": "2",
+            "rows": 8,
+            "occurrences": 8
+          },
+          {
+            "code": "FAR",
+            "rows": 6,
+            "occurrences": 6
+          },
+          {
+            "code": "FH",
+            "rows": 4,
+            "occurrences": 4
+          },
+          {
+            "code": "ALL",
+            "rows": 3,
+            "occurrences": 3
+          },
+          {
+            "code": "RA",
+            "rows": 3,
+            "occurrences": 3
+          },
+          {
+            "code": "FRR",
+            "rows": 2,
+            "occurrences": 2
+          }
+        ]
+      },
+      {
+        "slot": 6,
+        "weaponColumnIndex": 42,
+        "weaponColumnName": "Heavy Weapon 6",
+        "arcColumnIndex": 43,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 41,
+        "countColumnName": "Num",
+        "codes": [
+          {
+            "code": "ALL",
+            "rows": 70,
+            "occurrences": 70
+          },
+          {
+            "code": "LP",
+            "rows": 65,
+            "occurrences": 65
+          },
+          {
+            "code": "LS",
+            "rows": 53,
+            "occurrences": 53
+          },
+          {
+            "code": "RH",
+            "rows": 19,
+            "occurrences": 19
+          },
+          {
+            "code": "1",
+            "rows": 8,
+            "occurrences": 8
+          },
+          {
+            "code": "RP",
+            "rows": 8,
+            "occurrences": 8
+          },
+          {
+            "code": "2",
+            "rows": 7,
+            "occurrences": 7
+          },
+          {
+            "code": "FAL",
+            "rows": 6,
+            "occurrences": 6
+          },
+          {
+            "code": "FA",
+            "rows": 5,
+            "occurrences": 5
+          },
+          {
+            "code": "RS",
+            "rows": 4,
+            "occurrences": 4
+          },
+          {
+            "code": "FLL",
+            "rows": 2,
+            "occurrences": 2
+          }
+        ]
+      },
+      {
+        "slot": 7,
+        "weaponColumnIndex": 45,
+        "weaponColumnName": "Heavy Weapon 7",
+        "arcColumnIndex": 46,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 44,
+        "countColumnName": "Num",
+        "codes": [
+          {
+            "code": "2",
+            "rows": 96,
+            "occurrences": 96
+          },
+          {
+            "code": "1",
+            "rows": 66,
+            "occurrences": 66
+          },
+          {
+            "code": "3",
+            "rows": 64,
+            "occurrences": 64
+          },
+          {
+            "code": "ALL",
+            "rows": 40,
+            "occurrences": 40
+          },
+          {
+            "code": "LS",
+            "rows": 24,
+            "occurrences": 24
+          },
+          {
+            "code": "LLR",
+            "rows": 22,
+            "occurrences": 22
+          },
+          {
+            "code": "FRR",
+            "rows": 16,
+            "occurrences": 16
+          },
+          {
+            "code": "LP",
+            "rows": 6,
+            "occurrences": 6
+          },
+          {
+            "code": "RS",
+            "rows": 5,
+            "occurrences": 5
+          },
+          {
+            "code": "RA",
+            "rows": 3,
+            "occurrences": 3
+          },
+          {
+            "code": "RH",
+            "rows": 2,
+            "occurrences": 2
+          },
+          {
+            "code": "FA",
+            "rows": 1,
+            "occurrences": 1
+          }
+        ]
+      },
+      {
+        "slot": 8,
+        "weaponColumnIndex": 48,
+        "weaponColumnName": "Heavy Weapon 8",
+        "arcColumnIndex": 49,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 47,
+        "countColumnName": "Num",
+        "codes": [
+          {
+            "code": "LS",
+            "rows": 23,
+            "occurrences": 23
+          },
+          {
+            "code": "RRR",
+            "rows": 22,
+            "occurrences": 22
+          },
+          {
+            "code": "1",
+            "rows": 21,
+            "occurrences": 21
+          },
+          {
+            "code": "3",
+            "rows": 20,
+            "occurrences": 20
+          },
+          {
+            "code": "FX",
+            "rows": 20,
+            "occurrences": 20
+          },
+          {
+            "code": "FLL",
+            "rows": 16,
+            "occurrences": 16
+          },
+          {
+            "code": "ALL",
+            "rows": 13,
+            "occurrences": 13
+          },
+          {
+            "code": "2",
+            "rows": 12,
+            "occurrences": 12
+          },
+          {
+            "code": "RS",
+            "rows": 3,
+            "occurrences": 3
+          },
+          {
+            "code": "FA",
+            "rows": 1,
+            "occurrences": 1
+          }
+        ]
+      },
+      {
+        "slot": 9,
+        "weaponColumnIndex": 51,
+        "weaponColumnName": "Heavy Weapon 9",
+        "arcColumnIndex": 52,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 50,
+        "countColumnName": "Num",
+        "codes": [
+          {
+            "code": "1",
+            "rows": 95,
+            "occurrences": 95
+          },
+          {
+            "code": "ALL",
+            "rows": 20,
+            "occurrences": 20
+          },
+          {
+            "code": "FAL",
+            "rows": 17,
+            "occurrences": 17
+          },
+          {
+            "code": "FA",
+            "rows": 13,
+            "occurrences": 13
+          },
+          {
+            "code": "3",
+            "rows": 7,
+            "occurrences": 7
+          },
+          {
+            "code": "RS",
+            "rows": 6,
+            "occurrences": 6
+          },
+          {
+            "code": "2",
+            "rows": 2,
+            "occurrences": 2
+          },
+          {
+            "code": "LLR",
+            "rows": 1,
+            "occurrences": 1
+          },
+          {
+            "code": "LS",
+            "rows": 1,
+            "occurrences": 1
+          },
+          {
+            "code": "RH",
+            "rows": 1,
+            "occurrences": 1
+          }
+        ]
+      },
+      {
+        "slot": 10,
+        "weaponColumnIndex": 54,
+        "weaponColumnName": "Heavy Weapon 10",
+        "arcColumnIndex": 55,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 53,
+        "countColumnName": "Num",
+        "codes": [
+          {
+            "code": "RAL",
+            "rows": 17,
+            "occurrences": 17
+          },
+          {
+            "code": "RX",
+            "rows": 15,
+            "occurrences": 15
+          },
+          {
+            "code": "1",
+            "rows": 13,
+            "occurrences": 13
+          },
+          {
+            "code": "LS",
+            "rows": 6,
+            "occurrences": 6
+          },
+          {
+            "code": "3",
+            "rows": 2,
+            "occurrences": 2
+          },
+          {
+            "code": "RRR",
+            "rows": 1,
+            "occurrences": 1
+          }
+        ]
       }
     ]
   },
@@ -1117,8 +2714,8 @@
         "rows": 64,
         "occurrences": 101,
         "slots1to10": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 64,
+          "occurrences": 101
         },
         "slots11to25": {
           "rows": 0,
@@ -1130,8 +2727,8 @@
         "rows": 37,
         "occurrences": 39,
         "slots1to10": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 37,
+          "occurrences": 39
         },
         "slots11to25": {
           "rows": 0,
@@ -1143,8 +2740,8 @@
         "rows": 19,
         "occurrences": 20,
         "slots1to10": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 19,
+          "occurrences": 20
         },
         "slots11to25": {
           "rows": 0,
@@ -1156,8 +2753,8 @@
         "rows": 9,
         "occurrences": 9,
         "slots1to10": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 9,
+          "occurrences": 9
         },
         "slots11to25": {
           "rows": 0,
@@ -1169,8 +2766,8 @@
         "rows": 3,
         "occurrences": 3,
         "slots1to10": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 3,
+          "occurrences": 3
         },
         "slots11to25": {
           "rows": 0,
@@ -1182,8 +2779,8 @@
         "rows": 1,
         "occurrences": 1,
         "slots1to10": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 1,
+          "occurrences": 1
         },
         "slots11to25": {
           "rows": 0,
@@ -1195,8 +2792,8 @@
         "rows": 1,
         "occurrences": 1,
         "slots1to10": {
-          "rows": 0,
-          "occurrences": 0
+          "rows": 1,
+          "occurrences": 1
         },
         "slots11to25": {
           "rows": 0,
@@ -1264,7 +2861,87 @@
           "Arc",
           "Arc",
           "Arc"
-        ]
+        ],
+        "countColumnNames": [
+          "Num",
+          "Shots",
+          "Num",
+          "Shots",
+          "Num",
+          "Shots",
+          "Num",
+          "Shots",
+          "Num",
+          "Shots"
+        ],
+        "slotPairs": [
+          {
+            "slot": 1,
+            "weaponColumnIndex": 4,
+            "weaponColumnName": "Weapon1",
+            "arcColumnIndex": 5,
+            "arcColumnName": "Arc",
+            "countColumnIndex": 3,
+            "countColumnName": "Num"
+          },
+          {
+            "slot": 2,
+            "weaponColumnIndex": 8,
+            "weaponColumnName": "Weapon2",
+            "arcColumnIndex": 9,
+            "arcColumnName": "Arc",
+            "countColumnIndex": 7,
+            "countColumnName": "Num"
+          },
+          {
+            "slot": 3,
+            "weaponColumnIndex": 12,
+            "weaponColumnName": "Weapon3",
+            "arcColumnIndex": 13,
+            "arcColumnName": "Arc",
+            "countColumnIndex": 11,
+            "countColumnName": "Num"
+          },
+          {
+            "slot": 4,
+            "weaponColumnIndex": 16,
+            "weaponColumnName": "Weapon4",
+            "arcColumnIndex": 17,
+            "arcColumnName": "Arc",
+            "countColumnIndex": 15,
+            "countColumnName": "Num"
+          },
+          {
+            "slot": 5,
+            "weaponColumnIndex": 20,
+            "weaponColumnName": "Weapon5",
+            "arcColumnIndex": 21,
+            "arcColumnName": "Arc",
+            "countColumnIndex": 19,
+            "countColumnName": "Num"
+          }
+        ],
+        "weaponSlotOf": {
+          "4": 1,
+          "8": 2,
+          "12": 3,
+          "16": 4,
+          "20": 5
+        },
+        "arcSlotOf": {
+          "5": 1,
+          "9": 2,
+          "13": 3,
+          "17": 4,
+          "21": 5
+        },
+        "countSlotOf": {
+          "3": 1,
+          "7": 2,
+          "11": 3,
+          "15": 4,
+          "19": 5
+        }
       }
     },
     "raceRowCounts": [
@@ -1303,6 +2980,151 @@
       {
         "race": "Romulan",
         "rows": 1
+      }
+    ],
+    "numericArcCodeSources": [
+      {
+        "code": "1",
+        "rows": 0,
+        "occurrences": 0,
+        "columns": []
+      },
+      {
+        "code": "2",
+        "rows": 0,
+        "occurrences": 0,
+        "columns": []
+      },
+      {
+        "code": "3",
+        "rows": 0,
+        "occurrences": 0,
+        "columns": []
+      }
+    ],
+    "heavyWeaponSlotArcs": [
+      {
+        "slot": 1,
+        "weaponColumnIndex": 4,
+        "weaponColumnName": "Weapon1",
+        "arcColumnIndex": 5,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 3,
+        "countColumnName": "Num",
+        "codes": [
+          {
+            "code": "FH",
+            "rows": 58,
+            "occurrences": 58
+          },
+          {
+            "code": "FX",
+            "rows": 14,
+            "occurrences": 14
+          },
+          {
+            "code": "ALL",
+            "rows": 9,
+            "occurrences": 9
+          }
+        ]
+      },
+      {
+        "slot": 2,
+        "weaponColumnIndex": 8,
+        "weaponColumnName": "Weapon2",
+        "arcColumnIndex": 9,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 7,
+        "countColumnName": "Num",
+        "codes": [
+          {
+            "code": "FH",
+            "rows": 31,
+            "occurrences": 31
+          },
+          {
+            "code": "ALL",
+            "rows": 19,
+            "occurrences": 19
+          },
+          {
+            "code": "RX",
+            "rows": 5,
+            "occurrences": 5
+          },
+          {
+            "code": "FX",
+            "rows": 1,
+            "occurrences": 1
+          },
+          {
+            "code": "LS",
+            "rows": 1,
+            "occurrences": 1
+          }
+        ]
+      },
+      {
+        "slot": 3,
+        "weaponColumnIndex": 12,
+        "weaponColumnName": "Weapon3",
+        "arcColumnIndex": 13,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 11,
+        "countColumnName": "Num",
+        "codes": [
+          {
+            "code": "FH",
+            "rows": 12,
+            "occurrences": 12
+          },
+          {
+            "code": "ALL",
+            "rows": 11,
+            "occurrences": 11
+          },
+          {
+            "code": "FX",
+            "rows": 5,
+            "occurrences": 5
+          },
+          {
+            "code": "RX",
+            "rows": 4,
+            "occurrences": 4
+          },
+          {
+            "code": "RA",
+            "rows": 3,
+            "occurrences": 3
+          },
+          {
+            "code": "RS",
+            "rows": 1,
+            "occurrences": 1
+          }
+        ]
+      },
+      {
+        "slot": 4,
+        "weaponColumnIndex": 16,
+        "weaponColumnName": "Weapon4",
+        "arcColumnIndex": 17,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 15,
+        "countColumnName": "Num",
+        "codes": []
+      },
+      {
+        "slot": 5,
+        "weaponColumnIndex": 20,
+        "weaponColumnName": "Weapon5",
+        "arcColumnIndex": 21,
+        "arcColumnName": "Arc",
+        "countColumnIndex": 19,
+        "countColumnName": "Num",
+        "codes": []
       }
     ]
   },
