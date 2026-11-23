@@ -423,9 +423,11 @@ parser flags any duplicates as `duplicateClassKey` diagnostics. Spawning is toke
 #37). At load, the loader converts each `{ race, className }` key to a **small integer class id**, assigned
 in **sorted string order** so every peer gets the same mapping. The sim and replays store **only the
 integer**; mission files and `requestSpawn` keep the string key. **Duplicate keys** are reported in the
-load diagnostics and **block multiplayer sessions**. The diagnostic is `duplicateClassKey`, severity `error`, with the
-race, className and shiplist row numbers involved as details. Codes are stable camelCase and add-only, and
-are defined in `docs/engine/data-loader.md` (Engine Lead).
+load diagnostics and **block multiplayer sessions**. The diagnostic is `{ code: "duplicateClassKey",
+source: "shiplist" }`, severity `error`, with the race, className and shiplist row numbers involved as
+details. A related warning, `duplicateClassName` (same class name under different races, [PR #42](https://github.com/danielsegan/sfc2-browser-edition/pull/42)), is reported as
+a warning only. Codes are stable camelCase and add-only, and are
+defined in `docs/engine/data-loader.md` (Engine Lead).
 
 **Shield facings** (studio convention, matching `docs/ui/hud-spec.md` in PR #39 and Combat's rules): the
 engine model's `shields` is an array indexed **0 to 5, where 0 is the front facing and the indices go
@@ -621,7 +623,8 @@ level live in the scenario so they can be ported exactly.
 
 ```ts
 interface TextApi {
-  say(def: { to: TeamId | "all"; text: TextRef; from?: ShipHandle; channel?: "mission" | "comm" | "chatter" }): CommandToken;  // emits `hail`
+  say(def: { to: TeamId | "all"; text: TextRef; from?: ShipHandle; channel?: "mission" | "comm" | "chatter";
+             speakerKey?: string; portraitKey?: string }): CommandToken;  // emits `hail`
   commButton(def: { ship: ShipHandle; team: TeamId; id: string; label: TextRef }): CommandToken;
   clearCommButton(ship: ShipHandle, id: string): CommandToken;
   debrief(team: TeamId, text: TextRef): CommandToken;
@@ -643,9 +646,9 @@ type CampaignValue = number | string | boolean;    // integers only for numbers
 type MissionUiEvent =
   | { type: "objectiveUpdated"; id: string; team: TeamId; state: ObjectiveState; text: TextRef }
   | { type: "missionTimer"; id: string; team?: TeamId; remainingTicks: Tick; label?: TextRef }
-  | { type: "hail"; to: TeamId | "all"; from?: ShipHandle; channel: "mission" | "comm" | "chatter"; text: TextRef; speaker?: TextKey; portrait?: PortraitKey }
-  | { type: "briefing"; empire: EmpireId; text: TextRef; speaker?: TextKey; portrait?: PortraitKey }
-  | { type: "debrief"; team: TeamId; text: TextRef; speaker?: TextKey; portrait?: PortraitKey };
+  | { type: "hail"; to: TeamId | "all"; from?: ShipHandle; channel: "mission" | "comm" | "chatter"; text: TextRef; speakerKey?: string; portraitKey?: string }
+  | { type: "briefing"; empire: EmpireId; text: TextRef; speakerKey?: string; portraitKey?: string }
+  | { type: "debrief"; team: TeamId; text: TextRef; speakerKey?: string; portraitKey?: string };
 ```
 
 They carry **string keys** (`TextRef`), never baked-in text. Briefings and hails render in **localizable
@@ -666,10 +669,16 @@ resolve to text is in 6.12.
 - Where the original game placed these on screen is **TO VERIFY** against CE 2.670.
 
 **Panels** (UI & Art Director). The briefing, debrief and hail panels are HTML components owned by the
-UI & Art Director and specced in `docs/ui/hud-spec.md`. Each takes a string key plus optional **speaker**
-and **portrait** keys. Portraits come from the **player's own install**; when a portrait key doesn't
-resolve, the panel shows an **original silhouette** we drew ourselves. Missions only pass keys; layout and
-styling follow the HUD spec, not this doc.
+UI & Art Director and specced in `docs/ui/hud-spec.md`. Each takes a string key plus two optional fields
+([PR #40](https://github.com/danielsegan/sfc2-browser-edition/pull/40), `hud-spec.md` §14):
+
+- **`speakerKey?: string`**: the speaker's name or string key.
+- **`portraitKey?: string`**: a portrait asset key.
+
+Both are resolved **at runtime against the player's own install**. The key naming is **unverified** until
+checked against CE 2.670. If a field is absent or doesn't resolve, the panel shows **no portrait** and the
+**default speaker label**; that fallback is owned by UI & Art in `docs/ui/hud-spec.md` §14. Missions only
+pass keys; layout and styling follow the HUD spec, not this doc.
 
 Persistence handoff: the mission never writes saves. It returns `MissionResult`; the campaign layer
 validates it and decides what to persist.
@@ -794,7 +803,7 @@ with a scripted twist, such as one from the Mirak folder, exercises most of the 
    the VM, not files committed to the repo), briefings by key, victory preset, prestige table.
 4. **Write the script** for what data can't express, using the state-machine layer so each original state
    has a clear counterpart.
-5. **Validate against the player's data** with the loader's validation step (unknown ship keys, `duplicateClassKey`, bad cells).
+5. **Validate against the player's data** with the loader's validation step (unknown ship keys, `duplicateClassKey` errors and `duplicateClassName` warnings, bad cells).
 6. **Black-box comparison.** Play the original under Wine on the VM and record observable outcomes:
    which events happen, rough timings, victory level for a handful of scripted playthroughs. Compare with
    ours. Exact tick timings won't match; outcomes and ordering should.
@@ -828,13 +837,25 @@ These are kept strictly apart (Asset & Formats Engineer):
 - The Mission & Campaign Designer owns the schema (planned at `docs/missions/mission.schema.json`, JSON
   Schema, versioned with `schemaVersion`). It covers scenario metadata, teams, relations, ships by
   ship key (`{ "race": ..., "className": ... }`, [PR #38](https://github.com/danielsegan/sfc2-browser-edition/pull/38)), map, objectives, victory preset, prestige table, string-table references and the optional
-  script entry.
+  script entry. Briefing and debrief entries can carry the same optional `speakerKey` and `portraitKey`
+  as the UI events ([PR #40](https://github.com/danielsegan/sfc2-browser-edition/pull/40)), for example:
+
+  ```json
+  { "briefings": { "federation": { "text": "mission.example-patrol.briefing.federation",
+                                  "speakerKey": "...", "portraitKey": "..." } } }
+  ```
+
+  (Key values are placeholders; real speaker and portrait key naming is unverified until checked against
+  CE 2.670.)
 - The Asset & Formats importer validates these files and returns **`{ data, diagnostics }`**: `data` is
   the typed scenario (or `null` if it can't be used), and `diagnostics` is a list of
-  `{ severity: "error" | "warning" | "info", path, code, message }` entries (for example an unknown ship
-  key, a ship key that matches more than one shiplist entry (`duplicateClassKey`, severity `error`), an off-map cell or
-  a missing string key). Diagnostic codes are stable camelCase and add-only; the engine's codes are
-  defined in `docs/engine/data-loader.md`. The loader refuses to start a mission with any
+  `{ code, source, severity: "error" | "warning" | "info", path, message, details? }` entries. This
+  follows the studio convention (Engine Lead): a stable camelCase **`code`** plus a separate **`source`**,
+  for example `{ code: "duplicateClassKey", source: "shiplist" }`. Diagnostics about our own mission files
+  use `source: "mission"` (for example an unknown ship key, an off-map cell or a missing string key); ones
+  inherited from the shiplist keep `source: "shiplist"`, such as `duplicateClassKey` (severity `error`) and
+  `duplicateClassName` (severity `warning`: the same class name under different races, [PR #42](https://github.com/danielsegan/sfc2-browser-edition/pull/42)). Codes are
+  add-only; the engine's codes are defined in `docs/engine/data-loader.md`. The loader refuses to start a mission with any
   `error` diagnostic and shows the list to the author.
 - Test fixtures in the repo are synthetic files we write ourselves.
 
@@ -1016,8 +1037,9 @@ unverified until the PR #38 checklist confirms it, and the parser flags duplicat
 
 Answered: objectives and timer display (6.10, details in `docs/ui/hud-spec.md`; original placement TO
 VERIFY). Also answered: the briefing, debrief and hail panels are UI-owned HTML components specced in
-`docs/ui/hud-spec.md`; each takes a string key plus optional speaker and portrait keys; portraits come from
-the player's install with an original silhouette as fallback; English only at launch with English fallback
+`docs/ui/hud-spec.md`; each takes a string key plus optional `speakerKey` and `portraitKey` (#40, §14),
+resolved at runtime against the player's install, with no portrait and a default speaker label when absent
+or unresolved; English only at launch with English fallback
 for every key; original game strings are read from the player's string tables at runtime and never
 committed. Nothing left open for UI & Art in this doc beyond verifying original placement.
 
