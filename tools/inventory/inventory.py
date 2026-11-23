@@ -179,6 +179,123 @@ def _is_repeat_header(line: str, delimiter: str, header_names: list[str]) -> boo
     return bool(folded[0]) and folded[0] == headers[0] and folded[0] == "race" and _looks_like_header_line(line)
 
 
+_INSTRUCTION_RE = re.compile(
+    r"(do not edit|back-?up|this file contains|keep the first column blank|"
+    r"write a comment|instruction|synthetic fixture)",
+    re.IGNORECASE,
+)
+_PREAMBLE_MARKER_RE = re.compile(r"^<[^>\s]*>?$")
+_SINGLE_HEADER_VOCAB_RE = re.compile(
+    r"^(code|name|id|index|count|type|class|race|weapon|arc|damage|range|value)$",
+    re.IGNORECASE,
+)
+
+
+def _is_numeric_token(text: str) -> bool:
+    try:
+        float(text.strip())
+        return True
+    except ValueError:
+        return False
+
+
+def _is_comment_or_instruction_line(line: str, delimiter: str) -> bool:
+    """True for leading instruction rows, not for column-header or data rows.
+
+    The CE 2.670 shiplist/ftrlist comment form is: first column blank, a
+    sentence in column 2, and trailing empty fields.
+    """
+    stripped = line.strip()
+    if not stripped:
+        return False
+    if stripped.startswith(";") or stripped.startswith("#") or stripped.startswith("//"):
+        return True
+    cells = [c.strip() for c in split_line(line, delimiter)]
+    if len(cells) >= 2 and cells[0] == "" and cells[1]:
+        if all(not c for c in cells[2:]):
+            text = cells[1]
+            if " " in text or len(text) > 24 or _INSTRUCTION_RE.search(text):
+                return True
+    return False
+
+
+def _is_preamble_marker_line(line: str) -> bool:
+    """A lone marker such as ``<0``, not a column-header row."""
+    stripped = line.strip()
+    if not stripped:
+        return False
+    if "\t" in line:
+        return False
+    return bool(_PREAMBLE_MARKER_RE.match(stripped))
+
+
+def _looks_like_column_header_line(line: str, delimiter: str) -> bool:
+    if _is_comment_or_instruction_line(line, delimiter) or _is_preamble_marker_line(line):
+        return False
+    cells = [c.strip() for c in split_line(line, delimiter)]
+    nonempty = [c for c in cells if c]
+    if not nonempty:
+        return False
+    if len(nonempty) == 1:
+        return bool(_SINGLE_HEADER_VOCAB_RE.match(nonempty[0]))
+    # Long sentences are instructions, not column labels.
+    if any(len(c) > 48 or c.count(" ") >= 4 for c in nonempty):
+        return False
+    numeric = sum(1 for c in nonempty if _is_numeric_token(c))
+    if numeric * 2 >= len(nonempty):
+        return False
+    return True
+
+
+def _slot_number_from_header(name: str) -> int | None:
+    m = re.search(r"(\d+)\s*$", name.strip())
+    if not m:
+        return None
+    try:
+        return int(m.group(1))
+    except ValueError:
+        return None
+
+
+def _slot_band(slot: int | None) -> str:
+    if slot is None:
+        return "other"
+    if 1 <= slot <= 10:
+        return "1-10"
+    if 11 <= slot <= 25:
+        return "11-25"
+    return "other"
+
+
+def _is_assets_specs_path(path: str) -> bool:
+    parts = Path(str(path).replace("\\", "/")).parts
+    lower = [p.lower() for p in parts]
+    for i, part in enumerate(lower):
+        if part == "assets" and i + 1 < len(lower) and lower[i + 1] == "specs":
+            return True
+    return False
+
+
+def _is_metaassets_path(path: str) -> bool:
+    return "metaassets" in [p.lower() for p in Path(str(path).replace("\\", "/")).parts]
+
+
+def preferred_spec_index(copies: Sequence[tuple[Path, Any]], root: Path) -> int:
+    """Prefer Assets/Specs (any case) over MetaAssets."""
+    best = 0
+    best_rank = (2, 1, "")
+    for i, (path, _meta) in enumerate(copies):
+        rel = relpath(path, root)
+        rank = (
+            0 if _is_assets_specs_path(rel) else 1,
+            1 if _is_metaassets_path(rel) else 0,
+            rel.lower(),
+        )
+        if rank < best_rank:
+            best_rank = rank
+            best = i
+    return best
+
 def relpath(path: Path, root: Path | None) -> str:
     try:
         if root is not None:
@@ -560,28 +677,45 @@ def inspect_table_file(path: Path, root: Path | None, digest: str | None = None)
         body = text
     raw_lines = re.split(r"\r\n|\n|\r", body)
     line_endings = detect_line_endings(text)
-    header_idx = None
-    for i, line in enumerate(raw_lines):
-        if line.strip():
-            header_idx = i
-            break
-    if header_idx is None:
+
+    def _empty_meta(delimiter: str = "unknown", header_names: list[str] | None = None, header_line: int = 0, header_row_count: int = 0, row_count: int = 0) -> TableMeta:
+        names = header_names or []
         return TableMeta(
             path=relpath(path, root),
             size=len(data),
             sha256=digest or _sha256_bytes(data),
             encoding=encoding,
             lineEndings=line_endings,
-            delimiter="unknown",
-            headerNames=[],
-            columnCount=0,
-            rowCount=0,
-            headerLine=0,
-            headerRowCount=0,
+            delimiter=delimiter,
+            headerNames=names,
+            columnCount=len(names),
+            rowCount=row_count,
+            headerLine=header_line,
+            headerRowCount=header_row_count,
             hasBom=has_bom,
         )
+
+    header_idx = None
+    delimiter = "unknown"
+    for i, line in enumerate(raw_lines):
+        if not line.strip():
+            continue
+        delim = detect_delimiter(line)
+        if _is_preamble_marker_line(line) or _is_comment_or_instruction_line(line, delim):
+            continue
+        if _looks_like_column_header_line(line, delim):
+            header_idx = i
+            delimiter = delim
+            break
+        # A non-comment, non-header line means data has started; no header.
+        break
+    if header_idx is None:
+        row_count = sum(1 for line in raw_lines if line.strip() and not _is_preamble_marker_line(line) and not _is_comment_or_instruction_line(line, detect_delimiter(line)))
+        return _empty_meta(row_count=row_count)
+
     header_line = raw_lines[header_idx]
-    delimiter = detect_delimiter(header_line)
+    if delimiter == "unknown":
+        delimiter = detect_delimiter(header_line)
     header_names = [c.strip() for c in split_line(header_line, delimiter)]
     header_row_count = 1
     first_data = header_idx + 1
@@ -723,6 +857,7 @@ class SpecVerification:
     raceTokens: list[str]
     hullTokens: list[str]
     columnSelection: dict[str, Any]
+    sourcePath: str | None
 
 
 def verify_spec_tables(
@@ -774,18 +909,22 @@ def verify_spec_tables(
         copies=copy_infos,
         table=None,
         diagnostics=[{"code": "fileNotFound", "source": label, "severity": "error", "details": {}}],
-        uniqueness={"unique": None, "duplicateKeyCount": 0, "duplicateKeys": []},
+        uniqueness={"unique": None, "duplicateKeyCount": 0, "duplicateKeys": [], "duplicateClassNameCount": 0, "duplicateClassNames": []},
         fightersAndPfs={},
         weaponCodes=[],
         arcCodes=[],
         raceTokens=[],
         hullTokens=[],
         columnSelection={},
+        sourcePath=None,
     )
     if not tables:
         return empty
 
-    meta, raw_lines, delimiter = texts[0]
+    preferred = preferred_spec_index(copies, root)
+    meta, raw_lines, delimiter = texts[preferred]
+    source_path = copy_infos[preferred]["path"]
+    log.info(f"{label} source copy (Assets/Specs preferred over MetaAssets): {source_path}")
     headers = meta.headerNames
     race_cols = find_columns(headers, RACE_HEADER_RE)
     class_idx = pick_class_column(headers)
@@ -806,17 +945,28 @@ def verify_spec_tables(
     key_rows: dict[str, dict[str, Any]] = {}
     race_tokens: Counter[str] = Counter()
     hull_tokens: Counter[str] = Counter()
-    weapon_rows: dict[str, set[int]] = defaultdict(set)
-    weapon_occ: Counter[str] = Counter()
-    arc_rows: dict[str, set[int]] = defaultdict(set)
-    arc_occ: Counter[str] = Counter()
+    weapon_rows: dict[str, dict[str, set[int]]] = defaultdict(lambda: {"all": set(), "1-10": set(), "11-25": set(), "other": set()})
+    weapon_occ: dict[str, dict[str, int]] = defaultdict(lambda: {"all": 0, "1-10": 0, "11-25": 0, "other": 0})
+    arc_rows: dict[str, dict[str, set[int]]] = defaultdict(lambda: {"all": set(), "1-10": set(), "11-25": set(), "other": set()})
+    arc_occ: dict[str, dict[str, int]] = defaultdict(lambda: {"all": 0, "1-10": 0, "11-25": 0, "other": 0})
+    name_rows: dict[str, dict[str, Any]] = {}
     fighter_rows = 0
     pf_rows = 0
+    weapon_slot_of = {i: _slot_band(_slot_number_from_header(headers[i])) for i in weapon_info["weaponColumns"]}
+    arc_slot_of = {i: _slot_band(_slot_number_from_header(headers[i])) for i in weapon_info["arcColumns"]}
+
+    def _tally(rows_map: dict, occ_map: dict, code: str, line_no: int, band: str) -> None:
+        rows_map[code]["all"].add(line_no)
+        rows_map[code][band].add(line_no)
+        occ_map[code]["all"] += 1
+        occ_map[code][band] += 1
 
     for line_no, line in enumerate(raw_lines, start=1):
         if line_no <= meta.headerLine - 1 + meta.headerRowCount:
             continue
         if not line.strip():
+            continue
+        if _is_comment_or_instruction_line(line, delimiter):
             continue
         cells = split_line(line, delimiter)
         race = _cell(cells, race_idx)
@@ -845,17 +995,22 @@ def verify_spec_tables(
                 key_rows[fold] = {"race": race, "className": class_name, "rows": [line_no]}
             else:
                 entry["rows"].append(line_no)
+        if class_idx is not None and class_name:
+            nfold = class_name.casefold()
+            nentry = name_rows.get(nfold)
+            if nentry is None:
+                name_rows[nfold] = {"className": class_name, "rows": [line_no]}
+            else:
+                nentry["rows"].append(line_no)
 
         for ci in weapon_info["weaponColumns"]:
             val = _cell(cells, ci)
             if val:
-                weapon_occ[val] += 1
-                weapon_rows[val].add(line_no)
+                _tally(weapon_rows, weapon_occ, val, line_no, weapon_slot_of[ci])
         for ci in weapon_info["arcColumns"]:
             val = _cell(cells, ci)
             if val:
-                arc_occ[val] += 1
-                arc_rows[val].add(line_no)
+                _tally(arc_rows, arc_occ, val, line_no, arc_slot_of[ci])
 
     duplicate_keys = []
     for _fold, entry in sorted(key_rows.items(), key=lambda kv: kv[1]["rows"][0]):
@@ -884,6 +1039,30 @@ def verify_spec_tables(
                 f"race={entry['race']!s} className={entry['className']!s} rows={entry['rows']}"
             )
 
+    duplicate_names = []
+    for _fold, entry in sorted(name_rows.items(), key=lambda kv: kv[1]["rows"][0]):
+        if len(entry["rows"]) > 1:
+            diag = {
+                "code": "duplicateClassName",
+                "source": label,
+                "severity": "warning",
+                "details": {
+                    "className": entry["className"],
+                    "rows": entry["rows"],
+                },
+            }
+            diagnostics.append(diag)
+            duplicate_names.append(
+                {
+                    "className": entry["className"],
+                    "rows": entry["rows"],
+                }
+            )
+            log.info(
+                f"{label} diagnostic: code=duplicateClassName source={label} severity=warning "
+                f"className={entry['className']!s} rows={entry['rows']}"
+            )
+
     uniqueness = {
         "keyForm": "${race}:${className}",
         "comparison": "case-insensitive",
@@ -892,10 +1071,13 @@ def verify_spec_tables(
         "keyCount": len(key_rows),
         "duplicateKeyCount": len(duplicate_keys),
         "duplicateKeys": duplicate_keys,
+        "duplicateClassNameCount": len(duplicate_names),
+        "duplicateClassNames": duplicate_names,
     }
     log.info(
         f"{label} uniqueness: columnsFound={uniqueness['columnsFound']} "
         f"keyCount={uniqueness['keyCount']} duplicateKeyCount={uniqueness['duplicateKeyCount']} "
+        f"duplicateClassNameCount={uniqueness['duplicateClassNameCount']} "
         f"unique={uniqueness['unique']}"
     )
 
@@ -919,21 +1101,39 @@ def verify_spec_tables(
         f"fighterHullTokens={fighter_tokens} pfHullTokens={pf_tokens}"
     )
 
-    weapon_codes = [
-        {"code": code, "rows": len(weapon_rows[code]), "occurrences": weapon_occ[code]}
-        for code in sorted(weapon_occ, key=lambda c: (-weapon_occ[c], c))
-    ]
-    arc_codes = [
-        {"code": code, "rows": len(arc_rows[code]), "occurrences": arc_occ[code]}
-        for code in sorted(arc_occ, key=lambda c: (-arc_occ[c], c))
-    ]
+    def _code_items(rows_map: dict, occ_map: dict) -> list[dict[str, Any]]:
+        items = []
+        for code in sorted(occ_map, key=lambda c: (-occ_map[c]["all"], c)):
+            items.append(
+                {
+                    "code": code,
+                    "rows": len(rows_map[code]["all"]),
+                    "occurrences": occ_map[code]["all"],
+                    "slots1to10": {
+                        "rows": len(rows_map[code]["1-10"]),
+                        "occurrences": occ_map[code]["1-10"],
+                    },
+                    "slots11to25": {
+                        "rows": len(rows_map[code]["11-25"]),
+                        "occurrences": occ_map[code]["11-25"],
+                    },
+                }
+            )
+        return items
+
+    weapon_codes = _code_items(weapon_rows, weapon_occ)
+    arc_codes = _code_items(arc_rows, arc_occ)
     if weapon_info["weaponColumns"]:
         log.info(
             f"{label} distinct weapon codes: {len(weapon_codes)} "
             f"(column names: {json.dumps(weapon_info['weaponColumnNames'])})"
         )
         for item in weapon_codes:
-            log.info(f"{label} weapon code {item['code']!s}: rows={item['rows']} occurrences={item['occurrences']}")
+            log.info(
+                f"{label} weapon code {item['code']!s}: rows={item['rows']} occurrences={item['occurrences']} "
+                f"slots1to10 rows={item['slots1to10']['rows']} occ={item['slots1to10']['occurrences']} "
+                f"slots11to25 rows={item['slots11to25']['rows']} occ={item['slots11to25']['occurrences']}"
+            )
     else:
         log.info(f"{label} weapon columns: not identified from headers")
     if weapon_info["arcColumns"]:
@@ -942,7 +1142,11 @@ def verify_spec_tables(
             f"(column names: {json.dumps(weapon_info['arcColumnNames'])})"
         )
         for item in arc_codes:
-            log.info(f"{label} arc code {item['code']!s}: rows={item['rows']} occurrences={item['occurrences']}")
+            log.info(
+                f"{label} arc code {item['code']!s}: rows={item['rows']} occurrences={item['occurrences']} "
+                f"slots1to10 rows={item['slots1to10']['rows']} occ={item['slots1to10']['occurrences']} "
+                f"slots11to25 rows={item['slots11to25']['rows']} occ={item['slots11to25']['occurrences']}"
+            )
     else:
         log.info(f"{label} arc columns: not identified from headers")
 
@@ -960,7 +1164,9 @@ def verify_spec_tables(
         raceTokens=sorted(race_tokens),
         hullTokens=sorted(hull_tokens),
         columnSelection=col_sel,
+        sourcePath=source_path,
     )
+
 
 
 def _cell(cells: Sequence[str], index: int | None) -> str:
@@ -1721,6 +1927,9 @@ def write_verify_markdown(
 def _write_spec_md(a, label: str, spec: SpecVerification) -> None:
     a(f"## {label}")
     a("")
+    if spec.sourcePath:
+        a(f"- Source copy (Assets/Specs preferred over MetaAssets): `{_md_escape(spec.sourcePath)}`")
+        a("")
     a(f"### Copies ({len(spec.copies)})")
     a("")
     a("| Path | Size | sha256 |")
@@ -1755,6 +1964,7 @@ def _write_spec_md(a, label: str, spec: SpecVerification) -> None:
     a(f"- Key count: {u.get('keyCount')}")
     a(f"- Unique: {u.get('unique')}")
     a(f"- Duplicate key count: {u.get('duplicateKeyCount')}")
+    a(f"- Duplicate class-name count: {u.get('duplicateClassNameCount')}")
     a("")
     if u.get("duplicateKeys"):
         a("Duplicate keys (keys and row numbers only):")
@@ -1766,6 +1976,14 @@ def _write_spec_md(a, label: str, spec: SpecVerification) -> None:
                 f"| `{_md_escape(k['key'])}` | `{_md_escape(k['race'])}` | "
                 f"`{_md_escape(k['className'])}` | {k['rows']} |"
             )
+        a("")
+    if u.get("duplicateClassNames"):
+        a("Duplicate class names (names and row numbers only):")
+        a("")
+        a("| className | rows |")
+        a("| --- | --- |")
+        for k in u["duplicateClassNames"]:
+            a(f"| `{_md_escape(k['className'])}` | {k['rows']} |")
         a("")
     if spec.diagnostics:
         a("Diagnostics use a flat camelCase `code` plus a separate `source` naming the format:")
@@ -1792,25 +2010,37 @@ def _write_spec_md(a, label: str, spec: SpecVerification) -> None:
     if label == "shiplist" or spec.weaponCodes or spec.arcCodes:
         a("### Weapon and arc codes (vocabulary, with row counts)")
         a("")
-        a("Empty cells are omitted. `rows` is the number of data rows that use the code at least once; `occurrences` is the number of filled slot cells.")
+        a("Empty cells are omitted. `rows` is the number of data rows that use the code at least once; `occurrences` is the number of filled slot cells. Slot ranges 1–10 and 11–25 are taken from the numeric suffix on the weapon/arc header name.")
         a("")
         a("Weapon codes:")
         a("")
-        a("| Code | Rows | Occurrences |")
-        a("| --- | ---: | ---: |")
+        a("| Code | Rows | Occurrences | Rows 1–10 | Occ. 1–10 | Rows 11–25 | Occ. 11–25 |")
+        a("| --- | ---: | ---: | ---: | ---: | ---: | ---: |")
         for item in spec.weaponCodes:
-            a(f"| `{_md_escape(item['code'])}` | {item['rows']} | {item['occurrences']} |")
+            s1 = item.get("slots1to10") or {}
+            s2 = item.get("slots11to25") or {}
+            a(
+                f"| `{_md_escape(item['code'])}` | {item['rows']} | {item['occurrences']} | "
+                f"{s1.get('rows', 0)} | {s1.get('occurrences', 0)} | "
+                f"{s2.get('rows', 0)} | {s2.get('occurrences', 0)} |"
+            )
         if not spec.weaponCodes:
-            a("| *(none identified)* | | |")
+            a("| *(none identified)* | | | | | | |")
         a("")
         a("Arc codes:")
         a("")
-        a("| Code | Rows | Occurrences |")
-        a("| --- | ---: | ---: |")
+        a("| Code | Rows | Occurrences | Rows 1–10 | Occ. 1–10 | Rows 11–25 | Occ. 11–25 |")
+        a("| --- | ---: | ---: | ---: | ---: | ---: | ---: |")
         for item in spec.arcCodes:
-            a(f"| `{_md_escape(item['code'])}` | {item['rows']} | {item['occurrences']} |")
+            s1 = item.get("slots1to10") or {}
+            s2 = item.get("slots11to25") or {}
+            a(
+                f"| `{_md_escape(item['code'])}` | {item['rows']} | {item['occurrences']} | "
+                f"{s1.get('rows', 0)} | {s1.get('occurrences', 0)} | "
+                f"{s2.get('rows', 0)} | {s2.get('occurrences', 0)} |"
+            )
         if not spec.arcCodes:
-            a("| *(none identified)* | | |")
+            a("| *(none identified)* | | | | | | |")
         a("")
     a("### Column selection")
     a("")
@@ -1983,6 +2213,7 @@ def cmd_inventory(args: argparse.Namespace, log: MetadataLog) -> int:
 def _spec_to_dict(spec: SpecVerification) -> dict[str, Any]:
     return {
         "copies": spec.copies,
+        "sourcePath": spec.sourcePath,
         "table": spec.table,
         "diagnostics": spec.diagnostics,
         "uniqueness": spec.uniqueness,

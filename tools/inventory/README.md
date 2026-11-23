@@ -13,14 +13,14 @@ Real install data is read **only** on the self-hosted runner (`runs-on: [self-ho
   - `docs/formats/inventory/ce-2.670.md` — counts and bytes by extension and top-level folder; locations of spec tables, models, textures, audio, `sounds.txt`, string tables, fonts, `.scr` / `.mct` / `.gf`, FMSE/scenario paths, campaign/Conquest data; `*.q3` search of both trees; GUI/non-model BMP folders; self-illumination suffix patterns; extensionless weapon-group table headers (names/count only); `.gf` / `.mct` text-vs-binary probes (magic bytes, header names, and at most two coordinate figures)
   - `docs/formats/inventory/missions-ce-2.670.md` — `.scr`, `.mct` and `.gf` grouped by folder, with names, sizes and sha256
   - `docs/formats/inventory/observations-ce-2.670.json` — the same observations in machine-readable form
-- `verify` (Job B) locates every `shiplist.txt` and `ftrlist.txt` (for example `Assets/Specs` and `MetaAssets`), and writes:
-  - `docs/formats/inventory/shiplist-ftrlist-ce-2.670.json` and `.md` — header names, column count, row count, encoding, line endings, delimiter, hashes of every copy, whether `race` + short class name is unique, fighter/PF presence, distinct weapon and arc codes with row counts, and `.bft` / `*.q3` locations (path/size only)
+- `verify` (Job B) locates every `shiplist.txt` and `ftrlist.txt` (for example `Assets/Specs` and `MetaAssets`), uses the `Assets/Specs` copy as the source when both exist, and writes:
+  - `docs/formats/inventory/shiplist-ftrlist-ce-2.670.json` and `.md` — full header names in column order (leading comment/instruction lines and preamble markers such as `<0` are skipped so the real header is found), column count, row count, encoding, line endings, delimiter, hashes of every copy, `duplicateClassKey` / `duplicateClassName` (keys and row numbers only), fighter/PF presence counts, distinct weapon and arc codes with row counts split by slot range 1–10 vs 11–25, and `.bft` / `*.q3` locations (path/size only)
 
 Logs and generated files contain **no data rows**. Allowed metadata: paths, sizes, sha256, counts, header/column names, encoding, line endings, booleans, format vocabulary (weapon/arc codes, race/hull tokens, suffix patterns), and aggregate numeric stats.
 
 ## Diagnostics
 
-Uniqueness failures are reported with a flat camelCase `code` and a separate `source` naming the format, matching the engine loader:
+Uniqueness failures are reported with a flat camelCase `code` and a separate `source` naming the format, matching the engine loader. `duplicateClassKey` (race + class name) is an error; `duplicateClassName` (class name only) is a warning. Both carry keys and 1-based row numbers only:
 
 ```json
 {

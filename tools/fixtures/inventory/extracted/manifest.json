@@ -2,33 +2,33 @@
   "files": [
     {
       "path": "Assets/Specs/shiplist.txt",
-      "size": 233,
-      "sha256": "d521a664cd4ee8e62c061ea371131b9ee329845e5a6e385da4c838483c8c157e"
+      "size": 396,
+      "sha256": "4f1add84b4fa6f8640f426fa63d6fc55c52f0b79d13b81dafda3c6c6da347427"
     },
     {
       "path": "MetaAssets/shiplist.txt",
-      "size": 233,
-      "sha256": "d521a664cd4ee8e62c061ea371131b9ee329845e5a6e385da4c838483c8c157e"
+      "size": 374,
+      "sha256": "b42ee14a292b5fe629d7413681225be3209538c2ddf6fdf83a43322a8436089c"
     },
     {
       "path": "Assets/Specs/ftrlist.txt",
-      "size": 227,
-      "sha256": "e494e985aa74c4b037c2b2f587c3705eecbefd9677855e198bd4eca39846fac3"
+      "size": 342,
+      "sha256": "467b8e1e0cd0cb64980912603a2c5a0575bda23627765152bdc913a4db4489b7"
     },
     {
       "path": "MetaAssets/ftrlist.txt",
-      "size": 227,
-      "sha256": "e494e985aa74c4b037c2b2f587c3705eecbefd9677855e198bd4eca39846fac3"
+      "size": 342,
+      "sha256": "467b8e1e0cd0cb64980912603a2c5a0575bda23627765152bdc913a4db4489b7"
     },
     {
       "path": "Assets/Specs/WeaponGroups/PHASER",
-      "size": 33,
-      "sha256": "a549c039012bf1e39d89b8cdd68de8bcb1dc58a0843d36a010fd77be66dd0982"
+      "size": 36,
+      "sha256": "a6fae8f2df43897e08e86fceef7877e4068c6a6aa71aebdf8bb4f0121fdad5f3"
     },
     {
       "path": "Assets/Specs/WeaponGroups/DISRUPT",
-      "size": 34,
-      "sha256": "a84fc2b0d24e0a9c101eb85e635d890204724f97a409688b667d7073ba7859fc"
+      "size": 37,
+      "sha256": "132cd5a9744954f4f56b356ea8cfecac4b3200af1087879c28b369fed1713964"
     },
     {
       "path": "Assets/Sounds/sounds.txt",

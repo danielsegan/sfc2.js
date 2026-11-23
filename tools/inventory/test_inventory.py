@@ -153,42 +153,81 @@ class InventoryTests(unittest.TestCase):
         self.assertEqual(sl["table"]["encoding"], "ascii")
         self.assertEqual(sl["table"]["lineEndings"], "CRLF")
         self.assertEqual(sl["table"]["delimiter"], "TAB")
-        self.assertEqual(sl["table"]["columnCount"], 7)
+        # Comment/instruction on line 1 is skipped; the real header is line 2.
+        self.assertEqual(sl["table"]["headerLine"], 2)
+        self.assertEqual(sl["table"]["columnCount"], 11)
+        self.assertEqual(
+            sl["table"]["headerNames"],
+            [
+                "Race",
+                "Hull Type",
+                "Class",
+                "Weapon 1",
+                "Arc 1",
+                "Weapon 2",
+                "Arc 2",
+                "Weapon 11",
+                "Arc 11",
+                "",
+                "",
+            ],
+        )
         self.assertEqual(sl["table"]["rowCount"], 5)
         self.assertEqual(len(sl["copies"]), 2)
-        self.assertTrue(sl["copies"][0]["sha256"] == sl["copies"][1]["sha256"])
+        # Specs and MetaAssets copies are intentionally different; source is Specs.
+        self.assertNotEqual(sl["copies"][0]["sha256"], sl["copies"][1]["sha256"])
+        self.assertEqual(sl["sourcePath"], "Assets/Specs/shiplist.txt")
+        self.assertNotIn("MetaAssets", sl["sourcePath"] or "")
         self.assertFalse(sl["uniqueness"]["unique"])
         self.assertEqual(sl["uniqueness"]["duplicateKeyCount"], 1)
         keys = sl["uniqueness"]["duplicateKeys"]
         self.assertEqual(keys[0]["key"], "Federation:TEST-CA-01")
         self.assertEqual(keys[0]["race"], "Federation")
         self.assertEqual(keys[0]["className"], "TEST-CA-01")
-        # 1-based source lines: header is line 1, first two data rows are 2 and 3
-        self.assertEqual(keys[0]["rows"], [2, 3])
+        # 1-based source lines: comment is line 1, header is line 2, first two data rows are 3 and 4
+        self.assertEqual(keys[0]["rows"], [3, 4])
+        self.assertEqual(sl["uniqueness"]["duplicateClassNameCount"], 1)
+        names = sl["uniqueness"]["duplicateClassNames"]
+        self.assertEqual(names[0]["className"], "TEST-CA-01")
+        self.assertEqual(names[0]["rows"], [3, 4])
         diags = sl["diagnostics"]
-        self.assertEqual(len(diags), 1)
-        d = diags[0]
-        self.assertEqual(d["code"], "duplicateClassKey")
+        self.assertEqual({d["code"] for d in diags}, {"duplicateClassKey", "duplicateClassName"})
+        d = next(x for x in diags if x["code"] == "duplicateClassKey")
         self.assertEqual(d["source"], "shiplist")
         self.assertEqual(d["severity"], "error")
         self.assertEqual(d["details"]["race"], "Federation")
         self.assertEqual(d["details"]["className"], "TEST-CA-01")
-        self.assertEqual(d["details"]["rows"], [2, 3])
+        self.assertEqual(d["details"]["rows"], [3, 4])
         # No other fields leaked into the diagnostic
         self.assertEqual(set(d.keys()), {"code", "source", "severity", "details"})
         self.assertEqual(set(d["details"].keys()), {"race", "className", "rows"})
+        n = next(x for x in diags if x["code"] == "duplicateClassName")
+        self.assertEqual(n["source"], "shiplist")
+        self.assertEqual(n["severity"], "warning")
+        self.assertEqual(n["details"], {"className": "TEST-CA-01", "rows": [3, 4]})
+        self.assertEqual(set(n["details"].keys()), {"className", "rows"})
         self.assertTrue(sl["fightersAndPfs"]["fightersPresent"])
+        self.assertEqual(sl["fightersAndPfs"]["fighterRowCount"], 1)
         self.assertTrue(sl["fightersAndPfs"]["pfsPresent"])
+        self.assertEqual(sl["fightersAndPfs"]["pfRowCount"], 1)
         self.assertIn("FTR", sl["fightersAndPfs"]["fighterHullTokens"])
         self.assertIn("PF", sl["fightersAndPfs"]["pfHullTokens"])
         weapon = {item["code"]: item for item in sl["weaponCodes"]}
         self.assertEqual(weapon["Ph1"]["rows"], 2)
         self.assertEqual(weapon["Ph1"]["occurrences"], 2)
+        self.assertEqual(weapon["Ph1"]["slots1to10"], {"rows": 2, "occurrences": 2})
+        self.assertEqual(weapon["Ph1"]["slots11to25"], {"rows": 0, "occurrences": 0})
         self.assertEqual(weapon["Phot"]["rows"], 1)
+        self.assertEqual(weapon["Phot"]["slots1to10"]["rows"], 1)
+        self.assertEqual(weapon["ESG"]["rows"], 1)
+        self.assertEqual(weapon["ESG"]["slots1to10"], {"rows": 0, "occurrences": 0})
+        self.assertEqual(weapon["ESG"]["slots11to25"], {"rows": 1, "occurrences": 1})
         self.assertIn("Dis1", weapon)
         arc = {item["code"]: item for item in sl["arcCodes"]}
         self.assertEqual(arc["FA"]["rows"], 3)
         self.assertIn("FH", arc)
+        self.assertEqual(arc["FH"]["slots1to10"]["rows"], 1)
+        self.assertEqual(arc["FH"]["slots11to25"]["rows"], 1)
         # ftrlist is unique, LF, and has no weapon columns in this fixture
         fl = payload["ftrlist"]
         self.assertEqual(fl["table"]["lineEndings"], "LF")
@@ -297,11 +336,17 @@ class InventoryTests(unittest.TestCase):
         shutil.copyfile(self.readme, readme)
         out.mkdir()
 
-        def plant(rel: str, header: str, body_lines: list[str]) -> None:
+        def plant(rel: str, header: str, body_lines: list[str], comment: str | None = None) -> None:
             path = extracted / rel
-            path.write_bytes((header + "\r\n" + "\r\n".join(body_lines) + "\r\n").encode("ascii"))
+            parts: list[str] = []
+            if comment is not None:
+                parts.append(comment)
+            parts.append(header)
+            parts.extend(body_lines)
+            path.write_bytes(("\r\n".join(parts) + "\r\n").encode("ascii"))
 
         # Keep the same identifier/weapon vocabulary; add a Notes column with the sentinel.
+        # Leading comment/instruction line must be skipped and must not leak the sentinel.
         plant(
             "Assets/Specs/shiplist.txt",
             "Race\tHull Type\tClass\tWeapon 1\tArc 1\tWeapon 2\tArc 2\tNotes",
@@ -312,7 +357,9 @@ class InventoryTests(unittest.TestCase):
                 "Hydran\tFTR\tTEST-FTR-01\tPhG\tALL\t\t\t",
                 "Klingon\tPF\tTEST-PF-02\tDis1\tFA\t\t\t",
             ],
+            comment="\tSYNTHETIC FIXTURE ONLY. Keep the first column blank to write a comment.\t\t\t\t\t\t\t",
         )
+
         shutil.copyfile(extracted / "Assets/Specs/shiplist.txt", extracted / "MetaAssets/shiplist.txt")
 
         # Refresh manifest hashes/sizes for the rewritten tables (path/size/hash only).
