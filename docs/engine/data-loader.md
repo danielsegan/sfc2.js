@@ -69,7 +69,7 @@ interface ShipClass {
   fighterBays: readonly { count: number; fighterType?: FighterTypeId }[];
   art: { geometry: string | null; uiKey: string | null };      // UI & Art; UNVERIFIED columns
 }
-interface WeaponMount { slotIndex: number /* 0..24, original slot */; weapon: string /* exact CE code */; arc: string /* CE code, or unused when reloads is set */; count: number; reloads?: number /* reload-counted weapons only */ }
+interface WeaponMount { slotIndex: number /* 0..24, original slot */; weapon: string /* exact CE code */; arc: string /* CE code, or unused when reloads is set */; count: number; reloads?: number /* reloadCounted weapons only; no firing arc */ }
 ```
 
 - **Shields:** the raw file has four values (front, frontSides, rearSides, rear) per `docs/formats/shiplist.md` §4.4. The loader expands them to `[front, frontSides, rearSides, rear, rearSides, frontSides]` before scaling (**UNVERIFIED** mirror mapping, S1).
@@ -77,7 +77,7 @@ interface WeaponMount { slotIndex: number /* 0..24, original slot */; weapon: st
 - **Phasers are identified by weapon code, not by slot.** A `Ph*` mount is a phaser in any slot, including a heavy slot, and every phaser feeds the phaser capacitor. The old S1 “slots 11–25 only” capacitor hypothesis is not a loader rule.
 - **Weapon codes** are matched against Combat's mapping table in `docs/rules` **exactly, including case**. The table lists each distinct `Pla*` spelling as its own entry, all pointing at the same weapon. The loader never folds case. A code that is not in the table, including a new spelling from a mod, is kept on the mount and yields `unknownWeapon` (`source: "loader"`).
 - **CE 2.670 `Pla*` spellings** (names only, no row counts; metadata from the inventory): `PlaD`, `PlaF`, `PlaG`, `PlaI`, `PlaR`, `PlaS`, `PLaF`, `PLaG`, `PLaR`, `PLaS`. There are exactly these ten. Combat's table must include each one.
-- **Arc cells are interpreted according to the weapon in that slot.** If Combat's mapping table marks the weapon as reload-counted (drone racks), a whole number in the Arc cell is the reload count and is stored in `reloads`, not as an arc. For any other weapon, a numeric Arc cell is `unknownArc` (`source: "loader"`).
+- **Arc cells are interpreted according to the weapon in that slot.** Combat's mapping table marks these codes as `reloadCounted`: `DroA`, `DroB`, `DroC`, `DroF`, `DroG`, `ADD6`, `ADD12`. For a reload-counted weapon the Arc cell must be a whole-number count, stored in `reloads`; the rack has no firing arc. A letter or an empty Arc cell on a reload-counted rack is `unknownArc` (`source: "loader"`). For any other weapon, a numeric Arc cell is `unknownArc`. Fighter drones `DroI` and `DroVI` are not `reloadCounted` and use `ALL` as a normal arc. The only remaining **TO VERIFY** (Combat) is whether that number means reloads or rack capacity, and why ADD always shows `1`.
 - **Fighters** are a lighter entity type (speed, turn mode, damage points, weapons with arc/load/reload, ECM if present, bay and rearm data). `ftrlist.txt` is mostly **unknown** (12 of its 14 fields), and whether fighters need a matching `FTR` shiplist row is open (`docs/formats/ftrlist.md` §2).
 - **PFs** use the full ship model with `class: 'pf'`. Where PF rows live (probably `shiplist.txt`) is **UNVERIFIED**.
 
