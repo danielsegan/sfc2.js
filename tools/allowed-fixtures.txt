@@ -5,3 +5,8 @@
 # Do not list anything copied from a Starfleet Command 2 install.
 # Keep fixtures small; this list exists so original-looking extensions
 # we invented for tests (for example a tiny hand-made .bmp) can pass CI.
+
+# Hand-made, invented-value tab tables for the shiplist/ftrlist specs (#13, #14).
+# .txt does not trip the check; listed here so every fixture is accounted for.
+tools/fixtures/formats/shiplist/minimal.txt
+tools/fixtures/formats/ftrlist/minimal.txt
