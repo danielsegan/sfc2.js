@@ -861,13 +861,14 @@ These are kept strictly apart (Asset & Formats Engineer):
 
   (Field names and numbers are illustrative.)
 
-  **Range rule (Combat):** each `mapBounds` axis value must satisfy **|v| <= 32767 range units**, so 16.16
-  positions fit in an int32 and squared distances fit in an i64. A value outside that range, or a
-  non-integer, emits `{ code: "badMapBounds", source: "mission", severity: "error" }`, with `location.field`
-  pointing at the offending value.
+  **Range rule (Engine Lead; to be committed in `docs/engine/sim-core.md`):** each `mapBounds` axis value
+  must satisfy **|v| <= 8192 range units**. Position differences can reach twice the bound and the sim
+  computes differences in i64, which leaves about a 4x margin on the 2D squared distance. A value outside
+  that range, or a non-integer, emits `{ code: "badMapBounds", source: "mission", severity: "error" }`, with
+  `location.field` pointing at the offending value. (This supersedes an earlier 32767 proposal.)
 
-  For context only, not as a limit on bounds: the provisional longest weapon range is **75 range units**,
-  the Star Fleet Battles long-range phaser band, pending playtest.
+  Test-fixture context only, not a limit on bounds: the provisional longest weapon range is **75 range
+  units** (the Star Fleet Battles long-range phaser band), pending playtest.
 
   Positions (ships, map objects, bounds) come **only from our own mission files**. They are never
   extracted from CE `.scr` modules.
