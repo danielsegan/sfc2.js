@@ -16,8 +16,9 @@ This is a design doc only. No runtime code lands before Phase 4.
 > cloud agents (nothing here depends on it). **Out of scope:** the standalone *Orion Pirates* game (2001)
 > and its content, which sits in [Possible later](#16-possible-later-backlog).
 
-> **Data verification status: unverified.** Wintermute is installing CE 2.670 ([#37](https://github.com/danielsegan/sfc2-browser-edition/issues/37)) on the `sfc2-ci` VM, but
-> nothing has been checked against it yet. Every claim in this doc about the mission list, the empire
+> **Data verification status: unverified.** CE 2.670 ([#37](https://github.com/danielsegan/sfc2-browser-edition/issues/37)) is now installed on the `sfc2-ci` VM
+> (without the 2.679 patch), but the mission roster hasn't been checked against it yet; that waits on a
+> manifest-based check. Every claim in this doc about the mission list, the empire
 > roster, Orion content, or any game behaviour that depends on installed data is **unverified** until it
 > has been checked against the CE 2.670 install on `sfc2-ci`. Taldren's released EAW Scripting API R1.3 and
 > EAW mission sources remain valid **API and design references**; claims about them are verified against
@@ -232,7 +233,7 @@ browser, the Tauri shell and on headless servers.
 ### 4.3 Commands, not mutations
 
 Missions never mutate sim state directly. Every API call that changes the world queues a command, for
-example `{ t: "spawnShip", team, shipClass, at, facing, tag, token }`. The ordering rule (Engine Lead, pending the mission-runtime contract in `docs/engine/`):
+example `{ t: "spawnShip", team, ship: { race, className }, at, facing, tag, token }`. The ordering rule (Engine Lead, pending the mission-runtime contract in `docs/engine/`):
 
 - Commands a script issues during tick **T** apply in tick **T+1's input phase**.
 - Mission commands use **command slot 255** and are sorted by **(tick, slot, seq)**, so they apply **after
@@ -252,7 +253,7 @@ edit ship state directly, and the mission runtime owns no combat logic.
 | Command | Rules behaviour |
 | --- | --- |
 | `damageSystem(ship, system, boxes)` | Goes through normal damage allocation, so armor and the damage chart apply |
-| `damageShield(ship, facing, points)` | Takes points off one shield facing |
+| `damageShield(ship, facing, points)` | Takes points off one shield facing (`facing` is an index 0 to 5, see 6.5) |
 | `repairSystem(ship, system, boxes)` | Capped at the ship's original box count |
 | `setShields(ship, facing, value)` | Clamped to the ship data |
 | `setEnergy(ship, allocation)` | Clamped to the ship data |
@@ -412,15 +413,30 @@ interface TeamApi {
 
 ### 6.5 Ships
 
-Ships are spawned by **shiplist id**, i.e. the class key from the player's own `shiplist.txt` as parsed by
-the Asset & Formats parser. Spawning is token-based (4.3). The exact key (class name column, hull type, or both) is an open question for
-Asset & Formats.
+Ships are spawned by a **ship key: race + short class name** from the CE 2.670 shiplist, written
+`{ race, className }` (Asset & Formats decision, [PR #38](https://github.com/danielsegan/sfc2-browser-edition/pull/38)). The key comes from the player's own
+`shiplist.txt` as parsed by the Asset & Formats parser and is validated at load. **Unverified:** that race +
+short class name is unique across the whole CE 2.670 shiplist. The PR #38 checklist confirms this, and the
+parser flags any duplicates as `duplicateClassKey` diagnostics. Spawning is token-based (4.3).
+
+**Strings in files, integers in the sim** (Engine Lead, pending the `docs/engine/` contracts, #21 and
+#37). At load, the loader converts each `{ race, className }` key to a **small integer class id**, assigned
+in **sorted string order** so every peer gets the same mapping. The sim and replays store **only the
+integer**; mission files and `requestSpawn` keep the string key. **Duplicate keys** are reported in the
+load diagnostics and **block multiplayer sessions**. The diagnostic is `duplicateClassKey`, severity `error`, with the
+race, className and shiplist row numbers involved as details. Codes are stable camelCase and add-only, and
+are defined in `docs/engine/data-loader.md` (Engine Lead).
+
+**Shield facings** (studio convention, matching `docs/ui/hud-spec.md` in PR #39 and Combat's rules): the
+engine model's `shields` is an array indexed **0 to 5, where 0 is the front facing and the indices go
+clockwise**. Every mission API call that names a facing uses that index. (Star Fleet Battles numbers the
+same facings #1 to #6; that numbering appears only in prose, never in the API.)
 
 ```ts
 interface ShipApi {
   requestSpawn(def: {
     team: TeamId;
-    shipClass: ShipClassKey;               // from the player's shiplist; validated at load
+    ship: ShipKey;                         // { race, className } from the CE 2.670 shiplist (PR #38); validated at load
     at: MapPoint;                          // grid cell or fixed-point position
     facing?: Heading;                      // uint16, 65536 per circle (provisional)
     name?: TextRef;
@@ -431,7 +447,7 @@ interface ShipApi {
     targetable?: boolean;
     playerControlled?: boolean;
   }): SpawnToken;                          // ship id arrives later in a `spawned { token, entityId }` event
-  pickByBudget(def: { empire: EmpireId; bpv: number; roles?: ShipRole[] }): ShipClassKey[];  // FMSE "ships by BPV"
+  pickByBudget(def: { empire: EmpireId; bpv: number; roles?: ShipRole[] }): ShipKey[];  // FMSE "ships by BPV"
   byTag(tag: string): ShipHandle | undefined;   // resolves once the ship has spawned
   get(h: ShipHandle): ShipView;            // read-only query over this tick's state
   // Every command is queued (applied in T+1's input phase) and returns a token; the outcome arrives as a
@@ -440,19 +456,21 @@ interface ShipApi {
   setTeam(h: ShipHandle, team: TeamId): CommandToken;
   // Combat-state changes go through the rules module's entry points (4.3)
   damageSystem(h: ShipHandle, system: SystemKey, boxes: number): CommandToken;   // normal damage allocation
-  damageShield(h: ShipHandle, facing: ShieldFacing, points: number): CommandToken;
+  damageShield(h: ShipHandle, facing: ShieldFacing, points: number): CommandToken; // facing 0-5, 0 = front, clockwise
   repairSystem(h: ShipHandle, system: SystemKey, boxes: number): CommandToken;   // capped at original boxes
-  setShields(h: ShipHandle, facing: ShieldFacing, value: number): CommandToken;  // clamped to ship data
+  setShields(h: ShipHandle, facing: ShieldFacing, value: number): CommandToken;  // facing 0-5; clamped to ship data
   setEnergy(h: ShipHandle, allocation: Partial<EnergyAllocation>): CommandToken; // clamped to ship data
   addStores(h: ShipHandle, item: StoresItem, amount: number): CommandToken;
   setTargetable(h: ShipHandle, on: boolean): CommandToken;
 }
+type ShipKey = { race: string; className: string };   // race + short class name, CE 2.670 shiplist (PR #38)
+type ShieldFacing = 0 | 1 | 2 | 3 | 4 | 5;               // index into the engine's shields array; 0 = front, clockwise
 type CommandToken = number;                // unique per mission run, assigned in issue order
 type SpawnToken = CommandToken;            // spawns use the same token sequence
 
 interface ShipView {
   readonly id: ShipHandle; readonly team: TeamId; readonly originalTeam: TeamId; readonly empire: EmpireId;
-  readonly shipClass: ShipClassKey; readonly bpv: number; readonly inPlay: boolean;
+  readonly ship: ShipKey; readonly bpv: number; readonly inPlay: boolean;
   readonly status: "active" | "destroyed" | "captured" | "disengaged";
   readonly position: MapPoint; readonly heading: Heading; readonly damagePercent: Percent;
   readonly alert: "green" | "yellow" | "red"; readonly cloaked: boolean;
@@ -540,7 +558,7 @@ interface MapApi {
   cellSize(): Distance;                                      // FMSE documents 10 km per cell
   place(def:
     | { kind: "planet"; at: MapPoint; style: PlanetStyleKey; name?: TextRef }
-    | { kind: "base"; at: MapPoint; team: TeamId; baseClass: ShipClassKey }    // bases are shiplist entries
+    | { kind: "base"; at: MapPoint; team: TeamId; base: ShipKey }             // bases are shiplist entries
     | { kind: "asteroid"; at: MapPoint; size: "small" | "medium" | "large" }
     | { kind: "asteroidField"; area: MapArea; density: number }
     | { kind: "nebula"; area: MapArea }
@@ -718,7 +736,7 @@ Only rows verified against the public SFC2:EAW API R1.3 headers are listed. "Obs
 | `tDynaverseScriptInfo` fields (player race, team, allies, enemies, date, sector, fleet, previous victory) | `StartContext` | Fleet state passes in and out explicitly |
 | `tMissionInfo::mSetupTeam` / `tTeamInfo::mSetTeamInfoData` | `teams.create` | |
 | `tMissionInfo::mSetTeamRelations`, `eTeamRelationship`, `eTargetGoals` | `teams.setRelation(..., { goal, mutual })` | Same five relations and four goals |
-| `tTeamInfo::mCreateShipsForTeam`, `mCreateNewShip` | `ships.requestSpawn` + `spawned` event | By shiplist class key; token-based |
+| `tTeamInfo::mCreateShipsForTeam`, `mCreateNewShip` | `ships.requestSpawn` + `spawned` event | By `{ race, className }` ship key (PR #38); token-based |
 | `tShipInfo::mSetCustomID` / `mGetCustomID` | `tag` + `ships.byTag` | String tags instead of ints |
 | `tShipInfo::mSetShipTarget`, `mRemoveTargets`, `mClearCommands` | `ai.target`, `ai.clear` | |
 | `tShipInfo::mPatrol`, `mDefendEntity`, `mFollowEntity`, `mDisengage`, `mTractorEntity`, `mCloak`, `mFireProbe` | `ai.patrol`, `ai.defend`, `ai.follow`, `ai.disengage`, `ai.tractor`, `ai.cloak`, `ai.probe` | Priority enum mirrors `eAIPriority` |
@@ -776,7 +794,7 @@ with a scripted twist, such as one from the Mirak folder, exercises most of the 
    the VM, not files committed to the repo), briefings by key, victory preset, prestige table.
 4. **Write the script** for what data can't express, using the state-machine layer so each original state
    has a clear counterpart.
-5. **Validate against the player's data** with the loader's validation step (unknown class keys, bad cells).
+5. **Validate against the player's data** with the loader's validation step (unknown ship keys, `duplicateClassKey`, bad cells).
 6. **Black-box comparison.** Play the original under Wine on the VM and record observable outcomes:
    which events happen, rough timings, victory level for a handful of scripted playthroughs. Compare with
    ours. Exact tick timings won't match; outcomes and ordering should.
@@ -809,12 +827,14 @@ These are kept strictly apart (Asset & Formats Engineer):
 **(a) Our own mission files: JSON with a schema.**
 - The Mission & Campaign Designer owns the schema (planned at `docs/missions/mission.schema.json`, JSON
   Schema, versioned with `schemaVersion`). It covers scenario metadata, teams, relations, ships by
-  shiplist key, map, objectives, victory preset, prestige table, string-table references and the optional
+  ship key (`{ "race": ..., "className": ... }`, [PR #38](https://github.com/danielsegan/sfc2-browser-edition/pull/38)), map, objectives, victory preset, prestige table, string-table references and the optional
   script entry.
 - The Asset & Formats importer validates these files and returns **`{ data, diagnostics }`**: `data` is
   the typed scenario (or `null` if it can't be used), and `diagnostics` is a list of
   `{ severity: "error" | "warning" | "info", path, code, message }` entries (for example an unknown ship
-  class key, an off-map cell or a missing string key). The loader refuses to start a mission with any
+  key, a ship key that matches more than one shiplist entry (`duplicateClassKey`, severity `error`), an off-map cell or
+  a missing string key). Diagnostic codes are stable camelCase and add-only; the engine's codes are
+  defined in `docs/engine/data-loader.md`. The loader refuses to start a mission with any
   `error` diagnostic and shows the list to the author.
 - Test fixtures in the repo are synthetic files we write ourselves.
 
@@ -850,7 +870,8 @@ against the CE 2.670 install on `sfc2-ci`:
 | Mirak | expected | Has its own source folder in the public EAW scripts |
 | Orion (EAW faction) | **not yet verified** | The plan lists an Orion campaign. In the EAW API R1.3 headers Orion is an NPC race. Whether CE 2.670 has an Orion campaign or only Orion ships and races is not yet verified |
 
-**The roster still has to be confirmed against the CE 2.670 install on `sfc2-ci`**, including which
+**The roster still has to be confirmed against the CE 2.670 install on `sfc2-ci`** (installed, without the
+2.679 patch; the check will be manifest-based), including which
 campaigns ship, how many missions each has, and the Orion question above. Until that's done, the Phase 5
 estimate stays provisional.
 
@@ -918,7 +939,7 @@ without API changes.
   caps, and always reach an end state or a timeout.
 - **Lint rules** for mission code: ban `Date`, `Math.random`, timers, `for...in` over untrusted objects,
   and (if decided) float arithmetic.
-- **Synthetic fixtures only in the repo.** Test scenarios use invented ship class keys backed by a tiny
+- **Synthetic fixtures only in the repo.** Test scenarios use invented `{ race, className }` ship keys backed by a tiny
   synthetic shiplist fixture listed in `tools/allowed-fixtures.txt` if needed. Real-data replays stay on
   `sfc2-ci`.
 
@@ -967,21 +988,22 @@ throws). Still open: items 1 to 4 above, plus the full reason-code list in `docs
 
 ### Asset & Formats Engineer
 
-1. The **ship class key** missions should use from `shiplist.txt` (class name, hull type, or both), and how
-   duplicate names across empires are handled.
-2. Where mission text lives in the installed data (if anywhere outside compiled `.scr` files), and the
+Answered: the ship key is race + short class name from the CE 2.670 shiplist ([PR #38](https://github.com/danielsegan/sfc2-browser-edition/pull/38)); uniqueness is
+unverified until the PR #38 checklist confirms it, and the parser flags duplicates as `duplicateClassKey`. Still open:
+
+1. Where mission text lives in the installed data (if anywhere outside compiled `.scr` files), and the
    string-table format.
-3. Once CE 2.670 is installed on `sfc2-ci`: whether it contains mission metadata we can read (mission lists,
+2. Once CE 2.670 is installed on `sfc2-ci`: whether it contains mission metadata we can read (mission lists,
    campaign tables), and where CE 2.670 differs from what API R1.3 and the released EAW sources describe.
-4. The `{ data, diagnostics }` importer contract for our mission JSON (9.1a): diagnostic codes and
+3. The `{ data, diagnostics }` importer contract for our mission JSON (9.1a): diagnostic codes and
    severities.
-5. The `.fms` reverse-engineering job (9.1b): not yet reviewed; when it can be scheduled.
+4. The `.fms` reverse-engineering job (9.1b): not yet reviewed; when it can be scheduled.
 
 ### Producer
 
-1. **Confirming the CE 2.670 install on `sfc2-ci`** is ready (Wintermute is installing it). Until it has
-   been checked, every roster and mission-inventory claim stays unverified and the pilot choice is
-   provisional.
+1. **The manifest-based roster check** against CE 2.670 on `sfc2-ci` (installed, without the 2.679
+   patch). Until it's done, every roster and mission-inventory claim stays unverified and the pilot choice
+   is provisional.
 2. Which **pilot mission** for Phase 4, and which empire's campaign is the "first campaign" exit target.
 3. Whether a `docs/missions/` folder and `ports/` notes need a CODEOWNERS entry.
 4. Phase placement of the scenario editor (Phase 8 or a later stretch).
@@ -1001,10 +1023,11 @@ committed. Nothing left open for UI & Art in this doc beyond verifying original 
 
 ### Audio & Netcode QA Lead
 
-1. **Release-build** behaviour when a mission goes over its operation budget (dev builds error out), for
-   example aborting that handler for the tick and logging it. Your call. The Engine Lead's constraint: the
-   budget counts operations so every peer hits the limit at the same point, and the behaviour must be
-   deterministic with nothing varying by machine. The answer will come as a comment on PR #1.
+1. **Open item (not blocking review): release-build budget overrun.** Dev builds error out; the
+   release-build behaviour is still TBD (for example, abort that handler for the tick and log it). It's
+   your call, with the Engine Lead's constraint: the budget counts operations so every peer hits the limit
+   at the same point, and the behaviour must be deterministic and machine-independent. This doc gets
+   updated when you answer.
 2. The sound cue id for the pinned timer's last 10 seconds.
 3. Whether slot-255 mission commands go in the replay log or are regenerated (proposal: regenerated and
    hashed).
