@@ -105,6 +105,18 @@ WEAPON_HEADER_RE = re.compile(
 # Digit-only arc cell values that may be either a mis-paired Num column
 # or a legitimate reload count written in an Arc cell (drone racks).
 NUMERIC_ARC_CODES = ("1", "2", "3")
+INTEGER_ARC_RE = re.compile(r"^[+-]?\d+$")
+DRONE_OR_ADD_WEAPON_RE = re.compile(r"^(dro.*|add[_-]?6|add[_-]?12)$", re.IGNORECASE)
+
+
+def _is_integer_arc(value: str) -> bool:
+    """True when an Arc cell is a base-10 integer (1, 2, 3 or any other)."""
+    return bool(value) and bool(INTEGER_ARC_RE.fullmatch(value.strip()))
+
+
+def _is_drone_or_add_weapon(code: str) -> bool:
+    """Dro* / ADD6 / ADD12 weapon codes (optional underscore or hyphen in ADD)."""
+    return bool(code) and bool(DRONE_OR_ADD_WEAPON_RE.fullmatch(code.strip()))
 ARC_HEADER_RE = re.compile(
     r"(^(arc|firearc|fire_arc|fa)(\s*|#|_|-)?\d*$)|"
     r"((arc|firearc)\s*(code)?(\s*|#|_|-)?\d+$)",
@@ -1079,6 +1091,7 @@ class SpecVerification:
     numericColumnStats: list[dict[str, Any]]
     numericArcCodeSources: list[dict[str, Any]]
     heavyWeaponSlotArcs: list[dict[str, Any]]
+    numericArcWeaponPairings: dict[str, Any]
 
 
 
@@ -1212,6 +1225,7 @@ def verify_spec_tables(
         numericColumnStats=[],
         numericArcCodeSources=[],
         heavyWeaponSlotArcs=[],
+        numericArcWeaponPairings={},
     )
     if not tables:
         return empty
@@ -1263,10 +1277,51 @@ def verify_spec_tables(
     }
     weapon_slot_of = {i: _slot_band(weapon_slot_no[i]) for i in weapon_slot_no}
     arc_slot_of = {i: _slot_band(arc_slot_no[i]) for i in arc_slot_no}
-    numeric_arc_col_rows: dict[str, dict[int, set[int]]] = {c: defaultdict(set) for c in NUMERIC_ARC_CODES}
-    numeric_arc_col_occ: dict[str, dict[int, int]] = {c: defaultdict(int) for c in NUMERIC_ARC_CODES}
+    numeric_arc_col_rows: dict[str, dict[int, set[int]]] = defaultdict(lambda: defaultdict(set))
+    numeric_arc_col_occ: dict[str, dict[int, int]] = defaultdict(lambda: defaultdict(int))
     slot_arc_rows: dict[int, dict[str, set[int]]] = defaultdict(lambda: defaultdict(set))
     slot_arc_occ: dict[int, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+    arc_col_to_weapon_col: dict[int, int] = {
+        p["arcColumnIndex"]: p["weaponColumnIndex"]
+        for p in paired_maps["slotPairs"]
+        if p.get("arcColumnIndex") is not None
+    }
+    # numeric arc value -> weapon code -> row numbers / occurrences (and by slot / band)
+    num_arc_wpn_rows: dict[str, dict[str, set[int]]] = defaultdict(lambda: defaultdict(set))
+    num_arc_wpn_occ: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+    num_arc_wpn_band_rows: dict[str, dict[str, dict[str, set[int]]]] = defaultdict(
+        lambda: defaultdict(lambda: {"1-10": set(), "11-25": set(), "other": set(), "all": set()})
+    )
+    num_arc_wpn_band_occ: dict[str, dict[str, dict[str, int]]] = defaultdict(
+        lambda: defaultdict(lambda: {"1-10": 0, "11-25": 0, "other": 0, "all": 0})
+    )
+    slot_num_arc_wpn_rows: dict[int, dict[str, dict[str, set[int]]]] = defaultdict(
+        lambda: defaultdict(lambda: defaultdict(set))
+    )
+    slot_num_arc_wpn_occ: dict[int, dict[str, dict[str, int]]] = defaultdict(
+        lambda: defaultdict(lambda: defaultdict(int))
+    )
+    other_pair_rows: dict[str, dict[str, set[int]]] = defaultdict(lambda: defaultdict(set))
+    other_pair_occ: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+    other_pair_slot_rows: dict[str, dict[str, dict[int, set[int]]]] = defaultdict(
+        lambda: defaultdict(lambda: defaultdict(set))
+    )
+    other_pair_slot_occ: dict[str, dict[str, dict[int, int]]] = defaultdict(
+        lambda: defaultdict(lambda: defaultdict(int))
+    )
+    drone_add_rows: set[int] = set()
+    drone_add_occ = 0
+    drone_add_kind_rows: dict[str, set[int]] = {"numeric": set(), "letter": set(), "empty": set()}
+    drone_add_kind_occ: dict[str, int] = {"numeric": 0, "letter": 0, "empty": 0}
+    drone_add_kind_arc_rows: dict[str, dict[str, set[int]]] = {
+        "numeric": defaultdict(set),
+        "letter": defaultdict(set),
+    }
+    drone_add_kind_arc_occ: dict[str, dict[str, int]] = {
+        "numeric": defaultdict(int),
+        "letter": defaultdict(int),
+    }
+    drone_add_weapon_codes: set[str] = set()
     # Per-column raw nonempty cells for numeric-stat detection (aggregates only).
     column_values: dict[int, list[str]] = defaultdict(list)
     data_row_total = 0
@@ -1332,13 +1387,59 @@ def verify_spec_tables(
             val = _cell(cells, ci)
             if val:
                 _tally(arc_rows, arc_occ, val, line_no, arc_slot_of[ci])
-                if val in NUMERIC_ARC_CODES:
+                if _is_integer_arc(val):
                     numeric_arc_col_rows[val][ci].add(line_no)
                     numeric_arc_col_occ[val][ci] += 1
                 slot_no = arc_slot_no.get(ci)
                 if slot_no is not None and 1 <= slot_no <= 10:
                     slot_arc_rows[slot_no][val].add(line_no)
                     slot_arc_occ[slot_no][val] += 1
+
+        # Pair each Arc cell with the weapon code in the same slot (counts only).
+        for pair in paired_maps["slotPairs"]:
+            wci = pair["weaponColumnIndex"]
+            aci = pair["arcColumnIndex"]
+            slot_no = pair["slot"]
+            weapon_val = _cell(cells, wci)
+            arc_val = _cell(cells, aci) if aci is not None else ""
+            band = _slot_band(slot_no)
+            if _is_integer_arc(arc_val):
+                wkey = weapon_val if weapon_val else "(empty)"
+                num_arc_wpn_rows[arc_val][wkey].add(line_no)
+                num_arc_wpn_occ[arc_val][wkey] += 1
+                num_arc_wpn_band_rows[arc_val][wkey]["all"].add(line_no)
+                num_arc_wpn_band_rows[arc_val][wkey][band].add(line_no)
+                num_arc_wpn_band_occ[arc_val][wkey]["all"] += 1
+                num_arc_wpn_band_occ[arc_val][wkey][band] += 1
+                if slot_no is not None:
+                    slot_num_arc_wpn_rows[slot_no][arc_val][wkey].add(line_no)
+                    slot_num_arc_wpn_occ[slot_no][arc_val][wkey] += 1
+                if not _is_drone_or_add_weapon(weapon_val):
+                    other_pair_rows[arc_val][wkey].add(line_no)
+                    other_pair_occ[arc_val][wkey] += 1
+                    if slot_no is not None:
+                        other_pair_slot_rows[arc_val][wkey][slot_no].add(line_no)
+                        other_pair_slot_occ[arc_val][wkey][slot_no] += 1
+            if _is_drone_or_add_weapon(weapon_val):
+                drone_add_weapon_codes.add(weapon_val)
+                drone_add_rows.add(line_no)
+                drone_add_occ += 1
+                if not arc_val:
+                    kind = "empty"
+                    drone_add_kind_rows[kind].add(line_no)
+                    drone_add_kind_occ[kind] += 1
+                elif _is_integer_arc(arc_val):
+                    kind = "numeric"
+                    drone_add_kind_rows[kind].add(line_no)
+                    drone_add_kind_occ[kind] += 1
+                    drone_add_kind_arc_rows[kind][arc_val].add(line_no)
+                    drone_add_kind_arc_occ[kind][arc_val] += 1
+                else:
+                    kind = "letter"
+                    drone_add_kind_rows[kind].add(line_no)
+                    drone_add_kind_occ[kind] += 1
+                    drone_add_kind_arc_rows[kind][arc_val].add(line_no)
+                    drone_add_kind_arc_occ[kind][arc_val] += 1
 
     duplicate_keys = []
     for _fold, entry in sorted(key_rows.items(), key=lambda kv: kv[1]["rows"][0]):
@@ -1479,7 +1580,14 @@ def verify_spec_tables(
         log.info(f"{label} arc columns: not identified from headers")
 
     numeric_arc_sources: list[dict[str, Any]] = []
-    for code in NUMERIC_ARC_CODES:
+    source_codes = list(NUMERIC_ARC_CODES)
+    extra_ints = [
+        c for c in numeric_arc_col_rows
+        if c not in source_codes
+    ]
+    extra_ints.sort(key=lambda c: (int(c) if INTEGER_ARC_RE.fullmatch(c) else 0, c))
+    source_codes.extend(extra_ints)
+    for code in source_codes:
         columns = []
         for ci in sorted(numeric_arc_col_rows[code]):
             columns.append(
@@ -1537,6 +1645,140 @@ def verify_spec_tables(
             f"codes={json.dumps(codes, ensure_ascii=True)}"
         )
 
+    def _weapon_items(arc_code: str) -> list[dict[str, Any]]:
+        items = []
+        for wcode in sorted(num_arc_wpn_occ[arc_code], key=lambda c: (-num_arc_wpn_occ[arc_code][c], c)):
+            bands = num_arc_wpn_band_rows[arc_code][wcode]
+            bocc = num_arc_wpn_band_occ[arc_code][wcode]
+            items.append(
+                {
+                    "weaponCode": wcode,
+                    "droneOrAdd": _is_drone_or_add_weapon(wcode),
+                    "rows": len(num_arc_wpn_rows[arc_code][wcode]),
+                    "occurrences": num_arc_wpn_occ[arc_code][wcode],
+                    "slots1to10": {"rows": len(bands["1-10"]), "occurrences": bocc["1-10"]},
+                    "slots11to25": {"rows": len(bands["11-25"]), "occurrences": bocc["11-25"]},
+                }
+            )
+        return items
+
+    by_numeric_arc: list[dict[str, Any]] = []
+    for arc_code in sorted(num_arc_wpn_occ, key=lambda c: (int(c) if INTEGER_ARC_RE.fullmatch(c) else 0, c)):
+        weapons = _weapon_items(arc_code)
+        rec = {
+            "arcCode": arc_code,
+            "rows": len(set().union(*(num_arc_wpn_rows[arc_code][w] for w in num_arc_wpn_rows[arc_code]))),
+            "occurrences": sum(num_arc_wpn_occ[arc_code].values()),
+            "weapons": weapons,
+        }
+        by_numeric_arc.append(rec)
+        log.info(
+            f"{label} numeric arc {arc_code} paired weapon codes: "
+            + json.dumps(
+                [{"weaponCode": w["weaponCode"], "rows": w["rows"], "occurrences": w["occurrences"],
+                  "droneOrAdd": w["droneOrAdd"],
+                  "slots1to10": w["slots1to10"], "slots11to25": w["slots11to25"]} for w in weapons],
+                ensure_ascii=True,
+            )
+        )
+
+    by_slot_pairs: list[dict[str, Any]] = []
+    for slot in sorted(slot_num_arc_wpn_occ):
+        pairs = []
+        for arc_code in sorted(slot_num_arc_wpn_occ[slot], key=lambda c: (int(c) if INTEGER_ARC_RE.fullmatch(c) else 0, c)):
+            for wcode in sorted(slot_num_arc_wpn_occ[slot][arc_code], key=lambda c: (-slot_num_arc_wpn_occ[slot][arc_code][c], c)):
+                pairs.append(
+                    {
+                        "arcCode": arc_code,
+                        "weaponCode": wcode,
+                        "droneOrAdd": _is_drone_or_add_weapon(wcode),
+                        "rows": len(slot_num_arc_wpn_rows[slot][arc_code][wcode]),
+                        "occurrences": slot_num_arc_wpn_occ[slot][arc_code][wcode],
+                    }
+                )
+        rec = {"slot": slot, "pairs": pairs}
+        by_slot_pairs.append(rec)
+        log.info(
+            f"{label} slot {slot} numeric-arc weapon pairs: "
+            + json.dumps(
+                [{"arcCode": p["arcCode"], "weaponCode": p["weaponCode"], "rows": p["rows"],
+                  "occurrences": p["occurrences"]} for p in pairs],
+                ensure_ascii=True,
+            )
+        )
+
+    non_drone: list[dict[str, Any]] = []
+    for arc_code in sorted(other_pair_occ, key=lambda c: (int(c) if INTEGER_ARC_RE.fullmatch(c) else 0, c)):
+        for wcode in sorted(other_pair_occ[arc_code], key=lambda c: (-other_pair_occ[arc_code][c], c)):
+            slots = [
+                {
+                    "slot": s,
+                    "rows": len(other_pair_slot_rows[arc_code][wcode][s]),
+                    "occurrences": other_pair_slot_occ[arc_code][wcode][s],
+                }
+                for s in sorted(other_pair_slot_occ[arc_code][wcode])
+            ]
+            non_drone.append(
+                {
+                    "arcCode": arc_code,
+                    "weaponCode": wcode,
+                    "rows": len(other_pair_rows[arc_code][wcode]),
+                    "occurrences": other_pair_occ[arc_code][wcode],
+                    "slots": slots,
+                }
+            )
+    pairs_only_drone_or_add = len(non_drone) == 0
+    if non_drone:
+        log.info(
+            f"{label} numeric arcs pair only with Dro*/ADD6/ADD12: false "
+            f"otherPairings={json.dumps(non_drone, ensure_ascii=True)}"
+        )
+    else:
+        log.info(f"{label} numeric arcs pair only with Dro*/ADD6/ADD12: true")
+
+    def _kind_block(kind: str) -> dict[str, Any]:
+        block: dict[str, Any] = {
+            "rows": len(drone_add_kind_rows[kind]),
+            "occurrences": drone_add_kind_occ[kind],
+        }
+        if kind in drone_add_kind_arc_occ:
+            block["arcCodes"] = [
+                {
+                    "code": code,
+                    "rows": len(drone_add_kind_arc_rows[kind][code]),
+                    "occurrences": drone_add_kind_arc_occ[kind][code],
+                }
+                for code in sorted(
+                    drone_add_kind_arc_occ[kind],
+                    key=lambda c: (-drone_add_kind_arc_occ[kind][c], c),
+                )
+            ]
+        return block
+
+    drone_add_arc_kinds = {
+        "weaponCodes": sorted(drone_add_weapon_codes),
+        "filledOrEmptySlots": {"rows": len(drone_add_rows), "occurrences": drone_add_occ},
+        "numericArc": _kind_block("numeric"),
+        "letterArc": _kind_block("letter"),
+        "emptyArc": _kind_block("empty"),
+    }
+    log.info(
+        f"{label} Dro*/ADD6/ADD12 slots: weaponCodes={json.dumps(drone_add_arc_kinds['weaponCodes'])} "
+        f"total rows={drone_add_arc_kinds['filledOrEmptySlots']['rows']} "
+        f"occ={drone_add_arc_kinds['filledOrEmptySlots']['occurrences']} "
+        f"numericArc rows={drone_add_arc_kinds['numericArc']['rows']} occ={drone_add_arc_kinds['numericArc']['occurrences']} "
+        f"letterArc rows={drone_add_arc_kinds['letterArc']['rows']} occ={drone_add_arc_kinds['letterArc']['occurrences']} "
+        f"emptyArc rows={drone_add_arc_kinds['emptyArc']['rows']} occ={drone_add_arc_kinds['emptyArc']['occurrences']}"
+    )
+
+    numeric_arc_weapon_pairings: dict[str, Any] = {
+        "byNumericArc": by_numeric_arc,
+        "bySlot": by_slot_pairs,
+        "nonDroneOrAddPairings": non_drone,
+        "pairsOnlyWithDroneOrAdd": pairs_only_drone_or_add,
+        "droneAddArcKinds": drone_add_arc_kinds,
+    }
+
     race_row_counts = [
         {"race": name, "rows": race_tokens[name]}
         for name in sorted(race_tokens)
@@ -1575,6 +1817,7 @@ def verify_spec_tables(
         numericColumnStats=numeric_stats,
         numericArcCodeSources=numeric_arc_sources,
         heavyWeaponSlotArcs=heavy_weapon_slot_arcs,
+        numericArcWeaponPairings=numeric_arc_weapon_pairings,
     )
 
 
@@ -2824,6 +3067,91 @@ def _write_spec_md(a, label: str, spec: SpecVerification) -> None:
                         f"{c['rows']} | {c['occurrences']} |"
                     )
             a("")
+        pairings = spec.numericArcWeaponPairings or {}
+        if pairings:
+            a("Numeric arc values paired with the weapon code in the same slot (counts only; no ship names):")
+            a("")
+            only = pairings.get("pairsOnlyWithDroneOrAdd")
+            a(
+                f"- Numeric arcs pair only with `Dro*` / `ADD6` / `ADD12`: "
+                f"{'yes' if only else 'no'}"
+            )
+            a("")
+            a("By numeric arc value:")
+            a("")
+            a("| Arc code | Weapon code | Dro*/ADD | Rows | Occurrences | Rows 1–10 | Occ. 1–10 | Rows 11–25 | Occ. 11–25 |")
+            a("| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |")
+            for rec in pairings.get("byNumericArc") or []:
+                weapons = rec.get("weapons") or []
+                if not weapons:
+                    a(f"| `{_md_escape(str(rec['arcCode']))}` | *(none)* | | {rec.get('rows', 0)} | {rec.get('occurrences', 0)} | | | | |")
+                    continue
+                for w in weapons:
+                    s1 = w.get("slots1to10") or {}
+                    s2 = w.get("slots11to25") or {}
+                    a(
+                        f"| `{_md_escape(str(rec['arcCode']))}` | `{_md_escape(str(w['weaponCode']))}` | "
+                        f"{'yes' if w.get('droneOrAdd') else 'no'} | {w['rows']} | {w['occurrences']} | "
+                        f"{s1.get('rows', 0)} | {s1.get('occurrences', 0)} | "
+                        f"{s2.get('rows', 0)} | {s2.get('occurrences', 0)} |"
+                    )
+            a("")
+            if pairings.get("bySlot"):
+                a("By slot:")
+                a("")
+                a("| Slot | Arc code | Weapon code | Dro*/ADD | Rows | Occurrences |")
+                a("| ---: | --- | --- | --- | ---: | ---: |")
+                for rec in pairings["bySlot"]:
+                    for pr in rec.get("pairs") or []:
+                        a(
+                            f"| {rec['slot']} | `{_md_escape(str(pr['arcCode']))}` | "
+                            f"`{_md_escape(str(pr['weaponCode']))}` | "
+                            f"{'yes' if pr.get('droneOrAdd') else 'no'} | {pr['rows']} | {pr['occurrences']} |"
+                        )
+                a("")
+            others = pairings.get("nonDroneOrAddPairings") or []
+            a("Numeric-arc pairings that are **not** `Dro*` / `ADD6` / `ADD12`:")
+            a("")
+            if not others:
+                a("None observed.")
+                a("")
+            else:
+                a("| Arc code | Weapon code | Rows | Occurrences | Slots (slot: rows/occ) |")
+                a("| --- | --- | ---: | ---: | --- |")
+                for pr in others:
+                    slot_s = ", ".join(
+                        f"{s['slot']}: {s['rows']}/{s['occurrences']}" for s in (pr.get("slots") or [])
+                    )
+                    a(
+                        f"| `{_md_escape(str(pr['arcCode']))}` | `{_md_escape(str(pr['weaponCode']))}` | "
+                        f"{pr['rows']} | {pr['occurrences']} | {_md_escape(slot_s)} |"
+                    )
+                a("")
+            kinds = pairings.get("droneAddArcKinds") or {}
+            if kinds:
+                tot = kinds.get("filledOrEmptySlots") or {}
+                num = kinds.get("numericArc") or {}
+                let = kinds.get("letterArc") or {}
+                emp = kinds.get("emptyArc") or {}
+                a("Converse: slots whose weapon code is `Dro*` / `ADD6` / `ADD12`, by arc kind:")
+                a("")
+                a(
+                    "- Weapon codes: "
+                    + (", ".join(f"`{_md_escape(c)}`" for c in (kinds.get("weaponCodes") or [])) or "(none)")
+                )
+                a(f"- Total such slot cells: rows={tot.get('rows', 0)}, occurrences={tot.get('occurrences', 0)}")
+                a(f"- Numeric arc: rows={num.get('rows', 0)}, occurrences={num.get('occurrences', 0)}")
+                a(f"- Letter arc: rows={let.get('rows', 0)}, occurrences={let.get('occurrences', 0)}")
+                a(f"- Empty arc: rows={emp.get('rows', 0)}, occurrences={emp.get('occurrences', 0)}")
+                a("")
+                a("| Kind | Arc code | Rows | Occurrences |")
+                a("| --- | --- | ---: | ---: |")
+                for kind_name, block in (("numeric", num), ("letter", let)):
+                    for c in block.get("arcCodes") or []:
+                        a(
+                            f"| {kind_name} | `{_md_escape(str(c['code']))}` | {c['rows']} | {c['occurrences']} |"
+                        )
+                a("")
     a("### Column selection")
     a("")
     a("```json")
@@ -3009,6 +3337,7 @@ def _spec_to_dict(spec: SpecVerification) -> dict[str, Any]:
         "numericColumnStats": spec.numericColumnStats,
         "numericArcCodeSources": spec.numericArcCodeSources,
         "heavyWeaponSlotArcs": spec.heavyWeaponSlotArcs,
+        "numericArcWeaponPairings": spec.numericArcWeaponPairings,
     }
 
 

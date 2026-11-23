@@ -713,5 +713,84 @@ class InventoryTests(unittest.TestCase):
         self.assertIn("heavy weapon slot 1", joined)
 
 
+
+    def test_numeric_arc_pairs_with_same_slot_weapon(self) -> None:
+        """Numeric Arc cells are counted against the weapon code in the same slot."""
+        side = self.tmpdir / "numeric-arc-weapon-side"
+        if side.exists():
+            shutil.rmtree(side)
+        side.mkdir()
+        path = side / "shiplist.txt"
+        # Invented rows. Dro*/ADD* mostly take 1/2/3; one Phot and one Ph1
+        # take a numeric arc so the "other than Dro*/ADD*" path is tested.
+        # DroA has a letter arc (FA). ADD12 has an empty arc.
+        path.write_bytes(
+            (
+                "Race\tHull Type\tClass\tNum\tHeavy Weapon 1\tArc\tNum\tHeavy Weapon 2\tArc\tNum\tWeapon 11\tArc\r\n"
+                "Federation\tCA\tTEST-CA-01\t1\tDroB\t1\t1\tADD6\t2\t1\tPh1\tFH\r\n"
+                "Klingon\tDD\tTEST-DD-02\t1\tDroA\tFA\t1\tPhot\t1\t1\tPh3\t4\r\n"
+                "Hydran\tCA\tTEST-CA-03\t1\tADD12\t\t1\tDroC\t3\t1\tPh1\t1\r\n"
+            ).encode("ascii")
+        )
+        buf = io.StringIO()
+        log = inv.MetadataLog(stream=buf)
+        meta = inv.FileMeta(path="shiplist.txt", size=path.stat().st_size, sha256=inv.file_sha256(path))
+        result = inv.verify_spec_tables("shiplist", [(path, meta)], side, log)
+        joined = "\n".join(log.lines)
+        pairings = result.numericArcWeaponPairings
+        by_arc = {rec["arcCode"]: rec for rec in pairings["byNumericArc"]}
+        # Arc 1: DroB (slot 1), Phot (slot 2), Ph1 (slot 11)
+        w1 = {w["weaponCode"]: w for w in by_arc["1"]["weapons"]}
+        self.assertEqual(w1["DroB"]["rows"], 1)
+        self.assertEqual(w1["DroB"]["occurrences"], 1)
+        self.assertTrue(w1["DroB"]["droneOrAdd"])
+        self.assertEqual(w1["DroB"]["slots1to10"]["rows"], 1)
+        self.assertEqual(w1["Phot"]["rows"], 1)
+        self.assertFalse(w1["Phot"]["droneOrAdd"])
+        self.assertEqual(w1["Ph1"]["slots11to25"], {"rows": 1, "occurrences": 1})
+        self.assertFalse(w1["Ph1"]["droneOrAdd"])
+        # Arc 2 only ADD6; arc 3 only DroC; unexpected integer 4 with Ph3 in slot 11
+        w2 = {w["weaponCode"]: w for w in by_arc["2"]["weapons"]}
+        self.assertEqual(list(w2), ["ADD6"])
+        self.assertTrue(w2["ADD6"]["droneOrAdd"])
+        w3 = {w["weaponCode"]: w for w in by_arc["3"]["weapons"]}
+        self.assertEqual(list(w3), ["DroC"])
+        w4 = {w["weaponCode"]: w for w in by_arc["4"]["weapons"]}
+        self.assertEqual(w4["Ph3"]["slots11to25"]["rows"], 1)
+        self.assertFalse(pairings["pairsOnlyWithDroneOrAdd"])
+        others = {(p["arcCode"], p["weaponCode"]): p for p in pairings["nonDroneOrAddPairings"]}
+        self.assertIn(("1", "Phot"), others)
+        self.assertIn(("1", "Ph1"), others)
+        self.assertIn(("4", "Ph3"), others)
+        self.assertNotIn(("1", "DroB"), others)
+        self.assertNotIn(("2", "ADD6"), others)
+        by_slot = {rec["slot"]: rec for rec in pairings["bySlot"]}
+        s1 = {(p["arcCode"], p["weaponCode"]): p for p in by_slot[1]["pairs"]}
+        self.assertEqual(s1[("1", "DroB")]["rows"], 1)
+        s2 = {(p["arcCode"], p["weaponCode"]): p for p in by_slot[2]["pairs"]}
+        self.assertEqual(s2[("2", "ADD6")]["rows"], 1)
+        self.assertEqual(s2[("1", "Phot")]["rows"], 1)
+        s11 = {(p["arcCode"], p["weaponCode"]): p for p in by_slot[11]["pairs"]}
+        self.assertEqual(s11[("4", "Ph3")]["rows"], 1)
+        self.assertEqual(s11[("1", "Ph1")]["rows"], 1)
+        kinds = pairings["droneAddArcKinds"]
+        self.assertEqual(set(kinds["weaponCodes"]), {"DroA", "DroB", "DroC", "ADD6", "ADD12"})
+        # Five Dro*/ADD* slot cells: DroB+1, ADD6+2, DroA+FA, ADD12+empty, DroC+3
+        self.assertEqual(kinds["filledOrEmptySlots"]["occurrences"], 5)
+        self.assertEqual(kinds["numericArc"]["occurrences"], 3)
+        self.assertEqual(kinds["letterArc"]["occurrences"], 1)
+        self.assertEqual(kinds["emptyArc"]["occurrences"], 1)
+        letter_codes = {c["code"]: c for c in kinds["letterArc"]["arcCodes"]}
+        self.assertEqual(letter_codes["FA"]["rows"], 1)
+        # Logs: vocabulary and counts only, no data rows.
+        self.assertNotIn("DroB\t1", joined)
+        self.assertIn("numeric arcs pair only with Dro*/ADD6/ADD12: false", joined)
+        self.assertIn("Dro*/ADD6/ADD12 slots:", joined)
+        # integer 4 is recorded in per-column sources too
+        sources = {rec["code"]: rec for rec in result.numericArcCodeSources}
+        self.assertIn("4", sources)
+        self.assertEqual(sources["4"]["columns"][0]["slot"], 11)
+
+
 if __name__ == "__main__":
     unittest.main()
