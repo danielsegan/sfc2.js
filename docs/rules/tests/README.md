@@ -14,7 +14,7 @@ There is no engine test runner yet. `tools/check-rules-fixtures.mjs` is the harn
 
 | Field | Role |
 | --- | --- |
-| `id`, `mode` | Required. Mode is `pure`, `scale`, `load`, `resolve`, or `ticks`. |
+| `id`, `mode` | Required. Mode is `pure`, `scale`, `load`, `resolve`, `ticks`, or `bounds`. |
 | `constants` | Optional overrides of [`../data/constants.json`](../data/constants.json) for this file. |
 | `seed` | `combat` stream seed when a chart draw is not scripted. Default 1. |
 | `ships` | Engine-model ships. `className` must start with `test-`. |

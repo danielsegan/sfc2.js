@@ -10,8 +10,8 @@
       "weapons": [
         { "slotIndex": 0, "weapon": "TEST-NOPE", "arc": "TEST-FA" },
         { "slotIndex": 1, "weapon": "TEST-PH", "arc": "TEST-NOPE" },
-        { "slotIndex": 2, "weapon": "TEST-DRN", "arc": null, "reloads": 3 },
-        { "slotIndex": 3, "weapon": "TEST-DRN", "arc": "TEST-NOPE", "reloads": 1 },
+        { "slotIndex": 2, "weapon": "TEST-DRN", "arc": "3" },
+        { "slotIndex": 3, "weapon": "TEST-DRN", "arc": "TEST-NOPE" },
         { "slotIndex": 4, "weapon": null, "arc": null }
       ]
     }
@@ -40,7 +40,7 @@
     "mapped": [
       { "slotIndex": 1, "weapon": "TEST-PH", "internal": "phaser", "arc": "TEST-NOPE", "reloads": null },
       { "slotIndex": 2, "weapon": "TEST-DRN", "internal": "drone", "arc": null, "reloads": 3 },
-      { "slotIndex": 3, "weapon": "TEST-DRN", "internal": "drone", "arc": "TEST-NOPE", "reloads": 1 }
+      { "slotIndex": 3, "weapon": "TEST-DRN", "internal": "drone", "arc": "TEST-NOPE", "reloads": null }
     ]
   }
 }

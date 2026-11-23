@@ -58,9 +58,9 @@ interface FighterModel {
 }
 ```
 
-Absent ftrlist columns become `null`. A written zero stays 0. Fixed-point conversion uses the provisional scale `fxScale = 1000` milli-units until [`docs/engine/determinism.md`](../engine/determinism.md) names the production format. That file is not on `main` yet.
+Absent ftrlist columns become `null`. A written zero stays 0. Fixed-point conversion uses 16.16 (`FX_SHIFT = 16`, one unit = one range unit) from [`docs/engine/sim-core.md`](../engine/sim-core.md). That file is not on `main` yet.
 
-PFs are shiplist rows with `class: "pf"` once the CE hull token is known (still pending). They run the ship rules. Fighters are the lighter model and the duel entry points reject them with `notAShip`.
+The CE 2.670 shiplist has 15 `FTR` hull rows and no PF rows. `class: "pf"` stays on the model for a mod or a later file. Stock fighters are the lighter model, and the duel entry points reject them with `notAShip`.
 
 ## 2. Shiplist source key → engine field
 
@@ -78,12 +78,12 @@ Provisional keys, pending real headers. Fan-out and ×2 happen in the loader, in
 | `minCrew`, `deckCrews` | `crew.minCrew`, `crew.deckCrews` | ×1. |
 | shield front, forward-side, aft-side, rear | `shieldsMax[0..5]` | Fan out, then ×2. See the scale table. |
 | `cloakCost` | `systems.cloakCost` | Empty means no cloak. Cloak resolution is Phase 3. |
-| hardpoint `slotIndex`, `weapon`, `arc`, `count` | `weapons[]` | Codes stay exact. Empty slots dropped only after `slotIndex` is kept. |
-| hardpoint `reloads` | `weapons[].reloads` | Drone racks only. The arc cell is not also an arc. |
+| hardpoint `slotIndex`, `weapon`, `arc`, `count` | `weapons[]` | Codes stay exact, including case. File slot 1 is `slotIndex` 0. Empty slots drop only after `slotIndex` is kept. |
+| hardpoint numeric `Arc` on `DroA`/`DroB`/`DroC`/`DroF`/`DroG`/`ADD6`/`ADD12` | `weapons[].reloads` | The cell is a whole number (1–3 observed; ADD only ever shows 1). Those racks have no firing arc. A number on any other weapon, or a letter or empty cell on these weapons, is `unknownArc`. |
 | `warpSide`, `warpCenter` | `power.warp` | Side term ×2, centre term ×1, then add. |
 | `impulse`, `apr` | `power.impulse`, `power.apr` | ×1. |
 | `battery` | `power.battery` and `power.batteryCapacity` | The file number is both the starting charge and the capacity (ship starts full). Pending playtest. |
-| `armor`, `hullForward`, `hullCenter`, `hullAft`, `cargo`, `barracks`, `repair`, `bridge`, `security`, `lab`, `transporters`, `tractors`, `mechTractors`, `specialSensors`, `sensors`, `scanners`, `damageControl`, `extraDamage` | `systems.<same key>` | Flat box counts. The format spec's engine sketch says `labs`; this mapping uses `lab` to match the proposed source key. |
+| `armor`, `hullForward`, `hullCenter`, `hullAft`, `cargo`, `barracks`, `repair`, `bridge`, `security`, `lab`, `transporters`, `tractors`, `mechTractors`, `specialSensors`, `sensors`, `scanners`, `damageControl`, `extraDamage` | `systems.<same key>` | Flat box counts. The lab key is `lab`, lowercase and singular. |
 | `probes`, mine and shuttle counts, `fighterBays` | `systems` or `bays`, same names | Carried stores. Not resolved in the duel slice. |
 | `geometry`, `uiKey` | `geometry`, `uiKey` | Art. Passed through. |
 
@@ -116,9 +116,98 @@ Worked synthetic case: file cells 10, 8, 6, 4 and `warpSide` 5, `warpCenter` 3 b
 
 ## 4. Weapon and arc mapping
 
-One table, two sections. Canonical copy: [`data/weapon-arcs.json`](data/weapon-arcs.json). The loader checks the union. A code in either section is known. `unknownWeapon` and `unknownArc` (`source: "loader"`, severity warning) fire when the cell is non-empty and absent from both sections. Empty cells are silent. Drone rows with a null arc do not raise `unknownArc`.
+Canonical copy: [`data/weapon-arcs.json`](data/weapon-arcs.json). Codes match the CE 2.670 metadata exactly, including case. The loader checks the union of the shiplist rows and the ftrlist-only rows. A non-empty code that is not in that set is `unknownWeapon` or `unknownArc` (`source: "loader"`, severity warning). A mod that spells a plasma code differently, including `PLAF`, is unknown and is not folded into a nearby row. Empty cells are silent.
 
-Relative bearings are uint16, 0 at the bow, increasing clockwise. Spans are half-open `[from16, to16)`. A wrapped span crosses 0. Boundary headings belong to the clockwise-next shield facing. The six facing bins, from the duel-slice function, are:
+### 4.1 Slots
+
+File slots are 1–25. The engine `slotIndex` is the file slot minus 1.
+
+| File slots | Weapon column | Columns |
+| --- | --- | --- |
+| 1–10 | `Heavy Weapon 1` … `Heavy Weapon 10` | Slot 1 is columns 26–28 (Num, weapon, Arc). Each next slot is the next three columns. |
+| 11–25 | `Weapon 11` … `Weapon 25` | Slot 25 is columns 98–100. |
+
+`Ph3` also appears on heavy-slot rows (5 rows in the inventory summary). A weapon is a phaser because its code maps to `phaser`, not because of the slot. Every phaser feeds the capacitor.
+
+### 4.2 Shiplist weapon codes
+
+Thirty-one codes. Cost and damage rows are empty until playtest. `PLaF` is the same weapon as `PlaF`, and the same pairing holds for G, R and S. `PlaD` and `PlaI` have no `PLa` twin.
+
+| Code | Internal | Notes |
+| --- | --- | --- |
+| `Phot` | `photon` | |
+| `Dis1` `Dis2` `Dis3` `Dis4` | `disruptor` | Distinct rows, not aliases. |
+| `PlaD` | `plasma` | `weaponId` `plasma-d` |
+| `PlaF` / `PLaF` | `plasma` | Both `weaponId` `plasma-f` |
+| `PlaG` / `PLaG` | `plasma` | Both `weaponId` `plasma-g` |
+| `PlaI` | `plasma` | `weaponId` `plasma-i` |
+| `PlaR` / `PLaR` | `plasma` | Both `weaponId` `plasma-r` |
+| `PlaS` / `PLaS` | `plasma` | Both `weaponId` `plasma-s` |
+| `DroA` `DroB` `DroC` `DroF` `DroG` | `drone` | `reloadCounted` true. No firing arc. Seeking, so they launch in any direction. |
+| `ESG` | `esg` | |
+| `Fus` | `fusion` | |
+| `HB` | `hellbore` | |
+| `PPD` | `ppd` | |
+| `ADD6` `ADD12` | `add` | `reloadCounted` true. No firing arc, so they fire in any direction. Observed count is only 1. |
+| `Ph1` `Ph2` `Ph3` `Ph4` `PhG` | `phaser` | Capacitor follows the code, any slot |
+
+`TEST-PH`, `TEST-PHOT` and `TEST-DRN` stay in the data file as synthetic duel stand-ins. They are not CE codes.
+
+### 4.3 Ftrlist weapon codes
+
+`Ph2`, `Ph3` and `PhG` are the shiplist rows above. These six are ftrlist-only:
+
+| Code | Internal | Notes |
+| --- | --- | --- |
+| `PhoF` | `photon` | Trailing F is read as fighter-scale. That reading is TO VERIFY. |
+| `DisF` | `disruptor` | Same F caution. Outside the Phase 2 fire path. |
+| `HellF` | `hellbore` | Same F caution. |
+| `FusF` | `fusion` | Same F caution. |
+| `DroI` `DroVI` | `drone` | Not `reloadCounted`. ftrlist gives them the letter arc `ALL`. The roman suffix may be a mark, a speed or a warhead. TO VERIFY. |
+
+Fighter drones keep a letter arc. Shiplist `Dro*` and `ADD*` do not: their Arc cell is only the count.
+
+### 4.4 Arcs
+
+Twenty-eight codes: `RS`, `LS`, `ALL`, `FA`, `FX`, `FH`, `FAL`, `FAR`, `RX`, `RH`, `LLR`, `RRR`, `LP`, `RP`, `RAR`, `RAL`, `LW`, `RW`, `RA`, `FLL`, `FRR`, `FHL`, `FHR`, `FLLX`, `FRRX`, plus `1`, `2` and `3`. The numbers appear only in heavy-slot Arc cells.
+
+`1`, `2` and `3` are not facings. Confirmed pairing: they occur only on `DroA`, `DroB`, `DroC`, `DroF`, `DroG`, `ADD6` and `ADD12`, and every shiplist row of those codes has one. The number is stored as `reloads`. Whether it means reloads or rack capacity is TO VERIFY by playtest. ADD racks only ever show 1. A numeric Arc on any other weapon is `unknownArc`. A letter arc or an empty cell on these weapons is also `unknownArc`. Fixtures: `tests/shiplist-code-load.json`.
+
+Every letter arc below is a provisional set of the six shield facings (0 = front, clockwise). **All of them are TO VERIFY by playtest.** Some provisional sets coincide; playtest has to split them. Spans are the facing bins from the duel slice, half-open, wrapped when they cross the bow.
+
+| Code | Facings | Reading |
+| --- | --- | --- |
+| `ALL` | 0–5 | Every facing. |
+| `FH` | 0 | Bow only. |
+| `FA` | 5, 0, 1 | Bow and both forward shoulders. |
+| `FX` | 4, 5, 0, 1, 2 | Forward arc extended through both side facings. Stern stays out. |
+| `FAL` | 5, 0 | Bow and forward-left. |
+| `FAR` | 0, 1 | Bow and forward-right. |
+| `FLL` | 5 | Forward-left shoulder. |
+| `FRR` | 1 | Forward-right shoulder. |
+| `FHL` | 4, 5, 0 | Left half of the extended forward arc, bow included. |
+| `FHR` | 0, 1, 2 | Right half of the extended forward arc, bow included. |
+| `FLLX` | 4, 5 | Forward-left plus rear-left. Bow stays out. |
+| `FRRX` | 1, 2 | Forward-right plus rear-right. Bow stays out. |
+| `RH` | 3 | Stern only. |
+| `RA` | 2, 3, 4 | Stern and both rear shoulders. |
+| `RX` | 1, 2, 3, 4, 5 | Rear arc extended through both forward shoulders. Bow stays out. |
+| `RAL` | 3, 4 | Stern and rear-left. |
+| `RAR` | 2, 3 | Stern and rear-right. |
+| `LS` | 4, 5 | Both left-side facings. Same provisional set as `FLLX`. |
+| `RS` | 1, 2 | Both right-side facings. Same provisional set as `FRRX`. |
+| `LP` | 5 | Narrow port. Same provisional set as `FLL`. |
+| `RP` | 1 | Narrow starboard. Same provisional set as `FRR`. |
+| `LW` | 4 | Rear-left, read as a left wing. |
+| `RW` | 2 | Rear-right, read as a right wing. |
+| `LLR` | 3, 4 | Rear-left and stern. Same provisional set as `RAL`. |
+| `RRR` | 2, 3 | Rear-right and stern. Same provisional set as `RAR`. |
+
+Synthetic duel arcs `TEST-FA`, `TEST-ALL`, `TEST-STBD` and `TEST-PORT` stay in the data file for the old fixtures. They are not CE codes.
+
+Relative bearings are uint16, 0 at the bow, increasing clockwise. Boundary headings belong to the clockwise-next shield facing. The six facing bins are:
+
+
 
 | Facing | Index | Headings |
 | --- | --- | --- |
@@ -129,51 +218,9 @@ Relative bearings are uint16, 0 at the bow, increasing clockwise. Spans are half
 | rear-left | 4 | `[38230, 49152)` |
 | front-left | 5 | `[49152, 60075)` |
 
-### 4.1 Ship (shiplist) — placeholder
-
-Real CE shiplist codes are not known yet. **TODO:** fill this section from the #6 inventory. Synthetic keys only:
-
-| Code | Internal | Notes |
-| --- | --- | --- |
-| `TEST-PH` | `phaser` | Synthetic charge cost 4. Range bands 10 → 3 damage, 20 → 1 damage. |
-| `TEST-PHOT` | `photon` | Synthetic arming, overload and proximity numbers in the data file. |
-| `TEST-DRN` | `drone` | Reloads live in `reloads`, not in the arc. |
-| `TEST-FA` | arc | Front wedge, same headings as facing 0. |
-| `TEST-ALL` | arc | Full circle. |
-| `TEST-STBD` | arc | `[0, 32768)`. |
-| `TEST-PORT` | arc | `[32768, 65536)`. |
-
-### 4.2 Fighter (ftrlist) — real CE codes
-
-Names from the metadata-only CE 2.670 ftrlist inventory (#6, baseline #37). No occurrence counts. Angular ranges are a working geometry so the loader has a number. **Every range, and every suffix reading below, is pending verification.**
-
-| Code | Internal | Reading |
-| --- | --- | --- |
-| `Ph2` | `phaser` | Second phaser family. Costs and damage rows left empty. |
-| `Ph3` | `phaser` | Third phaser family. Range numbers left empty. |
-| `PhG` | `phaser` | Rapid-fire phaser. The G suffix has no tighter definition here. |
-| `PhoF` | `photon` | Fighter photon. Trailing F is read as fighter-scale and might instead mean fast or a special warhead. Uses the photon mechanism once a cost row exists. |
-| `DisF` | `disruptor` | Fighter disruptor. Same F caution. Outside the Phase 2 fire path. |
-| `HellF` | `hellbore` | Fighter hellbore. Same F caution. Outside the Phase 2 fire path. |
-| `FusF` | `fusion` | Fighter fusion beam. Same F caution. Outside the Phase 2 fire path. |
-| `DroI` | `drone` | Drone, suffix read as mark I. The suffix may be a mark, a speed or a warhead. |
-| `DroVI` | `drone` | Drone, suffix read as mark VI. Same caution. |
-
-Fighter drones have their own Arc column. They do not use the shiplist convention that the arc cell holds a reload count.
-
-| Code | Working uint16 span | Reading | Pending because |
-| --- | --- | --- | --- |
-| `ALL` | full circle | Every relative bearing. | Confirm there is no blind spot. |
-| `FH` | `[60075, 5462)` wrapped | Narrow forward, shield facing 0. | H may be a different forward width. |
-| `FX` | `[49152, 16384)` wrapped | Extended forward, facings 5, 0 and 1 (forward half). | Extended may be wider than a hemisphere. |
-| `RA` | `[27307, 38230)` | Rear, shield facing 3. | Rear may be wider than one facing. |
-| `RX` | `[16384, 49152)` | Extended rear, facings 2, 3 and 4. | Same width question as `FX`. |
-| `LS` | `[38230, 60075)` | Port side, facings 4 and 5, centred near bearing 49152. | A side arc might be one facing or a half-circle. |
-| `RS` | `[5462, 27307)` | Starboard side, facings 1 and 2, centred near bearing 16384. | Same width question as `LS`. |
-
 ## 5. Ftrlist header → engine field
 
-Inventory summary, CE 2.670, names only. Line 1 is a comment (text not stored here). Line 2 is the header. Thirty-six columns. Five weapon groups follow Speed. The summary names each group `Num`, `WeaponN`, `Arc`, `Shots`. This mapping writes the weapon column as `Weapon1` … `Weapon5` and binds repeated `Num`, `Arc` and `Shots` labels by group order (`slotIndex` 0..4). If a header dump shows suffixes or different spacing, add aliases; do not rename the engine fields.
+Inventory summary, CE 2.670, names only. Line 1 is a comment (text not stored here). Line 2 is the header. Thirty-six columns. Five weapon groups follow Speed. `Weapon1` through `Weapon5` pair with their `Num`, `Arc` and `Shots` neighbours by column order (`slotIndex` 0..4). Slots 4 and 5 (`Weapon4`, `Weapon5`) have no Arc filled in. The shiplist beside this file has 15 `FTR` hull rows and no PF rows.
 
 | # | Header | Engine field |
 | --- | --- | --- |

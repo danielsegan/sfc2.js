@@ -182,7 +182,7 @@ Campaign layer ◄── MissionResult (victory, prestige, flags, fleet) ──�
 
 ### 4.1 Determinism contract (provisional)
 
-These are the Engine Lead's working answers, **provisional until `docs/engine/determinism.md` lands**.
+These are the Engine Lead's working answers, **provisional until `docs/engine/sim-core.md` lands**.
 This doc will be updated to match whatever that contract finally says.
 
 | Rule | Working answer | What it means for missions |

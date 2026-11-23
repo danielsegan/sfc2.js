@@ -1,7 +1,7 @@
 {
   "ship": {
-    "status": "placeholder",
-    "todo": "Shiplist weapon and arc codes are still unknown. Header detection for shiplist.txt is pending the issue #6 inventory. Until then the only ship-section keys are the synthetic TEST-* codes below. Do not add observed shiplist strings here.",
+    "status": "ce-2.670-names",
+    "source": "Metadata-only Community Edition 2.670 shiplist inventory (issue #6, baseline issue #37). Codes and column names only. No ship rows and no stat values.",
     "weapons": {
       "TEST-PH": {
         "internal": "phaser",
@@ -10,7 +10,8 @@
         "rangeBands": [
           { "maxRange": 10, "damage": 3 },
           { "maxRange": 20, "damage": 1 }
-        ]
+        ],
+        "note": "Synthetic phaser used by duel fixtures. Same capacitor rule as a real phaser code."
       },
       "TEST-PHOT": {
         "internal": "photon",
@@ -22,137 +23,227 @@
         "overloadDamage": 12,
         "proxRadius": 2,
         "proxDamage": 4,
-        "projectileSpeed": 2
+        "projectileSpeed": 2,
+        "maxRange": 30,
+        "note": "Synthetic photon. maxRange 30 is a fixture stand-in, not the 75-unit probe."
       },
       "TEST-DRN": {
         "internal": "drone",
-        "usesReloads": true
-      }
+        "reloadCounted": true,
+        "weaponId": "test-drone"
+      },
+      "Phot": { "internal": "photon", "weaponId": "photon", "verification": "to-verify" },
+      "Dis1": { "internal": "disruptor", "weaponId": "disruptor-1", "verification": "to-verify" },
+      "Dis2": { "internal": "disruptor", "weaponId": "disruptor-2", "verification": "to-verify" },
+      "Dis3": { "internal": "disruptor", "weaponId": "disruptor-3", "verification": "to-verify" },
+      "Dis4": { "internal": "disruptor", "weaponId": "disruptor-4", "verification": "to-verify" },
+      "PlaD": { "internal": "plasma", "weaponId": "plasma-d", "verification": "to-verify" },
+      "PlaF": { "internal": "plasma", "weaponId": "plasma-f", "verification": "to-verify" },
+      "PlaG": { "internal": "plasma", "weaponId": "plasma-g", "verification": "to-verify" },
+      "PlaI": { "internal": "plasma", "weaponId": "plasma-i", "verification": "to-verify" },
+      "PlaR": { "internal": "plasma", "weaponId": "plasma-r", "verification": "to-verify" },
+      "PlaS": { "internal": "plasma", "weaponId": "plasma-s", "verification": "to-verify" },
+      "PLaF": { "internal": "plasma", "weaponId": "plasma-f", "sameAs": "PlaF", "verification": "to-verify" },
+      "PLaG": { "internal": "plasma", "weaponId": "plasma-g", "sameAs": "PlaG", "verification": "to-verify" },
+      "PLaR": { "internal": "plasma", "weaponId": "plasma-r", "sameAs": "PlaR", "verification": "to-verify" },
+      "PLaS": { "internal": "plasma", "weaponId": "plasma-s", "sameAs": "PlaS", "verification": "to-verify" },
+      "DroA": { "internal": "drone", "weaponId": "drone-a", "reloadCounted": true, "omnidirectional": true, "verification": "to-verify" },
+      "DroB": { "internal": "drone", "weaponId": "drone-b", "reloadCounted": true, "omnidirectional": true, "verification": "to-verify" },
+      "DroC": { "internal": "drone", "weaponId": "drone-c", "reloadCounted": true, "omnidirectional": true, "verification": "to-verify" },
+      "DroF": { "internal": "drone", "weaponId": "drone-f", "reloadCounted": true, "omnidirectional": true, "verification": "to-verify" },
+      "DroG": { "internal": "drone", "weaponId": "drone-g", "reloadCounted": true, "omnidirectional": true, "verification": "to-verify" },
+      "ESG": { "internal": "esg", "weaponId": "esg", "verification": "to-verify" },
+      "Fus": { "internal": "fusion", "weaponId": "fusion", "verification": "to-verify" },
+      "HB": { "internal": "hellbore", "weaponId": "hellbore", "verification": "to-verify" },
+      "PPD": { "internal": "ppd", "weaponId": "ppd", "verification": "to-verify" },
+      "ADD6": { "internal": "add", "weaponId": "add-6", "reloadCounted": true, "omnidirectional": true, "verification": "to-verify", "note": "Observed Arc values are only 1. Whether that number is reloads or rack capacity is TO VERIFY." },
+      "ADD12": { "internal": "add", "weaponId": "add-12", "reloadCounted": true, "omnidirectional": true, "verification": "to-verify", "note": "Observed Arc values are only 1. Whether that number is reloads or rack capacity is TO VERIFY." },
+      "Ph1": { "internal": "phaser", "weaponId": "phaser-1", "verification": "to-verify" },
+      "Ph2": { "internal": "phaser", "weaponId": "phaser-2", "verification": "to-verify" },
+      "Ph3": { "internal": "phaser", "weaponId": "phaser-3", "verification": "to-verify" },
+      "Ph4": { "internal": "phaser", "weaponId": "phaser-4", "verification": "to-verify" },
+      "PhG": { "internal": "phaser", "weaponId": "phaser-g", "verification": "to-verify" }
     },
     "arcs": {
       "TEST-FA": {
-        "note": "Synthetic forward wedge equal to shield facing 0: [60075, 65536) U [0, 5462).",
+        "note": "Synthetic forward wedge equal to shield facing 0.",
         "spans": [{ "from16": 60075, "to16": 5462 }]
       },
-      "TEST-ALL": {
-        "full": true,
-        "spans": []
-      },
+      "TEST-ALL": { "full": true, "spans": [] },
       "TEST-STBD": {
-        "note": "Synthetic starboard half-circle, half-open [0, 32768).",
+        "note": "Synthetic starboard half-circle.",
         "spans": [{ "from16": 0, "to16": 32768 }]
       },
       "TEST-PORT": {
-        "note": "Synthetic port half-circle, half-open [32768, 65536).",
+        "note": "Synthetic port half-circle.",
         "spans": [{ "from16": 32768, "to16": 0 }]
+      },
+      "ALL": {
+        "verification": "to-verify",
+        "facings": [0, 1, 2, 3, 4, 5],
+        "reading": "Every shield facing.",
+        "full": true,
+        "spans": []
+      },
+      "FH": {
+        "verification": "to-verify",
+        "facings": [0],
+        "reading": "Bow facing alone.",
+        "spans": [{ "from16": 60075, "to16": 5462 }]
+      },
+      "FA": {
+        "verification": "to-verify",
+        "facings": [5, 0, 1],
+        "reading": "Bow plus both forward shoulders.",
+        "spans": [{ "from16": 49152, "to16": 16384 }]
+      },
+      "FX": {
+        "verification": "to-verify",
+        "facings": [4, 5, 0, 1, 2],
+        "reading": "Forward arc extended through both side facings. Stern stays out.",
+        "spans": [{ "from16": 38230, "to16": 27307 }]
+      },
+      "FAL": {
+        "verification": "to-verify",
+        "facings": [5, 0],
+        "reading": "Bow and the forward-left shoulder.",
+        "spans": [{ "from16": 49152, "to16": 5462 }]
+      },
+      "FAR": {
+        "verification": "to-verify",
+        "facings": [0, 1],
+        "reading": "Bow and the forward-right shoulder.",
+        "spans": [{ "from16": 60075, "to16": 16384 }]
+      },
+      "FLL": {
+        "verification": "to-verify",
+        "facings": [5],
+        "reading": "Forward-left shoulder only.",
+        "spans": [{ "from16": 49152, "to16": 60075 }]
+      },
+      "FRR": {
+        "verification": "to-verify",
+        "facings": [1],
+        "reading": "Forward-right shoulder only.",
+        "spans": [{ "from16": 5462, "to16": 16384 }]
+      },
+      "FHL": {
+        "verification": "to-verify",
+        "facings": [4, 5, 0],
+        "reading": "Left half of the extended forward arc, bow included.",
+        "spans": [{ "from16": 38230, "to16": 5462 }]
+      },
+      "FHR": {
+        "verification": "to-verify",
+        "facings": [0, 1, 2],
+        "reading": "Right half of the extended forward arc, bow included.",
+        "spans": [{ "from16": 60075, "to16": 27307 }]
+      },
+      "FLLX": {
+        "verification": "to-verify",
+        "facings": [4, 5],
+        "reading": "Forward-left shoulder plus the rear-left facing. Bow stays out.",
+        "spans": [{ "from16": 38230, "to16": 60075 }]
+      },
+      "FRRX": {
+        "verification": "to-verify",
+        "facings": [1, 2],
+        "reading": "Forward-right shoulder plus the rear-right facing. Bow stays out.",
+        "spans": [{ "from16": 5462, "to16": 27307 }]
+      },
+      "RH": {
+        "verification": "to-verify",
+        "facings": [3],
+        "reading": "Stern facing alone.",
+        "spans": [{ "from16": 27307, "to16": 38230 }]
+      },
+      "RA": {
+        "verification": "to-verify",
+        "facings": [2, 3, 4],
+        "reading": "Stern plus both rear shoulders.",
+        "spans": [{ "from16": 16384, "to16": 49152 }]
+      },
+      "RX": {
+        "verification": "to-verify",
+        "facings": [1, 2, 3, 4, 5],
+        "reading": "Rear arc extended through both forward shoulders. Bow stays out.",
+        "spans": [{ "from16": 5462, "to16": 60075 }]
+      },
+      "RAL": {
+        "verification": "to-verify",
+        "facings": [3, 4],
+        "reading": "Stern and the rear-left facing.",
+        "spans": [{ "from16": 27307, "to16": 49152 }]
+      },
+      "RAR": {
+        "verification": "to-verify",
+        "facings": [2, 3],
+        "reading": "Stern and the rear-right facing.",
+        "spans": [{ "from16": 16384, "to16": 38230 }]
+      },
+      "LS": {
+        "verification": "to-verify",
+        "facings": [4, 5],
+        "reading": "The two left-side facings. This provisional set matches FLLX until playtest splits them.",
+        "spans": [{ "from16": 38230, "to16": 60075 }]
+      },
+      "RS": {
+        "verification": "to-verify",
+        "facings": [1, 2],
+        "reading": "The two right-side facings. This provisional set matches FRRX until playtest splits them.",
+        "spans": [{ "from16": 5462, "to16": 27307 }]
+      },
+      "LP": {
+        "verification": "to-verify",
+        "facings": [5],
+        "reading": "Forward-left facing, read as a narrow port arc. Provisional set matches FLL.",
+        "spans": [{ "from16": 49152, "to16": 60075 }]
+      },
+      "RP": {
+        "verification": "to-verify",
+        "facings": [1],
+        "reading": "Forward-right facing, read as a narrow starboard arc. Provisional set matches FRR.",
+        "spans": [{ "from16": 5462, "to16": 16384 }]
+      },
+      "LW": {
+        "verification": "to-verify",
+        "facings": [4],
+        "reading": "Rear-left facing, read as a left wing.",
+        "spans": [{ "from16": 38230, "to16": 49152 }]
+      },
+      "RW": {
+        "verification": "to-verify",
+        "facings": [2],
+        "reading": "Rear-right facing, read as a right wing.",
+        "spans": [{ "from16": 16384, "to16": 27307 }]
+      },
+      "LLR": {
+        "verification": "to-verify",
+        "facings": [3, 4],
+        "reading": "Rear-left and stern. Provisional set matches RAL.",
+        "spans": [{ "from16": 27307, "to16": 49152 }]
+      },
+      "RRR": {
+        "verification": "to-verify",
+        "facings": [2, 3],
+        "reading": "Rear-right and stern. Provisional set matches RAR.",
+        "spans": [{ "from16": 16384, "to16": 38230 }]
       }
     }
   },
   "fighter": {
     "status": "ce-2.670-names",
-    "source": "Metadata-only Community Edition 2.670 ftrlist inventory (issue #6, baseline issue #37). Names of codes only. No row counts.",
-    "section": "fighter (ftrlist)",
+    "source": "ftrlist codes that are not already in the shiplist set. Ph2, Ph3 and PhG are the shiplist rows.",
     "weapons": {
-      "Ph2": {
-        "internal": "phaser",
-        "reading": "Phaser of the second family.",
-        "verification": "pending",
-        "note": "Family reading is pending playtest. Charge cost, range bands and damage are data rows and are intentionally empty."
-      },
-      "Ph3": {
-        "internal": "phaser",
-        "reading": "Phaser of the third family, the shorter-ranged of the common phaser pair.",
-        "verification": "pending",
-        "note": "Range and damage stay empty until playtest."
-      },
-      "PhG": {
-        "internal": "phaser",
-        "reading": "Rapid-fire phaser. The G suffix is not given a tighter meaning here.",
-        "verification": "pending",
-        "note": "Ambiguous: G may mean a gatling mount or another phaser variant."
-      },
-      "PhoF": {
-        "internal": "photon",
-        "reading": "Photon torpedo on a fighter mount. Uses the photon arming, overload and proximity mechanisms once its cost row is filled.",
-        "verification": "pending",
-        "note": "Ambiguous: the trailing F is read as fighter-scale. It might instead mark a fast or otherwise special warhead."
-      },
-      "DisF": {
-        "internal": "disruptor",
-        "reading": "Disruptor on a fighter mount.",
-        "verification": "pending",
-        "note": "Ambiguous trailing F, same caution as PhoF. Outside the Phase 2 duel fire path."
-      },
-      "HellF": {
-        "internal": "hellbore",
-        "reading": "Hellbore on a fighter mount.",
-        "verification": "pending",
-        "note": "Ambiguous trailing F. Outside the Phase 2 duel fire path."
-      },
-      "FusF": {
-        "internal": "fusion",
-        "reading": "Fusion beam on a fighter mount.",
-        "verification": "pending",
-        "note": "Ambiguous trailing F. Outside the Phase 2 duel fire path."
-      },
-      "DroI": {
-        "internal": "drone",
-        "usesReloads": true,
-        "reading": "Drone whose suffix reads as mark I.",
-        "verification": "pending",
-        "note": "Ambiguous: the roman suffix may be a mark, a speed class or a warhead. On ftrlist the arc is its own column, so this code does not reuse the shiplist trick of storing reloads in the arc cell."
-      },
-      "DroVI": {
-        "internal": "drone",
-        "usesReloads": true,
-        "reading": "Drone whose suffix reads as mark VI.",
-        "verification": "pending",
-        "note": "Same ambiguity as DroI."
-      }
+      "DisF": { "internal": "disruptor", "weaponId": "disruptor-f", "verification": "to-verify" },
+      "DroI": { "internal": "drone", "weaponId": "drone-i", "reloadCounted": false, "verification": "to-verify", "note": "ftrlist letter arc ALL. Not a shiplist reload count." },
+      "DroVI": { "internal": "drone", "weaponId": "drone-vi", "reloadCounted": false, "verification": "to-verify", "note": "ftrlist letter arc ALL. Not a shiplist reload count." },
+      "FusF": { "internal": "fusion", "weaponId": "fusion-f", "verification": "to-verify" },
+      "HellF": { "internal": "hellbore", "weaponId": "hellbore-f", "verification": "to-verify" },
+      "PhoF": { "internal": "photon", "weaponId": "photon-f", "verification": "to-verify" }
     },
-    "arcs": {
-      "ALL": {
-        "full": true,
-        "spans": [],
-        "verification": "pending",
-        "reading": "Every relative bearing. The letters say the whole circle; confirm the code is not a near-circle with a blind spot."
-      },
-      "FH": {
-        "verification": "pending",
-        "reading": "Narrow forward arc. Working geometry uses shield facing 0 only, so a target in FH is in the front shield bin.",
-        "spans": [{ "from16": 60075, "to16": 5462 }],
-        "note": "Pending verification. The H may mean a one-facing wedge or a different forward width."
-      },
-      "FX": {
-        "verification": "pending",
-        "reading": "Extended forward arc. Working geometry is the forward half-circle: facings 5, 0 and 1.",
-        "spans": [{ "from16": 49152, "to16": 16384 }],
-        "note": "Pending verification. Extended may be wider than a hemisphere."
-      },
-      "RA": {
-        "verification": "pending",
-        "reading": "Rear arc. Working geometry is shield facing 3 only.",
-        "spans": [{ "from16": 27307, "to16": 38230 }],
-        "note": "Pending verification. Rear may be wider than one facing."
-      },
-      "RX": {
-        "verification": "pending",
-        "reading": "Extended rear arc. Working geometry is the rear half-circle: facings 2, 3 and 4.",
-        "spans": [{ "from16": 16384, "to16": 49152 }],
-        "note": "Pending verification. Same width caution as FX."
-      },
-      "LS": {
-        "verification": "pending",
-        "reading": "Port (left) side arc, centred on relative bearing 49152. Working geometry is facings 4 and 5.",
-        "spans": [{ "from16": 38230, "to16": 60075 }],
-        "note": "Pending verification. Side arcs may be one facing, two facings, or a full half-circle."
-      },
-      "RS": {
-        "verification": "pending",
-        "reading": "Starboard (right) side arc, centred on relative bearing 16384. Working geometry is facings 1 and 2.",
-        "spans": [{ "from16": 5462, "to16": 27307 }],
-        "note": "Pending verification. Same width caution as LS."
-      }
-    }
-  }
+    "arcs": {}
+  },
+  "reloadCountTokens": ["1", "2", "3"],
+  "reloadCountNote": "Confirmed pairing: numeric Arc values 1, 2 and 3 occur only on DroA, DroB, DroC, DroF, DroG, ADD6 and ADD12, and every shiplist row of those codes has a numeric Arc. The cell is a whole-number count. Those racks have no firing arc and launch or fire in any direction; drones are seeking weapons. ADD racks only ever show 1. Whether the number means reloads or rack capacity is TO VERIFY by playtest. A numeric Arc on any other weapon is unknownArc. A letter arc or an empty Arc cell on a reloadCounted weapon is unknownArc. ftrlist DroI and DroVI use the letter arc ALL and are not reloadCounted."
 }
