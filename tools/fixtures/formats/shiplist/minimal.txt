@@ -1,0 +1,4 @@
+Race	Hull Type	Class	BPV	Turn Mode	Move Cost	Shield 1	Cloak	Geometry	UI
+Federation	CA	TEST-CA-01	101	C	0.75	17		assets/models/test_ca01/test_ca01.mod	TCA
+Klingon	FF	TEST-FF-02	42	A	0.4	9		assets/models/test_ff02/test_ff02.mod	TFF	
+Neutral	BS	TEST-BS-03	250	H	0	40		assets/models/test_bs03/test_bs03.mod	TBS
