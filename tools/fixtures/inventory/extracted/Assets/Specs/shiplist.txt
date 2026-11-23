@@ -1,0 +1,6 @@
+Race	Hull Type	Class	Weapon 1	Arc 1	Weapon 2	Arc 2
+Federation	CA	TEST-CA-01	Ph1	FA	Phot	FH
+Federation	CA	TEST-CA-01	Ph1	FA		
+Klingon	FF	TEST-FF-02	Dis1	FX	DroA	4
+Hydran	FTR	TEST-FTR-01	PhG	ALL		
+Klingon	PF	TEST-PF-02	Dis1	FA		

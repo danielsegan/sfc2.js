@@ -1,0 +1,112 @@
+# Private CE 2.670 inventory and shiplist/ftrlist verification.
+#
+# Runs only on the sfc2-ci self-hosted runner, which has read access to
+# /srv/sfc2/reference/2.670/ and /srv/sfc2/extracted/2.670/.
+# workflow_dispatch only — never on push/pull_request, so a fork or a
+# public runner cannot start it.
+#
+# This workflow never commits (and never writes to main). It prints a
+# metadata-only summary to the job log and uploads JSON/MD artifacts.
+# See tools/inventory/README.md for how to copy those artifacts onto
+# the formats/inventory-ce2670 branch after review.
+name: Private CE 2.670 inventory
+
+on:
+  workflow_dispatch:
+
+# Least privilege: read the repo, upload artifacts. No contents:write.
+permissions:
+  contents: read
+
+concurrency:
+  group: private-ce-2670-inventory
+  cancel-in-progress: false
+
+env:
+  SFC2_EXTRACTED: /srv/sfc2/extracted/2.670
+  SFC2_REFERENCE: /srv/sfc2/reference/2.670
+  SFC2_README: /srv/sfc2/README.md
+
+jobs:
+  inventory:
+    name: Inventory extracted tree
+    runs-on: [self-hosted, sfc2-ci, private-data]
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Confirm private data is present (paths only)
+        run: |
+          set -euo pipefail
+          for p in "$SFC2_EXTRACTED" "$SFC2_REFERENCE" "$SFC2_README" "$SFC2_EXTRACTED/manifest.json"; do
+            if [[ -e "$p" ]]; then
+              echo "present: $p"
+            else
+              echo "missing: $p"
+              exit 1
+            fi
+          done
+
+      - name: Run inventory (metadata only)
+        run: |
+          set -euo pipefail
+          python3 --version
+          python3 tools/inventory/inventory.py inventory \
+            --extracted "$SFC2_EXTRACTED" \
+            --reference "$SFC2_REFERENCE" \
+            --manifest "$SFC2_EXTRACTED/manifest.json" \
+            --readme "$SFC2_README" \
+            --output-dir docs/formats/inventory
+
+      - name: Upload inventory metadata artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ce-2.670-inventory-metadata
+          path: |
+            docs/formats/inventory/ce-2.670.json
+            docs/formats/inventory/ce-2.670.md
+            docs/formats/inventory/missions-ce-2.670.md
+            docs/formats/inventory/observations-ce-2.670.json
+          if-no-files-found: error
+          retention-days: 30
+
+  verify-shiplist-ftrlist:
+    name: Verify shiplist and ftrlist
+    runs-on: [self-hosted, sfc2-ci, private-data]
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Confirm private data is present (paths only)
+        run: |
+          set -euo pipefail
+          for p in "$SFC2_EXTRACTED" "$SFC2_REFERENCE" "$SFC2_EXTRACTED/manifest.json"; do
+            if [[ -e "$p" ]]; then
+              echo "present: $p"
+            else
+              echo "missing: $p"
+              exit 1
+            fi
+          done
+
+      - name: Verify shiplist and ftrlist (metadata only)
+        run: |
+          set -euo pipefail
+          python3 --version
+          python3 tools/inventory/inventory.py verify \
+            --extracted "$SFC2_EXTRACTED" \
+            --reference "$SFC2_REFERENCE" \
+            --manifest "$SFC2_EXTRACTED/manifest.json" \
+            --output-dir docs/formats/inventory
+
+      - name: Upload verification metadata artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ce-2.670-shiplist-ftrlist-metadata
+          path: |
+            docs/formats/inventory/shiplist-ftrlist-ce-2.670.json
+            docs/formats/inventory/shiplist-ftrlist-ce-2.670.md
+          if-no-files-found: error
+          retention-days: 30

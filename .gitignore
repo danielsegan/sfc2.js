@@ -8,6 +8,11 @@ yarn-error.log*
 pnpm-debug.log*
 package-lock.json.bak
 
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
 # Build and test output
 dist/
 build/

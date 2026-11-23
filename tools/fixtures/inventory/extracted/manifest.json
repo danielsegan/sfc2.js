@@ -1,0 +1,54 @@
+{
+  "files": [
+    {
+      "path": "Assets/Specs/shiplist.txt",
+      "size": 233,
+      "sha256": "d521a664cd4ee8e62c061ea371131b9ee329845e5a6e385da4c838483c8c157e"
+    },
+    {
+      "path": "MetaAssets/shiplist.txt",
+      "size": 233,
+      "sha256": "d521a664cd4ee8e62c061ea371131b9ee329845e5a6e385da4c838483c8c157e"
+    },
+    {
+      "path": "Assets/Specs/ftrlist.txt",
+      "size": 227,
+      "sha256": "e494e985aa74c4b037c2b2f587c3705eecbefd9677855e198bd4eca39846fac3"
+    },
+    {
+      "path": "MetaAssets/ftrlist.txt",
+      "size": 227,
+      "sha256": "e494e985aa74c4b037c2b2f587c3705eecbefd9677855e198bd4eca39846fac3"
+    },
+    {
+      "path": "Assets/Specs/WeaponGroups/PHASER",
+      "size": 33,
+      "sha256": "a549c039012bf1e39d89b8cdd68de8bcb1dc58a0843d36a010fd77be66dd0982"
+    },
+    {
+      "path": "Assets/Specs/WeaponGroups/DISRUPT",
+      "size": 34,
+      "sha256": "a84fc2b0d24e0a9c101eb85e635d890204724f97a409688b667d7073ba7859fc"
+    },
+    {
+      "path": "Assets/Sounds/sounds.txt",
+      "size": 37,
+      "sha256": "0f8febb1f2ded1f1f5ea972e5cea6fa67948d81d2ae2408f76759f376f31b676"
+    },
+    {
+      "path": "Assets/Strings/strings.txt",
+      "size": 22,
+      "sha256": "badfc9ef95dec0e55728e86ab0491353aa118013e9d95b0f402b95730b6c91a4"
+    },
+    {
+      "path": "Assets/Strings/shipnames.txt",
+      "size": 35,
+      "sha256": "02b71fd041cdd1b817741b79f44cc06645a96b7268a0c1fe68c12666fb71fcce"
+    },
+    {
+      "path": "Assets/Campaign/Conquest/readme.txt",
+      "size": 31,
+      "sha256": "e4b164a5f15b264a218e909ecd66a74edf323607070c515d4f14be1c6ec48d7b"
+    }
+  ]
+}
