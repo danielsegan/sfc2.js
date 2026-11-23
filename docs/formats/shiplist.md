@@ -107,7 +107,11 @@ Units: "file units" means the number exactly as written. The data-model layer co
 | 26 + 3k | `hardpoints[k].weapon` | enum string, empty = unused | — | Weapon code, e.g. `Ph1`–`Ph4`, `PhG`, `Phot`, `Dis1`–`Dis4`, `PlaF`/`PlaG`/`PlaS`/`PlaR`, `DroA`… `DroG`, `ESG`, `Fus`, `HB` in SFC1. CE adds more (e.g. PPD, fast-load variants). Full CE list unknown. | unverified (S1) |
 | 27 + 3k | `hardpoints[k].arc` | string | arc code, or count for drones | Firing arc code (`FA`, `FH`, `FX`, `RA`, `L`, `R`, `LS`, `RS`, `ALL`, `FLLX`, `FRRX` …, plus `SFBL`, `SFBR`, `RLP`, `RRP` named in S4). For drone racks S1 says this cell holds the number of reloads instead. | unverified (S1, S4) |
 
-25 slots × 3 cells = 75 columns. S1 says slots 1–10 hold heavy weapons and slots 11–25 hold phasers, and that only slots 11–25 feed the phaser capacitor. Slot meaning also depends on the UI hardpoint layout picked by `uiKey` (and on `sprites.q3` in CE, per S4). Whether CE 2.670 still has exactly 25 slots is unknown.
+25 slots × 3 cells = 75 columns.
+
+**Parser contract for hardpoints (decided with the Engine Lead).** The parser always returns all 25 slots in file order (`null` for an empty slot) with raw file values: no ×2 for shields or side warp, no compaction, and no "slots 11–25 feed the phaser capacitor" rule. The Engine Lead's data loader compacts slots and converts numbers to fixed-point. The doubling and capacitor rules live in the rules module (Combat Systems Designer). See section 5.1.
+
+S1 says slots 1–10 hold heavy weapons and slots 11–25 hold phasers, and that only slots 11–25 feed the phaser capacitor. Slot meaning also depends on the UI hardpoint layout picked by `uiKey` (and on `sprites.q3` in CE, per S4). Whether CE 2.670 still has exactly 25 slots is unknown.
 
 ### 4.6 Probes, mines and drone support
 
@@ -187,10 +191,50 @@ SFB-derived systems that SFC2 may track separately (flag bridge, emergency bridg
 
 ### 4.10 Totals
 
+(Totals count file columns only; the derived `spawnKey` in 4.11 is not a column.)
+
+
 - **Field definitions:** 80 rows above. 78 have a proposed column index (153 physical columns, because the hardpoint group repeats 25 times); 2 are placeholders with no known column.
 - **By confidence:** 5 documented (`className`, `stealth`, `add6`, `add12`, `geometry`), 73 unverified, 2 unknown. None verified against CE 2.670.
 
+### 4.11 Spawn key
+
+Each row gets a stable **spawn key**, built by the parser as:
+
+```ts
+spawnKey = `${race}:${className}`   // e.g. "Federation:TEST-CA-01"
+```
+
+- `race` and `className` are the trimmed cell values as written (case kept). Duplicate detection compares keys case-insensitively, because Windows-era tools treat names that way.
+- Missions, saves, replays, lobby messages and the importer refer to ships by spawn key, never by row number, so a reordered or modded shiplist keeps the same keys.
+- **Uniqueness across the full CE 2.670 shiplist is unverified.** S1 says class IDs identify ships to the engine, which suggests they are unique, but we have not checked the CE file. If the real file has duplicate keys, we will need a tie-breaker (for example line order), recorded in this spec once observed.
+- Duplicate keys raise `shiplist/duplicate-spawn-key` (rule V15). A duplicate `className` under different races is only a warning (V4), since the spawn key still tells the rows apart.
+
+### 4.12 Ship art references (for UI & Art)
+
+These are the fields that name or select a ship's art. Anything marked **TO VERIFY** has not been checked against CE 2.670.
+
+| Art reference | Field / source | What it selects | Confidence | Status |
+| --- | --- | --- | --- | --- |
+| Model | `geometry` | Relative path to the ship's `.mod` mesh, e.g. `assets/models/test_ca01/test_ca01.mod`. | documented (S2, S3) | TO VERIFY |
+| Break-up / damaged model | derived from `geometry` | Sibling `<name>_brk.mod` in the same folder (S2, S3 mention it next to the main `.mod`). Not a shiplist column. | unverified | TO VERIFY |
+| Textures (incl. self-illumination) | not in shiplist, as far as known | BMP files in the model's folder, probably named inside the `.mod`. Shiplist has no known texture column; resolution belongs to the `.mod` spec (#19) and textures (#15). | unknown | TO VERIFY |
+| HUD picture and hardpoint layout | `uiKey` | Ship picture in the tactical HUD and Vessel Library, and on-screen hardpoint positions (S1). In CE the images and layouts are in `sprites.q3` (S4). | unverified (S1, S4) | TO VERIFY |
+| Icon / portrait key | none known | No shiplist column for a map icon or captain portrait is documented; icons may come from `hullType` + `race` or from `uiKey`. | unknown | TO VERIFY |
+| Class code | `className` | Ship class ID; also the second half of the spawn key, and may be used to build string-table keys for the display name (with `strings.txt` / `shipnames.txt`). | documented (S3) | TO VERIFY |
+| Hull-type code | `hullType` | Category (FF, CL, CA, DN, BS …); likely picks generic icons and Vessel Library grouping (S1). | unverified (S1) | TO VERIFY |
+| Empire | `race` | Empire colour scheme and HUD skin. | unverified (S1) | TO VERIFY |
+
 ## 5. Proposed data model (sketch, not code in this PR)
+
+### 5.1 Who does what
+
+| Layer | Owner | Does | Does not |
+| --- | --- | --- | --- |
+| Parser (`parseShiplist`) | Asset & Formats | Returns every row and every column as the file has it: all 25 hardpoint slots, raw numbers in file units, unknown columns in `extra`, raw cells in `raw`. | Doubling shields or side warp, compacting slots, the phaser-capacitor slot rule, fixed-point. |
+| Data loader | Engine Lead | Compacts hardpoints to a weapon list with slot indices, converts to sim units and fixed-point, builds the spawn-key index. | Game rules. |
+| Rules module | Combat Systems Designer | Shield ×2, side-warp ×2, which slots feed the phaser capacitor, and other SFB rules. | File parsing. |
+
 
 ```ts
 interface Shiplist {
@@ -201,6 +245,7 @@ interface Shiplist {
 
 interface ShipSpec {
   line: number;                  // 1-based source line
+  spawnKey: string;              // `${race}:${className}`, see section 4.11
   race: string; hullType: string; className: string;
   bpv: number; specialRole: string | null;
   yearFirstAvailable: number; yearLastAvailable: number;
@@ -209,9 +254,9 @@ interface ShipSpec {
   crew: { regular: number; boardingBase: number; boardingMax: number;
           deck: number; total: number; min: number };
   shields: { front: number; frontSides: number; rearSides: number; rear: number;
-             total: number };          // file units; doubling (if any) is a rules decision
+             total: number };          // raw file units; ×2 is applied in the rules module
   cloakCost: number | null;
-  hardpoints: Array<{ slot: number; count: number; weapon: string; arc: string } | null>; // length 25
+  hardpoints: Array<{ slot: number; count: number; weapon: string; arc: string } | null>; // always length 25, raw
   // ... remaining groups as in section 4, same names
   geometry: string | null; uiKey: string | null;
   extra: Record<string, string>; // unknown columns, keyed by label
@@ -239,7 +284,7 @@ Errors keep the row but mark it unusable for spawning. Warnings keep it usable.
 | V1 | `shiplist/empty-file` | error | No non-empty lines. |
 | V2 | `shiplist/no-header` | warning | No header row detected; index fallback used. |
 | V3 | `shiplist/ragged-row` | warning | Row has fewer cells than the header (missing cells read as empty) or more (extras kept in `extra` under `col<N>`). |
-| V4 | `shiplist/duplicate-class` | error | Two rows share a `className` (case-insensitive). The first wins for lookups. |
+| V4 | `shiplist/duplicate-class` | warning | Two rows share a `className` (case-insensitive) under different races. References by `className` alone (e.g. `refitBaseClass`) become ambiguous; the spawn key still tells them apart. |
 | V5 | `shiplist/bad-number` | warning | A numeric field does not parse; default 0 and keep the raw cell. |
 | V6 | `shiplist/unknown-race`, `shiplist/unknown-hull-type`, `shiplist/unknown-turn-mode`, `shiplist/unknown-weapon`, `shiplist/unknown-arc` | warning | Value outside the known token list. The lists start from S1 and grow from CE 2.670 observation. |
 | V7 | `shiplist/hardpoint-count-range` | warning | Hardpoint count outside 0–4, or a count with an empty weapon code (or the reverse). |
@@ -250,13 +295,14 @@ Errors keep the row but mark it unusable for spawning. Warnings keep it usable.
 | V12 | `shiplist/missing-geometry` | warning | Playable hull type with empty `geometry`. File existence is checked later by the importer (#16), not the parser. |
 | V13 | `shiplist/multiple-header-rows` | info | More than one header-like line. |
 | V14 | `shiplist/specs-metaassets-differ` | warning | Importer-level: the two copies differ. |
+| V15 | `shiplist/duplicate-spawn-key` | error | Two rows produce the same spawn key `${race}:${className}` (case-insensitive). Both rows are kept; lookups by key resolve to the first, and the diagnostic lists every line involved. |
 
 ## 8. Open questions
 
 ### For the Combat Systems Designer
 1. **Rules-facing names.** Please confirm or rename: `moveCost`, `hetChance`, `hetBreakdown`, `warpSide` / `warpCenter` / `impulse` / `apr` / `battery`, `shieldFront` / `shieldFrontSides` / `shieldRearSides` / `shieldRear`, `cloakCost`, `damageControl`, `extraDamage`, and the system box names in 4.8. Should energy sources be a nested `power` object?
-2. **Shield doubling.** S1 says SFC1 doubles file shield values in play. The parser returns file values. Does the rules module own the ×2 (and the R_L_Warp ×2), so the data model stays a faithful copy of the file?
-3. **Hardpoints.** Do you want slots kept as 25 fixed positions (null for empty, needed to match HUD layouts), or a compacted weapon list plus a slot index? And should the "slots 11–25 feed the phaser capacitor" rule live in data or rules?
+2. **Doubling (decided).** The parser returns raw file values; the rules module owns shield ×2 and side-warp ×2. Please confirm the exact formulas once you have checked the CE manual.
+3. **Hardpoints (decided).** The parser keeps all 25 slots raw; the Engine Lead's loader compacts them; the slot 11–25 phaser-capacitor rule lives in the rules module. Open for you: confirm that rule still holds in CE 2.670.
 4. **Weapon and arc vocabulary.** We need the full CE weapon code list (PPD, fast-load photons/disruptors, plasma variants, drone rack types) and arc codes, with your canonical enum names, so V6 can be strict.
 5. **Drone racks.** S1 says the arc cell holds reloads for drone racks. Should the data model split this into `reloads` for drone weapons?
 6. **Stealth.** Does CE 2.670 honour the stealth column (it was broken in EaW until 2.037)? Treat it as rules-ignored until we observe it?
@@ -266,7 +312,8 @@ Errors keep the row but mark it unusable for spawning. Warnings keep it usable.
 8. Exact header text and number of header rows; full column count; columns beyond S1 (PF, flag bridge, emergency bridge, aux control, probe launchers …).
 9. Encoding (any bytes above 0x7F?), line ends, trailing tabs.
 10. Which copy (`Assets/Specs` or `MetaAssets`) skirmish and campaign actually read; whether they are identical in a clean install.
-11. CE race and hull-type token sets; year encoding; whether `className` is unique in the stock file.
+11. CE race and hull-type token sets; year encoding; whether `className` and the spawn key `${race}:${className}` are unique in the stock file.
+12. Art references: whether any texture, icon or portrait column exists; how `uiKey` maps into `sprites.q3`.
 
 ## 9. Fixture
 
