@@ -1,0 +1,38 @@
+{
+  "id": "damage-seeded",
+  "mode": "resolve",
+  "seed": 1,
+  "ships": [
+    {
+      "spawnKey": "test-empire-a:test-ca-01",
+      "className": "test-ca-01",
+      "race": "test-empire-a",
+      "class": "ship",
+      "power": { "warp": 0, "impulse": 0, "apr": 0, "battery": 0, "batteryCapacity": 0 },
+      "movement": { "moveCost": 1, "turnMode": "TEST-C", "acceleration": 1, "speed": 0, "heading16": 0 },
+      "shields": [0, 0, 0, 0, 0, 0],
+      "systems": { "armor": 0, "bridge": 2, "hullForward": 2, "sensors": 2, "extraDamage": 3 },
+      "crew": { "crewUnits": 4, "boardingParties": 0, "minCrew": 1 }
+    }
+  ],
+  "commands": [
+    { "entry": "damageSystem", "ship": "test-empire-a:test-ca-01", "system": "any", "boxes": 3 }
+  ],
+  "expect": {
+    "results": [
+      {
+        "token": 1,
+        "status": "applied",
+        "reason": "ok",
+        "appliedValue": 3,
+        "details": { "draws": [1, 3, 0] }
+      }
+    ],
+    "state": {
+      "test-empire-a:test-ca-01": {
+        "destroyed": false,
+        "systems": { "armor": 0, "bridge": 1, "hullForward": 1, "sensors": 2, "extraDamage": 2 }
+      }
+    }
+  }
+}

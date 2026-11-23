@@ -1,0 +1,127 @@
+{
+  "id": "set-energy",
+  "mode": "resolve",
+  "constants": { "reinforceCapPerTurn": 2 },
+  "ships": [
+    {
+      "spawnKey": "test-empire-a:test-ca-01",
+      "className": "test-ca-01",
+      "race": "test-empire-a",
+      "class": "ship",
+      "power": { "warp": 10, "impulse": 0, "apr": 0, "battery": 0, "batteryCapacity": 0 },
+      "movement": { "moveCost": 1, "turnMode": "TEST-C", "acceleration": 100, "speed": 0, "heading16": 0 },
+      "shields": [0, 0, 0, 0, 0, 0],
+      "shieldsMax": [20, 20, 20, 20, 20, 20],
+      "crew": { "crewUnits": 6, "boardingParties": 1, "minCrew": 1 },
+      "weapons": [{ "slotIndex": 0, "weapon": "TEST-PH", "arc": "TEST-FA", "charge": 0, "boxes": 1 }]
+    },
+    {
+      "spawnKey": "test-empire-b:test-ff-02",
+      "className": "test-ff-02",
+      "race": "test-empire-b",
+      "class": "ship",
+      "power": { "warp": 10, "impulse": 0, "apr": 0, "battery": 0, "batteryCapacity": 0 },
+      "movement": { "moveCost": 1, "turnMode": "TEST-C", "acceleration": 100, "speed": 0, "heading16": 0 },
+      "shields": [0, 0, 0, 0, 0, 0],
+      "shieldsMax": [20, 20, 20, 20, 20, 20],
+      "crew": { "crewUnits": 4, "boardingParties": 0, "minCrew": 1 }
+    },
+    {
+      "spawnKey": "test-empire-a:test-dd-03",
+      "className": "test-dd-03",
+      "race": "test-empire-a",
+      "class": "ship",
+      "power": { "warp": 10, "impulse": 0, "apr": 0, "battery": 0, "batteryCapacity": 0 },
+      "movement": { "moveCost": 1, "turnMode": "TEST-C", "acceleration": 1, "speed": 0, "heading16": 0 },
+      "shields": [0, 0, 0, 0, 0, 0],
+      "crew": { "crewUnits": 4, "boardingParties": 0, "minCrew": 1 }
+    },
+    {
+      "spawnKey": "test-empire-b:test-bs-04",
+      "className": "test-bs-04",
+      "race": "test-empire-b",
+      "class": "ship",
+      "power": { "warp": 10, "impulse": 0, "apr": 0, "battery": 0, "batteryCapacity": 0 },
+      "movement": { "moveCost": 1, "turnMode": "H", "acceleration": 0, "speed": 0, "heading16": 0 },
+      "shields": [0, 0, 0, 0, 0, 0],
+      "crew": { "crewUnits": 2, "boardingParties": 0, "minCrew": 1 }
+    },
+    {
+      "spawnKey": "test-empire-a:test-ca-05",
+      "className": "test-ca-05",
+      "race": "test-empire-a",
+      "class": "ship",
+      "power": { "warp": 20, "impulse": 0, "apr": 0, "battery": 0, "batteryCapacity": 0 },
+      "movement": { "moveCost": 1, "turnMode": "TEST-C", "acceleration": 4, "speed": 0, "heading16": 0 },
+      "shields": [0, 0, 0, 0, 0, 0],
+      "crew": { "crewUnits": 4, "boardingParties": 0, "minCrew": 1 },
+      "weapons": [{ "slotIndex": 0, "weapon": "TEST-PH", "arc": "TEST-FA", "charge": 0, "boxes": 1 }]
+    },
+    {
+      "spawnKey": "test-empire-a:test-ca-06",
+      "className": "test-ca-06",
+      "race": "test-empire-a",
+      "class": "ship",
+      "power": { "warp": 8, "impulse": 0, "apr": 0, "battery": 0, "batteryCapacity": 0 },
+      "movement": { "moveCost": 1, "turnMode": "TEST-C", "acceleration": 4, "speed": 0, "heading16": 0 },
+      "shields": [0, 0, 0, 0, 0, 0],
+      "shieldsMax": [30, 30, 30, 30, 30, 30],
+      "crew": { "crewUnits": 4, "boardingParties": 0, "minCrew": 1 }
+    }
+  ],
+  "commands": [
+    {
+      "entry": "setEnergy",
+      "ship": "test-empire-a:test-ca-01",
+      "allocation": {
+        "speed": 4,
+        "lifeSupport": true,
+        "fireControl": true,
+        "shields": { "general": 2 },
+        "weapons": [{ "slotIndex": 0, "request": 2 }]
+      }
+    },
+    {
+      "entry": "setEnergy",
+      "ship": "test-empire-b:test-ff-02",
+      "allocation": { "speed": 20, "lifeSupport": true, "fireControl": true }
+    },
+    {
+      "entry": "setEnergy",
+      "ship": "test-empire-a:test-dd-03",
+      "allocation": { "speed": 4 }
+    },
+    {
+      "entry": "setEnergy",
+      "ship": "test-empire-b:test-bs-04",
+      "allocation": { "speed": 4, "lifeSupport": true }
+    },
+    {
+      "entry": "setEnergy",
+      "ship": "test-empire-a:test-ca-05",
+      "allocation": { "weapons": [{ "slotIndex": 0, "request": 6 }] }
+    },
+    {
+      "entry": "setEnergy",
+      "ship": "test-empire-a:test-ca-06",
+      "allocation": { "shields": { "general": 8, "specific": { "0": 3 } } }
+    }
+  ],
+  "expect": {
+    "results": [
+      { "token": 1, "status": "applied", "reason": "ok", "appliedValue": 10 },
+      { "token": 2, "status": "clamped", "reason": "overDraw", "appliedValue": 10 },
+      { "token": 3, "status": "clamped", "reason": "speedClamped", "appliedValue": 1 },
+      { "token": 4, "status": "clamped", "reason": "immobile", "appliedValue": 1 },
+      { "token": 5, "status": "clamped", "reason": "chargeCapped", "appliedValue": 4 },
+      { "token": 6, "status": "clamped", "reason": "reinforceCapped", "appliedValue": 8 }
+    ],
+    "state": {
+      "test-empire-a:test-ca-01": { "speed": 4, "fcPaid": true },
+      "test-empire-b:test-ff-02": { "speed": 8 },
+      "test-empire-a:test-dd-03": { "speed": 1 },
+      "test-empire-b:test-bs-04": { "speed": 0 },
+      "test-empire-a:test-ca-05": { "weapons": [{ "slotIndex": 0, "charge": 0 }] }
+    }
+  }
+}

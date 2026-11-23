@@ -1,0 +1,51 @@
+{
+  "id": "damage-allocation",
+  "mode": "resolve",
+  "ships": [
+    {
+      "spawnKey": "test-empire-a:test-ca-01",
+      "className": "test-ca-01",
+      "race": "test-empire-a",
+      "class": "ship",
+      "power": { "warp": 0, "impulse": 0, "apr": 0, "battery": 0, "batteryCapacity": 0 },
+      "movement": { "moveCost": 1, "turnMode": "TEST-C", "acceleration": 1, "speed": 0, "heading16": 0 },
+      "shields": [10, 10, 10, 10, 10, 10],
+      "systems": { "armor": 2, "bridge": 1, "hullForward": 4, "sensors": 2, "extraDamage": 0 },
+      "crew": { "crewUnits": 4, "boardingParties": 0, "minCrew": 1 }
+    },
+    {
+      "spawnKey": "test-empire-b:test-ff-02",
+      "className": "test-ff-02",
+      "race": "test-empire-b",
+      "class": "ship",
+      "power": { "warp": 0, "impulse": 0, "apr": 0, "battery": 0, "batteryCapacity": 0 },
+      "movement": { "moveCost": 1, "turnMode": "TEST-C", "acceleration": 1, "speed": 0, "heading16": 0 },
+      "shields": [4, 4, 4, 4, 4, 4],
+      "systems": { "armor": 0, "bridge": 2, "hullForward": 2, "extraDamage": 0 },
+      "crew": { "crewUnits": 2, "boardingParties": 0, "minCrew": 1 }
+    }
+  ],
+  "commands": [
+    { "entry": "damageSystem", "ship": "test-empire-a:test-ca-01", "system": "bridge", "boxes": 1 },
+    { "entry": "damageSystem", "ship": "test-empire-a:test-ca-01", "system": "bridge", "boxes": 2 },
+    { "entry": "damageSystem", "ship": "test-empire-a:test-ca-01", "system": "any", "boxes": 1, "scriptedDraws": [0] },
+    { "entry": "damageSystem", "ship": "test-empire-b:test-ff-02", "system": "any", "boxes": 2, "scriptedDraws": [3, 0] },
+    { "entry": "setShields", "ship": "test-empire-b:test-ff-02", "facing": 0, "value": 1 }
+  ],
+  "expect": {
+    "results": [
+      { "token": 1, "status": "applied", "reason": "ok", "appliedValue": 1 },
+      { "token": 2, "status": "applied", "reason": "ok", "appliedValue": 2 },
+      { "token": 3, "status": "applied", "reason": "ok", "appliedValue": 1 },
+      { "token": 4, "status": "clamped", "reason": "excessDamage", "appliedValue": 1 },
+      { "token": 5, "status": "rejected", "reason": "shipDestroyed", "appliedValue": null }
+    ],
+    "state": {
+      "test-empire-a:test-ca-01": {
+        "destroyed": false,
+        "systems": { "armor": 0, "bridge": 0, "hullForward": 3, "sensors": 2, "extraDamage": 0 }
+      },
+      "test-empire-b:test-ff-02": { "destroyed": true }
+    }
+  }
+}

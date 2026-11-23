@@ -1,0 +1,47 @@
+{
+  "status": "unverified",
+  "appliedBy": "loader",
+  "when": "At fixed-point conversion, after raw headers have been bound to provisional source keys. The parser does not apply this table.",
+  "baseline": "Community Edition 2.670 (issue #37). The factors are the SFC1-lineage hypothesis recorded in docs/formats/shiplist.md. They are not confirmed on the CE 2.670 install.",
+  "shieldFanOut": ["front", "forwardSide", "aftSide", "rear", "aftSide", "forwardSide"],
+  "factors": [
+    {
+      "source": "shieldFileValue",
+      "factor": 2,
+      "engine": "shields[0..5] maximum, after fan-out",
+      "note": "Each of the four file cells is multiplied by 2. The two side cells are written to two indices each."
+    },
+    {
+      "source": "warpSide",
+      "factor": 2,
+      "engine": "power.warp (side-engine term)",
+      "note": "The file stores one side-engine rating. The loader doubles it, then adds the unscaled centre engine."
+    },
+    {
+      "source": "warpCenter",
+      "factor": 1,
+      "engine": "power.warp (centre-engine term)"
+    },
+    {
+      "source": "impulse",
+      "factor": 1,
+      "engine": "power.impulse"
+    },
+    {
+      "source": "apr",
+      "factor": 1,
+      "engine": "power.apr"
+    },
+    {
+      "source": "battery",
+      "factor": 1,
+      "engine": "power.battery and power.batteryCapacity"
+    },
+    {
+      "source": "default",
+      "factor": 1,
+      "engine": "every other numeric source key",
+      "note": "moveCost, crew counts, box counts, weapon counts and drone reloads are not doubled."
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/danielsegan/sfc2.js/docs/rules/tests/schema.json",
+  "title": "SFC2.js Phase 2 rules fixture",
+  "type": "object",
+  "required": ["id", "mode"],
+  "additionalProperties": true,
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "mode": { "enum": ["pure", "scale", "load", "resolve", "ticks"] },
+    "seed": { "type": "integer" },
+    "endTick": { "type": "integer", "minimum": 0 },
+    "constants": { "type": "object" },
+    "ships": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["spawnKey", "className", "race"],
+        "properties": {
+          "className": { "type": "string", "pattern": "^test-" },
+          "class": { "enum": ["ship", "pf", "fighter"] }
+        }
+      }
+    },
+    "commands": { "type": "array" },
+    "timeline": { "type": "array" },
+    "expect": {}
+  }
+}

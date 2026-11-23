@@ -1,0 +1,15 @@
+name: Rules fixtures
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check-rules-fixtures:
+    name: Rules fixture checker
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Run synthetic rules fixtures
+        run: node tools/check-rules-fixtures.mjs

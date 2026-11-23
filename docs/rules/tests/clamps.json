@@ -1,0 +1,44 @@
+{
+  "id": "clamps",
+  "mode": "resolve",
+  "ships": [
+    {
+      "spawnKey": "test-empire-a:test-ca-01",
+      "className": "test-ca-01",
+      "race": "test-empire-a",
+      "class": "ship",
+      "power": { "warp": 0, "impulse": 0, "apr": 0, "battery": 0, "batteryCapacity": 0 },
+      "movement": { "moveCost": 1, "turnMode": "TEST-C", "acceleration": 1, "speed": 0, "heading16": 0 },
+      "shields": [20, 16, 12, 8, 12, 16],
+      "systems": { "bridge": 1, "armor": 0 },
+      "systemsMax": { "bridge": 4, "armor": 0 },
+      "crew": { "crewUnits": 4, "boardingParties": 0, "minCrew": 1 }
+    }
+  ],
+  "commands": [
+    { "entry": "setShields", "ship": "test-empire-a:test-ca-01", "facing": 0, "value": 25 },
+    { "entry": "setShields", "ship": "test-empire-a:test-ca-01", "facing": 0, "value": 10 },
+    { "entry": "damageShield", "ship": "test-empire-a:test-ca-01", "facing": 0, "points": 4 },
+    { "entry": "damageShield", "ship": "test-empire-a:test-ca-01", "facing": 0, "points": 100 },
+    { "entry": "repairSystem", "ship": "test-empire-a:test-ca-01", "system": "bridge", "boxes": 2 },
+    { "entry": "repairSystem", "ship": "test-empire-a:test-ca-01", "system": "bridge", "boxes": 10 },
+    { "entry": "repairSystem", "ship": "test-empire-a:test-ca-01", "system": "bridge", "boxes": 1 }
+  ],
+  "expect": {
+    "results": [
+      { "token": 1, "status": "clamped", "reason": "shieldAboveMax", "appliedValue": 20 },
+      { "token": 2, "status": "applied", "reason": "ok", "appliedValue": 10 },
+      { "token": 3, "status": "applied", "reason": "ok", "appliedValue": 4 },
+      { "token": 4, "status": "clamped", "reason": "shieldDepleted", "appliedValue": 6 },
+      { "token": 5, "status": "applied", "reason": "ok", "appliedValue": 2 },
+      { "token": 6, "status": "clamped", "reason": "repairCapped", "appliedValue": 1 },
+      { "token": 7, "status": "clamped", "reason": "nothingToRepair", "appliedValue": 0 }
+    ],
+    "state": {
+      "test-empire-a:test-ca-01": {
+        "shields": [0, 16, 12, 8, 12, 16],
+        "systems": { "bridge": 4, "armor": 0 }
+      }
+    }
+  }
+}

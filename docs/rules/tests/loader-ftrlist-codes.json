@@ -1,0 +1,41 @@
+{
+  "id": "loader-ftrlist-codes",
+  "mode": "load",
+  "ships": [
+    {
+      "spawnKey": "test-empire-a:test-ftr-01",
+      "className": "test-ftr-01",
+      "race": "test-empire-a",
+      "class": "fighter",
+      "weapons": [
+        { "slotIndex": 0, "weapon": "Ph3", "arc": "FH", "load": 1 },
+        { "slotIndex": 1, "weapon": "PhoF", "arc": "FX" },
+        { "slotIndex": 2, "weapon": "DroVI", "arc": "ALL", "load": 2 },
+        { "slotIndex": 3, "weapon": "DisF", "arc": "RS" },
+        { "slotIndex": 4, "weapon": "TEST-NOPE", "arc": "ZZ" }
+      ]
+    }
+  ],
+  "expect": {
+    "diagnostics": [
+      {
+        "code": "unknownWeapon",
+        "source": "loader",
+        "severity": "warning",
+        "details": { "weapon": "TEST-NOPE", "slotIndex": 4, "spawnKey": "test-empire-a:test-ftr-01" }
+      },
+      {
+        "code": "unknownArc",
+        "source": "loader",
+        "severity": "warning",
+        "details": { "arc": "ZZ", "slotIndex": 4, "spawnKey": "test-empire-a:test-ftr-01" }
+      }
+    ],
+    "mapped": [
+      { "slotIndex": 0, "weapon": "Ph3", "internal": "phaser", "arc": "FH", "reloads": null },
+      { "slotIndex": 1, "weapon": "PhoF", "internal": "photon", "arc": "FX", "reloads": null },
+      { "slotIndex": 2, "weapon": "DroVI", "internal": "drone", "arc": "ALL", "reloads": null },
+      { "slotIndex": 3, "weapon": "DisF", "internal": "disruptor", "arc": "RS", "reloads": null }
+    ]
+  }
+}

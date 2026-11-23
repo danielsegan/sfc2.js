@@ -1,0 +1,42 @@
+{
+  "id": "pf-and-fighter",
+  "mode": "resolve",
+  "ships": [
+    {
+      "spawnKey": "test-empire-a:test-pf-01",
+      "className": "test-pf-01",
+      "race": "test-empire-a",
+      "class": "pf",
+      "power": { "warp": 2, "impulse": 0, "apr": 0, "battery": 0, "batteryCapacity": 0 },
+      "movement": { "moveCost": 1, "turnMode": "TEST-A", "acceleration": 4, "speed": 0, "heading16": 0 },
+      "shields": [0, 0, 0, 0, 0, 0],
+      "shieldsMax": [12, 8, 8, 6, 8, 8],
+      "crew": { "crewUnits": 1, "boardingParties": 0, "minCrew": 0 }
+    },
+    {
+      "spawnKey": "test-empire-a:test-ftr-01",
+      "className": "test-ftr-01",
+      "race": "test-empire-a",
+      "class": "fighter",
+      "speed": 6,
+      "turnMode": "TEST-A",
+      "damagePoints": 3,
+      "ecm": 1,
+      "weapons": [{ "slotIndex": 0, "weapon": "Ph3", "arc": "FH", "load": 1 }],
+      "bay": { "carrierSpawnKey": "test-empire-a:test-ca-01", "count": 2, "rearmTicks": null }
+    }
+  ],
+  "commands": [
+    { "entry": "setShields", "ship": "test-empire-a:test-pf-01", "facing": 0, "value": 5 },
+    { "entry": "setShields", "ship": "test-empire-a:test-ftr-01", "facing": 0, "value": 1 }
+  ],
+  "expect": {
+    "results": [
+      { "token": 1, "status": "applied", "reason": "ok", "appliedValue": 5 },
+      { "token": 2, "status": "rejected", "reason": "notAShip", "appliedValue": null }
+    ],
+    "state": {
+      "test-empire-a:test-pf-01": { "class": "pf", "shields": [5, 0, 0, 0, 0, 0] }
+    }
+  }
+}

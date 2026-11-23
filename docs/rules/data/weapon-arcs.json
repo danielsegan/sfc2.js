@@ -1,0 +1,158 @@
+{
+  "ship": {
+    "status": "placeholder",
+    "todo": "Shiplist weapon and arc codes are still unknown. Header detection for shiplist.txt is pending the issue #6 inventory. Until then the only ship-section keys are the synthetic TEST-* codes below. Do not add observed shiplist strings here.",
+    "weapons": {
+      "TEST-PH": {
+        "internal": "phaser",
+        "chargeCost": 4,
+        "holdCost": 0,
+        "rangeBands": [
+          { "maxRange": 10, "damage": 3 },
+          { "maxRange": 20, "damage": 1 }
+        ]
+      },
+      "TEST-PHOT": {
+        "internal": "photon",
+        "armCost": 4,
+        "armTicks": 4,
+        "directDamage": 8,
+        "overloadArmCost": 8,
+        "overloadArmTicks": 4,
+        "overloadDamage": 12,
+        "proxRadius": 2,
+        "proxDamage": 4,
+        "projectileSpeed": 2
+      },
+      "TEST-DRN": {
+        "internal": "drone",
+        "usesReloads": true
+      }
+    },
+    "arcs": {
+      "TEST-FA": {
+        "note": "Synthetic forward wedge equal to shield facing 0: [60075, 65536) U [0, 5462).",
+        "spans": [{ "from16": 60075, "to16": 5462 }]
+      },
+      "TEST-ALL": {
+        "full": true,
+        "spans": []
+      },
+      "TEST-STBD": {
+        "note": "Synthetic starboard half-circle, half-open [0, 32768).",
+        "spans": [{ "from16": 0, "to16": 32768 }]
+      },
+      "TEST-PORT": {
+        "note": "Synthetic port half-circle, half-open [32768, 65536).",
+        "spans": [{ "from16": 32768, "to16": 0 }]
+      }
+    }
+  },
+  "fighter": {
+    "status": "ce-2.670-names",
+    "source": "Metadata-only Community Edition 2.670 ftrlist inventory (issue #6, baseline issue #37). Names of codes only. No row counts.",
+    "section": "fighter (ftrlist)",
+    "weapons": {
+      "Ph2": {
+        "internal": "phaser",
+        "reading": "Phaser of the second family.",
+        "verification": "pending",
+        "note": "Family reading is pending playtest. Charge cost, range bands and damage are data rows and are intentionally empty."
+      },
+      "Ph3": {
+        "internal": "phaser",
+        "reading": "Phaser of the third family, the shorter-ranged of the common phaser pair.",
+        "verification": "pending",
+        "note": "Range and damage stay empty until playtest."
+      },
+      "PhG": {
+        "internal": "phaser",
+        "reading": "Rapid-fire phaser. The G suffix is not given a tighter meaning here.",
+        "verification": "pending",
+        "note": "Ambiguous: G may mean a gatling mount or another phaser variant."
+      },
+      "PhoF": {
+        "internal": "photon",
+        "reading": "Photon torpedo on a fighter mount. Uses the photon arming, overload and proximity mechanisms once its cost row is filled.",
+        "verification": "pending",
+        "note": "Ambiguous: the trailing F is read as fighter-scale. It might instead mark a fast or otherwise special warhead."
+      },
+      "DisF": {
+        "internal": "disruptor",
+        "reading": "Disruptor on a fighter mount.",
+        "verification": "pending",
+        "note": "Ambiguous trailing F, same caution as PhoF. Outside the Phase 2 duel fire path."
+      },
+      "HellF": {
+        "internal": "hellbore",
+        "reading": "Hellbore on a fighter mount.",
+        "verification": "pending",
+        "note": "Ambiguous trailing F. Outside the Phase 2 duel fire path."
+      },
+      "FusF": {
+        "internal": "fusion",
+        "reading": "Fusion beam on a fighter mount.",
+        "verification": "pending",
+        "note": "Ambiguous trailing F. Outside the Phase 2 duel fire path."
+      },
+      "DroI": {
+        "internal": "drone",
+        "usesReloads": true,
+        "reading": "Drone whose suffix reads as mark I.",
+        "verification": "pending",
+        "note": "Ambiguous: the roman suffix may be a mark, a speed class or a warhead. On ftrlist the arc is its own column, so this code does not reuse the shiplist trick of storing reloads in the arc cell."
+      },
+      "DroVI": {
+        "internal": "drone",
+        "usesReloads": true,
+        "reading": "Drone whose suffix reads as mark VI.",
+        "verification": "pending",
+        "note": "Same ambiguity as DroI."
+      }
+    },
+    "arcs": {
+      "ALL": {
+        "full": true,
+        "spans": [],
+        "verification": "pending",
+        "reading": "Every relative bearing. The letters say the whole circle; confirm the code is not a near-circle with a blind spot."
+      },
+      "FH": {
+        "verification": "pending",
+        "reading": "Narrow forward arc. Working geometry uses shield facing 0 only, so a target in FH is in the front shield bin.",
+        "spans": [{ "from16": 60075, "to16": 5462 }],
+        "note": "Pending verification. The H may mean a one-facing wedge or a different forward width."
+      },
+      "FX": {
+        "verification": "pending",
+        "reading": "Extended forward arc. Working geometry is the forward half-circle: facings 5, 0 and 1.",
+        "spans": [{ "from16": 49152, "to16": 16384 }],
+        "note": "Pending verification. Extended may be wider than a hemisphere."
+      },
+      "RA": {
+        "verification": "pending",
+        "reading": "Rear arc. Working geometry is shield facing 3 only.",
+        "spans": [{ "from16": 27307, "to16": 38230 }],
+        "note": "Pending verification. Rear may be wider than one facing."
+      },
+      "RX": {
+        "verification": "pending",
+        "reading": "Extended rear arc. Working geometry is the rear half-circle: facings 2, 3 and 4.",
+        "spans": [{ "from16": 16384, "to16": 49152 }],
+        "note": "Pending verification. Same width caution as FX."
+      },
+      "LS": {
+        "verification": "pending",
+        "reading": "Port (left) side arc, centred on relative bearing 49152. Working geometry is facings 4 and 5.",
+        "spans": [{ "from16": 38230, "to16": 60075 }],
+        "note": "Pending verification. Side arcs may be one facing, two facings, or a full half-circle."
+      },
+      "RS": {
+        "verification": "pending",
+        "reading": "Starboard (right) side arc, centred on relative bearing 16384. Working geometry is facings 1 and 2.",
+        "spans": [{ "from16": 5462, "to16": 27307 }],
+        "note": "Pending verification. Same width caution as LS."
+      }
+    }
+  }
+}

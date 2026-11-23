@@ -1,0 +1,27 @@
+{
+  "id": "scale-factors",
+  "mode": "scale",
+  "raw": {
+    "shieldFront": 10,
+    "shieldForwardSide": 8,
+    "shieldAftSide": 6,
+    "shieldRear": 4,
+    "warpSide": 5,
+    "warpCenter": 3,
+    "impulse": 4,
+    "apr": 2,
+    "battery": 6,
+    "moveCost": 0.5
+  },
+  "expect": {
+    "shields": [20, 16, 12, 8, 12, 16],
+    "power": {
+      "warp": 13,
+      "impulse": 4,
+      "apr": 2,
+      "battery": 6,
+      "batteryCapacity": 6
+    },
+    "movement": { "moveCost": 0.5 }
+  }
+}

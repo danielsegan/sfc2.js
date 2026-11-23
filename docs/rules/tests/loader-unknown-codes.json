@@ -1,0 +1,46 @@
+{
+  "id": "loader-unknown-codes",
+  "mode": "load",
+  "ships": [
+    {
+      "spawnKey": "test-empire-a:test-ca-01",
+      "className": "test-ca-01",
+      "race": "test-empire-a",
+      "class": "ship",
+      "weapons": [
+        { "slotIndex": 0, "weapon": "TEST-NOPE", "arc": "TEST-FA" },
+        { "slotIndex": 1, "weapon": "TEST-PH", "arc": "TEST-NOPE" },
+        { "slotIndex": 2, "weapon": "TEST-DRN", "arc": null, "reloads": 3 },
+        { "slotIndex": 3, "weapon": "TEST-DRN", "arc": "TEST-NOPE", "reloads": 1 },
+        { "slotIndex": 4, "weapon": null, "arc": null }
+      ]
+    }
+  ],
+  "expect": {
+    "diagnostics": [
+      {
+        "code": "unknownWeapon",
+        "source": "loader",
+        "severity": "warning",
+        "details": { "weapon": "TEST-NOPE", "slotIndex": 0, "spawnKey": "test-empire-a:test-ca-01" }
+      },
+      {
+        "code": "unknownArc",
+        "source": "loader",
+        "severity": "warning",
+        "details": { "arc": "TEST-NOPE", "slotIndex": 1, "spawnKey": "test-empire-a:test-ca-01" }
+      },
+      {
+        "code": "unknownArc",
+        "source": "loader",
+        "severity": "warning",
+        "details": { "arc": "TEST-NOPE", "slotIndex": 3, "spawnKey": "test-empire-a:test-ca-01" }
+      }
+    ],
+    "mapped": [
+      { "slotIndex": 1, "weapon": "TEST-PH", "internal": "phaser", "arc": "TEST-NOPE", "reloads": null },
+      { "slotIndex": 2, "weapon": "TEST-DRN", "internal": "drone", "arc": null, "reloads": 3 },
+      { "slotIndex": 3, "weapon": "TEST-DRN", "internal": "drone", "arc": "TEST-NOPE", "reloads": 1 }
+    ]
+  }
+}

@@ -35,7 +35,7 @@ Diagnostics use the shared `{ code, source, severity, details?, location? }` typ
 
 ## 4. Field table
 
-No public source gives the column order, so **no column indices are proposed**. The parser must be header-driven and keys its output by the raw header names. The camelCase names below are the **proposed engine-model mapping** (owned by Engine Lead and Combat), built from the Combat Systems Designer's fighter wishlist. **They remain a wishlist until verified** against the CE 2.670 header.
+The metadata-only CE 2.670 inventory (issue #6) reports 36 columns: a comment on line 1 and the header on line 2. Combat's field mapping of those header names is in [`docs/rules/shiplist-mapping.md`](../rules/shiplist-mapping.md). That mapping does not include row counts or cell values. The parser still keys output by the raw header names. The camelCase names below are the earlier engine-model wishlist; where they disagree with the inventory header (no turn-mode column, `Shots` rather than a separate reload, an `ECCM` column), the rules mapping wins.
 
 | # | Proposed field | Type | Units | Meaning | Confidence (source) |
 | --- | --- | --- | --- | --- | --- |
@@ -45,9 +45,9 @@ No public source gives the column order, so **no column indices are proposed**. 
 | — | `yearFirstAvailable` | integer | game year index | First year the type is issued. | unverified (F5, OP+) |
 | — | `yearLastAvailable` | integer | game year index | Last year issued (999 used as "never retired" in OP+). | unverified (F5, OP+) |
 | — | `speed` | number | speed units | Maximum speed. | unknown (wishlist) |
-| — | `turnMode` | enum string | — | Turn class, same tokens as shiplist if present. | unknown (wishlist) |
+| — | `turnMode` | enum string | — | Not in the CE 2.670 header summary. Engine value stays null. | unknown (wishlist; header absent) |
 | — | `damagePoints` | number | damage points | Damage the fighter absorbs before destruction. | unknown (wishlist) |
-| — | `weapons[]` (`slotIndex`, `weapon`, `arc`, `load`, `reload`) | repeated group | as in shiplist hardpoints | Weapon fit with arcs, shots loaded and reload. Weapon/arc keys are exact CE strings. Number of slots unknown. | unknown (wishlist) |
+| — | `weapons[]` (`slotIndex`, `weapon`, `arc`, `load`, `reload`) | five groups | as in the rules mapping | `Num` / `WeaponN` / `Arc` / `Shots`. Codes stay exact. `Shots` maps to `load`; `reload` stays null until playtest. | documented (inventory names, #6) |
 | — | `droneLoad` | integer | drones | Drones carried by drone-armed fighters, if separate from `weapons[]`. | unknown |
 | — | `ecm` | number | ECM points | ECM, if the file has it. | unknown (wishlist) |
 | — | bay / launch data: `carrier`, `count`, `rearmTime` | mixed | —, fighters, turns or seconds | Which carrier bays hold the type, how many, and rearm time. May come partly from `shiplist.txt` fighter-bay columns. | unknown (wishlist) |
@@ -56,7 +56,7 @@ No public source gives the column order, so **no column indices are proposed**. 
 | — | `uiKey` / icon | string | — | Icon or HUD key. | unknown |
 | — | `isPf` / category | enum | — | Fighter vs PF vs other craft, if the file mixes them. | unknown |
 
-**Totals:** 16 proposed field definitions. 0 documented, 2 unverified (`yearFirstAvailable`, `yearLastAvailable`, from an OP mod note), 14 unknown (of which the Combat wishlist covers speed, turn mode, damage points, weapons, ECM and bay/launch data). File-level facts (location, TAB table, `MetaAssets` copy, size ~12 KB in EaW) are unverified and listed in sections 1–3.
+**Totals:** 16 proposed field definitions in the wishlist table. The CE 2.670 header names themselves are now documented from the metadata inventory (36 columns, no row counts); the binding of those names is [`docs/rules/shiplist-mapping.md`](../rules/shiplist-mapping.md). File-level facts other than that header (which copy campaign reads, byte size) stay unverified until the format spec is revised against the inventory artifact.
 
 ## 5. Proposed data model (sketch, not code in this PR)
 
@@ -135,4 +135,4 @@ The CE weapon and arc code lists themselves will come later from the `sfc2-ci` i
 
 ## 9. Fixture
 
-[`tools/fixtures/formats/ftrlist/minimal.txt`](../../tools/fixtures/formats/ftrlist/minimal.txt) is a hand-made table with **our own placeholder header labels** (the real labels are unknown) and 2 invented rows (`TEST-FTR-01`, `TEST-PF-02`). It exists only to exercise the shared TAB-table tokenizer and header mapping. It carries no real fighter data and must be replaced or relabelled once CE 2.670's real header is observed.
+[`tools/fixtures/formats/ftrlist/minimal.txt`](../../tools/fixtures/formats/ftrlist/minimal.txt) is a hand-made table with **our own placeholder header labels** and 2 invented rows (`TEST-FTR-01`, `TEST-PF-02`). It exists only to exercise the shared TAB-table tokenizer. It is not the CE 2.670 header and carries no real fighter data. The observed header names live in the rules mapping, not in this fixture.

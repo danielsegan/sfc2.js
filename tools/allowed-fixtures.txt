@@ -10,3 +10,24 @@
 # .txt does not trip the check; listed here so every fixture is accounted for.
 tools/fixtures/formats/shiplist/minimal.txt
 tools/fixtures/formats/ftrlist/minimal.txt
+
+# Synthetic Phase 2 rules cases (docs/rules). Invented test-* ships only.
+docs/rules/tests/capacitor-hypothesis.json
+docs/rules/tests/clamps.json
+docs/rules/tests/damage-allocation.json
+docs/rules/tests/damage-seeded.json
+docs/rules/tests/facing-bins.json
+docs/rules/tests/fire-checks.json
+docs/rules/tests/helm.json
+docs/rules/tests/life-support.json
+docs/rules/tests/loader-ftrlist-codes.json
+docs/rules/tests/loader-unknown-codes.json
+docs/rules/tests/overload-warhead.json
+docs/rules/tests/pf-and-fighter.json
+docs/rules/tests/phaser-charge-fire.json
+docs/rules/tests/photon-arm.json
+docs/rules/tests/photon-proximity.json
+docs/rules/tests/rejections.json
+docs/rules/tests/scale-factors.json
+docs/rules/tests/set-energy.json
+docs/rules/tests/shield-reinforcement.json

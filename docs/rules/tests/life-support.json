@@ -1,0 +1,64 @@
+{
+  "id": "life-support",
+  "mode": "ticks",
+  "constants": { "rulesTurnTicks": 1 },
+  "endTick": 1,
+  "ships": [
+    {
+      "spawnKey": "test-empire-a:test-ca-01",
+      "className": "test-ca-01",
+      "race": "test-empire-a",
+      "class": "ship",
+      "power": { "warp": 0, "impulse": 0, "apr": 0, "battery": 0, "batteryCapacity": 0 },
+      "movement": { "moveCost": 1, "turnMode": "TEST-C", "acceleration": 1, "speed": 0, "heading16": 0, "x": 0, "y": 0 },
+      "shields": [0, 0, 0, 0, 0, 0],
+      "crew": { "crewUnits": 1, "boardingParties": 0, "minCrew": 1 },
+      "weapons": [{ "slotIndex": 0, "weapon": "TEST-PH", "arc": "TEST-ALL", "charge": 4, "boxes": 1 }]
+    },
+    {
+      "spawnKey": "test-empire-b:test-ff-02",
+      "className": "test-ff-02",
+      "race": "test-empire-b",
+      "class": "ship",
+      "power": { "warp": 0, "impulse": 0, "apr": 0, "battery": 0, "batteryCapacity": 0 },
+      "movement": { "moveCost": 1, "turnMode": "TEST-C", "acceleration": 1, "speed": 0, "heading16": 0, "x": 5, "y": 0 },
+      "shields": [5, 5, 5, 5, 5, 5],
+      "crew": { "crewUnits": 2, "boardingParties": 0, "minCrew": 1 }
+    }
+  ],
+  "timeline": [
+    {
+      "tick": 0,
+      "commands": [
+        {
+          "entry": "setEnergy",
+          "ship": "test-empire-a:test-ca-01",
+          "allocation": { "lifeSupport": true }
+        }
+      ]
+    },
+    {
+      "tick": 1,
+      "commands": [
+        {
+          "entry": "fire",
+          "ship": "test-empire-a:test-ca-01",
+          "slotIndex": 0,
+          "target": "test-empire-b:test-ff-02"
+        }
+      ]
+    }
+  ],
+  "expect": {
+    "results": [
+      { "tick": 0, "token": 1, "status": "clamped", "reason": "overDraw", "appliedValue": 0 },
+      { "tick": 1, "token": 2, "status": "rejected", "reason": "crewDisabled", "appliedValue": null }
+    ],
+    "state": {
+      "test-empire-a:test-ca-01": {
+        "disabled": true,
+        "crew": { "crewUnits": 0, "boardingParties": 0, "minCrew": 1 }
+      }
+    }
+  }
+}
