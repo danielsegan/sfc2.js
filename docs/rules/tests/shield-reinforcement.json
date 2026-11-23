@@ -1,0 +1,39 @@
+{
+  "id": "shield-reinforcement",
+  "mode": "ticks",
+  "constants": { "rulesTurnTicks": 1 },
+  "endTick": 0,
+  "ships": [
+    {
+      "spawnKey": "test-empire-a:test-ca-01",
+      "className": "test-ca-01",
+      "race": "test-empire-a",
+      "class": "ship",
+      "power": { "warp": 11, "impulse": 0, "apr": 0, "battery": 0, "batteryCapacity": 0 },
+      "movement": { "moveCost": 1, "turnMode": "TEST-C", "acceleration": 4, "speed": 0, "heading16": 0 },
+      "shields": [0, 0, 0, 0, 0, 0],
+      "shieldsMax": [20, 20, 20, 20, 20, 20],
+      "crew": { "crewUnits": 4, "boardingParties": 0, "minCrew": 1 }
+    }
+  ],
+  "timeline": [
+    {
+      "tick": 0,
+      "commands": [
+        {
+          "entry": "setEnergy",
+          "ship": "test-empire-a:test-ca-01",
+          "allocation": { "shields": { "general": 8, "specific": { "0": 3 } } }
+        }
+      ]
+    }
+  ],
+  "expect": {
+    "results": [
+      { "tick": 0, "token": 1, "status": "applied", "reason": "ok", "appliedValue": 11 }
+    ],
+    "state": {
+      "test-empire-a:test-ca-01": { "shields": [5, 2, 1, 1, 1, 1] }
+    }
+  }
+}

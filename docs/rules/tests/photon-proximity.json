@@ -1,0 +1,69 @@
+{
+  "id": "photon-proximity",
+  "mode": "ticks",
+  "constants": { "rulesTurnTicks": 4 },
+  "endTick": 5,
+  "ships": [
+    {
+      "spawnKey": "test-empire-a:test-ca-01",
+      "className": "test-ca-01",
+      "race": "test-empire-a",
+      "class": "ship",
+      "power": { "warp": 5, "impulse": 0, "apr": 0, "battery": 0, "batteryCapacity": 0 },
+      "movement": { "moveCost": 1, "turnMode": "TEST-C", "acceleration": 4, "speed": 0, "heading16": 0, "x": 0, "y": 0 },
+      "shields": [0, 0, 0, 0, 0, 0],
+      "crew": { "crewUnits": 4, "boardingParties": 0, "minCrew": 1 },
+      "weapons": [
+        { "slotIndex": 0, "weapon": "TEST-PHOT", "arc": "TEST-ALL", "charge": 0, "ticksCharging": 0, "boxes": 1 }
+      ]
+    },
+    {
+      "spawnKey": "test-empire-b:test-ff-02",
+      "className": "test-ff-02",
+      "race": "test-empire-b",
+      "class": "ship",
+      "power": { "warp": 0, "impulse": 0, "apr": 0, "battery": 0, "batteryCapacity": 0 },
+      "movement": { "moveCost": 1, "turnMode": "TEST-C", "acceleration": 1, "speed": 0, "heading16": 32768, "x": 6, "y": 0 },
+      "shields": [20, 20, 20, 20, 20, 20],
+      "crew": { "crewUnits": 2, "boardingParties": 0, "minCrew": 1 }
+    }
+  ],
+  "timeline": [
+    {
+      "tick": 0,
+      "commands": [
+        {
+          "entry": "setEnergy",
+          "ship": "test-empire-a:test-ca-01",
+          "allocation": {
+            "fireControl": true,
+            "weapons": [{ "slotIndex": 0, "request": 4, "mode": "proximity" }]
+          }
+        }
+      ]
+    },
+    {
+      "tick": 4,
+      "commands": [
+        {
+          "entry": "fire",
+          "ship": "test-empire-a:test-ca-01",
+          "slotIndex": 0,
+          "target": "test-empire-b:test-ff-02"
+        }
+      ]
+    }
+  ],
+  "expect": {
+    "results": [
+      { "tick": 0, "token": 1, "status": "applied", "reason": "ok", "appliedValue": 5 },
+      { "tick": 4, "token": 2, "status": "applied", "reason": "ok", "appliedValue": 4 }
+    ],
+    "state": {
+      "test-empire-b:test-ff-02": {
+        "shields": [16, 20, 20, 20, 20, 20],
+        "lastHit": { "facing": 0, "damage": 4, "penetrating": 0 }
+      }
+    }
+  }
+}

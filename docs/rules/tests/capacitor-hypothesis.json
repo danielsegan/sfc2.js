@@ -1,0 +1,42 @@
+{
+  "id": "capacitor-hypothesis",
+  "mode": "ticks",
+  "constants": { "rulesTurnTicks": 1, "phaserCapacitorFromHighSlots": true },
+  "endTick": 0,
+  "ships": [
+    {
+      "spawnKey": "test-empire-a:test-ca-01",
+      "className": "test-ca-01",
+      "race": "test-empire-a",
+      "class": "ship",
+      "power": { "warp": 6, "impulse": 0, "apr": 0, "battery": 0, "batteryCapacity": 0 },
+      "movement": { "moveCost": 1, "turnMode": "TEST-C", "acceleration": 2, "speed": 0, "heading16": 0 },
+      "shields": [0, 0, 0, 0, 0, 0],
+      "crew": { "crewUnits": 2, "boardingParties": 0, "minCrew": 1 },
+      "weapons": [{ "slotIndex": 10, "weapon": "TEST-PH", "arc": "TEST-FA", "charge": 0, "boxes": 1 }]
+    }
+  ],
+  "timeline": [
+    {
+      "tick": 0,
+      "commands": [
+        {
+          "entry": "setEnergy",
+          "ship": "test-empire-a:test-ca-01",
+          "allocation": { "weapons": [{ "slotIndex": 10, "request": 6 }] }
+        }
+      ]
+    }
+  ],
+  "expect": {
+    "results": [
+      { "tick": 0, "token": 1, "status": "applied", "reason": "ok", "appliedValue": 6 }
+    ],
+    "state": {
+      "test-empire-a:test-ca-01": {
+        "capacitor": 2,
+        "weapons": [{ "slotIndex": 10, "charge": 4, "ready": true }]
+      }
+    }
+  }
+}

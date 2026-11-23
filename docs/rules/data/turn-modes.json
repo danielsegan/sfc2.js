@@ -1,0 +1,10 @@
+{
+  "status": "placeholder",
+  "note": "TEST-* rows exist so fixtures can move. Letters AA and A–G are recognised because docs/formats/shiplist.md already names them, and their rates stay null until playtest against Community Edition 2.670 (issue #37). A null rate rejects helm and speed orders with turnModeUnverified. H is the stationary token from that format spec.",
+  "modes": {
+    "TEST-A": { "maxYawPerTick": 8000, "immobile": false },
+    "TEST-C": { "maxYawPerTick": 2000, "immobile": false },
+    "H": { "maxYawPerTick": 0, "immobile": true }
+  },
+  "unverifiedLetters": ["AA", "A", "B", "C", "D", "E", "F", "G"]
+}

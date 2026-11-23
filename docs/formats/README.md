@@ -32,8 +32,10 @@ Every parser in this project follows the same contract, so the importer, tests a
    // docs/engine/diagnostics.md (not on main yet); do not invent a second list.
    export type DiagnosticSource =
      | 'shiplist' | 'ftrlist' | 'mod' | 'bmp' | 'sprites' | 'sounds' | 'strings' | 'fms'
-     | 'loader';
-     // add-only, like codes; 'loader' is the engine data loader, not a format parser
+     | 'loader'
+     | 'rules';
+     // add-only, like codes; 'loader' is the engine data loader, not a format parser.
+     // 'rules' is only for ruleResult reasons (docs/rules/reason-codes.md).
 
    export interface DiagnosticLocation {
      line?: number;    // 1-based line (text formats)

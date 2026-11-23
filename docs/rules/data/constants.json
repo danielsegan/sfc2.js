@@ -1,0 +1,30 @@
+{
+  "description": "Placeholder constants for the Phase 2 duel slice. Every number is synthetic. Nothing here is taken from a published rules chart or from a Community Edition 2.670 file. Playtest before treating any value as real.",
+  "verification": "unverified",
+  "baseline": "Community Edition 2.670 (issue #37)",
+  "fxScale": 1000,
+  "rulesTurnTicks": 900,
+  "lifeSupportCost": 1,
+  "fireControlCost": 1,
+  "reinforcePerEnergy": 1,
+  "reinforceCapPerTurn": 100,
+  "crewLossIfLifeSupportUnpaid": 1,
+  "chartPointSize": 1,
+  "phaserCapacitorFromHighSlots": false,
+  "capacitorSlotIndexMin": 10,
+  "capacitorSlotIndexMax": 24,
+  "warheadRollSides": 6,
+  "warheadThreshold": 2,
+  "warheadExtraPoints": 2,
+  "photonMaxRange": 30,
+  "payOrder": ["lifeSupport", "fireControl", "movement", "shields", "weapons"],
+  "damageChart": ["bridge", "hullStruck", "sensors", "excess"],
+  "hullStruckByFacing": {
+    "0": "hullForward",
+    "1": "hullForward",
+    "2": "hullCenter",
+    "3": "hullAft",
+    "4": "hullCenter",
+    "5": "hullForward"
+  }
+}

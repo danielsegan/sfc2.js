@@ -1,0 +1,108 @@
+{
+  "id": "rejections",
+  "mode": "resolve",
+  "ships": [
+    {
+      "spawnKey": "test-empire-a:test-ca-01",
+      "className": "test-ca-01",
+      "race": "test-empire-a",
+      "class": "ship",
+      "power": { "warp": 10, "impulse": 0, "apr": 0, "battery": 0, "batteryCapacity": 0 },
+      "movement": { "moveCost": 1, "turnMode": "TEST-C", "acceleration": 10, "speed": 0, "heading16": 0 },
+      "shields": [20, 20, 20, 20, 20, 20],
+      "systems": { "bridge": 2, "armor": 0 },
+      "crew": { "crewUnits": 4, "boardingParties": 1, "minCrew": 1 },
+      "weapons": [
+        { "slotIndex": 0, "weapon": "TEST-PH", "arc": "TEST-FA", "charge": 0, "boxes": 1 },
+        { "slotIndex": 1, "weapon": "TEST-DRN", "arc": null, "reloads": 2, "boxes": 1 },
+        { "slotIndex": 2, "weapon": "TEST-PH", "arc": "TEST-FA", "charge": 0, "boxes": 0 }
+      ]
+    },
+    {
+      "spawnKey": "test-empire-a:test-dd-03",
+      "className": "test-dd-03",
+      "race": "test-empire-a",
+      "class": "ship",
+      "power": { "warp": 10, "impulse": 0, "apr": 0, "battery": 0, "batteryCapacity": 0 },
+      "movement": { "moveCost": 1, "turnMode": "C", "acceleration": 10, "speed": 0, "heading16": 0 },
+      "shields": [10, 10, 10, 10, 10, 10],
+      "crew": { "crewUnits": 2, "boardingParties": 0, "minCrew": 1 }
+    },
+    {
+      "spawnKey": "test-empire-b:test-bs-04",
+      "className": "test-bs-04",
+      "race": "test-empire-b",
+      "class": "ship",
+      "destroyed": true,
+      "power": { "warp": 0, "impulse": 0, "apr": 0, "battery": 0, "batteryCapacity": 0 },
+      "movement": { "moveCost": 0, "turnMode": "H", "acceleration": 0, "speed": 0, "heading16": 0 },
+      "shields": [5, 5, 5, 5, 5, 5],
+      "crew": { "crewUnits": 0, "boardingParties": 0, "minCrew": 0 }
+    },
+    {
+      "spawnKey": "test-empire-a:test-ftr-01",
+      "className": "test-ftr-01",
+      "race": "test-empire-a",
+      "class": "fighter",
+      "speed": 8,
+      "damagePoints": 2,
+      "ecm": 1
+    },
+    {
+      "spawnKey": "test-empire-a:test-ca-02",
+      "className": "test-ca-02",
+      "race": "test-empire-a",
+      "class": "ship",
+      "disabled": true,
+      "fcPaid": true,
+      "power": { "warp": 4, "impulse": 0, "apr": 0, "battery": 0, "batteryCapacity": 0 },
+      "movement": { "moveCost": 1, "turnMode": "TEST-C", "acceleration": 4, "speed": 0, "heading16": 0 },
+      "shields": [8, 8, 8, 8, 8, 8],
+      "crew": { "crewUnits": 0, "boardingParties": 0, "minCrew": 1 },
+      "weapons": [
+        { "slotIndex": 0, "weapon": "TEST-PH", "arc": "TEST-ALL", "charge": 4, "boxes": 1 }
+      ]
+    }
+  ],
+  "commands": [
+    { "entry": "setShields", "ship": "test-empire-a:missing", "facing": 0, "value": 1 },
+    { "entry": "setShields", "ship": "test-empire-a:test-ca-01", "facing": 6, "value": 1 },
+    { "entry": "setShields", "ship": "test-empire-a:test-ca-01", "facing": 0, "value": -1 },
+    { "entry": "setShields", "ship": "test-empire-a:test-ca-01", "facing": 0, "value": 0.0001 },
+    { "entry": "repairSystem", "ship": "test-empire-a:test-ca-01", "system": "bridge", "boxes": 1.5 },
+    { "entry": "repairSystem", "ship": "test-empire-a:test-ca-01", "system": "lab", "boxes": 1 },
+    { "entry": "setEnergy", "ship": "test-empire-a:test-ca-01", "allocation": { "cloaks": 1 } },
+    { "entry": "setEnergy", "ship": "test-empire-a:test-ca-01", "allocation": { "weapons": [{ "slotIndex": 9, "request": 1 }] } },
+    { "entry": "fire", "ship": "test-empire-a:test-ca-01", "slotIndex": 1, "target": "test-empire-a:test-dd-03" },
+    { "entry": "fire", "ship": "test-empire-a:test-ca-01", "slotIndex": 2, "target": "test-empire-a:test-dd-03" },
+    { "entry": "fire", "ship": "test-empire-a:test-ca-01", "slotIndex": 0, "target": "test-empire-a:test-dd-03" },
+    { "entry": "setEnergy", "ship": "test-empire-a:test-dd-03", "allocation": { "speed": 1 } },
+    { "entry": "orderHelm", "ship": "test-empire-a:test-dd-03", "yaw16": 100 },
+    { "entry": "setShields", "ship": "test-empire-b:test-bs-04", "facing": 0, "value": 1 },
+    { "entry": "damageShield", "ship": "test-empire-a:test-ftr-01", "facing": 0, "points": 1 },
+    { "entry": "fire", "ship": "test-empire-a:test-ca-02", "slotIndex": 0, "target": "test-empire-a:test-dd-03" }
+  ],
+  "expect": {
+    "results": [
+      { "token": 1, "status": "rejected", "reason": "noSuchShip", "appliedValue": null },
+      { "token": 2, "status": "rejected", "reason": "badFacing", "appliedValue": null },
+      { "token": 3, "status": "rejected", "reason": "negativeValue", "appliedValue": null },
+      { "token": 4, "status": "rejected", "reason": "precisionExceeded", "appliedValue": null },
+      { "token": 5, "status": "rejected", "reason": "nonIntegerBoxes", "appliedValue": null },
+      { "token": 6, "status": "rejected", "reason": "noSuchSystem", "appliedValue": null },
+      { "token": 7, "status": "rejected", "reason": "unknownDraw", "appliedValue": null },
+      { "token": 8, "status": "rejected", "reason": "unknownWeaponSlot", "appliedValue": null },
+      { "token": 9, "status": "rejected", "reason": "notInDuelSlice", "appliedValue": null },
+      { "token": 10, "status": "rejected", "reason": "weaponDestroyed", "appliedValue": null },
+      { "token": 11, "status": "rejected", "reason": "notCharged", "appliedValue": null },
+      { "token": 12, "status": "rejected", "reason": "turnModeUnverified", "appliedValue": null },
+      { "token": 13, "status": "rejected", "reason": "turnModeUnverified", "appliedValue": null },
+      { "token": 14, "status": "rejected", "reason": "shipDestroyed", "appliedValue": null },
+      { "token": 15, "status": "rejected", "reason": "notAShip", "appliedValue": null },
+      { "token": 16, "status": "rejected", "reason": "crewDisabled", "appliedValue": null }
+    ],
+    "state": {
+      "test-empire-a:test-ca-01": { "shields": [20, 20, 20, 20, 20, 20] }
+    }
+  }
+}
