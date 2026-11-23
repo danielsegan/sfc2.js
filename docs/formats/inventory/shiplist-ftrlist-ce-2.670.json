@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "build": "CE 2.670",
   "observedOn": "sfc2-ci",
-  "generatedAt": "2026-11-23T21:33:55Z",
+  "generatedAt": "2026-11-23T21:53:34Z",
   "extractedRoot": "/srv/sfc2/extracted/2.670",
   "referenceRoot": "/srv/sfc2/reference/2.670",
   "manifestPath": "/srv/sfc2/extracted/2.670/manifest.json",
@@ -2495,7 +2495,908 @@
           }
         ]
       }
-    ]
+    ],
+    "numericArcWeaponPairings": {
+      "byNumericArc": [
+        {
+          "arcCode": "1",
+          "rows": 272,
+          "occurrences": 383,
+          "weapons": [
+            {
+              "weaponCode": "ADD12",
+              "droneOrAdd": true,
+              "rows": 130,
+              "occurrences": 132,
+              "slots1to10": {
+                "rows": 130,
+                "occurrences": 132
+              },
+              "slots11to25": {
+                "rows": 0,
+                "occurrences": 0
+              }
+            },
+            {
+              "weaponCode": "ADD6",
+              "droneOrAdd": true,
+              "rows": 101,
+              "occurrences": 105,
+              "slots1to10": {
+                "rows": 101,
+                "occurrences": 105
+              },
+              "slots11to25": {
+                "rows": 0,
+                "occurrences": 0
+              }
+            },
+            {
+              "weaponCode": "DroA",
+              "droneOrAdd": true,
+              "rows": 48,
+              "occurrences": 87,
+              "slots1to10": {
+                "rows": 48,
+                "occurrences": 87
+              },
+              "slots11to25": {
+                "rows": 0,
+                "occurrences": 0
+              }
+            },
+            {
+              "weaponCode": "DroB",
+              "droneOrAdd": true,
+              "rows": 16,
+              "occurrences": 27,
+              "slots1to10": {
+                "rows": 16,
+                "occurrences": 27
+              },
+              "slots11to25": {
+                "rows": 0,
+                "occurrences": 0
+              }
+            },
+            {
+              "weaponCode": "DroG",
+              "droneOrAdd": true,
+              "rows": 13,
+              "occurrences": 16,
+              "slots1to10": {
+                "rows": 13,
+                "occurrences": 16
+              },
+              "slots11to25": {
+                "rows": 0,
+                "occurrences": 0
+              }
+            },
+            {
+              "weaponCode": "DroF",
+              "droneOrAdd": true,
+              "rows": 9,
+              "occurrences": 12,
+              "slots1to10": {
+                "rows": 9,
+                "occurrences": 12
+              },
+              "slots11to25": {
+                "rows": 0,
+                "occurrences": 0
+              }
+            },
+            {
+              "weaponCode": "DroC",
+              "droneOrAdd": true,
+              "rows": 3,
+              "occurrences": 4,
+              "slots1to10": {
+                "rows": 3,
+                "occurrences": 4
+              },
+              "slots11to25": {
+                "rows": 0,
+                "occurrences": 0
+              }
+            }
+          ]
+        },
+        {
+          "arcCode": "2",
+          "rows": 163,
+          "occurrences": 280,
+          "weapons": [
+            {
+              "weaponCode": "DroB",
+              "droneOrAdd": true,
+              "rows": 76,
+              "occurrences": 118,
+              "slots1to10": {
+                "rows": 76,
+                "occurrences": 118
+              },
+              "slots11to25": {
+                "rows": 0,
+                "occurrences": 0
+              }
+            },
+            {
+              "weaponCode": "DroC",
+              "droneOrAdd": true,
+              "rows": 66,
+              "occurrences": 95,
+              "slots1to10": {
+                "rows": 66,
+                "occurrences": 95
+              },
+              "slots11to25": {
+                "rows": 0,
+                "occurrences": 0
+              }
+            },
+            {
+              "weaponCode": "DroG",
+              "droneOrAdd": true,
+              "rows": 50,
+              "occurrences": 65,
+              "slots1to10": {
+                "rows": 50,
+                "occurrences": 65
+              },
+              "slots11to25": {
+                "rows": 0,
+                "occurrences": 0
+              }
+            },
+            {
+              "weaponCode": "DroA",
+              "droneOrAdd": true,
+              "rows": 1,
+              "occurrences": 1,
+              "slots1to10": {
+                "rows": 1,
+                "occurrences": 1
+              },
+              "slots11to25": {
+                "rows": 0,
+                "occurrences": 0
+              }
+            },
+            {
+              "weaponCode": "DroF",
+              "droneOrAdd": true,
+              "rows": 1,
+              "occurrences": 1,
+              "slots1to10": {
+                "rows": 1,
+                "occurrences": 1
+              },
+              "slots11to25": {
+                "rows": 0,
+                "occurrences": 0
+              }
+            }
+          ]
+        },
+        {
+          "arcCode": "3",
+          "rows": 73,
+          "occurrences": 105,
+          "weapons": [
+            {
+              "weaponCode": "DroB",
+              "droneOrAdd": true,
+              "rows": 67,
+              "occurrences": 96,
+              "slots1to10": {
+                "rows": 67,
+                "occurrences": 96
+              },
+              "slots11to25": {
+                "rows": 0,
+                "occurrences": 0
+              }
+            },
+            {
+              "weaponCode": "DroG",
+              "droneOrAdd": true,
+              "rows": 6,
+              "occurrences": 6,
+              "slots1to10": {
+                "rows": 6,
+                "occurrences": 6
+              },
+              "slots11to25": {
+                "rows": 0,
+                "occurrences": 0
+              }
+            },
+            {
+              "weaponCode": "DroC",
+              "droneOrAdd": true,
+              "rows": 2,
+              "occurrences": 2,
+              "slots1to10": {
+                "rows": 2,
+                "occurrences": 2
+              },
+              "slots11to25": {
+                "rows": 0,
+                "occurrences": 0
+              }
+            },
+            {
+              "weaponCode": "DroA",
+              "droneOrAdd": true,
+              "rows": 1,
+              "occurrences": 1,
+              "slots1to10": {
+                "rows": 1,
+                "occurrences": 1
+              },
+              "slots11to25": {
+                "rows": 0,
+                "occurrences": 0
+              }
+            }
+          ]
+        }
+      ],
+      "bySlot": [
+        {
+          "slot": 1,
+          "pairs": [
+            {
+              "arcCode": "1",
+              "weaponCode": "ADD6",
+              "droneOrAdd": true,
+              "rows": 5,
+              "occurrences": 5
+            },
+            {
+              "arcCode": "1",
+              "weaponCode": "ADD12",
+              "droneOrAdd": true,
+              "rows": 4,
+              "occurrences": 4
+            },
+            {
+              "arcCode": "1",
+              "weaponCode": "DroA",
+              "droneOrAdd": true,
+              "rows": 3,
+              "occurrences": 3
+            },
+            {
+              "arcCode": "1",
+              "weaponCode": "DroB",
+              "droneOrAdd": true,
+              "rows": 2,
+              "occurrences": 2
+            },
+            {
+              "arcCode": "1",
+              "weaponCode": "DroG",
+              "droneOrAdd": true,
+              "rows": 2,
+              "occurrences": 2
+            },
+            {
+              "arcCode": "2",
+              "weaponCode": "DroB",
+              "droneOrAdd": true,
+              "rows": 15,
+              "occurrences": 15
+            },
+            {
+              "arcCode": "2",
+              "weaponCode": "DroC",
+              "droneOrAdd": true,
+              "rows": 11,
+              "occurrences": 11
+            },
+            {
+              "arcCode": "2",
+              "weaponCode": "DroG",
+              "droneOrAdd": true,
+              "rows": 11,
+              "occurrences": 11
+            },
+            {
+              "arcCode": "3",
+              "weaponCode": "DroB",
+              "droneOrAdd": true,
+              "rows": 1,
+              "occurrences": 1
+            },
+            {
+              "arcCode": "3",
+              "weaponCode": "DroG",
+              "droneOrAdd": true,
+              "rows": 1,
+              "occurrences": 1
+            }
+          ]
+        },
+        {
+          "slot": 2,
+          "pairs": [
+            {
+              "arcCode": "1",
+              "weaponCode": "ADD12",
+              "droneOrAdd": true,
+              "rows": 6,
+              "occurrences": 6
+            },
+            {
+              "arcCode": "1",
+              "weaponCode": "ADD6",
+              "droneOrAdd": true,
+              "rows": 4,
+              "occurrences": 4
+            },
+            {
+              "arcCode": "1",
+              "weaponCode": "DroA",
+              "droneOrAdd": true,
+              "rows": 3,
+              "occurrences": 3
+            },
+            {
+              "arcCode": "1",
+              "weaponCode": "DroB",
+              "droneOrAdd": true,
+              "rows": 3,
+              "occurrences": 3
+            },
+            {
+              "arcCode": "1",
+              "weaponCode": "DroG",
+              "droneOrAdd": true,
+              "rows": 2,
+              "occurrences": 2
+            },
+            {
+              "arcCode": "2",
+              "weaponCode": "DroC",
+              "droneOrAdd": true,
+              "rows": 14,
+              "occurrences": 14
+            },
+            {
+              "arcCode": "2",
+              "weaponCode": "DroB",
+              "droneOrAdd": true,
+              "rows": 13,
+              "occurrences": 13
+            },
+            {
+              "arcCode": "2",
+              "weaponCode": "DroG",
+              "droneOrAdd": true,
+              "rows": 7,
+              "occurrences": 7
+            },
+            {
+              "arcCode": "3",
+              "weaponCode": "DroG",
+              "droneOrAdd": true,
+              "rows": 3,
+              "occurrences": 3
+            }
+          ]
+        },
+        {
+          "slot": 3,
+          "pairs": [
+            {
+              "arcCode": "1",
+              "weaponCode": "ADD6",
+              "droneOrAdd": true,
+              "rows": 26,
+              "occurrences": 26
+            },
+            {
+              "arcCode": "1",
+              "weaponCode": "DroA",
+              "droneOrAdd": true,
+              "rows": 23,
+              "occurrences": 23
+            },
+            {
+              "arcCode": "1",
+              "weaponCode": "DroB",
+              "droneOrAdd": true,
+              "rows": 5,
+              "occurrences": 5
+            },
+            {
+              "arcCode": "1",
+              "weaponCode": "DroC",
+              "droneOrAdd": true,
+              "rows": 2,
+              "occurrences": 2
+            },
+            {
+              "arcCode": "1",
+              "weaponCode": "DroG",
+              "droneOrAdd": true,
+              "rows": 2,
+              "occurrences": 2
+            },
+            {
+              "arcCode": "2",
+              "weaponCode": "DroC",
+              "droneOrAdd": true,
+              "rows": 28,
+              "occurrences": 28
+            },
+            {
+              "arcCode": "2",
+              "weaponCode": "DroB",
+              "droneOrAdd": true,
+              "rows": 20,
+              "occurrences": 20
+            },
+            {
+              "arcCode": "2",
+              "weaponCode": "DroG",
+              "droneOrAdd": true,
+              "rows": 2,
+              "occurrences": 2
+            },
+            {
+              "arcCode": "3",
+              "weaponCode": "DroB",
+              "droneOrAdd": true,
+              "rows": 2,
+              "occurrences": 2
+            },
+            {
+              "arcCode": "3",
+              "weaponCode": "DroC",
+              "droneOrAdd": true,
+              "rows": 2,
+              "occurrences": 2
+            }
+          ]
+        },
+        {
+          "slot": 4,
+          "pairs": [
+            {
+              "arcCode": "1",
+              "weaponCode": "DroA",
+              "droneOrAdd": true,
+              "rows": 23,
+              "occurrences": 23
+            },
+            {
+              "arcCode": "1",
+              "weaponCode": "ADD12",
+              "droneOrAdd": true,
+              "rows": 22,
+              "occurrences": 22
+            },
+            {
+              "arcCode": "1",
+              "weaponCode": "DroB",
+              "droneOrAdd": true,
+              "rows": 7,
+              "occurrences": 7
+            },
+            {
+              "arcCode": "1",
+              "weaponCode": "ADD6",
+              "droneOrAdd": true,
+              "rows": 1,
+              "occurrences": 1
+            },
+            {
+              "arcCode": "1",
+              "weaponCode": "DroG",
+              "droneOrAdd": true,
+              "rows": 1,
+              "occurrences": 1
+            },
+            {
+              "arcCode": "2",
+              "weaponCode": "DroB",
+              "droneOrAdd": true,
+              "rows": 22,
+              "occurrences": 22
+            },
+            {
+              "arcCode": "2",
+              "weaponCode": "DroC",
+              "droneOrAdd": true,
+              "rows": 10,
+              "occurrences": 10
+            },
+            {
+              "arcCode": "2",
+              "weaponCode": "DroG",
+              "droneOrAdd": true,
+              "rows": 2,
+              "occurrences": 2
+            },
+            {
+              "arcCode": "3",
+              "weaponCode": "DroB",
+              "droneOrAdd": true,
+              "rows": 3,
+              "occurrences": 3
+            }
+          ]
+        },
+        {
+          "slot": 5,
+          "pairs": [
+            {
+              "arcCode": "1",
+              "weaponCode": "ADD12",
+              "droneOrAdd": true,
+              "rows": 17,
+              "occurrences": 17
+            },
+            {
+              "arcCode": "1",
+              "weaponCode": "ADD6",
+              "droneOrAdd": true,
+              "rows": 12,
+              "occurrences": 12
+            },
+            {
+              "arcCode": "1",
+              "weaponCode": "DroA",
+              "droneOrAdd": true,
+              "rows": 4,
+              "occurrences": 4
+            },
+            {
+              "arcCode": "1",
+              "weaponCode": "DroC",
+              "droneOrAdd": true,
+              "rows": 1,
+              "occurrences": 1
+            },
+            {
+              "arcCode": "2",
+              "weaponCode": "DroC",
+              "droneOrAdd": true,
+              "rows": 4,
+              "occurrences": 4
+            },
+            {
+              "arcCode": "2",
+              "weaponCode": "DroB",
+              "droneOrAdd": true,
+              "rows": 3,
+              "occurrences": 3
+            },
+            {
+              "arcCode": "2",
+              "weaponCode": "DroG",
+              "droneOrAdd": true,
+              "rows": 1,
+              "occurrences": 1
+            }
+          ]
+        },
+        {
+          "slot": 6,
+          "pairs": [
+            {
+              "arcCode": "1",
+              "weaponCode": "DroA",
+              "droneOrAdd": true,
+              "rows": 4,
+              "occurrences": 4
+            },
+            {
+              "arcCode": "1",
+              "weaponCode": "ADD12",
+              "droneOrAdd": true,
+              "rows": 2,
+              "occurrences": 2
+            },
+            {
+              "arcCode": "1",
+              "weaponCode": "ADD6",
+              "droneOrAdd": true,
+              "rows": 1,
+              "occurrences": 1
+            },
+            {
+              "arcCode": "1",
+              "weaponCode": "DroC",
+              "droneOrAdd": true,
+              "rows": 1,
+              "occurrences": 1
+            },
+            {
+              "arcCode": "2",
+              "weaponCode": "DroC",
+              "droneOrAdd": true,
+              "rows": 4,
+              "occurrences": 4
+            },
+            {
+              "arcCode": "2",
+              "weaponCode": "DroB",
+              "droneOrAdd": true,
+              "rows": 3,
+              "occurrences": 3
+            }
+          ]
+        },
+        {
+          "slot": 7,
+          "pairs": [
+            {
+              "arcCode": "1",
+              "weaponCode": "DroA",
+              "droneOrAdd": true,
+              "rows": 21,
+              "occurrences": 21
+            },
+            {
+              "arcCode": "1",
+              "weaponCode": "DroB",
+              "droneOrAdd": true,
+              "rows": 10,
+              "occurrences": 10
+            },
+            {
+              "arcCode": "1",
+              "weaponCode": "ADD12",
+              "droneOrAdd": true,
+              "rows": 9,
+              "occurrences": 9
+            },
+            {
+              "arcCode": "1",
+              "weaponCode": "DroF",
+              "droneOrAdd": true,
+              "rows": 9,
+              "occurrences": 9
+            },
+            {
+              "arcCode": "1",
+              "weaponCode": "DroG",
+              "droneOrAdd": true,
+              "rows": 9,
+              "occurrences": 9
+            },
+            {
+              "arcCode": "1",
+              "weaponCode": "ADD6",
+              "droneOrAdd": true,
+              "rows": 8,
+              "occurrences": 8
+            },
+            {
+              "arcCode": "2",
+              "weaponCode": "DroG",
+              "droneOrAdd": true,
+              "rows": 37,
+              "occurrences": 37
+            },
+            {
+              "arcCode": "2",
+              "weaponCode": "DroB",
+              "droneOrAdd": true,
+              "rows": 33,
+              "occurrences": 33
+            },
+            {
+              "arcCode": "2",
+              "weaponCode": "DroC",
+              "droneOrAdd": true,
+              "rows": 24,
+              "occurrences": 24
+            },
+            {
+              "arcCode": "2",
+              "weaponCode": "DroA",
+              "droneOrAdd": true,
+              "rows": 1,
+              "occurrences": 1
+            },
+            {
+              "arcCode": "2",
+              "weaponCode": "DroF",
+              "droneOrAdd": true,
+              "rows": 1,
+              "occurrences": 1
+            },
+            {
+              "arcCode": "3",
+              "weaponCode": "DroB",
+              "droneOrAdd": true,
+              "rows": 61,
+              "occurrences": 61
+            },
+            {
+              "arcCode": "3",
+              "weaponCode": "DroG",
+              "droneOrAdd": true,
+              "rows": 2,
+              "occurrences": 2
+            },
+            {
+              "arcCode": "3",
+              "weaponCode": "DroA",
+              "droneOrAdd": true,
+              "rows": 1,
+              "occurrences": 1
+            }
+          ]
+        },
+        {
+          "slot": 8,
+          "pairs": [
+            {
+              "arcCode": "1",
+              "weaponCode": "ADD6",
+              "droneOrAdd": true,
+              "rows": 14,
+              "occurrences": 14
+            },
+            {
+              "arcCode": "1",
+              "weaponCode": "DroA",
+              "droneOrAdd": true,
+              "rows": 4,
+              "occurrences": 4
+            },
+            {
+              "arcCode": "1",
+              "weaponCode": "DroF",
+              "droneOrAdd": true,
+              "rows": 3,
+              "occurrences": 3
+            },
+            {
+              "arcCode": "2",
+              "weaponCode": "DroB",
+              "droneOrAdd": true,
+              "rows": 7,
+              "occurrences": 7
+            },
+            {
+              "arcCode": "2",
+              "weaponCode": "DroG",
+              "droneOrAdd": true,
+              "rows": 5,
+              "occurrences": 5
+            },
+            {
+              "arcCode": "3",
+              "weaponCode": "DroB",
+              "droneOrAdd": true,
+              "rows": 20,
+              "occurrences": 20
+            }
+          ]
+        },
+        {
+          "slot": 9,
+          "pairs": [
+            {
+              "arcCode": "1",
+              "weaponCode": "ADD12",
+              "droneOrAdd": true,
+              "rows": 63,
+              "occurrences": 63
+            },
+            {
+              "arcCode": "1",
+              "weaponCode": "ADD6",
+              "droneOrAdd": true,
+              "rows": 30,
+              "occurrences": 30
+            },
+            {
+              "arcCode": "1",
+              "weaponCode": "DroA",
+              "droneOrAdd": true,
+              "rows": 2,
+              "occurrences": 2
+            },
+            {
+              "arcCode": "2",
+              "weaponCode": "DroB",
+              "droneOrAdd": true,
+              "rows": 2,
+              "occurrences": 2
+            },
+            {
+              "arcCode": "3",
+              "weaponCode": "DroB",
+              "droneOrAdd": true,
+              "rows": 7,
+              "occurrences": 7
+            }
+          ]
+        },
+        {
+          "slot": 10,
+          "pairs": [
+            {
+              "arcCode": "1",
+              "weaponCode": "ADD12",
+              "droneOrAdd": true,
+              "rows": 9,
+              "occurrences": 9
+            },
+            {
+              "arcCode": "1",
+              "weaponCode": "ADD6",
+              "droneOrAdd": true,
+              "rows": 4,
+              "occurrences": 4
+            },
+            {
+              "arcCode": "3",
+              "weaponCode": "DroB",
+              "droneOrAdd": true,
+              "rows": 2,
+              "occurrences": 2
+            }
+          ]
+        }
+      ],
+      "nonDroneOrAddPairings": [],
+      "pairsOnlyWithDroneOrAdd": true,
+      "droneAddArcKinds": {
+        "weaponCodes": [
+          "ADD12",
+          "ADD6",
+          "DroA",
+          "DroB",
+          "DroC",
+          "DroF",
+          "DroG"
+        ],
+        "filledOrEmptySlots": {
+          "rows": 350,
+          "occurrences": 768
+        },
+        "numericArc": {
+          "rows": 350,
+          "occurrences": 768,
+          "arcCodes": [
+            {
+              "code": "1",
+              "rows": 272,
+              "occurrences": 383
+            },
+            {
+              "code": "2",
+              "rows": 163,
+              "occurrences": 280
+            },
+            {
+              "code": "3",
+              "rows": 73,
+              "occurrences": 105
+            }
+          ]
+        },
+        "letterArc": {
+          "rows": 0,
+          "occurrences": 0,
+          "arcCodes": []
+        },
+        "emptyArc": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      }
+    }
   },
   "ftrlist": {
     "copies": [
@@ -3126,7 +4027,43 @@
         "countColumnName": "Num",
         "codes": []
       }
-    ]
+    ],
+    "numericArcWeaponPairings": {
+      "byNumericArc": [],
+      "bySlot": [],
+      "nonDroneOrAddPairings": [],
+      "pairsOnlyWithDroneOrAdd": true,
+      "droneAddArcKinds": {
+        "weaponCodes": [
+          "DroI",
+          "DroVI"
+        ],
+        "filledOrEmptySlots": {
+          "rows": 26,
+          "occurrences": 27
+        },
+        "numericArc": {
+          "rows": 0,
+          "occurrences": 0,
+          "arcCodes": []
+        },
+        "letterArc": {
+          "rows": 26,
+          "occurrences": 27,
+          "arcCodes": [
+            {
+              "code": "ALL",
+              "rows": 26,
+              "occurrences": 27
+            }
+          ]
+        },
+        "emptyArc": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      }
+    }
   },
   "bft": {
     "count": 126,

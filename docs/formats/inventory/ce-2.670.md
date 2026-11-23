@@ -4,7 +4,7 @@ Observed on the private `sfc2-ci` runner against Community Edition 2.670 (no 2.6
 This document is metadata only: paths, sizes, hashes, counts, header names, and aggregate stats.
 It contains no game data rows and no binary payloads.
 
-- Generated (UTC): `2026-11-23T21:34:01Z`
+- Generated (UTC): `2026-11-23T21:53:40Z`
 - Extracted tree: `/srv/sfc2/extracted/2.670`
 - Reference tree: `/srv/sfc2/reference/2.670`
 - Manifest: `/srv/sfc2/extracted/2.670/manifest.json`

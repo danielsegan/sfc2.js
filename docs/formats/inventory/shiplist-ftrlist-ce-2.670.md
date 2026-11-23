@@ -2,7 +2,7 @@
 
 Observed on `sfc2-ci`. Metadata only: no data rows.
 
-- Generated (UTC): `2026-11-23T21:33:55Z`
+- Generated (UTC): `2026-11-23T21:53:34Z`
 
 ## shiplist
 
@@ -484,6 +484,133 @@ Per-slot arc counts for weapon slots 1–10 (after Num/Arc pairing):
 | 10 | 54 | `Heavy Weapon 10` | 55 | `Arc` | `LS` | 6 | 6 |
 | 10 | 54 | `Heavy Weapon 10` | 55 | `Arc` | `3` | 2 | 2 |
 | 10 | 54 | `Heavy Weapon 10` | 55 | `Arc` | `RRR` | 1 | 1 |
+
+Numeric arc values paired with the weapon code in the same slot (counts only; no ship names):
+
+- Numeric arcs pair only with `Dro*` / `ADD6` / `ADD12`: yes
+
+By numeric arc value:
+
+| Arc code | Weapon code | Dro*/ADD | Rows | Occurrences | Rows 1–10 | Occ. 1–10 | Rows 11–25 | Occ. 11–25 |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `1` | `ADD12` | yes | 130 | 132 | 130 | 132 | 0 | 0 |
+| `1` | `ADD6` | yes | 101 | 105 | 101 | 105 | 0 | 0 |
+| `1` | `DroA` | yes | 48 | 87 | 48 | 87 | 0 | 0 |
+| `1` | `DroB` | yes | 16 | 27 | 16 | 27 | 0 | 0 |
+| `1` | `DroG` | yes | 13 | 16 | 13 | 16 | 0 | 0 |
+| `1` | `DroF` | yes | 9 | 12 | 9 | 12 | 0 | 0 |
+| `1` | `DroC` | yes | 3 | 4 | 3 | 4 | 0 | 0 |
+| `2` | `DroB` | yes | 76 | 118 | 76 | 118 | 0 | 0 |
+| `2` | `DroC` | yes | 66 | 95 | 66 | 95 | 0 | 0 |
+| `2` | `DroG` | yes | 50 | 65 | 50 | 65 | 0 | 0 |
+| `2` | `DroA` | yes | 1 | 1 | 1 | 1 | 0 | 0 |
+| `2` | `DroF` | yes | 1 | 1 | 1 | 1 | 0 | 0 |
+| `3` | `DroB` | yes | 67 | 96 | 67 | 96 | 0 | 0 |
+| `3` | `DroG` | yes | 6 | 6 | 6 | 6 | 0 | 0 |
+| `3` | `DroC` | yes | 2 | 2 | 2 | 2 | 0 | 0 |
+| `3` | `DroA` | yes | 1 | 1 | 1 | 1 | 0 | 0 |
+
+By slot:
+
+| Slot | Arc code | Weapon code | Dro*/ADD | Rows | Occurrences |
+| ---: | --- | --- | --- | ---: | ---: |
+| 1 | `1` | `ADD6` | yes | 5 | 5 |
+| 1 | `1` | `ADD12` | yes | 4 | 4 |
+| 1 | `1` | `DroA` | yes | 3 | 3 |
+| 1 | `1` | `DroB` | yes | 2 | 2 |
+| 1 | `1` | `DroG` | yes | 2 | 2 |
+| 1 | `2` | `DroB` | yes | 15 | 15 |
+| 1 | `2` | `DroC` | yes | 11 | 11 |
+| 1 | `2` | `DroG` | yes | 11 | 11 |
+| 1 | `3` | `DroB` | yes | 1 | 1 |
+| 1 | `3` | `DroG` | yes | 1 | 1 |
+| 2 | `1` | `ADD12` | yes | 6 | 6 |
+| 2 | `1` | `ADD6` | yes | 4 | 4 |
+| 2 | `1` | `DroA` | yes | 3 | 3 |
+| 2 | `1` | `DroB` | yes | 3 | 3 |
+| 2 | `1` | `DroG` | yes | 2 | 2 |
+| 2 | `2` | `DroC` | yes | 14 | 14 |
+| 2 | `2` | `DroB` | yes | 13 | 13 |
+| 2 | `2` | `DroG` | yes | 7 | 7 |
+| 2 | `3` | `DroG` | yes | 3 | 3 |
+| 3 | `1` | `ADD6` | yes | 26 | 26 |
+| 3 | `1` | `DroA` | yes | 23 | 23 |
+| 3 | `1` | `DroB` | yes | 5 | 5 |
+| 3 | `1` | `DroC` | yes | 2 | 2 |
+| 3 | `1` | `DroG` | yes | 2 | 2 |
+| 3 | `2` | `DroC` | yes | 28 | 28 |
+| 3 | `2` | `DroB` | yes | 20 | 20 |
+| 3 | `2` | `DroG` | yes | 2 | 2 |
+| 3 | `3` | `DroB` | yes | 2 | 2 |
+| 3 | `3` | `DroC` | yes | 2 | 2 |
+| 4 | `1` | `DroA` | yes | 23 | 23 |
+| 4 | `1` | `ADD12` | yes | 22 | 22 |
+| 4 | `1` | `DroB` | yes | 7 | 7 |
+| 4 | `1` | `ADD6` | yes | 1 | 1 |
+| 4 | `1` | `DroG` | yes | 1 | 1 |
+| 4 | `2` | `DroB` | yes | 22 | 22 |
+| 4 | `2` | `DroC` | yes | 10 | 10 |
+| 4 | `2` | `DroG` | yes | 2 | 2 |
+| 4 | `3` | `DroB` | yes | 3 | 3 |
+| 5 | `1` | `ADD12` | yes | 17 | 17 |
+| 5 | `1` | `ADD6` | yes | 12 | 12 |
+| 5 | `1` | `DroA` | yes | 4 | 4 |
+| 5 | `1` | `DroC` | yes | 1 | 1 |
+| 5 | `2` | `DroC` | yes | 4 | 4 |
+| 5 | `2` | `DroB` | yes | 3 | 3 |
+| 5 | `2` | `DroG` | yes | 1 | 1 |
+| 6 | `1` | `DroA` | yes | 4 | 4 |
+| 6 | `1` | `ADD12` | yes | 2 | 2 |
+| 6 | `1` | `ADD6` | yes | 1 | 1 |
+| 6 | `1` | `DroC` | yes | 1 | 1 |
+| 6 | `2` | `DroC` | yes | 4 | 4 |
+| 6 | `2` | `DroB` | yes | 3 | 3 |
+| 7 | `1` | `DroA` | yes | 21 | 21 |
+| 7 | `1` | `DroB` | yes | 10 | 10 |
+| 7 | `1` | `ADD12` | yes | 9 | 9 |
+| 7 | `1` | `DroF` | yes | 9 | 9 |
+| 7 | `1` | `DroG` | yes | 9 | 9 |
+| 7 | `1` | `ADD6` | yes | 8 | 8 |
+| 7 | `2` | `DroG` | yes | 37 | 37 |
+| 7 | `2` | `DroB` | yes | 33 | 33 |
+| 7 | `2` | `DroC` | yes | 24 | 24 |
+| 7 | `2` | `DroA` | yes | 1 | 1 |
+| 7 | `2` | `DroF` | yes | 1 | 1 |
+| 7 | `3` | `DroB` | yes | 61 | 61 |
+| 7 | `3` | `DroG` | yes | 2 | 2 |
+| 7 | `3` | `DroA` | yes | 1 | 1 |
+| 8 | `1` | `ADD6` | yes | 14 | 14 |
+| 8 | `1` | `DroA` | yes | 4 | 4 |
+| 8 | `1` | `DroF` | yes | 3 | 3 |
+| 8 | `2` | `DroB` | yes | 7 | 7 |
+| 8 | `2` | `DroG` | yes | 5 | 5 |
+| 8 | `3` | `DroB` | yes | 20 | 20 |
+| 9 | `1` | `ADD12` | yes | 63 | 63 |
+| 9 | `1` | `ADD6` | yes | 30 | 30 |
+| 9 | `1` | `DroA` | yes | 2 | 2 |
+| 9 | `2` | `DroB` | yes | 2 | 2 |
+| 9 | `3` | `DroB` | yes | 7 | 7 |
+| 10 | `1` | `ADD12` | yes | 9 | 9 |
+| 10 | `1` | `ADD6` | yes | 4 | 4 |
+| 10 | `3` | `DroB` | yes | 2 | 2 |
+
+Numeric-arc pairings that are **not** `Dro*` / `ADD6` / `ADD12`:
+
+None observed.
+
+Converse: slots whose weapon code is `Dro*` / `ADD6` / `ADD12`, by arc kind:
+
+- Weapon codes: `ADD12`, `ADD6`, `DroA`, `DroB`, `DroC`, `DroF`, `DroG`
+- Total such slot cells: rows=350, occurrences=768
+- Numeric arc: rows=350, occurrences=768
+- Letter arc: rows=0, occurrences=0
+- Empty arc: rows=0, occurrences=0
+
+| Kind | Arc code | Rows | Occurrences |
+| --- | --- | ---: | ---: |
+| numeric | `1` | 272 | 383 |
+| numeric | `2` | 163 | 280 |
+| numeric | `3` | 73 | 105 |
 
 ### Column selection
 
@@ -1128,6 +1255,31 @@ Per-slot arc counts for weapon slots 1–10 (after Num/Arc pairing):
 | 3 | 12 | `Weapon3` | 13 | `Arc` | `RS` | 1 | 1 |
 | 4 | 16 | `Weapon4` | 17 | `Arc` | *(none)* | | |
 | 5 | 20 | `Weapon5` | 21 | `Arc` | *(none)* | | |
+
+Numeric arc values paired with the weapon code in the same slot (counts only; no ship names):
+
+- Numeric arcs pair only with `Dro*` / `ADD6` / `ADD12`: yes
+
+By numeric arc value:
+
+| Arc code | Weapon code | Dro*/ADD | Rows | Occurrences | Rows 1–10 | Occ. 1–10 | Rows 11–25 | Occ. 11–25 |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+
+Numeric-arc pairings that are **not** `Dro*` / `ADD6` / `ADD12`:
+
+None observed.
+
+Converse: slots whose weapon code is `Dro*` / `ADD6` / `ADD12`, by arc kind:
+
+- Weapon codes: `DroI`, `DroVI`
+- Total such slot cells: rows=26, occurrences=27
+- Numeric arc: rows=0, occurrences=0
+- Letter arc: rows=26, occurrences=27
+- Empty arc: rows=0, occurrences=0
+
+| Kind | Arc code | Rows | Occurrences |
+| --- | --- | ---: | ---: |
+| letter | `ALL` | 26 | 27 |
 
 ### Column selection
 

@@ -3,7 +3,7 @@
 Observed on `sfc2-ci`. Grouped `.scr`, `.mct` and `.gf` paths for the Mission & Campaign Designer.
 Metadata only: names, folder paths, sizes, sha256. No module contents.
 
-- Generated (UTC): `2026-11-23T21:34:01Z`
+- Generated (UTC): `2026-11-23T21:53:40Z`
 - Files: 183 in 13 folder(s)
 
 ## `scripts/Assets/Scripts`
