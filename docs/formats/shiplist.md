@@ -45,7 +45,7 @@ Status: **spec draft, nothing verified.** Reference build is **SFC2 Community Ed
 1. Decode, split into lines, drop a trailing empty line.
 2. **Header detection.** Treat the first non-empty line as the header if its first cell equals `Race` case-insensitively, or more generally if most of its cells are non-numeric. If more than one header-like line precedes the data, keep all of them in `data.headerRows` and emit `multipleHeaderRows` (info). CE 2.670's actual header count is unknown.
 3. **Column keys.** Output keys are the raw header names exactly as written, so known and unknown columns are treated alike. For lookups (race, class name, hardpoint groups, spawn key) the parser matches headers after normalizing them (lower-case, trim, collapse spaces, drop a trailing `_`). If there is no header, it falls back to the proposed index order in section 4, uses `col<N>` keys and emits `noHeader` (warning).
-4. Each row produces a `ShipSpec` even if fields fail to parse. Bad cells become `NaN`-free defaults plus a diagnostic that carries line and column.
+4. Each row produces a `ShipSpec` even if fields fail to parse. Bad cells become `NaN`-free defaults plus a diagnostic whose optional `location` carries the 1-based line and column, or the field name.
 5. Keep the raw cell array per row (`row.raw`) so we can diff against the real file on `sfc2-ci` and round-trip mods.
 
 ## 4. Field table
@@ -214,7 +214,7 @@ spawnKey = `${race}:${className}`   // e.g. "Federation:TEST-CA-01"
 - `race` and `className` are the trimmed cell values as written (case kept). Duplicate detection compares keys case-insensitively, because Windows-era tools treat names that way.
 - Missions, saves, replays, lobby messages and the importer refer to ships by spawn key, never by row number, so a reordered or modded shiplist keeps the same keys.
 - **Uniqueness across the full CE 2.670 shiplist is unverified.** S1 says class IDs identify ships to the engine, which suggests they are unique, but we have not checked the CE file. If the real file has duplicate keys, we will need a tie-breaker (for example line order), recorded in this spec once observed.
-- Duplicate keys raise `duplicateClassKey` (severity error, `details: { race, className, rows[] }`, rule V15, matching `docs/engine/data-loader.md`). A duplicate `className` under different races is only a warning (V4), since the spawn key still tells the rows apart.
+- Duplicate keys raise `duplicateClassKey` (severity error, `details: { race, className, rows[] }`, rule V15, same code as in the planned engine diagnostics registry). A duplicate `className` under different races is only a warning (V4), since the spawn key still tells them apart.
 
 ### 4.12 Ship art references (for UI & Art)
 
@@ -297,13 +297,17 @@ Provisional until the CE 2.670 headers are observed. The engine loader builds th
 
 ## 7. Validation rules
 
-Diagnostic codes are flat, stable camelCase strings: add-only, never renamed. Every diagnostic from this parser carries `source: "shiplist"`. Example:
+The shared diagnostic type is `{ code, source, severity, details?, location? }` (see [README](README.md#parser-conventions)). Codes are flat, stable camelCase strings: add-only, never renamed. The single registry is the planned [`docs/engine/diagnostics.md`](../engine/diagnostics.md) (Engine Lead; not on `main` yet).
+
+This parser raises codes only for fields it can't read (empty or malformed) and for structural checks on the table it parsed. Every diagnostic from this parser carries `source: "shiplist"`. Example:
 
 ```ts
 { code: "duplicateClassKey", source: "shiplist", severity: "error",
-  message: "Spawn key Federation:TEST-CA-01 appears on 2 rows",
-  line: 7, details: { race: "Federation", className: "TEST-CA-01", rows: [3, 7] } }
+  details: { race: "Federation", className: "TEST-CA-01", rows: [3, 7] },
+  location: { line: 7 } }
 ```
+
+`location` is optional and minimal: a 1-based `line`, a 1-based field `column`, and/or the raw header `field` name. File-level codes (`emptyFile`, `noHeader`) omit it. Human-readable text is looked up as `source.code`; there is no `message` field.
 
 Errors keep the row but mark it unusable for spawning. Warnings keep it usable.
 
@@ -314,7 +318,7 @@ Errors keep the row but mark it unusable for spawning. Warnings keep it usable.
 | V3 | `raggedRow` | warning | Row has fewer cells than the header (missing cells read as empty) or more (extras kept in `extra` under `col<N>`). |
 | V4 | `duplicateClassName` | warning | Two rows share a `className` (case-insensitive) under different races. References by `className` alone (e.g. `refitBaseClass`) become ambiguous; the spawn key still tells them apart. |
 | V5 | `badNumber` | warning | A numeric field does not parse; default 0 and keep the raw cell. |
-| V6 | `unknownRace`, `unknownHullType`, `unknownTurnMode`, `unknownWeapon`, `unknownArc` | warning | Value outside the known token list. The lists start from S1 and grow from CE 2.670 observation. |
+| V6 | `unknownRace`, `unknownHullType`, `unknownTurnMode` | warning | Value outside the known token list. The lists start from S1 and grow from CE 2.670 observation. Weapon and arc tokens are not checked here; see loader diagnostics below. |
 | V7 | `hardpointCountRange` | warning | Hardpoint count outside 0–4, or a count with an empty weapon code (or the reverse). |
 | V8 | `shieldTotalMismatch` | info | `shieldTotal` ≠ the sum of `shields[0..5]` (the four file values, with the two shared ones counted twice). |
 | V9 | `crewTotalMismatch` | info | `totalCrew` disagrees with the S1 formula. |
@@ -323,7 +327,18 @@ Errors keep the row but mark it unusable for spawning. Warnings keep it usable.
 | V12 | `missingGeometry` | warning | Playable hull type with empty `geometry`. File existence is checked later by the importer (#16), not the parser. |
 | V13 | `multipleHeaderRows` | info | More than one header-like line. |
 | V14 | `specsMetaassetsDiffer` | warning | Importer-level: the two copies differ. |
-| V15 | `duplicateClassKey` | error | Two rows produce the same spawn key `${race}:${className}` (case-insensitive). `details: { race, className, rows: number[] }` (1-based lines of every row involved). Both rows are kept; lookups by key resolve to the first. Same code and shape as the Engine Lead's `docs/engine/data-loader.md`. |
+| V15 | `duplicateClassKey` | error | Two rows produce the same spawn key `${race}:${className}` (case-insensitive). `details: { race, className, rows: number[] }` (1-based lines of every row involved). Both rows are kept; lookups by key resolve to the first. Same code and shape as in the planned engine diagnostics registry. |
+
+### Loader diagnostics (not raised by this parser)
+
+Weapon and arc values are kept as the exact file strings. The engine loader checks them against the mapping table in `docs/rules` (owned by Combat). These codes use `source: "loader"` and are not emitted by the shiplist parser. There is no loader module in the repo yet, so this is documentation only.
+
+| Code | Source | Severity | Rule |
+| --- | --- | --- | --- |
+| `unknownWeapon` | `loader` | warning | Weapon token is not in the `docs/rules` mapping table. |
+| `unknownArc` | `loader` | warning | Arc token is not in the `docs/rules` mapping table. |
+
+The CE weapon and arc code lists themselves will come later from the `sfc2-ci` inventory and are not listed here.
 
 ## 8. Open questions
 

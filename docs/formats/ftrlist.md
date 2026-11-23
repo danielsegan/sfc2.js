@@ -31,7 +31,7 @@ Public documentation of this file is thin, and much thinner than for `shiplist.t
 
 Same expectations and parsing rules as [`shiplist.md` §3](shiplist.md#3-encoding-and-layout), including **parser output keys = raw file header names** and values as written (no scaling, no renaming, exact weapon/arc strings): single-byte Windows text, TAB-delimited, header row(s) of labels, empty cells allowed, header-driven column mapping, unknown columns kept in `extra`, raw cells kept. Confidence: **unverified** (F6 shows it is a ShipEdit text table; everything else is assumed by analogy with the ship list).
 
-Diagnostics use `source: "ftrlist"` and the same flat, stable camelCase codes as the ship list, with the same meanings (`emptyFile`, `noHeader`, `raggedRow`, `badNumber`, `duplicateFighterType`, `multipleHeaderRows`, `specsMetaassetsDiffer`).
+Diagnostics use the shared `{ code, source, severity, details?, location? }` type (see [`README`](README.md#parser-conventions) and the planned [`docs/engine/diagnostics.md`](../engine/diagnostics.md)). Parser diagnostics carry `source: "ftrlist"` and the same flat, stable camelCase codes as the ship list, with the same meanings (`emptyFile`, `noHeader`, `raggedRow`, `badNumber`, `duplicateFighterType`, `multipleHeaderRows`, `specsMetaassetsDiffer`). `unknownWeapon` and `unknownArc` are loader diagnostics (`source: "loader"`), not raised by this parser; see §7.
 
 ## 4. Field table
 
@@ -94,6 +94,8 @@ In the engine model, absent columns become `null` (not 0): `null` means "column 
 
 ## 7. Validation rules
 
+This parser raises codes only for fields it can't read (empty or malformed) and for structural checks on the table it parsed. Every diagnostic from this parser carries `source: "ftrlist"`.
+
 | ID | Code | Severity | Rule |
 | --- | --- | --- | --- |
 | W1 | `emptyFile` | error | No non-empty lines. |
@@ -101,10 +103,21 @@ In the engine model, absent columns become `null` (not 0): `null` means "column 
 | W3 | `raggedRow` | warning | Cell count differs from header. |
 | W4 | `duplicateFighterType` | error | Two rows share a `typeName`. |
 | W5 | `badNumber` | warning | Numeric cell fails to parse. |
-| W6 | `unknownRace`, `unknownWeapon` | warning | Token outside the known lists (shared with shiplist). |
+| W6 | `unknownRace` | warning | Race token outside the known list (shared with shiplist). Weapon and arc tokens are not checked here; see loader diagnostics below. |
 | W7 | `yearOrder` | warning | First year after last year. |
 | W8 | `missingShipRef` | warning | Cross-file (importer-level): `shipClassRef` names no shiplist row, or a carrier bay references a fighter type that does not exist. |
 | W9 | `specsMetaassetsDiffer` | warning | Importer-level: the two copies differ. |
+
+### Loader diagnostics (not raised by this parser)
+
+Weapon and arc values are kept as the exact file strings. The engine loader checks them against the mapping table in `docs/rules` (owned by Combat). These codes use `source: "loader"` and are not emitted by the ftrlist parser. There is no loader module in the repo yet, so this is documentation only. Same codes as in [`shiplist.md` §7](shiplist.md#loader-diagnostics-not-raised-by-this-parser).
+
+| Code | Source | Severity | Rule |
+| --- | --- | --- | --- |
+| `unknownWeapon` | `loader` | warning | Weapon token is not in the `docs/rules` mapping table. |
+| `unknownArc` | `loader` | warning | Arc token is not in the `docs/rules` mapping table. |
+
+The CE weapon and arc code lists themselves will come later from the `sfc2-ci` inventory and are not listed here.
 
 ## 8. Open questions
 
