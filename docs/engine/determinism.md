@@ -1,9 +1,13 @@
 # SFC2.js determinism contract (sim core)
 
-Project: **SFC2.js** (repo `danielsegan/sfc2-browser-edition`). Status: **Draft v1.0**, agreed by the Engine Lead and the Audio/Netcode/QA Lead on 2026-11-23. Owner: Audio & Netcode QA Lead. Co-owner: Engine Lead.
-§9 is the exit criterion for [#21](https://github.com/danielsegan/sfc2-browser-edition/issues/21), the deterministic fixed-timestep sim core (Phase 2). This doc also supports #25 (deterministic replay + CI hash checks) and #27 (the determinism/math-policy risk).
+Project: **SFC2.js** (repo [`danielsegan/sfc2.js`](https://github.com/danielsegan/sfc2.js)). Status: **Draft v1.1**, agreed by the Engine Lead and the Audio/Netcode/QA Lead on 2026-11-23. Owner: Audio & Netcode QA Lead. Co-owner: Engine Lead.
+§9 is the exit criterion for [#21](https://github.com/danielsegan/sfc2.js/issues/21), the deterministic fixed-timestep sim core (Phase 2). This doc also supports #25 (deterministic replay + CI hash checks) and #27 (the determinism/math-policy risk).
 
 Language: **TypeScript (strict)**. The rules below are enforced by ESLint (typescript-eslint) on the sim packages, not by the type system alone.
+
+**Change log**
+- **Draft v1.1 (2026-11-23):** Settled N1 on **Q16.16 positions** (signed 32-bit, 16.16). Map bounds are held to ±8,192 world units per axis, which fits Q16.16's ±32,768 integer range with 4× headroom; data outside is rejected as `badMapBounds`. Added N1a: distance-squared and cross products MUST NOT be computed in int32 Q16.16 (8,192² overflows); a documented safe approach is required (a coarser shift, or a two-limb 64-bit helper without BigInt), pinned by a golden-vector test. **The Engine Lead should confirm the dist² approach.** Removed the obsolete mixed Q24.8×Q16.16 helper wording; velocities stay Q16.16. Repo name and links updated to [`danielsegan/sfc2.js`](https://github.com/danielsegan/sfc2.js). Follows the #53 squash merge (`a4bb10a`).
+- **Draft v1.0 (2026-11-23):** Initial contract, merged as [#53](https://github.com/danielsegan/sfc2.js/pull/53) (`a4bb10a`).
 
 **Status tags used below**
 - **AGREED** / **Agreed (Engine Lead, 2026-11-23)**: agreed with the Engine Lead. Daniel still has final say on anything the plan lists as open.
@@ -79,7 +83,8 @@ Golden vector (reference C and the JS `Math.imul` port agree; generated 2026-11-
 
 | ID | Requirement | Verified by |
 |---|---|---|
-| N1 MUST | Formats: positions use **Q24.8 in int32** (range ±8,388,607 units at 1/256 resolution). Velocities and fractions use **Q16.16**. Q16.16 is **not** used for positions because it caps at ±32,767. The position scale is **OPEN** (§10, Engine Lead Q1) until the Asset & Formats Engineer confirms map extents. | Type/brand checks in `fx`; property tests for range |
+| N1 MUST | Formats: positions use **Q16.16 in signed int32** (16.16; representable range ±32,768 units at 1/65536 resolution). Velocities and fractions stay **Q16.16**. The studio holds **map bounds to ±8,192 world units per axis**, which fits the Q16.16 integer range with **4× headroom** (8,192 × 4 = 32,768). Map data (and any authored position that enters the sim) outside that box is rejected as `badMapBounds`. This scale is **settled** (studio decision, reported by the Producer, 2026-11-23). | Type/brand checks in `fx`; property tests for range; a data-layer test that extents and positions outside ±8,192 fail with `badMapBounds` and in-range values are accepted |
+| N1a MUST | Distance-squared and cross products MUST NOT be computed as int32 Q16.16 multiplies: a coordinate of 8,192 in Q16.16 is 8,192×2^16 = 2^29, and (2^29)² overflows int32 (a full-map axis delta of 16,384 overflows further). Implementations MUST use a documented safe approach, one of: (1) a two-limb 64-bit helper (16-bit hi/lo split, no BigInt in hot paths, per N3) whose result format is specified alongside the helper; or (2) computing the square on positions shifted down to a coarser format such that every intermediate and the result fit the documented integer width (if the result must live in int32 and the max \|delta\| is 16,384, the operands may be at most **Q16.1**; a Q16.8 shift still has a 2^42 raw product and needs a wide intermediate, though the final integer units-squared fits int32). The chosen approach is recorded in `fx`. **The Engine Lead should confirm which approach `fx` will use** (§10). | Golden-vector tests at map corners and at the maximum axis delta (±8,192 and Δ=16,384), pinning the helper's outputs |
 | N2 MUST | `mul` and `div` round toward **−∞** (floor). A right shift of int32 is floor. `div(a,b) = floor(a·2^F / b)` for all sign combinations. WASM ports must implement floor explicitly: AssemblyScript (and Rust) integer `/` truncates toward zero. | Property tests (fast-check) against a BigInt reference, run in tests only |
 | N3 MUST | No BigInt in hot paths. Wide products use a 16-bit hi/lo split so every partial product is exact below 2^53. | Lint ban on `BigInt` outside `*.test.*`; perf bench |
 | N4 MUST | Angles are **uint16 BAM** (65536 per turn). `sin`/`cos` come from a committed LUT. `atan2` is integer (CORDIC or an octant LUT) and returns BAM. `sqrt` is integer floor isqrt. | Golden-vector tests; the LUT content hash is pinned in a test |
@@ -135,7 +140,7 @@ Golden vector (reference C and the JS `Math.imul` port agree; generated 2026-11-
 ## 9. Verification plan (exit criterion for #21)
 
 #21 is done when all of the following pass on `main`:
-1. **Unit/golden:** PRNG vectors, per-stream fork vectors, `fx` property tests (N2, N7), LUT/atan2/isqrt vectors, hash vectors and codec round-trip/fuzz.
+1. **Unit/golden:** PRNG vectors, per-stream fork vectors, `fx` property tests (N1, N1a, N2, N7), N1a dist²/cross-product golden vectors, LUT/atan2/isqrt vectors, hash vectors and codec round-trip/fuzz.
 2. **Lint:** ESLint (typescript-eslint) on sim packages with `no-restricted-globals`, `no-restricted-properties` and `no-restricted-syntax` covering everything in T3, R5, N3, N6 and the iteration-order list, plus custom rules for non-integer literals, raw `/` and comparator-less `sort`. CI fails on violations, and a fixture file of known violations proves each rule fires.
 3. **Isolation:** dependency rules (B1) and a headless Node run with no DOM.
 4. **Replay golden:** a corpus of scripted scenarios using **synthetic, test-authored ships and data only** (no original game data in the repo, per the plan and the no-game-files CI check). Each runs N ticks, and the full per-tick hash sequence plus the event hash must match the committed golden.
@@ -146,7 +151,7 @@ Golden vector (reference C and the JS `Math.imul` port agree; generated 2026-11-
 ## 10. Open questions
 
 **Engine Lead**
-1. Position scale: confirm Q24.8 after the Asset & Formats Engineer reports map extents. Also: mixed Q24.8×Q16.16 multiply helpers and the units for distance-squared, which overflows int32 quickly.
+1. *(N1 settled, 2026-11-23.)* Positions are Q16.16; map bounds are ±8,192 world units per axis, with `badMapBounds` outside. **Please confirm the dist² / cross-product approach in N1a:** a two-limb 64-bit helper (no BigInt, per N3), or a shift to a format coarse enough that squares fit the documented width (at most Q16.1 if the result must be int32 and the max |delta| is 16,384).
 2. 64-bit replay hashes: should replay files (and the final-state check) carry a 64-bit hash alongside the per-tick xxHash32? Not needed for Phase 2.
 3. *(Resolved.)* Mission API: architecture draft v0.2.1 has an emit-only `MissionHost`, where `requestSpawn`/`requestObjective` are commands on slot 255 (C4). The plan's diagram arrow "Mission runtime ──events──► Sim core" should be read as commands.
 4. Free-list policy (FIFO/LIFO) and the maximum generation before an id is retired.
