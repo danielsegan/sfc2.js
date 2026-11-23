@@ -297,7 +297,13 @@ Provisional until the CE 2.670 headers are observed. The engine loader builds th
 
 ## 7. Validation rules
 
-Diagnostic codes are stable camelCase strings: add-only, never renamed.
+Diagnostic codes are flat, stable camelCase strings: add-only, never renamed. Every diagnostic from this parser carries `source: "shiplist"`. Example:
+
+```ts
+{ code: "duplicateClassKey", source: "shiplist", severity: "error",
+  message: "Spawn key Federation:TEST-CA-01 appears on 2 rows",
+  line: 7, details: { race: "Federation", className: "TEST-CA-01", rows: [3, 7] } }
+```
 
 Errors keep the row but mark it unusable for spawning. Warnings keep it usable.
 

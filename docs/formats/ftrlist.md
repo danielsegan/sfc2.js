@@ -31,7 +31,7 @@ Public documentation of this file is thin, and much thinner than for `shiplist.t
 
 Same expectations and parsing rules as [`shiplist.md` §3](shiplist.md#3-encoding-and-layout), including **parser output keys = raw file header names** and values as written (no scaling, no renaming, exact weapon/arc strings): single-byte Windows text, TAB-delimited, header row(s) of labels, empty cells allowed, header-driven column mapping, unknown columns kept in `extra`, raw cells kept. Confidence: **unverified** (F6 shows it is a ShipEdit text table; everything else is assumed by analogy with the ship list).
 
-Diagnostic codes are the same stable camelCase codes as the ship list, with the same meanings (`emptyFile`, `noHeader`, `raggedRow`, `badNumber`, `duplicateFighterType`, `multipleHeaderRows`, `specsMetaassetsDiffer`).
+Diagnostics use `source: "ftrlist"` and the same flat, stable camelCase codes as the ship list, with the same meanings (`emptyFile`, `noHeader`, `raggedRow`, `badNumber`, `duplicateFighterType`, `multipleHeaderRows`, `specsMetaassetsDiffer`).
 
 ## 4. Field table
 
