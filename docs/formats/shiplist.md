@@ -1,7 +1,7 @@
 # `shiplist.txt`: ship specification table
 
-Issue: [#13](https://github.com/danielsegan/sfc2-browser-edition/issues/13) · Milestone: Phase 1: Asset pipeline · Owner: Asset & Formats Engineer
-Status: **spec draft, nothing verified.** Reference build is **SFC2 Community Edition 2.670** ([#37](https://github.com/danielsegan/sfc2-browser-edition/issues/37)). Every statement about real files below is *unverified* until a real-data job on the private `sfc2-ci` runner checks it against the CE 2.670 install.
+Issue: [#13](https://github.com/danielsegan/sfc2.js/issues/13) · Milestone: Phase 1: Asset pipeline · Owner: Asset & Formats Engineer
+Status: **spec draft, partially verified against CE 2.670.** Reference build is **SFC2 Community Edition 2.670** ([#37](https://github.com/danielsegan/sfc2.js/issues/37)). Claims marked **verified (CE 2.670)** were checked by private inventory run [45269125770](https://github.com/danielsegan/sfc2.js/actions/runs/45269125770) on `sfc2-ci` (tools commit `2ef5fa2`). Other statements stay unverified. No ship data rows are reproduced here.
 
 > Clean-room note. This spec is written only from public community documentation and forum posts cited below, plus our own design choices. It does not use, cite or derive from SFC2-decomp or any other decompilation or disassembly. No real ship rows or weapon tables are reproduced here. All example names and numbers are invented (`TEST-CA-01` etc.).
 
@@ -22,37 +22,37 @@ Status: **spec draft, nothing verified.** Reference build is **SFC2 Community Ed
 
 ## 2. File location and role
 
-- Path (unverified for CE 2.670): `<install>/Assets/Specs/shiplist.txt`, and a second copy at `<install>/MetaAssets/shiplist.txt` that campaign / Dynaverse play reads (S2, S5, S10). Windows paths are case-insensitive, so the importer must resolve both names case-insensitively.
-- Role: one row per spawnable unit. That includes playable ships, and also bases, freighters, monsters, planets, mines, shuttles and fighters, each told apart by hull type (S1).
-- If the two copies differ, the importer emits `specsMetaassetsDiffer` (warning) and uses the `Assets/Specs` copy for skirmish and the `MetaAssets` copy for campaign. Which copy wins in CE 2.670 is an open question.
+- Path (**verified (CE 2.670)**): both copies exist in the extracted tree as `tables/Assets/specs/shiplist.txt` (Assets/Specs, 647,855 bytes, sha256 `44f09e060788c3e4ea15a178ee14189865c6e8db6776b25e7c0b6fe17150dfb9`) and `tables/MetaAssets/shiplist.txt` (647,465 bytes, sha256 `c201c5575a473d691ac48fba3fa56e226281e96183867d95644b43f014a825bd`). Windows paths are case-insensitive, so the importer must resolve both names case-insensitively. Community sources (S2, S5, S10) say campaign / Dynaverse play reads the MetaAssets copy; that game behaviour was not checked by this run.
+- Role: one row per spawnable unit. That includes playable ships, and also bases, freighters, monsters, planets, mines, shuttles and fighters, each told apart by hull type (S1). CE 2.670 hull tokens observed in this file are listed in [shiplist-ftrlist-ce-2.670.md](inventory/shiplist-ftrlist-ce-2.670.md); among them is `FTR` (15 rows). No `PF` hull token was present.
+- The two CE 2.670 copies **differ** (sizes 647,855 vs 647,465). **The importer reads the Assets/Specs copy (`shiplist.txt` under Specs) for now** and should emit `specsMetaassetsDiffer` (warning) when the hashes do not match. Which copy skirmish or campaign actually loads in the game remains an open question.
 
 ## 3. Encoding and layout
 
 | Property | Expectation | Confidence |
 | --- | --- | --- |
-| Encoding | Single-byte Windows text (ASCII / Windows-1252). Decode as Windows-1252, strip a UTF-8 BOM if one is present. | unknown |
-| Line ends | CRLF expected; accept LF and CR as well. | unknown |
-| Field delimiter | One TAB (`\t`) per field. No quoting or escaping. | unverified (S1 for SFC1; S2/S3 say "spreadsheet import" for SFC2) |
+| Encoding | Single-byte Windows text (ASCII / Windows-1252). Decode as Windows-1252, strip a UTF-8 BOM if one is present. The CE 2.670 Specs copy is ASCII with no BOM. | **verified (CE 2.670)** (ASCII, no BOM; keep Windows-1252 as the decoder) |
+| Line ends | CRLF expected; accept LF and CR as well. The CE 2.670 Specs copy is CRLF. | **verified (CE 2.670)** (CRLF; still accept LF and CR) |
+| Field delimiter | One TAB (`\t`) per field. No quoting or escaping. | **verified (CE 2.670)** (TAB; quoting/escaping not observed) |
 | Empty cells | Allowed. An empty numeric cell means 0 or "not fitted" (S1: blank cloak means no cloak; blank acceleration means the unit cannot move). | unverified |
-| Trailing tabs | Rows may end with empty trailing fields; tolerate them. | unknown |
-| Header | At least one header row of column labels. The executable appears to look up at least one column by its label text (S6), so labels may be significant. | unverified |
-| Row count / size | Hundreds of rows; EaW 2.036 file is about 816 KB (S8). CE 2.670 size unknown. | unverified |
-| Numbers | Decimal, `.` as separator; integers and fractions (move cost, cost) both occur. | unverified |
-| Comments | None known. | unknown |
+| Trailing tabs | Rows may end with empty trailing fields; tolerate them. The header includes a blank name before the trailing `W1`–`W25` calculation columns. | **verified (CE 2.670)** (blank header cell observed; per-row trailing empties still tolerated) |
+| Header | One header row of column labels on line 2; line 1 is a leading comment/instruction (blank first cell). The first nonempty header cell is `Race`. 190 columns. The executable appears to look up at least one column by its label text (S6), so labels may be significant. Full header names are in [shiplist-ftrlist-ce-2.670.md](inventory/shiplist-ftrlist-ce-2.670.md). | **verified (CE 2.670)** (layout); executable label lookup still unverified (S6) |
+| Row count / size | 1,393 data rows after the header. Specs copy 647,855 bytes; MetaAssets copy 647,465 bytes (S8: EaW 2.036 was about 816 KB). | **verified (CE 2.670)** |
+| Numbers | Decimal, `.` as separator; integers and fractions (move cost, cost) both occur. | **verified (CE 2.670)** (both integer and fractional cells occur; per-column ranges are not published here) |
+| Comments | A leading comment/instruction line precedes the header (blank first cell, text in a later cell). Data rows were not treated as comments. | **verified (CE 2.670)** |
 
 ### Parsing rules (our design)
 
 1. Decode, split into lines, drop a trailing empty line.
-2. **Header detection.** Treat the first non-empty line as the header if its first cell equals `Race` case-insensitively, or more generally if most of its cells are non-numeric. If more than one header-like line precedes the data, keep all of them in `data.headerRows` and emit `multipleHeaderRows` (info). CE 2.670's actual header count is unknown.
+2. **Header detection.** Skip leading comment/instruction lines (blank first cell) and preamble markers such as `<0`. Treat the first remaining line as the header if its first nonempty cell equals `Race` case-insensitively, or more generally if most of its cells are non-numeric labels. If more than one header-like line precedes the data, keep all of them in `data.headerRows` and emit `multipleHeaderRows` (info). **Verified (CE 2.670):** the Specs copy has exactly one header row, on line 2, first cell `Race`.
 3. **Column keys.** Output keys are the raw header names exactly as written, so known and unknown columns are treated alike. For lookups (race, class name, hardpoint groups, spawn key) the parser matches headers after normalizing them (lower-case, trim, collapse spaces, drop a trailing `_`). If there is no header, it falls back to the proposed index order in section 4, uses `col<N>` keys and emits `noHeader` (warning).
 4. Each row produces a `ShipSpec` even if fields fail to parse. Bad cells become `NaN`-free defaults plus a diagnostic whose optional `location` carries the 1-based line and column, or the field name.
 5. Keep the raw cell array per row (`row.raw`) so we can diff against the real file on `sfc2-ci` and round-trip mods.
 
 ## 4. Field table
 
-**Parser output vs engine model (agreed with Combat, provisional until CE 2.670 headers are seen).** The parser's output keys are the **raw file header names** exactly as written (e.g. `Move Cost`), so a row round-trips without a rename table. The camelCase names in the "Proposed field" column below are the **proposed engine-model mapping**, owned by the Engine Lead and Combat Systems Designer, and are grouped as in section 5.2. They are documented here so the loader has one place to read them from.
+**Parser output vs engine model (agreed with Combat).** The parser's output keys are the **raw file header names** exactly as written (e.g. `Move Cost`), so a row round-trips without a rename table. The camelCase names in the "Proposed field" column below are the **proposed engine-model mapping**, owned by the Engine Lead and Combat Systems Designer, and are grouped as in section 5.2. They are documented here so the loader has one place to read them from. The proposed **column indices** below still follow S1's SFC1 order and do **not** match the 190-column CE 2.670 header; look up columns by label. The observed header list is in [shiplist-ftrlist-ce-2.670.md](inventory/shiplist-ftrlist-ce-2.670.md).
 
-Column indices are **proposed only**. They follow the left-to-right order of the SFC1 file as S1 walks through it. CE 2.670 almost certainly adds, renames or reorders columns, which is why the parser maps by header label. Field names are our own camelCase proposals, and the Combat Systems Designer should confirm the rules-facing ones (see section 8).
+Column indices are **proposed only**. They follow the left-to-right order of the SFC1 file as S1 walks through it. CE 2.670 has 190 columns and does add, rename and extend the S1 layout (slots 1–10 are labelled `Heavy Weapon 1`–`Heavy Weapon 10`, slots 11–25 `Weapon 11`–`Weapon 25`, each followed by `Arc` and `Num`; trailing `W1`–`W25` and BPV subtotal columns also exist), which is why the parser maps by header label. Field names are our own camelCase proposals, and the Combat Systems Designer should confirm the rules-facing ones (see section 8).
 
 Units: "file units" means the number exactly as written. The data-model layer converts later (see [README](README.md#parser-conventions)).
 
@@ -60,8 +60,8 @@ Units: "file units" means the number exactly as written. The data-model layer co
 
 | # | Proposed field | Type | Units | Meaning | Confidence (source) |
 | --- | --- | --- | --- | --- | --- |
-| 0 | `race` | enum string | — | Owning empire or pseudo-race. SFC1 values: Federation, Klingon, Romulan, Lyran, Hydran, Gorn, plus non-playable Orion, Neutral, Monster. SFC2 adds at least ISC and Mirak; the exact CE token set is unknown. | unverified (S1) |
-| 1 | `hullType` | enum string | — | Category: playable FF, CL, CA, DN; non-playable codes such as BS, BT, F (freighter), KDP, KLP, KSD, SHT (shuttle), FTR (fighter), XMN (mine), monster codes, Planet, Asteroid, Star, UNKNOWN. SFC2 classes such as DD, BC, PF unknown. | unverified (S1) |
+| 0 | `race` | enum string | — | Owning empire or pseudo-race. CE 2.670 Specs values and row counts: Federation 154, Klingon 159, Romulan 153, ISC 141, Hydran 140, Lyran 139, Mirak 136, Orion 134, Gorn 131, Neutral 87, Monster 19 (1,393 rows). | **verified (CE 2.670)** |
+| 1 | `hullType` | enum string | — | Category tokens in CE 2.670: Asteroid, BOX, BS, BT, CA, CL, DN, F, FF, FTR, KDP, KLP, KSD, MAM, MDM, MLC, MMT, MSG, MSS, Planet, SB, SHT, Star, UNKNOWN, XMN. No `PF` token was present. 15 rows have hull `FTR`. | **verified (CE 2.670)** (token set; meaning of each code still from S1) |
 | 2 | `className` | string (unique key) | — | Class identifier that missions, refits and other files use to find the row. Treat as the primary key. | documented (S3) |
 | 3 | `bpv` | number | points | Basic point value used to balance fleets and skirmish budgets. | unverified (S1) |
 | 4 | `specialRole` | enum string, may be empty | — | Fleet-composition role flag (S1 lists command, commando, missile, restricted and Romulan-hull variants). | unverified (S1) |
@@ -108,7 +108,7 @@ Engine shields are an array indexed 0–5, 0 = front, going clockwise (matches t
 | # | Proposed field | Type | Units | Meaning | Confidence (source) |
 | --- | --- | --- | --- | --- | --- |
 | 25 + 3k (k = 0..24) | `hardpoints[k].count` (with `slotIndex` = k) | integer 0–4 | shots stored or mounts | How many shots the mount stores (S1 says above 4 crashes SFC1). | unverified (S1) |
-| 26 + 3k | `hardpoints[k].weapon` | enum string, empty = unused | — | Weapon code, e.g. `Ph1`–`Ph4`, `PhG`, `Phot`, `Dis1`–`Dis4`, `PlaF`/`PlaG`/`PlaS`/`PlaR`, `DroA`… `DroG`, `ESG`, `Fus`, `HB` in SFC1. CE adds more (e.g. PPD, fast-load variants). Full CE list unknown. | unverified (S1) |
+| 26 + 3k | `hardpoints[k].weapon` | enum string, empty = unused | — | Weapon code, e.g. `Ph1`–`Ph4`, `PhG`, `Phot`, `Dis1`–`Dis4`, `PlaF`/`PlaG`/`PlaS`/`PlaR`, `DroA`… `DroG`, `ESG`, `Fus`, `HB` in SFC1. Columns named `Weapon 11`–`Weapon 25` in CE 2.670 contain `Ph1`, `Ph2`, `Ph3`, `Ph4` and `PhG` only (slot band 11–25). Codes in `Heavy Weapon 1`–`10` were not collected by that header-name pattern, so this is not a complete CE vocabulary. | **verified (CE 2.670)** (slots 11–25 phaser codes only); heavy-weapon codes still unverified |
 | 27 + 3k | `hardpoints[k].arc` | string | arc code, or count for drones | Firing arc code (`FA`, `FH`, `FX`, `RA`, `L`, `R`, `LS`, `RS`, `ALL`, `FLLX`, `FRRX` …, plus `SFBL`, `SFBR`, `RLP`, `RRP` named in S4). For drone racks S1 says this cell holds the number of reloads instead; the parser then also fills a separate `reloads` field. | unverified (S1, S4) |
 
 25 slots × 3 cells = 75 columns.
@@ -117,7 +117,7 @@ Engine shields are an array indexed 0–5, 0 = front, going clockwise (matches t
 
 **Weapon and arc codes.** Canonical keys are the exact CE file strings. The parser does not rename or invent codes. The mapping from those strings to rules behaviour is a table in `docs/rules` (Combat). Example codes below come from S1 (SFC1) and only illustrate the shape.
 
-S1 says slots 1–10 hold heavy weapons and slots 11–25 hold phasers, and that only slots 11–25 feed the phaser capacitor. For us that is a **rules-side, unverified hypothesis**, not parser behaviour. Slot meaning also depends on the UI hardpoint layout picked by `uiKey` (and on `sprites.q3` in CE, per S4). Whether CE 2.670 still has exactly 25 slots is unknown.
+S1 says slots 1–10 hold heavy weapons and slots 11–25 hold phasers, and that only slots 11–25 feed the phaser capacitor. The **header layout** in CE 2.670 matches 25 slots (`Heavy Weapon 1`–`10` then `Weapon 11`–`25`). The capacitor rule remains a **rules-side, unverified hypothesis**, not parser behaviour. Slot meaning also depends on the UI hardpoint layout picked by `uiKey` (and on `sprites.q3` in CE, per S4).
 
 ### 4.6 Probes, mines and drone support
 
@@ -351,12 +351,12 @@ The CE weapon and arc code lists themselves will come later from the `sfc2-ci` i
 6. **Stealth.** Still open: treat as rules-ignored until observed working in CE 2.670.
 7. ~~Fighters and PFs~~ **Answered.** PFs use the full ship model with entity class `'pf'` (rows in this file). Fighters are a lighter entity; see [ftrlist.md](ftrlist.md).
 
-### For observation on `sfc2-ci` (CE 2.670)
-8. Exact header text and number of header rows; full column count; columns beyond S1 (PF, flag bridge, emergency bridge, aux control, probe launchers …).
-9. Encoding (any bytes above 0x7F?), line ends, trailing tabs.
-10. Which copy (`Assets/Specs` or `MetaAssets`) skirmish and campaign actually read; whether they are identical in a clean install.
-11. CE race and hull-type token sets; year encoding; whether `className` and the spawn key `${race}:${className}` are unique in the stock file.
-12. Art references: whether any texture, icon or portrait column exists; how `uiKey` maps into `sprites.q3`.
+### Observed on `sfc2-ci` (CE 2.670) and still open
+8. **Answered (layout).** One header row on line 2, 190 columns, 1,393 data rows. Names and order are in [shiplist-ftrlist-ce-2.670.md](inventory/shiplist-ftrlist-ce-2.670.md). Columns beyond the S1 core include `Class Type`, fighter type columns, `UI`, `Full Name`, `refits`, `Balance`, `End`, `W1`–`W25`, BPV subtotals, and `SFB Year First/Last Available`. No header named flag bridge / emergency bridge / aux control / probe launchers was recorded.
+9. **Answered.** Encoding ASCII, no BOM, no bytes above 0x7F in the Specs copy as reported; line ends CRLF; a blank header cell sits before the trailing `W1`–`W25` columns.
+10. **Partially answered.** The two copies exist and are **not** identical (647,855 vs 647,465 bytes). The importer reads Assets/Specs for now. Which copy skirmish or campaign actually loads in the game is still open.
+11. **Answered (tokens and uniqueness).** Race and hull tokens are listed above and in the inventory report. The spawn key `${race}:${className}` is unique (1,393 keys, 0 `duplicateClassKey`, 0 `duplicateClassName`). Year encoding (offset vs calendar) was not interpreted.
+12. **Partially answered.** A `UI` column and a `Geometry` column exist. How `UI` maps into `sprites.q3` is still open. `sprites.q3` is present (80,717,666 bytes, same hash in the extracted and reference trees) but its container is unidentified (not ZIP or PACK; magic `MDM!`).
 
 ## 9. Fixture
 

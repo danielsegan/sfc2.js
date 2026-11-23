@@ -1,0 +1,1979 @@
+{
+  "schemaVersion": 1,
+  "build": "CE 2.670",
+  "observedOn": "sfc2-ci",
+  "generatedAt": "2026-11-23T21:23:19Z",
+  "extractedRoot": "/srv/sfc2/extracted/2.670",
+  "referenceRoot": "/srv/sfc2/reference/2.670",
+  "manifestPath": "/srv/sfc2/extracted/2.670/manifest.json",
+  "shiplist": {
+    "copies": [
+      {
+        "path": "tables/Assets/specs/shiplist.txt",
+        "absoluteParent": "/srv/sfc2/extracted/2.670/tables/Assets/specs",
+        "size": 647855,
+        "sha256": "44f09e060788c3e4ea15a178ee14189865c6e8db6776b25e7c0b6fe17150dfb9",
+        "exists": true
+      },
+      {
+        "path": "tables/MetaAssets/shiplist.txt",
+        "absoluteParent": "/srv/sfc2/extracted/2.670/tables/MetaAssets",
+        "size": 647465,
+        "sha256": "c201c5575a473d691ac48fba3fa56e226281e96183867d95644b43f014a825bd",
+        "exists": true
+      }
+    ],
+    "sourcePath": "tables/Assets/specs/shiplist.txt",
+    "table": {
+      "path": "tables/Assets/specs/shiplist.txt",
+      "size": 647855,
+      "sha256": "44f09e060788c3e4ea15a178ee14189865c6e8db6776b25e7c0b6fe17150dfb9",
+      "encoding": "ascii",
+      "lineEndings": "CRLF",
+      "delimiter": "TAB",
+      "headerNames": [
+        "Race",
+        "Hull Type",
+        "Class",
+        "Class Type",
+        "BPV",
+        "Special Role",
+        "Year First Available",
+        "Year Last Available",
+        "Size Class",
+        "Turn mode",
+        "Move Cost",
+        "HET +2 Turns & Nimble",
+        "HET Breakdown",
+        "Stealth (+ECM)",
+        "Regular Crew",
+        "Boarding Parties Base",
+        "Boarding Parties Max",
+        "Deck Crews",
+        "Total Crew",
+        "Min Crew",
+        "Shield 1",
+        "Shield 2 _ 6",
+        "Shield 3 _ 5",
+        "Shield 4",
+        "Shield Total",
+        "Cloak",
+        "Num",
+        "Heavy Weapon 1",
+        "Arc",
+        "Num",
+        "Heavy Weapon 2",
+        "Arc",
+        "Num",
+        "Heavy Weapon 3",
+        "Arc",
+        "Num",
+        "Heavy Weapon 4",
+        "Arc",
+        "Num",
+        "Heavy Weapon 5",
+        "Arc",
+        "Num",
+        "Heavy Weapon 6",
+        "Arc",
+        "Num",
+        "Heavy Weapon 7",
+        "Arc",
+        "Num",
+        "Heavy Weapon 8",
+        "Arc",
+        "Num",
+        "Heavy Weapon 9",
+        "Arc",
+        "Num",
+        "Heavy Weapon 10",
+        "Arc",
+        "Num",
+        "Weapon 11",
+        "Arc",
+        "Num",
+        "Weapon 12",
+        "Arc",
+        "Num",
+        "Weapon 13",
+        "Arc",
+        "Num",
+        "Weapon 14",
+        "Arc",
+        "Num",
+        "Weapon 15",
+        "Arc",
+        "Num",
+        "Weapon 16",
+        "Arc",
+        "Num",
+        "Weapon 17",
+        "Arc",
+        "Num",
+        "Weapon 18",
+        "Arc",
+        "Num",
+        "Weapon 19",
+        "Arc",
+        "Num",
+        "Weapon 20",
+        "Arc",
+        "Num",
+        "Weapon 21",
+        "Arc",
+        "Num",
+        "Weapon 22",
+        "Arc",
+        "Num",
+        "Weapon 23",
+        "Arc",
+        "Num",
+        "Weapon 24",
+        "Arc",
+        "Num",
+        "Weapon 25",
+        "Arc",
+        "Probes",
+        "T Bombs Base",
+        "T Bombs Max",
+        "Nuclear Mine Base",
+        "Nuclear Mine Max",
+        "Drone Control",
+        "ADD_6",
+        "ADD_12",
+        "Shuttles Size",
+        "Launch Rate",
+        "General Base",
+        "General Max",
+        "Fighter Bay 1",
+        "Fighter Type 1",
+        "Fighter Bay 2",
+        "Fighter Type 2",
+        "Fighter Bay 3",
+        "Fighter Type 3",
+        "Fighter Bay 4",
+        "Fighter Type 4",
+        "Armor",
+        "Forward Hull",
+        "Center Hull",
+        "Aft Hull",
+        "Cargo",
+        "Barracks",
+        "Repair",
+        "R_L_Warp",
+        "C_Warp",
+        "Impulse",
+        "Apr",
+        "Battery",
+        "Bridge",
+        "Security",
+        "Lab",
+        "Transporters",
+        "Tractors",
+        "Mech Tractors",
+        "Special Sensors",
+        "Sensors",
+        "Scanners",
+        "Explosion Strength",
+        "Acceleration",
+        "Damage Control",
+        "Extra Damage",
+        "Ship Cost",
+        "Refit Base Class",
+        "Geometry",
+        "UI",
+        "Full Name",
+        "refits",
+        "Balance",
+        "End",
+        "",
+        "W1",
+        "W2",
+        "W3",
+        "W4",
+        "W5",
+        "W6",
+        "W7",
+        "W8",
+        "W9",
+        "W10",
+        "W11",
+        "W12",
+        "W13",
+        "W14",
+        "W15",
+        "W16",
+        "W17",
+        "W18",
+        "W19",
+        "W20",
+        "W21",
+        "W22",
+        "W23",
+        "W24",
+        "W25",
+        "Weapon BPV",
+        "FB1",
+        "FB2",
+        "FB3",
+        "FB4",
+        "Fighter Subtotal",
+        "System BPV",
+        "BPV Subtotal",
+        "SFB Year First Available",
+        "SFB Year Last Available"
+      ],
+      "columnCount": 190,
+      "rowCount": 1393,
+      "headerLine": 2,
+      "headerRowCount": 1,
+      "hasBom": false,
+      "dataColumnCountMin": 190,
+      "dataColumnCountMax": 190,
+      "headerRejection": null
+    },
+    "diagnostics": [],
+    "uniqueness": {
+      "keyForm": "${race}:${className}",
+      "comparison": "case-insensitive",
+      "columnsFound": true,
+      "unique": true,
+      "keyCount": 1393,
+      "duplicateKeyCount": 0,
+      "duplicateKeys": [],
+      "duplicateClassNameCount": 0,
+      "duplicateClassNames": []
+    },
+    "fightersAndPfs": {
+      "fightersPresent": true,
+      "fighterRowCount": 15,
+      "fighterHullTokens": [
+        "FTR"
+      ],
+      "pfsPresent": false,
+      "pfRowCount": 0,
+      "pfHullTokens": []
+    },
+    "weaponCodes": [
+      {
+        "code": "Ph4",
+        "rows": 335,
+        "occurrences": 1869,
+        "slots1to10": {
+          "rows": 0,
+          "occurrences": 0
+        },
+        "slots11to25": {
+          "rows": 335,
+          "occurrences": 1869
+        }
+      },
+      {
+        "code": "Ph1",
+        "rows": 618,
+        "occurrences": 1800,
+        "slots1to10": {
+          "rows": 0,
+          "occurrences": 0
+        },
+        "slots11to25": {
+          "rows": 618,
+          "occurrences": 1800
+        }
+      },
+      {
+        "code": "Ph3",
+        "rows": 626,
+        "occurrences": 1393,
+        "slots1to10": {
+          "rows": 0,
+          "occurrences": 0
+        },
+        "slots11to25": {
+          "rows": 626,
+          "occurrences": 1393
+        }
+      },
+      {
+        "code": "Ph2",
+        "rows": 267,
+        "occurrences": 600,
+        "slots1to10": {
+          "rows": 0,
+          "occurrences": 0
+        },
+        "slots11to25": {
+          "rows": 267,
+          "occurrences": 600
+        }
+      },
+      {
+        "code": "PhG",
+        "rows": 110,
+        "occurrences": 224,
+        "slots1to10": {
+          "rows": 0,
+          "occurrences": 0
+        },
+        "slots11to25": {
+          "rows": 110,
+          "occurrences": 224
+        }
+      }
+    ],
+    "arcCodes": [
+      {
+        "code": "RS",
+        "rows": 742,
+        "occurrences": 1157,
+        "slots1to10": {
+          "rows": 0,
+          "occurrences": 0
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "LS",
+        "rows": 738,
+        "occurrences": 1151,
+        "slots1to10": {
+          "rows": 0,
+          "occurrences": 0
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "ALL",
+        "rows": 549,
+        "occurrences": 919,
+        "slots1to10": {
+          "rows": 0,
+          "occurrences": 0
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "FA",
+        "rows": 444,
+        "occurrences": 794,
+        "slots1to10": {
+          "rows": 0,
+          "occurrences": 0
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "FX",
+        "rows": 331,
+        "occurrences": 552,
+        "slots1to10": {
+          "rows": 0,
+          "occurrences": 0
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "FH",
+        "rows": 370,
+        "occurrences": 493,
+        "slots1to10": {
+          "rows": 0,
+          "occurrences": 0
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "FAL",
+        "rows": 417,
+        "occurrences": 453,
+        "slots1to10": {
+          "rows": 0,
+          "occurrences": 0
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "FAR",
+        "rows": 417,
+        "occurrences": 436,
+        "slots1to10": {
+          "rows": 0,
+          "occurrences": 0
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "RX",
+        "rows": 222,
+        "occurrences": 406,
+        "slots1to10": {
+          "rows": 0,
+          "occurrences": 0
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "1",
+        "rows": 272,
+        "occurrences": 383,
+        "slots1to10": {
+          "rows": 0,
+          "occurrences": 0
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "2",
+        "rows": 163,
+        "occurrences": 280,
+        "slots1to10": {
+          "rows": 0,
+          "occurrences": 0
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "RH",
+        "rows": 216,
+        "occurrences": 275,
+        "slots1to10": {
+          "rows": 0,
+          "occurrences": 0
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "LLR",
+        "rows": 128,
+        "occurrences": 146,
+        "slots1to10": {
+          "rows": 0,
+          "occurrences": 0
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "RRR",
+        "rows": 126,
+        "occurrences": 144,
+        "slots1to10": {
+          "rows": 0,
+          "occurrences": 0
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "LP",
+        "rows": 127,
+        "occurrences": 141,
+        "slots1to10": {
+          "rows": 0,
+          "occurrences": 0
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "RP",
+        "rows": 126,
+        "occurrences": 140,
+        "slots1to10": {
+          "rows": 0,
+          "occurrences": 0
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "RAR",
+        "rows": 115,
+        "occurrences": 138,
+        "slots1to10": {
+          "rows": 0,
+          "occurrences": 0
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "RAL",
+        "rows": 115,
+        "occurrences": 136,
+        "slots1to10": {
+          "rows": 0,
+          "occurrences": 0
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "LW",
+        "rows": 86,
+        "occurrences": 131,
+        "slots1to10": {
+          "rows": 0,
+          "occurrences": 0
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "RW",
+        "rows": 86,
+        "occurrences": 131,
+        "slots1to10": {
+          "rows": 0,
+          "occurrences": 0
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "3",
+        "rows": 73,
+        "occurrences": 105,
+        "slots1to10": {
+          "rows": 0,
+          "occurrences": 0
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "RA",
+        "rows": 73,
+        "occurrences": 98,
+        "slots1to10": {
+          "rows": 0,
+          "occurrences": 0
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "FLL",
+        "rows": 63,
+        "occurrences": 71,
+        "slots1to10": {
+          "rows": 0,
+          "occurrences": 0
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "FRR",
+        "rows": 61,
+        "occurrences": 69,
+        "slots1to10": {
+          "rows": 0,
+          "occurrences": 0
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "FHL",
+        "rows": 22,
+        "occurrences": 22,
+        "slots1to10": {
+          "rows": 0,
+          "occurrences": 0
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "FHR",
+        "rows": 22,
+        "occurrences": 22,
+        "slots1to10": {
+          "rows": 0,
+          "occurrences": 0
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "FLLX",
+        "rows": 21,
+        "occurrences": 21,
+        "slots1to10": {
+          "rows": 0,
+          "occurrences": 0
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "FRRX",
+        "rows": 21,
+        "occurrences": 21,
+        "slots1to10": {
+          "rows": 0,
+          "occurrences": 0
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      }
+    ],
+    "raceTokens": [
+      "Federation",
+      "Gorn",
+      "Hydran",
+      "ISC",
+      "Klingon",
+      "Lyran",
+      "Mirak",
+      "Monster",
+      "Neutral",
+      "Orion",
+      "Romulan"
+    ],
+    "hullTokens": [
+      "Asteroid",
+      "BOX",
+      "BS",
+      "BT",
+      "CA",
+      "CL",
+      "DN",
+      "F",
+      "FF",
+      "FTR",
+      "KDP",
+      "KLP",
+      "KSD",
+      "MAM",
+      "MDM",
+      "MLC",
+      "MMT",
+      "MSG",
+      "MSS",
+      "Planet",
+      "SB",
+      "SHT",
+      "Star",
+      "UNKNOWN",
+      "XMN"
+    ],
+    "columnSelection": {
+      "raceColumn": "Race",
+      "raceColumnIndex": 0,
+      "classNameColumn": "Class",
+      "classNameColumnIndex": 2,
+      "hullTypeColumn": "Hull Type",
+      "hullTypeColumnIndex": 1,
+      "weaponArc": {
+        "method": "header-name-patterns",
+        "weaponColumns": [
+          57,
+          60,
+          63,
+          66,
+          69,
+          72,
+          75,
+          78,
+          81,
+          84,
+          87,
+          90,
+          93,
+          96,
+          99
+        ],
+        "arcColumns": [
+          28,
+          31,
+          34,
+          37,
+          40,
+          43,
+          46,
+          49,
+          52,
+          55,
+          58,
+          61,
+          64,
+          67,
+          70,
+          73,
+          76,
+          79,
+          82,
+          85,
+          88,
+          91,
+          94,
+          97,
+          100
+        ],
+        "countColumns": [
+          26,
+          29,
+          32,
+          35,
+          38,
+          41,
+          44,
+          47,
+          50,
+          53,
+          56,
+          59,
+          62,
+          65,
+          68,
+          71,
+          74,
+          77,
+          80,
+          83,
+          86,
+          89,
+          92,
+          95,
+          98
+        ],
+        "weaponColumnNames": [
+          "Weapon 11",
+          "Weapon 12",
+          "Weapon 13",
+          "Weapon 14",
+          "Weapon 15",
+          "Weapon 16",
+          "Weapon 17",
+          "Weapon 18",
+          "Weapon 19",
+          "Weapon 20",
+          "Weapon 21",
+          "Weapon 22",
+          "Weapon 23",
+          "Weapon 24",
+          "Weapon 25"
+        ],
+        "arcColumnNames": [
+          "Arc",
+          "Arc",
+          "Arc",
+          "Arc",
+          "Arc",
+          "Arc",
+          "Arc",
+          "Arc",
+          "Arc",
+          "Arc",
+          "Arc",
+          "Arc",
+          "Arc",
+          "Arc",
+          "Arc",
+          "Arc",
+          "Arc",
+          "Arc",
+          "Arc",
+          "Arc",
+          "Arc",
+          "Arc",
+          "Arc",
+          "Arc",
+          "Arc"
+        ]
+      }
+    },
+    "raceRowCounts": [
+      {
+        "race": "Federation",
+        "rows": 154
+      },
+      {
+        "race": "Gorn",
+        "rows": 131
+      },
+      {
+        "race": "Hydran",
+        "rows": 140
+      },
+      {
+        "race": "ISC",
+        "rows": 141
+      },
+      {
+        "race": "Klingon",
+        "rows": 159
+      },
+      {
+        "race": "Lyran",
+        "rows": 139
+      },
+      {
+        "race": "Mirak",
+        "rows": 136
+      },
+      {
+        "race": "Monster",
+        "rows": 19
+      },
+      {
+        "race": "Neutral",
+        "rows": 87
+      },
+      {
+        "race": "Orion",
+        "rows": 134
+      },
+      {
+        "race": "Romulan",
+        "rows": 153
+      }
+    ]
+  },
+  "ftrlist": {
+    "copies": [
+      {
+        "path": "tables/Assets/specs/ftrlist.txt",
+        "absoluteParent": "/srv/sfc2/extracted/2.670/tables/Assets/specs",
+        "size": 9617,
+        "sha256": "af4a661a5b0418857d2d42db975e41c8560d1eadd2f9b16f13331c1b1d706fe1",
+        "exists": true
+      },
+      {
+        "path": "tables/MetaAssets/ftrlist.txt",
+        "absoluteParent": "/srv/sfc2/extracted/2.670/tables/MetaAssets",
+        "size": 9617,
+        "sha256": "af4a661a5b0418857d2d42db975e41c8560d1eadd2f9b16f13331c1b1d706fe1",
+        "exists": true
+      }
+    ],
+    "sourcePath": "tables/Assets/specs/ftrlist.txt",
+    "table": {
+      "path": "tables/Assets/specs/ftrlist.txt",
+      "size": 9617,
+      "sha256": "af4a661a5b0418857d2d42db975e41c8560d1eadd2f9b16f13331c1b1d706fe1",
+      "encoding": "ascii",
+      "lineEndings": "CRLF",
+      "delimiter": "TAB",
+      "headerNames": [
+        "Race",
+        "Type",
+        "Speed",
+        "Num",
+        "Weapon1",
+        "Arc",
+        "Shots",
+        "Num",
+        "Weapon2",
+        "Arc",
+        "Shots",
+        "Num",
+        "Weapon3",
+        "Arc",
+        "Shots",
+        "Num",
+        "Weapon4",
+        "Arc",
+        "Shots",
+        "Num",
+        "Weapon5",
+        "Arc",
+        "Shots",
+        "Damage",
+        "ADD_6",
+        "Ground Attack Bonus",
+        "ECM",
+        "ECCM",
+        "BPV",
+        "Carrier Size Class",
+        "First Year Avail",
+        "Last Year Avail",
+        "Size",
+        "UI",
+        "Geometry",
+        "Name"
+      ],
+      "columnCount": 36,
+      "rowCount": 81,
+      "headerLine": 2,
+      "headerRowCount": 1,
+      "hasBom": false,
+      "dataColumnCountMin": 36,
+      "dataColumnCountMax": 36,
+      "headerRejection": null
+    },
+    "diagnostics": [],
+    "uniqueness": {
+      "keyForm": "${race}:${className}",
+      "comparison": "case-insensitive",
+      "columnsFound": true,
+      "unique": true,
+      "keyCount": 81,
+      "duplicateKeyCount": 0,
+      "duplicateKeys": [],
+      "duplicateClassNameCount": 0,
+      "duplicateClassNames": []
+    },
+    "fightersAndPfs": {
+      "fightersPresent": false,
+      "fighterRowCount": 0,
+      "fighterHullTokens": [],
+      "pfsPresent": false,
+      "pfRowCount": 0,
+      "pfHullTokens": []
+    },
+    "weaponCodes": [
+      {
+        "code": "Ph3",
+        "rows": 58,
+        "occurrences": 65,
+        "slots1to10": {
+          "rows": 58,
+          "occurrences": 65
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "Ph2",
+        "rows": 21,
+        "occurrences": 24,
+        "slots1to10": {
+          "rows": 21,
+          "occurrences": 24
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "PhG",
+        "rows": 20,
+        "occurrences": 23,
+        "slots1to10": {
+          "rows": 20,
+          "occurrences": 23
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "DroVI",
+        "rows": 17,
+        "occurrences": 17,
+        "slots1to10": {
+          "rows": 17,
+          "occurrences": 17
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "DisF",
+        "rows": 15,
+        "occurrences": 15,
+        "slots1to10": {
+          "rows": 15,
+          "occurrences": 15
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "DroI",
+        "rows": 10,
+        "occurrences": 10,
+        "slots1to10": {
+          "rows": 10,
+          "occurrences": 10
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "HellF",
+        "rows": 8,
+        "occurrences": 8,
+        "slots1to10": {
+          "rows": 8,
+          "occurrences": 8
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "FusF",
+        "rows": 6,
+        "occurrences": 6,
+        "slots1to10": {
+          "rows": 6,
+          "occurrences": 6
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "PhoF",
+        "rows": 6,
+        "occurrences": 6,
+        "slots1to10": {
+          "rows": 6,
+          "occurrences": 6
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      }
+    ],
+    "arcCodes": [
+      {
+        "code": "FH",
+        "rows": 64,
+        "occurrences": 101,
+        "slots1to10": {
+          "rows": 0,
+          "occurrences": 0
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "ALL",
+        "rows": 37,
+        "occurrences": 39,
+        "slots1to10": {
+          "rows": 0,
+          "occurrences": 0
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "FX",
+        "rows": 19,
+        "occurrences": 20,
+        "slots1to10": {
+          "rows": 0,
+          "occurrences": 0
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "RX",
+        "rows": 9,
+        "occurrences": 9,
+        "slots1to10": {
+          "rows": 0,
+          "occurrences": 0
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "RA",
+        "rows": 3,
+        "occurrences": 3,
+        "slots1to10": {
+          "rows": 0,
+          "occurrences": 0
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "LS",
+        "rows": 1,
+        "occurrences": 1,
+        "slots1to10": {
+          "rows": 0,
+          "occurrences": 0
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      },
+      {
+        "code": "RS",
+        "rows": 1,
+        "occurrences": 1,
+        "slots1to10": {
+          "rows": 0,
+          "occurrences": 0
+        },
+        "slots11to25": {
+          "rows": 0,
+          "occurrences": 0
+        }
+      }
+    ],
+    "raceTokens": [
+      "Federation",
+      "Gorn",
+      "Hydran",
+      "ISC",
+      "Klingon",
+      "Lyran",
+      "Mirak",
+      "Orion",
+      "Romulan"
+    ],
+    "hullTokens": [],
+    "columnSelection": {
+      "raceColumn": "Race",
+      "raceColumnIndex": 0,
+      "classNameColumn": "Type",
+      "classNameColumnIndex": 1,
+      "hullTypeColumn": null,
+      "hullTypeColumnIndex": null,
+      "weaponArc": {
+        "method": "header-name-patterns",
+        "weaponColumns": [
+          4,
+          8,
+          12,
+          16,
+          20
+        ],
+        "arcColumns": [
+          5,
+          9,
+          13,
+          17,
+          21
+        ],
+        "countColumns": [
+          3,
+          6,
+          7,
+          10,
+          11,
+          14,
+          15,
+          18,
+          19,
+          22
+        ],
+        "weaponColumnNames": [
+          "Weapon1",
+          "Weapon2",
+          "Weapon3",
+          "Weapon4",
+          "Weapon5"
+        ],
+        "arcColumnNames": [
+          "Arc",
+          "Arc",
+          "Arc",
+          "Arc",
+          "Arc"
+        ]
+      }
+    },
+    "raceRowCounts": [
+      {
+        "race": "Federation",
+        "rows": 13
+      },
+      {
+        "race": "Gorn",
+        "rows": 1
+      },
+      {
+        "race": "Hydran",
+        "rows": 13
+      },
+      {
+        "race": "ISC",
+        "rows": 13
+      },
+      {
+        "race": "Klingon",
+        "rows": 13
+      },
+      {
+        "race": "Lyran",
+        "rows": 1
+      },
+      {
+        "race": "Mirak",
+        "rows": 13
+      },
+      {
+        "race": "Orion",
+        "rows": 13
+      },
+      {
+        "race": "Romulan",
+        "rows": 1
+      }
+    ]
+  },
+  "bft": {
+    "count": 126,
+    "folders": [
+      {
+        "path": "fonts/Assets/aafonts",
+        "count": 126,
+        "files": [
+          {
+            "path": "fonts/Assets/aafonts/Federation10.bft",
+            "size": 27843,
+            "sha256": "62659274e343bdb7c1216c255e9923c91302523849b956b5a6a385dbc37e7d23"
+          },
+          {
+            "path": "fonts/Assets/aafonts/Federation11.bft",
+            "size": 32482,
+            "sha256": "ab7a2669b594a14d503b2913d51cf979ca6679afe21e551af71acf1d04761068"
+          },
+          {
+            "path": "fonts/Assets/aafonts/Federation12.bft",
+            "size": 36495,
+            "sha256": "3731e51f38e5f55ad7ba63357c8a4be42bb7b559407774d712be4e4acca0cad8"
+          },
+          {
+            "path": "fonts/Assets/aafonts/Federation14.bft",
+            "size": 46955,
+            "sha256": "d9c0d1a7bbe65e477e1250cf4d232c06307307b9e870f7a019fdb16660452fe1"
+          },
+          {
+            "path": "fonts/Assets/aafonts/Federation16.bft",
+            "size": 58840,
+            "sha256": "12e88bd8335f2d8c572dd01ffbde74e68b3937c49797002816cd9cd3e069c245"
+          },
+          {
+            "path": "fonts/Assets/aafonts/Federation18.bft",
+            "size": 71801,
+            "sha256": "65cec60f4ed1f94bd0ef8d08f4fa70929bf5a16ac5220dc00ab5d49ad5ccda4a"
+          },
+          {
+            "path": "fonts/Assets/aafonts/Federation20.bft",
+            "size": 86081,
+            "sha256": "1d25e4c89387de921b098acb7fb3f7494835a73ddc23df90e8310eac4b4e6cfd"
+          },
+          {
+            "path": "fonts/Assets/aafonts/Federation22.bft",
+            "size": 101971,
+            "sha256": "9c5daefdad85da6aa755fec4be18b4fb85cea7952bf630e647f4afdc661b4a17"
+          },
+          {
+            "path": "fonts/Assets/aafonts/Federation24.bft",
+            "size": 118586,
+            "sha256": "0a8113ef188f4984857d5e2daf47e6bf54aeb0abb3e153742a6cd28751608a08"
+          },
+          {
+            "path": "fonts/Assets/aafonts/Federation5.bft",
+            "size": 11806,
+            "sha256": "e905527e1eeca560a237a872e6ea7ee14cadc01808a6032c46219fd69032227b"
+          },
+          {
+            "path": "fonts/Assets/aafonts/Federation6.bft",
+            "size": 15133,
+            "sha256": "82531c92f0927ab0b9b4110ab3038e2c2554a4fd5a1df4125cdc300dcfbf5c3f"
+          },
+          {
+            "path": "fonts/Assets/aafonts/Federation7.bft",
+            "size": 17599,
+            "sha256": "a6210c6ec63c08a0537724e94f4d6487a81650fe154c40f5b09de28d239a8896"
+          },
+          {
+            "path": "fonts/Assets/aafonts/Federation8.bft",
+            "size": 20490,
+            "sha256": "821558a1d45d239c7228cfcd031c5fe50209b132f8eaeee6e4485cfb9f3e5311"
+          },
+          {
+            "path": "fonts/Assets/aafonts/Federation9.bft",
+            "size": 24426,
+            "sha256": "0c710abb220749362c05b3c7992e1ba09225490f6e0387e5927da48320f76b1b"
+          },
+          {
+            "path": "fonts/Assets/aafonts/Klingon10.bft",
+            "size": 23794,
+            "sha256": "fa86495fd060e14366f254caf903f377046f79edded2273983fb0f4c126b17c0"
+          },
+          {
+            "path": "fonts/Assets/aafonts/Klingon11.bft",
+            "size": 27783,
+            "sha256": "5c166ef4a2efb41acb6d03d66207bf8b3cb7ccc8a0738aa757b08148d2f42375"
+          },
+          {
+            "path": "fonts/Assets/aafonts/Klingon12.bft",
+            "size": 31047,
+            "sha256": "30de3afca8bf5585db8d483317e8682ada107124241cf3613a47c0a430698114"
+          },
+          {
+            "path": "fonts/Assets/aafonts/Klingon14.bft",
+            "size": 39768,
+            "sha256": "7ac68be372d3f6618a3db5ca735263ee5f82e6bed3b1400fbbff37d427f80468"
+          },
+          {
+            "path": "fonts/Assets/aafonts/Klingon16.bft",
+            "size": 49134,
+            "sha256": "5b8e9454f5828b4201bb81ecd2a220ba81e6bd098e969ddf4cf718ebfe5140f2"
+          },
+          {
+            "path": "fonts/Assets/aafonts/Klingon18.bft",
+            "size": 59378,
+            "sha256": "f269fc08ac12727fb40586a40fc8ad29ce21f1c882cf32345eee42791b1e9a91"
+          },
+          {
+            "path": "fonts/Assets/aafonts/Klingon20.bft",
+            "size": 71028,
+            "sha256": "3def44bdec6e5996dd69c948b0b0b32c816edeb200d390b7afe4287d27fbdfa9"
+          },
+          {
+            "path": "fonts/Assets/aafonts/Klingon22.bft",
+            "size": 83739,
+            "sha256": "55c63b7507db232e1b82300f55c120402776f8205fdf6e2f4324ebebea81fa9a"
+          },
+          {
+            "path": "fonts/Assets/aafonts/Klingon24.bft",
+            "size": 97784,
+            "sha256": "a5aeecd60734028a6edbad1e9fbf4d80f1d0f9a02284f97ec0a047a352a20ce7"
+          },
+          {
+            "path": "fonts/Assets/aafonts/Klingon5.bft",
+            "size": 9675,
+            "sha256": "3056cd1881e9290f0acd5ea865e579aefa890d9b92e428f06f63863e95029e57"
+          },
+          {
+            "path": "fonts/Assets/aafonts/Klingon6.bft",
+            "size": 11417,
+            "sha256": "e131233880e0938ee0b402d80281b67a063b425b97dcbb5a1a827890896e45e1"
+          },
+          {
+            "path": "fonts/Assets/aafonts/Klingon7.bft",
+            "size": 15120,
+            "sha256": "7b0d2da5e8b8bfb5fafe2b7143269842d2f1af92bbcd4cb836dec228d967d72e"
+          },
+          {
+            "path": "fonts/Assets/aafonts/Klingon8.bft",
+            "size": 16955,
+            "sha256": "4fbe4f4ab81510802e2df8062f8824064b10122ba72c46031799d3cb4d4daeb1"
+          },
+          {
+            "path": "fonts/Assets/aafonts/Klingon9.bft",
+            "size": 20282,
+            "sha256": "540a051fa1ef66bddf0b092c0f83e4499056e4d6e50a0eb62ee2649c8dd1e1bd"
+          },
+          {
+            "path": "fonts/Assets/aafonts/arial10.bft",
+            "size": 22986,
+            "sha256": "6808fe130f83c58956b352139898ae8272c8bcd13fbb6130703a7647ddbc3eed"
+          },
+          {
+            "path": "fonts/Assets/aafonts/arial11.bft",
+            "size": 30323,
+            "sha256": "9a1fa5a090414b932be1c01880d8483be8e3e4287f88d0b5b6d8b897ca942d95"
+          },
+          {
+            "path": "fonts/Assets/aafonts/arial12.bft",
+            "size": 34402,
+            "sha256": "7441d8128c9386edc529dc1caba3343f379d78e8642a6f50f92eb6c0293636d1"
+          },
+          {
+            "path": "fonts/Assets/aafonts/arial14.bft",
+            "size": 43787,
+            "sha256": "84f834f06b0aab298f5981eb4952b25aa3cc8e42ab369b1ff83f6cc9a94daefb"
+          },
+          {
+            "path": "fonts/Assets/aafonts/arial16.bft",
+            "size": 54986,
+            "sha256": "d4302352661866aa7b396a85a80070169a1a90eabe4efab1030b52e71da3965e"
+          },
+          {
+            "path": "fonts/Assets/aafonts/arial18.bft",
+            "size": 66523,
+            "sha256": "b315096c79797c07f3034a03eb5ee2c9d5d09eb955f163322d58c3bfe82a500e"
+          },
+          {
+            "path": "fonts/Assets/aafonts/arial20.bft",
+            "size": 79058,
+            "sha256": "bf56e6f3090a1d59b99b155a978758e66f694dcab640aee0ddf56816bb46dafd"
+          },
+          {
+            "path": "fonts/Assets/aafonts/arial22.bft",
+            "size": 93575,
+            "sha256": "786c09fb57e08780f03ac7142b69a2fdd2f6867fafd01157d1a9888300fdfb94"
+          },
+          {
+            "path": "fonts/Assets/aafonts/arial24.bft",
+            "size": 109303,
+            "sha256": "33fafe1d38833030e9c6c14f4b2d5fa804517ba901a9b0163e946600f045538d"
+          },
+          {
+            "path": "fonts/Assets/aafonts/arial5.bft",
+            "size": 10194,
+            "sha256": "a6fdca63165c22d20fa9a05b18abeb26e4ffb5fe4ec61731cc84235989240af1"
+          },
+          {
+            "path": "fonts/Assets/aafonts/arial6.bft",
+            "size": 12484,
+            "sha256": "dd6b3b4e7d8db3703a2459c88da6893d1261ee0972441ef42c015ff623fc6356"
+          },
+          {
+            "path": "fonts/Assets/aafonts/arial7.bft",
+            "size": 14800,
+            "sha256": "0f162ca3497426b16cb4e326d7eaaccc8901069b2180d77786de41a475f13c8e"
+          },
+          {
+            "path": "fonts/Assets/aafonts/arial8.bft",
+            "size": 17231,
+            "sha256": "1a3eba70b98929ea28eb9e0904739357e5571856ebc309fae1f7062dcd8f56d3"
+          },
+          {
+            "path": "fonts/Assets/aafonts/arial9.bft",
+            "size": 20995,
+            "sha256": "44eaaded6dfc040d22c4075411cbe117579d464910e6c52053dab4a8987243b9"
+          },
+          {
+            "path": "fonts/Assets/aafonts/gorn10.bft",
+            "size": 21254,
+            "sha256": "25f8e0fbd655f594e7bccbbb72177499ae6b4b4c9f2d1959b5fa848db75f02e0"
+          },
+          {
+            "path": "fonts/Assets/aafonts/gorn11.bft",
+            "size": 24825,
+            "sha256": "82c6d10eb6fa499d37ca148354ca48954452aebee75562c3487366403bbd56e8"
+          },
+          {
+            "path": "fonts/Assets/aafonts/gorn12.bft",
+            "size": 28205,
+            "sha256": "e72b6a398916695141206d7b27b8f1c3feabd0b0bfade2acd5a3949aac9a3419"
+          },
+          {
+            "path": "fonts/Assets/aafonts/gorn14.bft",
+            "size": 36140,
+            "sha256": "c03c1d728f3ade1a90c133036161ab6ad470cca6bb8aaaf36edb59d436d90086"
+          },
+          {
+            "path": "fonts/Assets/aafonts/gorn16.bft",
+            "size": 45159,
+            "sha256": "6b523c6a138cbab649981865d5ecb24feacab72c4e28de9c1cd3bd1b8a7e3fb9"
+          },
+          {
+            "path": "fonts/Assets/aafonts/gorn18.bft",
+            "size": 54967,
+            "sha256": "e321eb843be9e1b4674c2646f17588be533bd5ac5c344e947fde0b330eabc495"
+          },
+          {
+            "path": "fonts/Assets/aafonts/gorn20.bft",
+            "size": 64967,
+            "sha256": "7948627d0c72121d051d13d9c8aebe5b70fa6f3011ab2605c36053b59e7c2339"
+          },
+          {
+            "path": "fonts/Assets/aafonts/gorn22.bft",
+            "size": 76275,
+            "sha256": "f40ef969d30caaf24520959fb1d35dcd004fcc8be07e129481a4d0da954cb27b"
+          },
+          {
+            "path": "fonts/Assets/aafonts/gorn24.bft",
+            "size": 88023,
+            "sha256": "1af06f36f56ff1d516b007c495e4883d91ae1605e5a8150ce0946b69aec52d81"
+          },
+          {
+            "path": "fonts/Assets/aafonts/gorn5.bft",
+            "size": 10177,
+            "sha256": "ac73ed476412fe96c38c8047578cb16ae8074ab56c679c8c601d5b1b4454c03c"
+          },
+          {
+            "path": "fonts/Assets/aafonts/gorn6.bft",
+            "size": 12172,
+            "sha256": "e5513374c9929f0bc9749331e981eeef1ef24fe318132171812d98cdc861d8c9"
+          },
+          {
+            "path": "fonts/Assets/aafonts/gorn7.bft",
+            "size": 14519,
+            "sha256": "37d18cff2f0848cb86e692b8edab1af776b578d72115b4517af9373243971a6a"
+          },
+          {
+            "path": "fonts/Assets/aafonts/gorn8.bft",
+            "size": 16192,
+            "sha256": "11b855c25c9c67dc253809f1333ff55c619d1c3622193db80628db02e63b210e"
+          },
+          {
+            "path": "fonts/Assets/aafonts/gorn9.bft",
+            "size": 19086,
+            "sha256": "f2724632e3512ff47d8ca83716141e73d1b56cd9f97a7dd57ec5194363b28c56"
+          },
+          {
+            "path": "fonts/Assets/aafonts/hydran10.bft",
+            "size": 30266,
+            "sha256": "08a8baca35a4f423e4265e0ac3f2e68710a600c45293951b065e5a5920633445"
+          },
+          {
+            "path": "fonts/Assets/aafonts/hydran11.bft",
+            "size": 34411,
+            "sha256": "78003a4f39deef4a794836105990ad7f0f2f3531a2ce6d77d1d919bf57d30ed8"
+          },
+          {
+            "path": "fonts/Assets/aafonts/hydran12.bft",
+            "size": 41596,
+            "sha256": "e596165d1f6d84334223db393aebfc60bc3aa7f4ec1c5f69a10e0f7a17c54053"
+          },
+          {
+            "path": "fonts/Assets/aafonts/hydran14.bft",
+            "size": 53399,
+            "sha256": "95096549cf8fa038c32d53c384ae15e0241bae5d1c8f154393507b2c8080e025"
+          },
+          {
+            "path": "fonts/Assets/aafonts/hydran16.bft",
+            "size": 66239,
+            "sha256": "cc3144a3a370a94cc3257e1eb04f0d0e724b3b2ef918029d5da1180c10fa3141"
+          },
+          {
+            "path": "fonts/Assets/aafonts/hydran18.bft",
+            "size": 80399,
+            "sha256": "8fc0143679776a708f02c021c76da2ee6260842eec860efdd62527a0e99c8d4b"
+          },
+          {
+            "path": "fonts/Assets/aafonts/hydran20.bft",
+            "size": 96021,
+            "sha256": "4e7b92e32edebf7ac662e3c6fbc052c7718f76fceb438a7d7e22bb6c8fdcfd80"
+          },
+          {
+            "path": "fonts/Assets/aafonts/hydran22.bft",
+            "size": 115974,
+            "sha256": "bf20559d5b0122185764cece76c632c55a8d9b89c60fb806961932960815bd36"
+          },
+          {
+            "path": "fonts/Assets/aafonts/hydran24.bft",
+            "size": 135587,
+            "sha256": "08def19e6970b0d3e80f0a0e08a8581798b1b8c29c50c359dbd6a1bc486b370b"
+          },
+          {
+            "path": "fonts/Assets/aafonts/hydran5.bft",
+            "size": 13017,
+            "sha256": "ea2fa7251fc74ab17574a587e4e623863156d6f5bbe4be3d6d3a169c124ee190"
+          },
+          {
+            "path": "fonts/Assets/aafonts/hydran6.bft",
+            "size": 15089,
+            "sha256": "e63ddd6c6b1d2820870dd1149a1602032a0b5e0f436fe0082fdc31c5ad2f8c0a"
+          },
+          {
+            "path": "fonts/Assets/aafonts/hydran7.bft",
+            "size": 18642,
+            "sha256": "fdc2cae33aef3b6c8443264e9ca8b2a0cb0d79ae36a5849cfb6268ba6bef4c6c"
+          },
+          {
+            "path": "fonts/Assets/aafonts/hydran8.bft",
+            "size": 21083,
+            "sha256": "7fd7ce203c69ecefc57ac28a7ad1c3678bb0c6f4d187b5f22b077671983ee3a1"
+          },
+          {
+            "path": "fonts/Assets/aafonts/hydran9.bft",
+            "size": 25853,
+            "sha256": "05dc5db167c73043ebf02f07085d569c5f8c6b186db766ecc8d8594ae2b52646"
+          },
+          {
+            "path": "fonts/Assets/aafonts/isc10.bft",
+            "size": 24017,
+            "sha256": "361dc9303b00bf5d27d4117053969866292af0aa6d03d93993572c49eb986953"
+          },
+          {
+            "path": "fonts/Assets/aafonts/isc11.bft",
+            "size": 27830,
+            "sha256": "36d5eb1e01dac6c37ece4baa43d4b465dc9f3ba58cafb422264b34650447c783"
+          },
+          {
+            "path": "fonts/Assets/aafonts/isc12.bft",
+            "size": 31172,
+            "sha256": "33723720bdb057762d0617b36b7814672abc6206847ce29d10bdcaf4f447b2e2"
+          },
+          {
+            "path": "fonts/Assets/aafonts/isc14.bft",
+            "size": 39627,
+            "sha256": "78cb5590390fcdf6faa5b1efba26c20689fc193969ae1d08b5ecacad7c8c9ba3"
+          },
+          {
+            "path": "fonts/Assets/aafonts/isc16.bft",
+            "size": 48786,
+            "sha256": "d664d854103195731d2bb8b5c69ec59565f3e4ad35458ecdd3e6132de23181b6"
+          },
+          {
+            "path": "fonts/Assets/aafonts/isc18.bft",
+            "size": 58978,
+            "sha256": "808b80e59143560d26aba842270101f534cf1cf9b5442adccd44b590f5635317"
+          },
+          {
+            "path": "fonts/Assets/aafonts/isc20.bft",
+            "size": 71038,
+            "sha256": "06219c90d607efd1cc1fe60225e9db9011dda55ba1c94afd19ad4e4242d95df9"
+          },
+          {
+            "path": "fonts/Assets/aafonts/isc22.bft",
+            "size": 84152,
+            "sha256": "e850d00d2994ed023d3a991152e3bf138217683e332000361efb3ca5da475262"
+          },
+          {
+            "path": "fonts/Assets/aafonts/isc24.bft",
+            "size": 97625,
+            "sha256": "f8f1639f8513a8f61e8d65f7d86576f751ed618a0d79b1ad8e834bf18ca6fce5"
+          },
+          {
+            "path": "fonts/Assets/aafonts/isc5.bft",
+            "size": 10630,
+            "sha256": "14f4f778b57e0532b05ff9dd25e03fd915dcf4c45bf5c84fcc8880b41cad467c"
+          },
+          {
+            "path": "fonts/Assets/aafonts/isc6.bft",
+            "size": 12973,
+            "sha256": "9f27d5831bd96ae0291624c056c8b1e060afd083b0784a2772168439eae0adc9"
+          },
+          {
+            "path": "fonts/Assets/aafonts/isc7.bft",
+            "size": 14683,
+            "sha256": "0f086a631fd7ab6e172f455ab76600c7449cdef558638fb7efe2fb37091e9730"
+          },
+          {
+            "path": "fonts/Assets/aafonts/isc8.bft",
+            "size": 17265,
+            "sha256": "d0af5b3f22b12421399a2b9f8ef7343e2fbe578aab784b94f2548fd09082dbf6"
+          },
+          {
+            "path": "fonts/Assets/aafonts/isc9.bft",
+            "size": 20405,
+            "sha256": "46026d3fb73d987c89a342c97801bf516a2c8a045ac4b210a5169b6fc98d6cae"
+          },
+          {
+            "path": "fonts/Assets/aafonts/lyran10.bft",
+            "size": 23931,
+            "sha256": "8997ded76b7e049015a4bd592d5cafdf3f1b6ee9872dd0050472774398d4527b"
+          },
+          {
+            "path": "fonts/Assets/aafonts/lyran11.bft",
+            "size": 30442,
+            "sha256": "3ad77df17075dfa597532a7b9293c4db7441b1d2d267c7c2bf606ec8c2b6ba82"
+          },
+          {
+            "path": "fonts/Assets/aafonts/lyran12.bft",
+            "size": 34905,
+            "sha256": "641e37af5cfbe9e2c18e6dbaf90c94748bb15327d4495972590fa7376ae7653b"
+          },
+          {
+            "path": "fonts/Assets/aafonts/lyran14.bft",
+            "size": 44812,
+            "sha256": "8611f51152fad4b42b33925b816be07242abfe05aaf222b2eb82c0a611cb4d62"
+          },
+          {
+            "path": "fonts/Assets/aafonts/lyran16.bft",
+            "size": 55544,
+            "sha256": "7a0af629dd34efd50380cda49e780d7e594239300a54fd84a987320af31cd108"
+          },
+          {
+            "path": "fonts/Assets/aafonts/lyran18.bft",
+            "size": 68426,
+            "sha256": "b431451982521cb5d82490a1f137836caf7638b42ac2913a5246c022e00354e8"
+          },
+          {
+            "path": "fonts/Assets/aafonts/lyran20.bft",
+            "size": 81231,
+            "sha256": "b75e16b306a6637b339ff4d7f4ab44af2382325d8083c626111629c8377fc278"
+          },
+          {
+            "path": "fonts/Assets/aafonts/lyran22.bft",
+            "size": 96163,
+            "sha256": "3d5f11018ad50edb01be19489f2bd9571c064570254e4fe26e1d508dfc09ef49"
+          },
+          {
+            "path": "fonts/Assets/aafonts/lyran24.bft",
+            "size": 111969,
+            "sha256": "9314ebbe2f227ed5f31f9022292423376585c51a8ced0ee646535c2aae7c5a31"
+          },
+          {
+            "path": "fonts/Assets/aafonts/lyran5.bft",
+            "size": 10388,
+            "sha256": "8e930924d9e3a8a66c6f8733a45fb2f4a1f994d31b5705ee5da7b4d8d32ae119"
+          },
+          {
+            "path": "fonts/Assets/aafonts/lyran6.bft",
+            "size": 12532,
+            "sha256": "d0cf50f7c1e51daa6e7aa19e5507e27bd53097f107af3cba7e02c25eeaddb960"
+          },
+          {
+            "path": "fonts/Assets/aafonts/lyran7.bft",
+            "size": 14911,
+            "sha256": "84ea0d8471f465763b907336177010cd554cd4d7e849a88112492e143cb3f41b"
+          },
+          {
+            "path": "fonts/Assets/aafonts/lyran8.bft",
+            "size": 17376,
+            "sha256": "2e1d1a23cab2ce915185955797a659dd6d231b99d2355883ad2b1768995a6635"
+          },
+          {
+            "path": "fonts/Assets/aafonts/lyran9.bft",
+            "size": 20353,
+            "sha256": "d35a82e2e42e9ced5ec2e5c1856b5506a932512dd2f034f145b4f865fa0005ee"
+          },
+          {
+            "path": "fonts/Assets/aafonts/mirak10.bft",
+            "size": 23242,
+            "sha256": "8fcdc2bc2c34653e23fe778bc03abe023cc268eb1080f5d70ff38d2f6963766b"
+          },
+          {
+            "path": "fonts/Assets/aafonts/mirak11.bft",
+            "size": 27213,
+            "sha256": "22c07d39aadd7aa07547a39c7a79d1e119a1d7c489e49262af059120758ff19f"
+          },
+          {
+            "path": "fonts/Assets/aafonts/mirak12.bft",
+            "size": 29786,
+            "sha256": "b5454d942d1b59b410838d43a226b4871a9a109627698051ad44a3bc7e568be9"
+          },
+          {
+            "path": "fonts/Assets/aafonts/mirak14.bft",
+            "size": 37969,
+            "sha256": "b2cb11de4496ed62e4cce9c1568220238590aae8630f4255b2cc858b024f9ffc"
+          },
+          {
+            "path": "fonts/Assets/aafonts/mirak16.bft",
+            "size": 46993,
+            "sha256": "c9b17db439dd7f269e17fac0a8d776150759d81b8a0a8c5ba7d1fd42718f73e6"
+          },
+          {
+            "path": "fonts/Assets/aafonts/mirak18.bft",
+            "size": 57179,
+            "sha256": "64374a424eed254f9a30a4d499eb2c679d723f9eca61acf5e94dcc034c40ffbd"
+          },
+          {
+            "path": "fonts/Assets/aafonts/mirak20.bft",
+            "size": 68732,
+            "sha256": "3f95331f7e56521ec174357490fedaf7ed1dfdd53fc0239b01c88e6366f44016"
+          },
+          {
+            "path": "fonts/Assets/aafonts/mirak22.bft",
+            "size": 81109,
+            "sha256": "db86fa0c4afcd14c198d7fef724a462b8853ae30d8771b2526800cf46375a67f"
+          },
+          {
+            "path": "fonts/Assets/aafonts/mirak24.bft",
+            "size": 94257,
+            "sha256": "b52ceea155dbbacb01dc8ce1a7a73448d3ac304f79d6deddaf1ef364e44e6f82"
+          },
+          {
+            "path": "fonts/Assets/aafonts/mirak5.bft",
+            "size": 10653,
+            "sha256": "e9e51955ee1bed2309d8ab87ffc66aeea0188ec8942aedb6af73185dee591be1"
+          },
+          {
+            "path": "fonts/Assets/aafonts/mirak6.bft",
+            "size": 12572,
+            "sha256": "833664855f982c0b89f521383300aaf9bc9ddc68153e6d17a0215af87d0a7699"
+          },
+          {
+            "path": "fonts/Assets/aafonts/mirak7.bft",
+            "size": 15109,
+            "sha256": "018458ccc39d1e106e77fb96cea403a324e4a716c08a8ae4ca9f57c3800e4de0"
+          },
+          {
+            "path": "fonts/Assets/aafonts/mirak8.bft",
+            "size": 17425,
+            "sha256": "e5b9b35ab6199c2d5955018732b36a2b367e404cf468e9b1d2b229cf3e78f645"
+          },
+          {
+            "path": "fonts/Assets/aafonts/mirak9.bft",
+            "size": 20738,
+            "sha256": "fa66f26950a292f99b5d0ca55297aeac1893e2ba1a156f5895734efbb40c94eb"
+          },
+          {
+            "path": "fonts/Assets/aafonts/romulan10.bft",
+            "size": 28221,
+            "sha256": "e1e644c128db1cd25ecda17aea250a3fcf4a53a24466a4ed623dd452715cca72"
+          },
+          {
+            "path": "fonts/Assets/aafonts/romulan11.bft",
+            "size": 33047,
+            "sha256": "a441528bb3d7e365768255051fc1f7345d7447d41206f7bab86256dfc8faffac"
+          },
+          {
+            "path": "fonts/Assets/aafonts/romulan12.bft",
+            "size": 38061,
+            "sha256": "c5bdbebd1ac3c19e6ef98c8f44e20a8b421f3b8c451e9965f6f6e40cd2127d8a"
+          },
+          {
+            "path": "fonts/Assets/aafonts/romulan14.bft",
+            "size": 48300,
+            "sha256": "b817d872361b871e276eddeaa6d8573a8ab473775596814c1f2e53f9851e66a9"
+          },
+          {
+            "path": "fonts/Assets/aafonts/romulan16.bft",
+            "size": 60085,
+            "sha256": "1fa1bd2cdb93b0f46db65edf7b51fdad53275567bc44d39e38ab88e42afd5ab5"
+          },
+          {
+            "path": "fonts/Assets/aafonts/romulan18.bft",
+            "size": 74527,
+            "sha256": "73b6f3e70782f8393e220a6a9eca1ba90ec342cd966020a96dd44b690ba2c0ca"
+          },
+          {
+            "path": "fonts/Assets/aafonts/romulan20.bft",
+            "size": 88133,
+            "sha256": "20505e429db5b8d00b9551c6aa17233b902ef26a55e8808574c5608bb98987fa"
+          },
+          {
+            "path": "fonts/Assets/aafonts/romulan22.bft",
+            "size": 104321,
+            "sha256": "464ea6b42aa713d1276d85527ec6ce80eb95d2436054d8ac8bcb735603bc629f"
+          },
+          {
+            "path": "fonts/Assets/aafonts/romulan24.bft",
+            "size": 122416,
+            "sha256": "ccb2e008d881e9bff17549cf58e62c5f70691cd846b3da868a04638a441820bb"
+          },
+          {
+            "path": "fonts/Assets/aafonts/romulan5.bft",
+            "size": 11755,
+            "sha256": "02ef07537663e92114f85c6814d62d0b24bcce3a29690f6bdda4a81cc373bd54"
+          },
+          {
+            "path": "fonts/Assets/aafonts/romulan6.bft",
+            "size": 14501,
+            "sha256": "ef967eb96267323c8b29a66d4a4271765e8caeaf11808b0b04d66f38003be30b"
+          },
+          {
+            "path": "fonts/Assets/aafonts/romulan7.bft",
+            "size": 16825,
+            "sha256": "a1f909571340c8159d33becab526b1817c78f927a98e90a767fff3af40303c64"
+          },
+          {
+            "path": "fonts/Assets/aafonts/romulan8.bft",
+            "size": 19915,
+            "sha256": "bb3a193acf4fb6ef36cc29787eefbbae03b68f0708ad3b6b63bce9add259091d"
+          },
+          {
+            "path": "fonts/Assets/aafonts/romulan9.bft",
+            "size": 25172,
+            "sha256": "0c76491ec1ec21861d2b6616e47546cdb2807bd9f3510984c44f5d05e73812bd"
+          }
+        ]
+      }
+    ],
+    "note": "Observed by path and size only; no .bft payload is parsed or logged."
+  },
+  "q3": {
+    "extracted": [
+      {
+        "path": "sprites/Assets/Sprites/sprites.q3",
+        "size": 80717666,
+        "sha256": "8558ca51240843c3e5595a3b4820ab97a7f4314546cfb4451428b3383d875346",
+        "format": "unidentified",
+        "entryCount": null,
+        "entries": null,
+        "note": "No identifiable archive directory (not ZIP or PACK).",
+        "magicHex": "4d444d219900000110000ddea4048002",
+        "magicAscii": "MDM!............"
+      }
+    ],
+    "reference": [
+      {
+        "path": "Assets/Sprites/sprites.q3",
+        "size": 80717666,
+        "sha256": "8558ca51240843c3e5595a3b4820ab97a7f4314546cfb4451428b3383d875346",
+        "format": "unidentified",
+        "entryCount": null,
+        "entries": null,
+        "note": "No identifiable archive directory (not ZIP or PACK).",
+        "magicHex": "4d444d219900000110000ddea4048002",
+        "magicAscii": "MDM!............"
+      }
+    ]
+  }
+}
