@@ -97,11 +97,14 @@ INTERESTING_NAMES = {
 }
 
 WEAPON_HEADER_RE = re.compile(
-    r"(^(wpn|weapon|weap|special|hardpoint|hp)(\s*|#|_|-)?\d+$)|"
+    r"(^((heavy|light)\s+)?(wpn|weapon|weap|special|hardpoint|hp)(\s*|#|_|-)?\d+$)|"
     r"((wpn|weapon|weap|special)\s*(code|type|name)?(\s*|#|_|-)?\d+$)|"
     r"(^(wpn|weapon|weap)$)",
     re.IGNORECASE,
 )
+# Digit-only arc cell values that may be either a mis-paired Num column
+# or a legitimate reload count written in an Arc cell (drone racks).
+NUMERIC_ARC_CODES = ("1", "2", "3")
 ARC_HEADER_RE = re.compile(
     r"(^(arc|firearc|fire_arc|fa)(\s*|#|_|-)?\d*$)|"
     r"((arc|firearc)\s*(code)?(\s*|#|_|-)?\d+$)",
@@ -304,6 +307,103 @@ def _slot_band(slot: int | None) -> str:
     if 11 <= slot <= 25:
         return "11-25"
     return "other"
+
+
+def _column_slot_number(column_index: int, headers: Sequence[str], assigned: dict[int, int | None]) -> int | None:
+    """Prefer a paired slot number; fall back to a numeric suffix on the header itself."""
+    if column_index in assigned and assigned[column_index] is not None:
+        return assigned[column_index]
+    if 0 <= column_index < len(headers):
+        return _slot_number_from_header(headers[column_index])
+    return None
+
+
+def pair_weapon_arc_count_slots(
+    headers: Sequence[str],
+    weapon_cols: Sequence[int],
+    arc_cols: Sequence[int],
+    count_cols: Sequence[int],
+) -> dict[str, Any]:
+    """Give unlabeled Arc/Num columns the slot number of the adjacent weapon header.
+
+    CE 2.670 groups are `Num`, `Heavy Weapon N` / `Weapon N`, `Arc`. ftrlist
+    groups are `Num`, `WeaponN`, `Arc`, `Shots`. Existing fixtures that number
+    the Arc header itself (`Arc 1`) still resolve via the suffix fallback.
+    """
+    arc_set = set(arc_cols)
+    count_set = set(count_cols)
+    weapon_slot: dict[int, int | None] = {}
+    arc_slot: dict[int, int | None] = {}
+    count_slot: dict[int, int | None] = {}
+    pairs: list[dict[str, Any]] = []
+
+    def _name(idx: int | None) -> str | None:
+        if idx is None or idx < 0 or idx >= len(headers):
+            return None
+        return headers[idx]
+
+    for i in weapon_cols:
+        slot = _slot_number_from_header(headers[i]) if i < len(headers) else None
+        weapon_slot[i] = slot
+        if slot is None:
+            pairs.append(
+                {
+                    "slot": None,
+                    "weaponColumnIndex": i,
+                    "weaponColumnName": _name(i),
+                    "arcColumnIndex": None,
+                    "arcColumnName": None,
+                    "countColumnIndex": None,
+                    "countColumnName": None,
+                }
+            )
+            continue
+        arc_i = None
+        for j in (i + 1, i + 2):
+            if j in arc_set and j not in arc_slot:
+                arc_i = j
+                break
+        count_i = None
+        for j in (i - 1, i + 1, i - 2):
+            if j in count_set and j not in count_slot and j != arc_i:
+                count_i = j
+                break
+        if arc_i is not None:
+            arc_slot[arc_i] = slot
+        if count_i is not None:
+            count_slot[count_i] = slot
+        pairs.append(
+            {
+                "slot": slot,
+                "weaponColumnIndex": i,
+                "weaponColumnName": _name(i),
+                "arcColumnIndex": arc_i,
+                "arcColumnName": _name(arc_i),
+                "countColumnIndex": count_i,
+                "countColumnName": _name(count_i),
+            }
+        )
+
+    for i in arc_cols:
+        if i in arc_slot:
+            continue
+        for j in range(i - 1, max(-1, i - 4), -1):
+            if j in weapon_slot and weapon_slot[j] is not None:
+                arc_slot[i] = weapon_slot[j]
+                for pair in pairs:
+                    if pair["weaponColumnIndex"] == j and pair["arcColumnIndex"] is None:
+                        pair["arcColumnIndex"] = i
+                        pair["arcColumnName"] = _name(i)
+                        break
+                break
+
+    pairs.sort(key=lambda p: ((p["slot"] is None), p["slot"] if p["slot"] is not None else 0, p["weaponColumnIndex"]))
+    return {
+        "weaponSlotOf": weapon_slot,
+        "arcSlotOf": arc_slot,
+        "countSlotOf": count_slot,
+        "slotPairs": pairs,
+    }
 
 
 def _is_assets_specs_path(path: str) -> bool:
@@ -931,6 +1031,7 @@ def identify_weapon_arc_columns(headers: Sequence[str]) -> dict[str, Any]:
                     weapon_cols.append(remaining[0])
                 if len(remaining) > 1 and not any(i in arc_cols for i, _ in names):
                     arc_cols.append(remaining[-1])
+    paired = pair_weapon_arc_count_slots(headers, weapon_cols, arc_cols, count_cols)
     return {
         "method": method,
         "weaponColumns": weapon_cols,
@@ -938,6 +1039,11 @@ def identify_weapon_arc_columns(headers: Sequence[str]) -> dict[str, Any]:
         "countColumns": count_cols,
         "weaponColumnNames": [headers[i] for i in weapon_cols],
         "arcColumnNames": [headers[i] for i in arc_cols],
+        "countColumnNames": [headers[i] for i in count_cols],
+        "slotPairs": paired["slotPairs"],
+        "weaponSlotOf": {str(i): paired["weaponSlotOf"][i] for i in paired["weaponSlotOf"]},
+        "arcSlotOf": {str(i): paired["arcSlotOf"][i] for i in paired["arcSlotOf"]},
+        "countSlotOf": {str(i): paired["countSlotOf"][i] for i in paired["countSlotOf"]},
     }
 
 
@@ -971,6 +1077,8 @@ class SpecVerification:
     sourcePath: str | None
     raceRowCounts: list[dict[str, Any]]
     numericColumnStats: list[dict[str, Any]]
+    numericArcCodeSources: list[dict[str, Any]]
+    heavyWeaponSlotArcs: list[dict[str, Any]]
 
 
 
@@ -1102,6 +1210,8 @@ def verify_spec_tables(
         sourcePath=None,
         raceRowCounts=[],
         numericColumnStats=[],
+        numericArcCodeSources=[],
+        heavyWeaponSlotArcs=[],
     )
     if not tables:
         return empty
@@ -1137,8 +1247,26 @@ def verify_spec_tables(
     name_rows: dict[str, dict[str, Any]] = {}
     fighter_rows = 0
     pf_rows = 0
-    weapon_slot_of = {i: _slot_band(_slot_number_from_header(headers[i])) for i in weapon_info["weaponColumns"]}
-    arc_slot_of = {i: _slot_band(_slot_number_from_header(headers[i])) for i in weapon_info["arcColumns"]}
+    paired_maps = pair_weapon_arc_count_slots(
+        headers,
+        weapon_info["weaponColumns"],
+        weapon_info["arcColumns"],
+        weapon_info.get("countColumns") or [],
+    )
+    weapon_slot_no = {
+        i: _column_slot_number(i, headers, paired_maps["weaponSlotOf"])
+        for i in weapon_info["weaponColumns"]
+    }
+    arc_slot_no = {
+        i: _column_slot_number(i, headers, paired_maps["arcSlotOf"])
+        for i in weapon_info["arcColumns"]
+    }
+    weapon_slot_of = {i: _slot_band(weapon_slot_no[i]) for i in weapon_slot_no}
+    arc_slot_of = {i: _slot_band(arc_slot_no[i]) for i in arc_slot_no}
+    numeric_arc_col_rows: dict[str, dict[int, set[int]]] = {c: defaultdict(set) for c in NUMERIC_ARC_CODES}
+    numeric_arc_col_occ: dict[str, dict[int, int]] = {c: defaultdict(int) for c in NUMERIC_ARC_CODES}
+    slot_arc_rows: dict[int, dict[str, set[int]]] = defaultdict(lambda: defaultdict(set))
+    slot_arc_occ: dict[int, dict[str, int]] = defaultdict(lambda: defaultdict(int))
     # Per-column raw nonempty cells for numeric-stat detection (aggregates only).
     column_values: dict[int, list[str]] = defaultdict(list)
     data_row_total = 0
@@ -1204,6 +1332,13 @@ def verify_spec_tables(
             val = _cell(cells, ci)
             if val:
                 _tally(arc_rows, arc_occ, val, line_no, arc_slot_of[ci])
+                if val in NUMERIC_ARC_CODES:
+                    numeric_arc_col_rows[val][ci].add(line_no)
+                    numeric_arc_col_occ[val][ci] += 1
+                slot_no = arc_slot_no.get(ci)
+                if slot_no is not None and 1 <= slot_no <= 10:
+                    slot_arc_rows[slot_no][val].add(line_no)
+                    slot_arc_occ[slot_no][val] += 1
 
     duplicate_keys = []
     for _fold, entry in sorted(key_rows.items(), key=lambda kv: kv[1]["rows"][0]):
@@ -1343,6 +1478,65 @@ def verify_spec_tables(
     else:
         log.info(f"{label} arc columns: not identified from headers")
 
+    numeric_arc_sources: list[dict[str, Any]] = []
+    for code in NUMERIC_ARC_CODES:
+        columns = []
+        for ci in sorted(numeric_arc_col_rows[code]):
+            columns.append(
+                {
+                    "columnIndex": ci,
+                    "headerName": headers[ci] if ci < len(headers) else f"col{ci}",
+                    "slot": arc_slot_no.get(ci),
+                    "rows": len(numeric_arc_col_rows[code][ci]),
+                    "occurrences": numeric_arc_col_occ[code][ci],
+                }
+            )
+        rec = {
+            "code": code,
+            "rows": len(arc_rows[code]["all"]) if code in arc_rows else 0,
+            "occurrences": arc_occ[code]["all"] if code in arc_occ else 0,
+            "columns": columns,
+        }
+        numeric_arc_sources.append(rec)
+        log.info(
+            f"{label} numeric arc code {code}: rows={rec['rows']} occurrences={rec['occurrences']} "
+            f"columns={json.dumps([{k: c[k] for k in ('columnIndex', 'headerName', 'slot', 'rows', 'occurrences')} for c in columns], ensure_ascii=True)}"
+        )
+
+    pair_by_slot = {p["slot"]: p for p in paired_maps["slotPairs"] if p.get("slot") is not None}
+    heavy_weapon_slot_arcs: list[dict[str, Any]] = []
+    for slot in range(1, 11):
+        pair = pair_by_slot.get(slot)
+        # A slot is reported when a weapon column with that number was paired
+        # (Heavy Weapon N or Weapon N). Skip unused slots with no weapon column.
+        if pair is None:
+            continue
+        codes = [
+            {
+                "code": code,
+                "rows": len(slot_arc_rows[slot][code]),
+                "occurrences": slot_arc_occ[slot][code],
+            }
+            for code in sorted(slot_arc_occ[slot], key=lambda c: (-slot_arc_occ[slot][c], c))
+        ]
+        rec = {
+            "slot": slot,
+            "weaponColumnIndex": pair["weaponColumnIndex"],
+            "weaponColumnName": pair["weaponColumnName"],
+            "arcColumnIndex": pair["arcColumnIndex"],
+            "arcColumnName": pair["arcColumnName"],
+            "countColumnIndex": pair["countColumnIndex"],
+            "countColumnName": pair["countColumnName"],
+            "codes": codes,
+        }
+        heavy_weapon_slot_arcs.append(rec)
+        log.info(
+            f"{label} heavy weapon slot {slot}: weaponColumn={pair['weaponColumnIndex']} "
+            f"weaponHeader={pair['weaponColumnName']!s} arcColumn={pair['arcColumnIndex']} "
+            f"arcHeader={pair['arcColumnName']!s} "
+            f"codes={json.dumps(codes, ensure_ascii=True)}"
+        )
+
     race_row_counts = [
         {"race": name, "rows": race_tokens[name]}
         for name in sorted(race_tokens)
@@ -1379,6 +1573,8 @@ def verify_spec_tables(
         sourcePath=source_path,
         raceRowCounts=race_row_counts,
         numericColumnStats=numeric_stats,
+        numericArcCodeSources=numeric_arc_sources,
+        heavyWeaponSlotArcs=heavy_weapon_slot_arcs,
     )
 
 
@@ -2552,7 +2748,7 @@ def _write_spec_md(a, label: str, spec: SpecVerification) -> None:
     if label == "shiplist" or spec.weaponCodes or spec.arcCodes:
         a("### Weapon and arc codes (vocabulary, with row counts)")
         a("")
-        a("Empty cells are omitted. `rows` is the number of data rows that use the code at least once; `occurrences` is the number of filled slot cells. Slot ranges 1–10 and 11–25 are taken from the numeric suffix on the weapon/arc header name.")
+        a("Empty cells are omitted. `rows` is the number of data rows that use the code at least once; `occurrences` is the number of filled slot cells.")
         a("")
         a("Weapon codes:")
         a("")
@@ -2584,6 +2780,50 @@ def _write_spec_md(a, label: str, spec: SpecVerification) -> None:
         if not spec.arcCodes:
             a("| *(none identified)* | | | | | | |")
         a("")
+        a("Slot ranges 1–10 and 11–25 use a numeric suffix on the header when present, otherwise the slot of the paired weapon column (`Num` / `Heavy Weapon N` or `Weapon N` / `Arc`).")
+        a("")
+        if spec.numericArcCodeSources:
+            a("Numeric arc codes `1`, `2`, `3` (per-column sources; used to check Num/Arc pairing):")
+            a("")
+            a("| Code | Column index | Header | Slot | Rows | Occurrences |")
+            a("| --- | ---: | --- | ---: | ---: | ---: |")
+            for rec in spec.numericArcCodeSources:
+                if not rec.get("columns"):
+                    a(f"| `{_md_escape(str(rec['code']))}` | — | *(not observed)* | | {rec.get('rows', 0)} | {rec.get('occurrences', 0)} |")
+                    continue
+                for col in rec["columns"]:
+                    slot = col.get("slot")
+                    slot_s = "" if slot is None else str(slot)
+                    a(
+                        f"| `{_md_escape(str(rec['code']))}` | {col['columnIndex']} | "
+                        f"`{_md_escape(str(col['headerName']))}` | {slot_s} | "
+                        f"{col['rows']} | {col['occurrences']} |"
+                    )
+            a("")
+        if spec.heavyWeaponSlotArcs:
+            a("Per-slot arc counts for weapon slots 1–10 (after Num/Arc pairing):")
+            a("")
+            a("| Slot | Weapon column | Weapon header | Arc column | Arc header | Arc code | Rows | Occurrences |")
+            a("| ---: | ---: | --- | ---: | --- | --- | ---: | ---: |")
+            for rec in spec.heavyWeaponSlotArcs:
+                wname = rec.get("weaponColumnName") or ""
+                aname = rec.get("arcColumnName") or ""
+                aidx = rec.get("arcColumnIndex")
+                aidx_s = "" if aidx is None else str(aidx)
+                codes = rec.get("codes") or []
+                if not codes:
+                    a(
+                        f"| {rec['slot']} | {rec['weaponColumnIndex']} | `{_md_escape(str(wname))}` | "
+                        f"{aidx_s} | `{_md_escape(str(aname))}` | *(none)* | | |"
+                    )
+                    continue
+                for c in codes:
+                    a(
+                        f"| {rec['slot']} | {rec['weaponColumnIndex']} | `{_md_escape(str(wname))}` | "
+                        f"{aidx_s} | `{_md_escape(str(aname))}` | `{_md_escape(str(c['code']))}` | "
+                        f"{c['rows']} | {c['occurrences']} |"
+                    )
+            a("")
     a("### Column selection")
     a("")
     a("```json")
@@ -2767,6 +3007,8 @@ def _spec_to_dict(spec: SpecVerification) -> dict[str, Any]:
         "columnSelection": spec.columnSelection,
         "raceRowCounts": spec.raceRowCounts,
         "numericColumnStats": spec.numericColumnStats,
+        "numericArcCodeSources": spec.numericArcCodeSources,
+        "heavyWeaponSlotArcs": spec.heavyWeaponSlotArcs,
     }
 
 

@@ -636,5 +636,82 @@ class InventoryTests(unittest.TestCase):
 
 
 
+
+    def test_heavy_weapon_pairing_and_numeric_arc_sources(self) -> None:
+        """Unlabeled Arc columns inherit Heavy Weapon / Weapon slot numbers.
+
+        Numeric codes 1/2/3 are attributed to the Arc column they appear in
+        (index + header + row count), not to a Num column, when pairing is correct.
+        """
+        side = self.tmpdir / "heavy-weapon-side"
+        if side.exists():
+            shutil.rmtree(side)
+        side.mkdir()
+        path = side / "shiplist.txt"
+        # Num, Heavy Weapon N, Arc groups (CE 2.670 shape) plus Weapon 11.
+        # Invented rows only. Codes 1/2/3 sit in Arc cells on purpose.
+        path.write_bytes(
+            (
+                "Race\tHull Type\tClass\tNum\tHeavy Weapon 1\tArc\tNum\tHeavy Weapon 2\tArc\tNum\tWeapon 11\tArc\r\n"
+                "Federation\tCA\tTEST-CA-01\t1\tPhot\tFA\t2\tPhoF\t1\t1\tPh1\tFH\r\n"
+                "Klingon\tDD\tTEST-DD-02\t1\tESG\t2\t\t\t\t2\tPh3\tFX\r\n"
+                "Hydran\tCA\tTEST-CA-03\t1\tFus\tFH\t1\tPlaF\t3\t1\tPh2\tFA\r\n"
+            ).encode("ascii")
+        )
+        buf = io.StringIO()
+        log = inv.MetadataLog(stream=buf)
+        meta = inv.FileMeta(path="shiplist.txt", size=path.stat().st_size, sha256=inv.file_sha256(path))
+        result = inv.verify_spec_tables("shiplist", [(path, meta)], side, log)
+        joined = "\n".join(log.lines)
+        # Heavy Weapon columns are selected; Phot/ESG live in slots 1-10.
+        weapon = {item["code"]: item for item in result.weaponCodes}
+        self.assertIn("Phot", weapon)
+        self.assertEqual(weapon["Phot"]["slots1to10"], {"rows": 1, "occurrences": 1})
+        self.assertEqual(weapon["ESG"]["slots1to10"]["rows"], 1)
+        self.assertEqual(weapon["Ph1"]["slots11to25"], {"rows": 1, "occurrences": 1})
+        self.assertEqual(weapon["Ph3"]["slots11to25"]["rows"], 1)
+        # Arc FA after Heavy Weapon 1 is slot 1, not "other".
+        arc = {item["code"]: item for item in result.arcCodes}
+        self.assertEqual(arc["FA"]["rows"], 2)
+        self.assertEqual(arc["FA"]["slots1to10"]["rows"], 1)
+        self.assertEqual(arc["FA"]["slots11to25"]["rows"], 1)
+        self.assertEqual(arc["FH"]["slots1to10"]["rows"], 1)
+        self.assertEqual(arc["FH"]["slots11to25"]["rows"], 1)
+        # 1, 2, 3 come from Arc columns, not Num.
+        sources = {rec["code"]: rec for rec in result.numericArcCodeSources}
+        self.assertEqual([c["columnIndex"] for c in sources["1"]["columns"]], [8])
+        self.assertEqual(sources["1"]["columns"][0]["headerName"], "Arc")
+        self.assertEqual(sources["1"]["columns"][0]["slot"], 2)
+        self.assertEqual(sources["1"]["columns"][0]["rows"], 1)
+        self.assertEqual([c["columnIndex"] for c in sources["2"]["columns"]], [5])
+        self.assertEqual(sources["2"]["columns"][0]["headerName"], "Arc")
+        self.assertEqual(sources["2"]["columns"][0]["slot"], 1)
+        self.assertEqual(sources["2"]["rows"], 1)
+        self.assertEqual([c["columnIndex"] for c in sources["3"]["columns"]], [8])
+        self.assertEqual(sources["3"]["columns"][0]["slot"], 2)
+        for rec in result.numericArcCodeSources:
+            for col in rec["columns"]:
+                self.assertEqual(col["headerName"], "Arc")
+                self.assertNotEqual(col["headerName"].casefold(), "num")
+        # Per-slot arc counts for Heavy Weapon 1-2 (and Weapon 11 is not in 1-10).
+        by_slot = {rec["slot"]: rec for rec in result.heavyWeaponSlotArcs}
+        self.assertEqual(by_slot[1]["weaponColumnName"], "Heavy Weapon 1")
+        self.assertEqual(by_slot[1]["weaponColumnIndex"], 4)
+        self.assertEqual(by_slot[1]["arcColumnIndex"], 5)
+        codes1 = {c["code"]: c for c in by_slot[1]["codes"]}
+        self.assertEqual(codes1["FA"]["rows"], 1)
+        self.assertEqual(codes1["2"]["rows"], 1)
+        self.assertEqual(by_slot[2]["weaponColumnName"], "Heavy Weapon 2")
+        self.assertEqual(by_slot[2]["arcColumnIndex"], 8)
+        codes2 = {c["code"]: c for c in by_slot[2]["codes"]}
+        self.assertEqual(codes2["1"]["rows"], 1)
+        self.assertEqual(codes2["3"]["rows"], 1)
+        self.assertNotIn(11, by_slot)
+        # Logs stay metadata-only: no tab-separated data cells.
+        self.assertNotIn("Phot\tFA", joined)
+        self.assertIn("numeric arc code 1", joined)
+        self.assertIn("heavy weapon slot 1", joined)
+
+
 if __name__ == "__main__":
     unittest.main()
