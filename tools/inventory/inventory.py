@@ -1819,10 +1819,16 @@ def _write_spec_md(a, label: str, spec: SpecVerification) -> None:
     a("```")
     a("")
 
-def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(
-        description="CE 2.670 inventory and shiplist/ftrlist verification (metadata only)."
-    )
+def _common_option_parser() -> argparse.ArgumentParser:
+    """Shared flags for every subcommand.
+
+    They are attached to the subparsers, not the top-level parser, so the
+    command lines used by .github/workflows/private-inventory.yml work:
+
+        inventory.py inventory --extracted ... --reference ... --manifest ... --readme ... --output-dir ...
+        inventory.py verify    --extracted ... --reference ... --manifest ... --output-dir ...
+    """
+    p = argparse.ArgumentParser(add_help=False)
     p.add_argument("--extracted", type=Path, default=DEFAULT_EXTRACTED, help="Extracted tree root")
     p.add_argument("--reference", type=Path, default=DEFAULT_REFERENCE, help="Read-only reference install root")
     p.add_argument("--manifest", type=Path, default=None, help="manifest.json (default: <extracted>/manifest.json)")
@@ -1833,10 +1839,21 @@ def build_parser() -> argparse.ArgumentParser:
         default=Path("docs/formats/inventory"),
         help="Where to write metadata files",
     )
+    return p
+
+
+def build_parser() -> argparse.ArgumentParser:
+    common = _common_option_parser()
+    p = argparse.ArgumentParser(
+        description=(
+            "CE 2.670 inventory and shiplist/ftrlist verification (metadata only). "
+            "Pass options after the subcommand, matching the private-inventory workflow."
+        )
+    )
     sub = p.add_subparsers(dest="command", required=True)
-    sub.add_parser("inventory", help="Job A: inventory + locations + missions + probes")
-    sub.add_parser("verify", help="Job B: shiplist/ftrlist verification")
-    sub.add_parser("all", help="Run inventory and verify")
+    sub.add_parser("inventory", parents=[common], help="Job A: inventory + locations + missions + probes")
+    sub.add_parser("verify", parents=[common], help="Job B: shiplist/ftrlist verification")
+    sub.add_parser("all", parents=[common], help="Run inventory and verify")
     return p
 
 

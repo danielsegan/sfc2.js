@@ -11,6 +11,7 @@ import hashlib
 import io
 import json
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -74,8 +75,10 @@ class InventoryTests(unittest.TestCase):
     def _run(self, command: str) -> tuple[int, str]:
         buf = io.StringIO()
         log = inv.MetadataLog(stream=buf)
+        # Options follow the subcommand, matching the private-inventory workflow.
         args = inv.build_parser().parse_args(
             [
+                command,
                 "--extracted",
                 str(self.extracted),
                 "--reference",
@@ -86,7 +89,6 @@ class InventoryTests(unittest.TestCase):
                 str(self.readme),
                 "--output-dir",
                 str(self.out),
-                command,
             ]
         )
         rc = inv.main.__wrapped__ if False else None  # placeholder to keep grep quiet
@@ -231,6 +233,163 @@ class InventoryTests(unittest.TestCase):
         result = inv.verify_spec_tables("shiplist", [(path, meta)], side, log)
         self.assertTrue(result.uniqueness["unique"])
         self.assertEqual(result.diagnostics, [])
+
+
+    # Unique value planted only in a synthetic *data* cell, never in a header,
+    # path, race, class, hull, weapon or arc field that metadata logs may list.
+    SENTINEL = "SENTINEL_NOLOG_ZX9Q4_TESTROW"
+
+    def test_workflow_command_lines_parse(self) -> None:
+        """The exact flag sets and order from main's private-inventory.yml (03a4039)."""
+        inventory_argv = [
+            "inventory",
+            "--extracted",
+            "/srv/sfc2/extracted/2.670",
+            "--reference",
+            "/srv/sfc2/reference/2.670",
+            "--manifest",
+            "/srv/sfc2/extracted/2.670/manifest.json",
+            "--readme",
+            "/srv/sfc2/README.md",
+            "--output-dir",
+            "docs/formats/inventory",
+        ]
+        verify_argv = [
+            "verify",
+            "--extracted",
+            "/srv/sfc2/extracted/2.670",
+            "--reference",
+            "/srv/sfc2/reference/2.670",
+            "--manifest",
+            "/srv/sfc2/extracted/2.670/manifest.json",
+            "--output-dir",
+            "docs/formats/inventory",
+        ]
+        inv_args = inv.build_parser().parse_args(inventory_argv)
+        ver_args = inv.build_parser().parse_args(verify_argv)
+        self.assertEqual(inv_args.command, "inventory")
+        self.assertEqual(ver_args.command, "verify")
+        self.assertEqual(inv_args.extracted, Path("/srv/sfc2/extracted/2.670"))
+        self.assertEqual(inv_args.reference, Path("/srv/sfc2/reference/2.670"))
+        self.assertEqual(inv_args.manifest, Path("/srv/sfc2/extracted/2.670/manifest.json"))
+        self.assertEqual(inv_args.readme, Path("/srv/sfc2/README.md"))
+        self.assertEqual(inv_args.output_dir, Path("docs/formats/inventory"))
+        self.assertEqual(ver_args.extracted, Path("/srv/sfc2/extracted/2.670"))
+        self.assertEqual(ver_args.manifest, Path("/srv/sfc2/extracted/2.670/manifest.json"))
+        self.assertEqual(ver_args.output_dir, Path("docs/formats/inventory"))
+
+    def test_workflow_command_lines_end_to_end_no_data_rows_in_logs(self) -> None:
+        """Run the exact workflow command lines against a synthetic tree.
+
+        A unique sentinel is placed only in a data cell (a Notes column), not in
+        any header or identifier that metadata logs may emit. The sentinel must
+        not appear on stdout or stderr.
+        """
+        side = self.tmpdir / "workflow-e2e"
+        if side.exists():
+            shutil.rmtree(side)
+        extracted = side / "extracted"
+        reference = side / "reference"
+        out = side / "out"
+        shutil.copytree(self.extracted, extracted)
+        shutil.copytree(self.reference, reference)
+        readme = side / "README.md"
+        shutil.copyfile(self.readme, readme)
+        out.mkdir()
+
+        def plant(rel: str, header: str, body_lines: list[str]) -> None:
+            path = extracted / rel
+            path.write_bytes((header + "\r\n" + "\r\n".join(body_lines) + "\r\n").encode("ascii"))
+
+        # Keep the same identifier/weapon vocabulary; add a Notes column with the sentinel.
+        plant(
+            "Assets/Specs/shiplist.txt",
+            "Race\tHull Type\tClass\tWeapon 1\tArc 1\tWeapon 2\tArc 2\tNotes",
+            [
+                f"Federation\tCA\tTEST-CA-01\tPh1\tFA\tPhot\tFH\t{self.SENTINEL}",
+                "Federation\tCA\tTEST-CA-01\tPh1\tFA\t\t\t",
+                "Klingon\tFF\tTEST-FF-02\tDis1\tFX\tDroA\t4\t",
+                "Hydran\tFTR\tTEST-FTR-01\tPhG\tALL\t\t\t",
+                "Klingon\tPF\tTEST-PF-02\tDis1\tFA\t\t\t",
+            ],
+        )
+        shutil.copyfile(extracted / "Assets/Specs/shiplist.txt", extracted / "MetaAssets/shiplist.txt")
+
+        # Refresh manifest hashes/sizes for the rewritten tables (path/size/hash only).
+        manifest_path = extracted / "manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        by_path = {e["path"]: e for e in manifest["files"]}
+        for rel in ("Assets/Specs/shiplist.txt", "MetaAssets/shiplist.txt"):
+            data = (extracted / rel).read_bytes()
+            by_path[rel]["size"] = len(data)
+            by_path[rel]["sha256"] = sha(data)
+        manifest["files"] = list(by_path.values())
+        manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+
+        script = ROOT / "tools" / "inventory" / "inventory.py"
+        # Exact argument order from .github/workflows/private-inventory.yml on main (03a4039).
+        inventory_cmd = [
+            sys.executable,
+            str(script),
+            "inventory",
+            "--extracted",
+            str(extracted),
+            "--reference",
+            str(reference),
+            "--manifest",
+            str(manifest_path),
+            "--readme",
+            str(readme),
+            "--output-dir",
+            str(out),
+        ]
+        verify_cmd = [
+            sys.executable,
+            str(script),
+            "verify",
+            "--extracted",
+            str(extracted),
+            "--reference",
+            str(reference),
+            "--manifest",
+            str(manifest_path),
+            "--output-dir",
+            str(out),
+        ]
+
+        for cmd in (inventory_cmd, verify_cmd):
+            proc = subprocess.run(cmd, cwd=str(ROOT), capture_output=True, text=True, check=False)
+            logs = (proc.stdout or "") + (proc.stderr or "")
+            self.assertEqual(proc.returncode, 0, msg=f"cmd={cmd[2:]} rc={proc.returncode}\n{logs}")
+            self.assertNotIn(
+                self.SENTINEL,
+                proc.stdout or "",
+                "sentinel from a synthetic data row leaked to stdout",
+            )
+            self.assertNotIn(
+                self.SENTINEL,
+                proc.stderr or "",
+                "sentinel from a synthetic data row leaked to stderr",
+            )
+            self._assert_no_data_rows(proc.stdout or "")
+            self._assert_no_data_rows(proc.stderr or "")
+
+        self.assertTrue((out / "ce-2.670.json").is_file())
+        self.assertTrue((out / "ce-2.670.md").is_file())
+        self.assertTrue((out / "missions-ce-2.670.md").is_file())
+        self.assertTrue((out / "shiplist-ftrlist-ce-2.670.json").is_file())
+        self.assertTrue((out / "shiplist-ftrlist-ce-2.670.md").is_file())
+        # Metadata outputs must not reproduce the planted data-row sentinel either.
+        for name in (
+            "ce-2.670.json",
+            "ce-2.670.md",
+            "missions-ce-2.670.md",
+            "observations-ce-2.670.json",
+            "shiplist-ftrlist-ce-2.670.json",
+            "shiplist-ftrlist-ce-2.670.md",
+        ):
+            body = (out / name).read_text(encoding="utf-8")
+            self.assertNotIn(self.SENTINEL, body, f"sentinel leaked into {name}")
 
     def test_logs_redact_tab_data_rows(self) -> None:
         log = inv.MetadataLog(stream=io.StringIO())
