@@ -25,14 +25,14 @@ interface StepResult { tick: Tick; events: readonly SimEvent[]; hash?: u32 }
 ## 2. Numbers (`engine/core/fx.ts`)
 
 - **Fixed-point integers only** [N1–N8]. `type Fx = number & { readonly __fx: unique symbol }`.
-- **Committed scale:** `FX_SHIFT = 16` (16.16). `1.0` in this format is **one range unit**. This answers determinism.md N1 / §10 Engine Q1. The choice follows the CE 2.670 aggregate bounds: max speed 32, max shield 480, max per-facing shield 80; every numeric column is an integer except Move Cost, which has two decimal places. Those bounds fit 16.16 after the rules scale factors are applied. A single `FX_SHIFT` is used for positions and for other fixed-point quantities in this core.
-- **Position differences and squared distances are computed in i64**, so a full-map difference cannot overflow int32.
+- **Committed scale:** `FX_SHIFT = 16` (16.16). `1.0` in this format is **one range unit**. This matches [determinism.md](determinism.md) N1, settled on `main` by QA PR #56 (`d74ab2c`). The choice follows the CE 2.670 aggregate bounds: max speed 32, max shield 480, max per-facing shield 80; every numeric column is an integer except Move Cost, which has two decimal places. Those bounds fit 16.16 after the rules scale factors are applied. A single `FX_SHIFT` is used for positions and for other fixed-point quantities in this core.
+- **Position differences and squared distances** follow [N1a](#n1a-distance-squared) below. They are never computed as int32 Q16.16 multiplies.
 - **Map bounds.** A mission's `mapBounds` are whole range units. Each axis must lie within **±8,192** range units. A value outside that range, or a non-integer, is the mission diagnostic `badMapBounds` (`source: "mission"`; [diagnostics.md](diagnostics.md)). This is the same rule as merged PR #52. A range of 75 that appears in fixtures is test context only; it is not a weapon-range rule and not a map limit.
 - **Decimal data columns** (Move Cost in hundredths; BPV at its per-column scale) are parsed from text to a scaled integer, never through a float. Overflow of the column scale is `badNumber`. Details live in [data-loader.md](data-loader.md).
 - `mul`/`div` round with **floor** (toward −∞) [N2]. Wide products use a 16-bit hi/lo split, never BigInt in hot paths [N3].
 - **Overflow saturates** to the format's min/max [N7].
 - **Division by zero:** `x/0 = +MAX` if x > 0, `−MAX` if x < 0, and `0/0 = 0` [N7]. Dev builds assert and log op, operands and tick. Release builds only saturate, so results match.
-- **Integer sqrt:** `isqrt` is floor. Distance-squared uses the i64 unit above.
+- **Integer sqrt:** `isqrt` of a uint32 is floor. Distance uses a floored integer sqrt of the i64 `d²` ([N1a](#n1a-distance-squared)).
 
 ```ts
 export const FX_SHIFT = 16;           // 16.16; 1.0 = one range unit
@@ -40,6 +40,29 @@ export function fx(i: number): Fx;        // integer -> Fx
 export function mul(a: Fx, b: Fx): Fx;    // floor, saturating
 export function div(a: Fx, b: Fx): Fx;    // floor, saturating, div-by-zero rule above
 export function isqrt(x: number): number; // floor sqrt of a uint32
+```
+
+### N1a: distance squared
+
+This records the Engine Lead's approach for [determinism.md](determinism.md) **N1** and **N1a** (QA PR #56, `d74ab2c` on `main`). N1a forbids computing distance-squared or a cross product as an int32 Q16.16 multiply; this section specifies the safe path. It is option (1) in N1a: a 64-bit result with no BigInt in hot paths, not a pre-shift to a coarser scale.
+
+**Bounds.** Inside the settled map box (±8,192 range units per axis, N1 / §2), a Q16.16 raw coordinate satisfies `|raw| ≤ 2^29`. A per-axis difference is at most `2^30` (the corner-to-corner case) and still fits in signed i32 (`2^30 < 2^31`). Each square is at most `2^60`. The 2-axis sum is at most `2^61` and fits in signed i64; a 3-axis sum would too.
+
+**Compute.** Form `dx` and `dy` in i32, then `d² = dx·dx + dy·dy` as an exact i64. No floats, no pre-shift, and no rounding.
+
+**Paths.** The WASM sim-core hot path uses native i64. The TypeScript reference path uses a 32-bit split multiply (hi/lo limbs via `Math.imul`) and must be bit-identical to the WASM result. `d²` is not stored as a JS `number` (the value can exceed `2^53`). BigInt is allowed in tests only, as a check against the limb helper [N3].
+
+**Range checks** compare `d²` to a precomputed i64 `r²`. They do not take a square root. Where a distance itself is needed, take the floored integer square root of that i64.
+
+**Required fixtures:** corner-to-corner worst case (`±8,192` on both axes), zero, and off-by-one at a range boundary. The WASM and TypeScript paths must hash identically on these.
+
+```ts
+// d2 is a signed i64 in two limbs (hi is signed int32, lo is uint32): value = hi * 2^32 + lo
+interface I64 { hi: number; lo: number }
+function delta(a: Fx, b: Fx): number;          // i32 raw difference; defined for in-bounds coords
+function distSq(dx: number, dy: number): I64;  // exact dx*dx + dy*dy
+function cmpI64(a: I64, b: I64): number;       // -1 / 0 / 1; range checks use cmpI64(d2, r2)
+function isqrt64(x: I64): number;              // floor sqrt of a non-negative i64
 ```
 
 ## 3. Angles (`engine/core/angle.ts`)
