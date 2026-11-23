@@ -21,7 +21,7 @@ This folder holds the visual and interaction design for the tactical HUD, the me
 
 ## Reference build (Daniel's decisions, 2026-11-23)
 
-- **Version baseline:** *Star Trek: Starfleet Command II* **Community Edition 2.670**, from the CE installer Daniel owns (written as **CE 2.670** in these docs; changed from EaW 2.036 + unofficial 2.037 on 2026-11-23).
+- **Version baseline:** *Star Trek: Starfleet Command II* **Community Edition 2.670**, from the CE installer Daniel owns (written as **CE 2.670** in these docs; changed from EaW 2.036 + unofficial 2.037 on 2026-11-23; decision recorded in [#37](https://github.com/danielsegan/sfc2-browser-edition/issues/37)).
 - **HUD reference:** the HUD and menus follow SFC2's own HUD. There is one reference skin; no alternate skin is designed here (a possible future one is a single item under Open questions).
 - **Art source:** the HUD is built from the player's own `sprites.q3` GUI art wherever possible; every fallback is original project art.
 - **TO VERIFY** in these docs means: check against a CE 2.670 install running under Wine. Each one is a check to make, not a claim.
