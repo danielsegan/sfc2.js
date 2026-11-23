@@ -28,13 +28,19 @@ Every parser in this project follows the same contract, so the importer, tests a
 
 1. **TypeScript, pure functions.** A parser is a single exported function with no I/O, no globals, no clock and no randomness:
    ```ts
+   export type DiagnosticSource =
+     | 'shiplist' | 'ftrlist' | 'mod' | 'bmp' | 'sprites' | 'sounds' | 'strings' | 'fms';
+     // add-only, like codes
+
    export interface Diagnostic {
      severity: 'error' | 'warning' | 'info';
-     code: string;          // stable machine code, e.g. 'shiplist/unknown-race'
+     code: string;          // flat, stable camelCase code, e.g. 'unknownRace', 'duplicateClassKey'
+     source: DiagnosticSource; // which format produced it, e.g. 'shiplist'
      message: string;       // human-readable, English
      line?: number;         // 1-based, text formats
      column?: number;       // 1-based field index, tab-delimited formats
      offset?: number;       // byte offset, binary formats
+     details?: Record<string, unknown>; // structured context, e.g. { race, className, rows }
    }
 
    export interface ParseResult<T> {
@@ -49,9 +55,9 @@ Every parser in this project follows the same contract, so the importer, tests a
 2. **Never throw on bad input.** Malformed, truncated or unexpected data becomes a diagnostic. The parser returns as much as it could read. Only programmer errors (wrong argument type) may throw.
 3. **Plain floats in file units.** Parsers return numbers exactly as the file means them (game distance units, energy points, turns, years as the file encodes them). No unit conversion and no fixed-point. The Engine Lead's data-model layer converts to sim units and fixed-point for the deterministic core.
 4. **Lossless where cheap.** Keep the raw string of any cell we could not interpret (`raw` / `extra` fields) so mods with extra columns survive a round trip and so we can diff against the real install later.
-5. **Header-driven text tables.** For tab-delimited tables, map columns by header label when a header row exists, and fall back to documented column index only when it does not. Unknown columns are kept, not dropped.
+5. **Header-driven text tables.** For tab-delimited tables, parser output keys are the **raw file header names** as written. Fall back to documented column indices (`col<N>` keys) only when there is no header. Unknown columns are kept, not dropped. Renaming to the engine's camelCase model, scale factors (e.g. ×2) and compaction happen in the Engine Lead's loader, using tables in `docs/rules`.
 6. **Text decoding.** Original text files are expected to be single-byte Windows text (ASCII / Windows-1252, CRLF line ends). This is unverified. Parsers accept `ArrayBuffer`, strip a UTF-8 BOM if present, decode as Windows-1252 without throwing, and accept LF, CRLF or CR line ends.
-7. **Stable diagnostic codes.** Codes are `<format>/<kebab-case>` and are listed in each spec's validation section, so tests assert codes, not messages.
+7. **Stable diagnostic codes (Engine Lead's convention).** `code` is a flat camelCase string with no format prefix (e.g. `duplicateClassKey`), and a separate `source` field names the format, for example `{ code: "duplicateClassKey", source: "shiplist", severity: "error", details: { race, className, rows } }`. Codes are listed in each spec's validation section and shared across formats when the meaning is the same (`emptyFile`, `noHeader` …); `source` tells them apart. They are **add-only and never renamed**, because the Engine Lead's data loader (`docs/engine/data-loader.md`) and tests match on them. Tests assert codes, not messages.
 8. **Synthetic fixtures only.** In-repo fixtures are hand-written by us with invented names and values (e.g. `TEST-CA-01`). They live under `tools/fixtures/formats/` and are listed in [`tools/allowed-fixtures.txt`](../../tools/allowed-fixtures.txt). Nothing copied from an install, including single rows. Real-data tests run only on the private runner (`runs-on: [self-hosted, sfc2-ci]`) against its local install, and their outputs stay on that machine.
 
 ## Confidence labels used in the specs
