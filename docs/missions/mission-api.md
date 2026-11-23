@@ -220,9 +220,11 @@ browser, the Tauri shell and on headless servers.
   crosses a thread or message channel.
 - **Budget.** The per-tick budget counts **operations or API calls, never wall-clock time**, so it is the
   same on every machine (Engine Lead, pending the mission-runtime contract in `docs/engine/`). Going over it is an **error in dev builds, never a silent skip**: the dev
-  build stops the mission with a report naming the tick and handler. What a release build does on overrun
-  (end the mission as a fault, hand the battle to normal AI, or something else) still has to be decided,
-  and must be identical on every lockstep peer (open question, section 15).
+  build stops the mission with a report naming the tick and handler. **Release builds:** the only engine
+  requirement is that the budget counts operations, so every peer hits the limit at the same point (Engine
+  Lead). The release behaviour (for example, abort that handler for the tick and log it) is the Audio &
+  Netcode QA Lead's call, but it must be deterministic and nothing may vary by machine (open question,
+  section 15).
 - How operations are counted (instrumented API calls only, or a transform that also counts loop
   iterations) is part of the Engine Lead's contract.
 
@@ -589,9 +591,9 @@ type CampaignValue = number | string | boolean;    // integers only for numbers
 type MissionUiEvent =
   | { type: "objectiveUpdated"; id: string; team: TeamId; state: ObjectiveState; text: TextRef }
   | { type: "missionTimer"; id: string; team?: TeamId; remainingTicks: Tick; label?: TextRef }
-  | { type: "hail"; to: TeamId | "all"; from?: ShipHandle; channel: "mission" | "comm" | "chatter"; text: TextRef }
-  | { type: "briefing"; empire: EmpireId; text: TextRef }
-  | { type: "debrief"; team: TeamId; text: TextRef };
+  | { type: "hail"; to: TeamId | "all"; from?: ShipHandle; channel: "mission" | "comm" | "chatter"; text: TextRef; speaker?: TextKey; portrait?: PortraitKey }
+  | { type: "briefing"; empire: EmpireId; text: TextRef; speaker?: TextKey; portrait?: PortraitKey }
+  | { type: "debrief"; team: TeamId; text: TextRef; speaker?: TextKey; portrait?: PortraitKey };
 ```
 
 They carry **string keys** (`TextRef`), never baked-in text. Briefings and hails render in **localizable
@@ -599,6 +601,12 @@ HTML**, not on the HUD canvas, per the Engine Lead's HUD contract; the HTML laye
 (following SFC2's EAW HUD look), escaping and localization. Missions can't inject markup. UI events are
 outputs only: they never feed back into the sim, so they aren't part of the determinism hash. How keys
 resolve to text is in 6.12.
+
+**Panels** (UI & Art Director). The briefing, debrief and hail panels are HTML components owned by the
+UI & Art Director and specced in `docs/ui/hud-spec.md`. Each takes a string key plus optional **speaker**
+and **portrait** keys. Portraits come from the **player's own install**; when a portrait key doesn't
+resolve, the panel shows an **original silhouette** we drew ourselves. Missions only pass keys; layout and
+styling follow the HUD spec, not this doc.
 
 Persistence handoff: the mission never writes saves. It returns `MissionResult`; the campaign layer
 validates it and decides what to persist.
@@ -631,17 +639,19 @@ that subscribed, in actor-registration order.
   `mission.example-patrol.hail.ambush`. Shared strings (empire names, ship roles, victory levels) live
   under `common.*`.
 - **String tables are JSON**, one file per locale per mission (or campaign): `strings/<locale>.json`,
-  mapping key → ICU-style message with named arguments (`{shipName}`, plural rules). `en` is the
-  reference locale; other locales fall back to `en`, then to the key itself so missing strings are visible
-  in testing.
+  mapping key → ICU-style message with named arguments (`{shipName}`, plural rules).
+- **Locales** (UI & Art Director): **English only at launch.** Every key falls back to English; if English
+  is missing too, the key itself shows, so gaps are visible in testing. The table format already allows
+  more locales later.
 - **Validation.** The importer (9.1) checks that every key a scenario or script references exists in the
   reference locale and that arguments match. Missing keys are diagnostics, not crashes.
 - **Rendering.** The HTML layer resolves keys at display time using the player's chosen locale, escapes
   arguments, and applies the EAW-style formatting. Missions never see resolved text, so changing locale
   can't change sim behaviour or replays.
-- **Original text.** For ported missions, keys can resolve to text in the player's installed game data (if
-  the original keeps it there; unverified until we have an EAW 2.036 copy) or to an original string table
-  we write. We don't paste Taldren mission text into the repo.
+- **Original text** (UI & Art Director). Keys that point at original game strings are **read from the
+  player's own string tables at runtime**, and that text is **never committed**. Where the originals keep
+  mission text in game data is unverified until we have an EAW 2.036 copy. Everything else resolves to
+  original string tables we write. We don't paste Taldren mission text into the repo.
 - **Per-race briefings** (as in Taldren's per-race briefing arrays) become separate keys per empire.
 - Which i18n library formats messages is an implementation choice for Phase 4, kept out of this doc.
 
@@ -926,14 +936,20 @@ Still open:
 
 ### UI & Art Director
 
-1. Layout and styling of the HTML briefing and hail panels in the EAW look, and how `missionTimer` and
-   `objectiveUpdated` are shown.
-2. Locale list and fallback behaviour for the string tables (6.12).
+Answered: the briefing, debrief and hail panels are UI-owned HTML components specced in
+`docs/ui/hud-spec.md`; each takes a string key plus optional speaker and portrait keys; portraits come from
+the player's install with an original silhouette as fallback; English only at launch with English fallback
+for every key; original game strings are read from the player's string tables at runtime and never
+committed. Still open:
+
+1. How `missionTimer` and `objectiveUpdated` are shown (in `docs/ui/hud-spec.md`).
 
 ### Audio & Netcode QA Lead
 
-1. **Release-build** policy for a mission that goes over its operation budget (dev builds error out), so
-   all lockstep peers behave the same.
+1. **Release-build** behaviour when a mission goes over its operation budget (dev builds error out), for
+   example aborting that handler for the tick and logging it. Your call. The Engine Lead's constraint: the
+   budget counts operations so every peer hits the limit at the same point, and the behaviour must be
+   deterministic with nothing varying by machine.
 2. Whether slot-255 mission commands go in the replay log or are regenerated (proposal: regenerated and
    hashed).
 
