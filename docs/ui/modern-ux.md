@@ -5,11 +5,14 @@ Status: draft v0.1. These are layers on top of SFC2's own EaW HUD (baseline EaW 
 ## 1. Resolution scaling and UI scale
 
 - The 3D view renders at native resolution × `renderScale` (0.5–2.0, default 1.0; auto-lowered by the quality preset).
-- The HUD is authored on a **1024 × 768 logical canvas** (style-guide §1). `uiScale = clamp(viewportHeight / 768 × userScale, 0.75, 3.0)`, with `userScale` 0.75–2.0 in settings (default 1.0).
-- **Period sprites** (from the player's `sprites.q3`) scale by integer factors when `uiScale ≥ 2` (nearest-neighbour, to keep the pixel look crisp) and by a smooth filter otherwise. The user can force "pixel-perfect" (integer only, with letterboxing of the HUD region).
-- **Vector fallback and HD art** scale freely.
-- Text never renders below 11 physical px; if it would, `uiScale` stops shrinking.
-- `devicePixelRatio` is respected for canvas layers (sensor map, arcs).
+**Agreed with Engine Lead (pending docs/engine HUD contract):** the tactical HUD draws on its own 2D overlay canvas above the three.js view, scaled in **whole-number steps** so original sprites stay pixel-exact. Menus, options, briefings and accessibility surfaces are **HTML** and scale freely.
+
+- **Tactical HUD (overlay canvas), integer scale.** The HUD is authored on a **1024 × 768 logical canvas** (style-guide §1). The canvas backing store is sized in physical pixels (`devicePixelRatio` applied), and `hudScale = N`, a whole number: `Nmax = max(1, floor(min(physW / 1024, physH / 768)))`. The default is `N = Nmax`; the user can step down (`N = 1 … Nmax`). Sprites draw with `imageSmoothingEnabled = false` at exactly N× so original `sprites.q3` art stays pixel-exact. Space left over after the integer scale goes to the 3D view (anchors push outwards, see §2); the HUD is never stretched by a fractional amount.
+- **Fallback vector and HD art** are rasterised at the same N× step, so the layout is identical whatever the art source.
+- **Canvas text** (readouts, labels) is drawn at N× the style-guide size; the smallest canvas size is 11 logical px, so it never drops below 11 physical px.
+- **HTML layer, free scale.** Menus, options, briefings, the message-log reader and accessibility mirrors use CSS pixels with the user's **text size** setting (§5) and browser zoom. They aren't bound to N.
+- Example: 1920×1080 gives N = 1 (HUD 1024×768 physical, centred or anchored, with more 3D view); 2560×1440 gives N = 1; 3840×2160 gives N = 2 (2048×1536).
+- `devicePixelRatio` changes (monitor move, browser zoom) recompute `Nmax`.
 
 ## 2. 4:3 safe area vs 16:9 and ultrawide
 
@@ -69,7 +72,7 @@ Uses the browser Gamepad API (and the same API inside Tauri's webview). Standard
 | Legible font | Swaps to Atkinson Hyperlegible (SIL OFL 1.1). |
 | Reduced motion | Follows `prefers-reduced-motion` by default; disables screen shake, pulses, flashes and camera auto-moves; bars snap per tick. |
 | Flash safety | Nothing above 3 Hz; large-area flashes (explosions) capped in brightness change. |
-| Screen-reader-friendly menus | All menus and settings are DOM with real buttons, headings and labels; focus order follows layout; dialogs trap focus. The real-time tactical view itself is not fully screen-reader playable, but key state is reachable: the live regions for alerts, the text table views for shields, contacts and damage (`hud-spec.md`). |
+| Screen-reader-friendly menus | Menus, options, briefings and every accessibility surface are **HTML** (agreed with Engine Lead) with real buttons, headings and labels; focus order follows layout; dialogs trap focus. The tactical HUD canvas is `aria-hidden`; an HTML mirror reads the same `ViewModel` and provides live regions for alerts and text table views for shields, weapons, contacts and damage (`hud-spec.md` §0). The real-time battle itself is not fully screen-reader playable. |
 | Hold vs toggle | Any "hold" action can be set to toggle. |
 | Game speed | Single player only: a slower sim rate option (if the Engine Lead's fixed tick allows a time-scale) helps players with slower reaction. Never available in multiplayer. |
 | Subtitles | Voice cues and mission audio get captions in the message log. |
@@ -85,12 +88,13 @@ The plan targets a Tauri desktop shell (plan.md, "Vision and scope"; Phase 8 "Ta
 - Native file dialogs for pointing at the SFC2 install folder (the web build uses the File System Access API or archive import, per plan.md "Architecture").
 - Cursor confinement during camera drag; release on focus loss.
 - High-DPI and mixed-DPI monitors: re-compute `uiScale` on `scaleFactorChanged`.
-- Our own app icon only (no franchise art). The window title uses the working name until Daniel decides the project name (open decision).
+- Our own app icon only (no franchise art). The window title and About screen use the project name, **SFC2.js**.
 
 ## Open questions
 
-1. Engine Lead: does the sim support a single-player time-scale (for example 0.5×) without breaking determinism, or should "game speed" be dropped?
-2. Engine Lead: Tauri webview differences (WebView2 / WKWebView / WebKitGTK) for the Gamepad API and pointer lock: test matrix owner?
-3. Daniel: default layout on 16:9 — safe-area centred (closer to the original) or wide (more modern)?
-4. Daniel: should controller support stay in Phase 8 as planned, or should basic gamepad input move earlier?
-5. Combat Systems: are there rules that assume mouse precision (for example free aim) that a controller can't do well?
+1. Daniel / Engine Lead: at 1080p and 1440p the integer rule gives N = 1, so the HUD is fairly small. Should we add an opt-in fractional scale for fallback and HD art only (original sprites would stay integer)? Off by default, to keep the agreed pixel-exact rule.
+2. Engine Lead: does the sim support a single-player time-scale (for example 0.5×) without breaking determinism, or should "game speed" be dropped?
+3. Engine Lead: Tauri webview differences (WebView2 / WKWebView / WebKitGTK) for the Gamepad API and pointer lock: test matrix owner?
+4. Daniel: default layout on 16:9 — safe-area centred (closer to the original) or wide (more modern)?
+5. Daniel: should controller support stay in Phase 8 as planned, or should basic gamepad input move earlier?
+6. Combat Systems: are there rules that assume mouse precision (for example free aim) that a controller can't do well?

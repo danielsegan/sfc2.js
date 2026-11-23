@@ -16,6 +16,7 @@ The tier is a single setting with per-feature overrides (for example Period HUD 
 ## 1. Layout grid
 
 - **Design canvas:** 1024 × 768 logical units (4:3). All HUD positions are authored on this canvas and scaled (see `modern-ux.md` for scaling, 16:9 and ultrawide).
+- **Scale:** the tactical HUD draws on a 2D overlay canvas at whole-number steps (N×), so original sprites stay pixel-exact; HTML menus scale freely (modern-ux §1).
 - **Base unit:** 8 logical px. Panel padding 8, gutter between panels 8, minimum hit target 24 × 24 (32 × 32 in "large targets" mode).
 - **Anchors:** every component anchors to one of nine points (TL, T, TR, L, C, R, BL, B, BR) plus an offset in units. On wide screens the anchors move outwards and the 3D view fills the middle.
 - **Regions** (proposed default, arranged like SFC2's console; exact placement **TO VERIFY**):
@@ -61,11 +62,11 @@ Open-licensed fonts only, self-hosted with the web app (no CDN calls), with the 
 | Body / log | **Inter** | SIL Open Font License 1.1 | Message log, tooltips, briefings |
 | Accessibility alt | **Atkinson Hyperlegible** | SIL Open Font License 1.1 | Swapped in for Inter and Saira when "legible font" is on |
 
-Scale (logical px at UI scale 1.0): 10 (micro, tick labels), 12 (readouts), 14 (body), 16 (headers), 20 (menu items), 28 (menu titles). Minimum rendered size is 11 physical px; the UI scale clamps to keep it there. In Period tier, bitmap fonts from the player's install may be used if the Asset & Formats Engineer can parse them (**TO VERIFY** against EaW 2.036/2.037 whether the original fonts are bitmaps inside the GUI archives).
+Scale (logical px at HUD scale N = 1): 11 (micro, tick labels), 12 (readouts), 14 (body), 16 (headers), 20 (menu items), 28 (menu titles). Minimum rendered size is 11 physical px; the UI scale clamps to keep it there. In Period tier, bitmap fonts from the player's install may be used if the Asset & Formats Engineer can parse them (**TO VERIFY** against EaW 2.036/2.037 whether the original fonts are bitmaps inside the GUI archives).
 
 ## 4. Color tokens
 
-Tokens are CSS custom properties (DOM HUD) mirrored as a JSON table for canvas and WebGL layers. Names are stable; values can be themed.
+Tokens live in one TypeScript table used by the HUD overlay canvas and WebGL, mirrored as CSS custom properties for the HTML menus and accessibility layer. Names are stable; values can be themed.
 
 ### 4.1 Base and state tokens
 
@@ -119,14 +120,14 @@ Presentation only; never reads the wall clock into the sim.
 | Event | Duration | Easing | Reduced motion |
 | --- | --- | --- | --- |
 | Panel open / close | 120 ms | ease-out | instant |
-| Value change (bar fill) | interpolated between sim ticks at display rate | linear | snap per tick |
+| Value change (bar fill) | steps once per sim tick (gauges are not interpolated) | none | same |
 | Weapon ready pulse | 1 pulse, 300 ms | ease-in-out | static outline |
 | Shield hit flash (HUD) | 150 ms | ease-out | border thickens, no flash |
 | Alert banner | 200 ms in, holds, 200 ms out | ease-out | instant |
 | Critical blink (shield down, hull breach) | 2 Hz, max 3 s, then steady | step | steady colour plus icon |
 
 - Nothing flashes faster than 3 Hz (photosensitivity).
-- Sim timing (provisional, Engine Lead): the sim runs at a **fixed 30 Hz**, so charge and energy change in whole ticks. The HUD interpolates between the previous and current snapshot for smooth bars.
+- Sim timing (provisional, Engine Lead): the sim runs at a **fixed 30 Hz**, so charge and energy change in whole ticks. Gauges show the current tick's values with no interpolation; only positions and headings blend (hud-spec §0, agreed with Engine Lead).
 
 ## 7. Sound-cue hooks
 
@@ -207,9 +208,10 @@ Performance budgets are the Engine Lead's call; HD effects must degrade graceful
 
 ## Open questions
 
-1. Engine Lead: DOM/CSS HUD over the WebGL canvas, or a canvas/WebGL HUD? (This guide assumes a DOM HUD for text and accessibility, with a canvas layer for the sensor map and arcs.)
-2. Engine Lead: WebGL2 only, or also WebGPU? plan.md names three.js but not a backend.
-3. Asset & Formats: are the original HUD fonts bitmap glyph sheets inside `sprites.q3`, and are explosion flipbooks in BMP or another format?
-4. Asset & Formats: does the shiplist or another spec table define per-empire weapon colours, or are they baked into textures?
-5. Combat Systems: how should the HUD show shield strength — raw boxes, or percent of max?
-6. Daniel: are the empire accent colours above acceptable, or should they be sampled to match the in-game feel (sampling original art for exact values is off the table; matching by eye in our own palette is fine)?
+Agreed with Engine Lead (pending docs/engine HUD contract): the tactical HUD draws on a 2D overlay canvas at whole-number scale steps; menus, options, briefings and accessibility surfaces are HTML (hud-spec §0).
+
+1. Engine Lead: WebGL2 only, or also WebGPU? plan.md names three.js but not a backend.
+2. Asset & Formats: are the original HUD fonts bitmap glyph sheets inside `sprites.q3`, and are explosion flipbooks in BMP or another format?
+3. Asset & Formats: does the shiplist or another spec table define per-empire weapon colours, or are they baked into textures?
+4. Combat Systems: how should the HUD show shield strength — raw boxes, or percent of max?
+5. Daniel: are the empire accent colours above acceptable, or should they be sampled to match the in-game feel (sampling original art for exact values is off the table; matching by eye in our own palette is fine)?

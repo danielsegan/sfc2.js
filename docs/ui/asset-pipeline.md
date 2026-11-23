@@ -45,6 +45,12 @@ interface SlotBinding {
 - Chrome that the original draws as one bitmap (a whole console background) maps to one slot, and our layout cuts it with nine-slice insets for wide modes. Where a slice would distort the original art, wide mode switches that panel to fallback chrome. **TO VERIFY** per panel against EaW 2.036/2.037.
 - Missing or failing slots fall back **per slot**, not all or nothing. A debug overlay (`?hudDebug=1`) shows each slot's source (original / fallback / HD).
 
+## 2a. Where sprites are drawn (Agreed with Engine Lead, pending docs/engine HUD contract)
+
+- **Tactical HUD:** a dedicated **2D overlay canvas** above the three.js view. Sprites from `sprites.q3`/BMP are uploaded once as `ImageBitmap`s (or packed into atlases) and drawn with `drawImage` at **whole-number scale** (N×, `imageSmoothingEnabled = false`), so they stay pixel-exact. Our SVG fallback and HD art are rasterised to bitmaps at the current N and re-rasterised when N changes.
+- **HTML surfaces** (menus, options, briefings, accessibility mirrors) may use the same sprites as CSS backgrounds via object URLs created at runtime from the player's files, with `image-rendering: pixelated` and integer CSS sizes where original art is shown. Nothing is written to disk outside browser storage.
+- Per-frame, the HUD reads the read-only `ViewModel` (hud-spec §0). Sprite selection by state (normal / warning / damage / disabled) uses the gauge values of the current tick; flashes come from the frame's one-off events.
+
 ## 3. Expected inputs from the Asset & Formats Engineer
 
 | Need | Detail |
@@ -67,7 +73,7 @@ What the renderer needs from the importer for ships, bases and terrain (Phase 1 
 | Self-illum semantics | Black = unlit; brightness = emission strength. Period tier: add unlit on top of the lit base. HD tier: `emissive` × `emissiveIntensity`, bloom threshold tuned so only self-illum areas bloom. |
 | UV origin | Normalised to three.js convention (origin bottom-left) in the importer, not in shaders. |
 | Mipmaps | Generated at load for 3D textures; never for HUD sprites. |
-| Filtering | 3D: trilinear + anisotropic (HD) / bilinear (Period). HUD sprites: nearest at integer scale, linear otherwise. |
+| Filtering | 3D: trilinear + anisotropic (HD) / bilinear (Period). HUD sprites: always nearest-neighbour at whole-number scale on the 2D overlay canvas (agreed with Engine Lead). |
 | Non-power-of-two | Allowed (WebGL2), but the importer reports them. |
 | Damage meshes | `_brk` meshes and their materials share the parent's texture set unless the data says otherwise. |
 | Hardpoints | Weapon mount positions and facings exported with the model so weapon VFX originate correctly. |

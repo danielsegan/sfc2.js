@@ -19,19 +19,44 @@ These are the Engine Lead's working answers. They stay **provisional until `docs
 | **Distance unit is one swappable constant** | All range labels go through a single `toDisplayRange()` helper. No hard-coded unit names in components. |
 | **Headings are uint16**, 65536 per full circle | `deg = h * 360 / 65536`. Arcs and shield facings use the same conversion. |
 | Randomness only from **named seeded streams** | The HUD never draws from sim streams. Presentation jitter (debris, flicker) uses its own unseeded RNG. |
-| HUD **reads sim snapshots** and **interpolates between ticks** at display rate | Each component gets `prev` and `curr` snapshots plus `alpha` (0–1). Discrete values (states, counts) snap to `curr`; continuous ones (bars, positions, headings) lerp. Headings lerp along the shortest arc. |
+| HUD reads a per-frame read-only **`ViewModel`** (see the Agreed section below) | Gauges show the current tick's values; only positions and headings blend (headings along the shortest arc). |
 | HUD **never writes into the sim** | All player actions become `Command` objects pushed to the input/command queue. The HUD may show optimistic "pending" state until the next snapshot confirms or rejects. |
 
 ```mermaid
 flowchart LR
-  Sim[Sim core 30 Hz] -->|snapshot N-1, N| Adapter[HUD view-model adapter<br/>fixed-point → display units<br/>interpolate at alpha]
-  Adapter --> Comps[HUD components]
-  Comps -->|Command| Queue[Input / command queue]
+  Sim[Sim core 30 Hz] -->|snapshots N-1, N| VM[ViewModel builder - engine<br/>fixed-point to display units<br/>gauges = tick N, positions/headings blended by alpha<br/>+ one-off events]
+  VM --> Canvas[Tactical HUD<br/>2D overlay canvas over three.js]
+  VM --> Html[HTML layer<br/>menus, options, briefings,<br/>accessibility mirrors and live regions]
+  Canvas -->|Command| Queue[Input / command queue]
+  Html -->|Command| Queue
   Queue --> Sim
-  Comps -->|ui events| Audio[Audio cue mapper]
+  VM -->|events| Audio[Audio cue mapper]
 ```
 
-Field names below are **proposals for the Engine Lead to confirm**. They're written in TypeScript, which Daniel chose as the project language on 2026-11-23, and should become real `.ts` types once confirmed. `Fx` means a fixed-point number; `Tick` means an integer tick count; `Heading16` means a uint16 heading.
+### Agreed with Engine Lead (pending docs/engine HUD contract)
+
+Answered by the Engine Lead on 2026-11-23. These hold until the HUD contract in `docs/engine/` lands and supersedes them.
+
+1. **ViewModel per frame.** Each display frame the HUD receives one read-only `ViewModel`, built from the previous and current sim snapshots plus a blend factor `alpha` (0–1). **Gauges are not interpolated**: energy, shields, weapon charge, damage and counts show the *current* tick's values. **Only positions and headings blend.** Each frame also carries a list of **one-off events** (hits, alerts, system damage, and so on) that drive flashes and sound cues.
+2. **Rendering surfaces.** The tactical HUD draws on its **own 2D overlay canvas** above the three.js view, so original sprites stay **pixel-exact at whole-number scale steps**. **Menus, options, briefings, and anything text-heavy or accessibility-related are HTML.**
+
+```ts
+interface ViewModel {
+  tick: Tick; alpha: number;            // alpha applies only to positions and headings
+  self: { /* gauge views below (EnergyView, ShieldsView, WeaponView[], ...) at tick N */ };
+  contacts: SensorView["contacts"];      // positions and headings already blended
+  events: HudEvent[];                    // one-off, this frame only
+}
+type HudEvent =
+  | { kind: "hit"; ship: ShipId; facing: Facing; amount: number }
+  | { kind: "alert"; id: string; severity: "info"|"warn"|"crit" }
+  | { kind: "systemDamaged"; ship: ShipId; system: string }
+  | { kind: string; [k: string]: unknown };   // exact list: Engine Lead
+```
+
+Accessibility consequence: components drawn on the canvas aren't in the DOM, so each component's accessibility notes below are delivered by an **HTML mirror** (text tables, live regions, labelled controls) that reads the same `ViewModel`. The canvas itself is `aria-hidden`.
+
+Component field names below are **proposals for the Engine Lead to confirm**; each would be a section of the `ViewModel`. They're written in TypeScript, which Daniel chose as the project language on 2026-11-23, and should become real `.ts` types once confirmed. `Fx` means a fixed-point number; `Tick` means an integer tick count; `Heading16` means a uint16 heading.
 
 Common types:
 
@@ -97,7 +122,7 @@ interface EnergyView {
 - Presets (for example Attack / Balanced / Run / Defense) send `setPowerPreset`. Whether SFC2 has named presets: **TO VERIFY**.
 - Proposed keys: `F1`–`F4` presets, `Shift+F1..F4` save preset, `PgUp/PgDn` on the focused row.
 
-**Accessibility.** Each row is a labelled slider (`role="slider"`, `aria-valuenow` in display units). Overdraw is announced once via the polite live region. Numbers are always shown beside the bars.
+**Accessibility.** The HTML mirror exposes each row as a labelled slider (`role="slider"`, `aria-valuenow` in display units). Overdraw is announced once via the polite live region. Numbers are always shown beside the bars.
 
 **Open/TO VERIFY.** Energy period; whether batteries discharge automatically to cover a shortfall; whether shield reinforcement draws from the same pool.
 
@@ -119,11 +144,11 @@ interface ShieldsView {
 
 **Drawing.** A ship silhouette (our generic hull glyph; the original's per-ship icon from `sprites.q3` when present) inside a ring of six arc segments. Each segment fills radially by `current/max` and shows a number. Reinforcement is a separate outer band.
 
-**States.** Full (normal); partial (normal fill); under 25% (warning); 0 / down (damage, broken outline); reinforced (outer band, charging token while building up); just hit (150 ms flash, reduced-motion: thicker border).
+**States.** Full (normal); partial (normal fill); under 25% (warning); 0 / down (damage, broken outline); reinforced (outer band, charging token while building up); just hit (150 ms flash triggered by a `hit` event; reduced motion: thicker border).
 
 **Interactions.** Click a facing to send `reinforceFacing` with it; scroll or `+/-` to change the amount; `Shift+click` to clear. Proposed keys: `Num8/9/3/2/1/7` for facings in clock order, `Num5` toggles general reinforcement, `S` toggles shields if allowed.
 
-**Accessibility.** Each facing is a button labelled "Forward-right shield, 14 of 24, reinforced 4". Low and down states use a pattern as well as colour. A text table view is available (`Alt+S`).
+**Accessibility.** Each facing is a button labelled "Forward-right shield, 14 of 24, reinforced 4". Low and down states use a pattern as well as colour. A text table view in HTML is available (`Alt+S`).
 
 **TO VERIFY.** Facing lettering and order as shown in SFC2; whether specific reinforcement exists per facing in SFC2 or only general; shield regeneration display.
 
@@ -154,7 +179,7 @@ interface WeaponView {
 
 **Interactions.** Click to select; `1`–`6` fire group; `Space` fire selected group at target; `O` toggle overload on selection (sends `setWeaponMode`); `Ctrl+1..6` assign selection to group; `Alt+click` single-fire one mount. Every action sends a `Command`. Optimistic "pending" outline until the snapshot confirms.
 
-**Accessibility.** Chips are list items with full text ("Photon 1, charging, 18 of 60 ticks, overload armed, in arc"). Arc fans have a high-contrast outline mode.
+**Accessibility.** The HTML mirror lists chips with full text ("Photon 1, charging, 18 of 60 ticks, overload armed, in arc"). Arc fans have a high-contrast outline mode.
 
 **TO VERIFY.** Per-family charge times and whether SFC2 lets players hold charges; plasma bolt versus torpedo modes; proximity fuse for photons; how SFC2 groups weapons by default.
 
@@ -205,7 +230,7 @@ interface DamageView {
 
 **Interactions.** Drag or `Ctrl+Up/Down` reorders repair priority (sends `setRepairPriority`). `D` toggles expanded view.
 
-**Accessibility.** Table semantics; each row reads "Warp engine, 8 of 15 boxes, repairing".
+**Accessibility.** HTML mirror with table semantics; each row reads "Warp engine, 8 of 15 boxes, repairing".
 
 **TO VERIFY.** SFC2's damage-control model (repair rate, which systems can be repaired in combat) — owned by Combat.
 
@@ -224,7 +249,7 @@ interface SensorView {
 }
 ```
 
-**Drawing.** Canvas layer. North-up or heading-up (toggle). Range rings at labelled distances (via `toDisplayRange`). Contacts use our own shape glyphs: ship = chevron, base = square, seeking weapon = small diamond with a velocity tick, mine = dot with a ring once detected. Hostility uses both colour and shape fill (hollow for hostile, solid for friendly).
+**Drawing.** Drawn on the HUD overlay canvas. North-up or heading-up (toggle). Range rings at labelled distances (via `toDisplayRange`). Contacts use our own shape glyphs: ship = chevron, base = square, seeking weapon = small diamond with a velocity tick, mine = dot with a ring once detected. Hostility uses both colour and shape fill (hollow for hostile, solid for friendly).
 
 **States.** Contacts can be detected, lost (fading ghost of their last known position for N ticks), cloaked (owner sees a ghost; enemies see nothing, or a sensor "echo" if the rules allow it, **TO VERIFY**).
 
@@ -330,7 +355,7 @@ interface CraftView {
 
 **12a Message log.** Scrolling list, newest last, max 200 lines in memory, filters (combat / comms / system / mission). Reads `{ tick: Tick; channel: string; text: string; severity: "info"|"warn"|"crit"; fromShip?: ShipId }[]`. Mission text comes from the Mission runtime. Original strings come from the player's install; nothing is copied into the repo. `Enter` focuses chat in multiplayer; `PgUp/PgDn` scroll.
 
-**12b Alerts.** A banner region for high-priority events: incoming seeking weapon, shield facing down, boarding, hull critical, self-destruct countdown, mission objective. At most two at a time; the rest queue. Each raises a sound hook (style-guide §7). Screen-reader: assertive live region for `crit`, polite otherwise.
+**12b Alerts.** A banner region for high-priority events: incoming seeking weapon, shield facing down, boarding, hull critical, self-destruct countdown, mission objective. At most two at a time; the rest queue. Alerts come from `alert` events in the `ViewModel`; each raises a sound hook (style-guide §7). Screen-reader: assertive live region for `crit`, polite otherwise.
 
 ## 13. Camera controls
 
@@ -363,7 +388,9 @@ All keys are **proposals**. SFC2's original defaults are **TO VERIFY** against E
 ## Open questions
 
 **Engine Lead**
-1. Confirm the snapshot shape: one immutable snapshot per tick with `prev/curr/alpha` delivered to the HUD, or a diff stream?
+(Snapshot delivery and the HUD rendering surface are settled; see §0, "Agreed with Engine Lead".)
+
+1. The exact `HudEvent` list and payloads.
 2. Confirm the `Command` envelope and how rejected commands are reported back (so the HUD can clear "pending" state).
 3. Where does the fixed-point → display conversion live: shared `engine/units` or HUD-only?
 4. Will the provisional 30 Hz, uint16 heading and fixed-point rules be final in `docs/engine/determinism.md`?

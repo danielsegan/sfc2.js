@@ -2,7 +2,7 @@
 
 Owner: UI & Art Director. Status: **draft v0.1** (first pass, pre-Phase 2).
 
-This folder holds the visual and interaction design for the tactical HUD, the menus, and the 3D space look of SFC2 Browser Edition. It follows `docs/plan.md` (the source of truth for scope and phases) and `docs/LEGAL.md` (asset and clean-room rules).
+This folder holds the visual and interaction design for the tactical HUD, the menus, and the 3D space look of **SFC2.js** (the project's name; the repo stays `sfc2-browser-edition`). It follows `docs/plan.md` (the source of truth for scope and phases) and `docs/LEGAL.md` (asset and clean-room rules).
 
 ## Index
 
@@ -26,11 +26,11 @@ This folder holds the visual and interaction design for the tactical HUD, the me
 - **Art source:** the HUD is built from the player's own `sprites.q3` GUI art wherever possible; every fallback is original project art.
 - **TO VERIFY** in these docs means: check against an EaW 2.036/2.037 install running under Wine. Each one is a check to make, not a claim.
 
-These decisions postdate `docs/plan.md`, which still lists language and game version as open. The Producer owns updating the plan.
+These decisions postdate `docs/plan.md`, which still lists the name, language and game version as open. The Producer owns updating the plan.
 
 ## Principles
 
-1. **Read, never write.** The HUD reads sim snapshots and sends player intent through the command queue. It never mutates sim state (plan.md, "Architecture"; Engine Lead working rules, provisional).
+1. **Read, never write.** The HUD reads a per-frame read-only `ViewModel` and sends player intent through the command queue. It never mutates sim state (plan.md, "Architecture"; Engine Lead working rules, provisional).
 2. **Feels like SFC2 first, better second.** Default layout and behavior follow the reference build. Modern features (scaling, rebinding, accessibility, HD) are layered on and switchable.
 3. **The player's files skin the game; our art keeps it working.** Original GUI sprites load from the player's install at runtime. When they are missing, original project-made vector art takes over. The HUD must be fully usable with zero original assets.
 4. **Information first.** SFC2 is an energy-and-arcs game. Shield facings, charge state and power budget must be readable at a glance, without relying on color alone.
@@ -55,17 +55,16 @@ Decided by Daniel on 2026-11-23 (after plan.md was written):
 | **Language: TypeScript** | Interfaces in these docs are TypeScript and are intended to become real `.ts` types once the Engine Lead confirms field names. |
 | **Version baseline: EaW 2.036 + unofficial 2.037** | All TO VERIFY items are checked against EaW 2.036/2.037. |
 | **HUD follows SFC2's own EaW HUD** | Single reference skin. |
+| **Project name: SFC2.js** | Used in prose and UI text (title screen, window title, About). Repo name and paths are unchanged. |
 
-Still open (plan.md, "Open decisions for Daniel"). The docs use neutral wording:
+Still open: **Cursor cloud agents** (plan.md, "Open decisions for Daniel"). It doesn't affect the UI docs. (Hosting tooling is also listed in plan.md; GitHub is in use and nothing here depends on it.)
 
-| Decision | How these docs handle it |
-| --- | --- |
-| Project / game name | Called "the game" or "SFC2 Browser Edition (working title)". No title art or logo yet. |
-| Cursor cloud agents | Doesn't affect the UI docs. |
-| Hosting tooling (GitHub / Cursor Origin) | Doesn't affect the UI docs. |
+## HUD architecture
+
+The HUD architecture agreed with the Engine Lead is recorded in `hud-spec.md` §0 ("Agreed with Engine Lead (pending docs/engine HUD contract)"): a per-frame read-only `ViewModel` (gauges not interpolated, only positions and headings blend, plus one-off events), a 2D overlay canvas for the tactical HUD at whole-number scale steps, and HTML for menus, options, briefings and accessibility surfaces.
 
 ## Open questions
 
 1. Daniel: is a future alternate skin (for example one modelled on a later SFC release) wanted at all? Not designed here; if yes, it would be a Phase 8 item.
 2. Producer: which milestone gets the minimal Phase 2 HUD (energy, shields, weapons) — Phase 2 or Phase 3?
-3. Producer / legal: is a small original studio emblem (silver ring with a four-pointed star) OK for menus and the loading screen, or should the UI carry no emblem until the project has a name?
+3. Producer / legal: is a small original studio emblem (silver ring with a four-pointed star) OK next to the SFC2.js wordmark in menus and the loading screen? Should the name be reviewed legally before going public, given it includes "SFC2"?
