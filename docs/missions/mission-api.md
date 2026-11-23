@@ -10,13 +10,13 @@ This is a design doc only. No runtime code lands before Phase 4.
 > short names in mapping tables. No Taldren code is copied here, and no game files are committed.
 
 > **Decisions this doc follows (made by Daniel):** the project is named **SFC2.js** (the repo name and
-> paths stay `sfc2-browser-edition`); the language is **TypeScript**; the reference game for mission and
-> campaign content is **SFC2 Community Edition (CE) 2.670** ([#37](https://github.com/danielsegan/sfc2-browser-edition/issues/37)) (this replaced an earlier EAW 2.036 + 2.037
+> paths now use `sfc2.js`; the repo was renamed from `sfc2-browser-edition`); the language is **TypeScript**; the reference game for mission and
+> campaign content is **SFC2 Community Edition (CE) 2.670** ([#37](https://github.com/danielsegan/sfc2.js/issues/37)) (this replaced an earlier EAW 2.036 + 2.037
 > baseline); the HUD models the SFC2 HUD. **Still open:** whether studio bots use Cursor
 > cloud agents (nothing here depends on it). **Out of scope:** the standalone *Orion Pirates* game (2001)
 > and its content, which sits in [Possible later](#16-possible-later-backlog).
 
-> **Data verification status: unverified.** CE 2.670 ([#37](https://github.com/danielsegan/sfc2-browser-edition/issues/37)) is now installed on the `sfc2-ci` VM
+> **Data verification status: unverified.** CE 2.670 ([#37](https://github.com/danielsegan/sfc2.js/issues/37)) is now installed on the `sfc2-ci` VM
 > (without the 2.679 patch), but the mission roster hasn't been checked against it yet; that waits on a
 > manifest-based check. Every claim in this doc about the mission list, the empire
 > roster, Orion content, or any game behaviour that depends on installed data is **unverified** until it
@@ -63,7 +63,7 @@ This is a design doc only. No runtime code lands before Phase 4.
 
 What follows is **observed** in Taldren's public SFC2:EAW API Release 1.3 (readme dated 2 July 2002) and
 the public EAW mission sources. They are used as API and design references. Our reference build is
-**CE 2.670** ([#37](https://github.com/danielsegan/sfc2-browser-edition/issues/37)). **Not verified:** how closely CE 2.670's missions, campaigns and behaviour still match what
+**CE 2.670** ([#37](https://github.com/danielsegan/sfc2.js/issues/37)). **Not verified:** how closely CE 2.670's missions, campaigns and behaviour still match what
 API R1.3 and the released EAW sources describe. That gets checked against the CE 2.670 install on
 `sfc2-ci` before porting starts. Where something is inferred rather than read directly, it says so.
 
@@ -182,14 +182,14 @@ Campaign layer ◄── MissionResult (victory, prestige, flags, fleet) ──�
 
 ### 4.1 Determinism contract (provisional)
 
-These are the Engine Lead's working answers, **provisional until `docs/engine/determinism.md` lands**.
+These are the Engine Lead's working answers, **provisional until `docs/engine/sim-core.md` (planned) lands**.
 This doc will be updated to match whatever that contract finally says.
 
 | Rule | Working answer | What it means for missions |
 | --- | --- | --- |
 | Tick rate | Fixed **30 Hz** | Mission time is a tick count. 1 second = 30 ticks |
 | Numbers | Fixed-point everywhere in the sim, **no floats** | Positions, distances, damage and timers are fixed-point or integer values; the API never hands a mission a float |
-| Distance | One swappable unit constant | Missions use named helpers (`km(10)`, `cells(3)`) rather than raw numbers, so the unit can change |
+| Distance | One swappable unit constant (scale to be fixed in `docs/engine/sim-core.md`, planned) | Missions use named helpers (`km(10)`, `cells(3)`) rather than raw numbers, so the unit can change |
 | Headings | `uint16`, 65536 per full circle | Facing values are integers; helpers like `deg(90)` convert at authoring time |
 | Randomness | Named seeded streams, e.g. `ctx.rng("combat").int(min, max)`; never `Math.random` | Missions get their **own stream**, `ctx.rng("mission")`, so mission rolls never shift combat rolls |
 
@@ -265,7 +265,7 @@ that never reaches the sim (timers, triggers, campaign variables, the state-mach
 ids or nothing. Nothing comes back to the script right
 away. On the next tick after a command is applied, the sim emits a `ruleResult` event with the command
 token, a status of `applied`, `clamped` or `rejected`, a reason code (for example `noSuchSystem`,
-`shipDestroyed`, `outOfRange`) and the value actually applied. **Rejection never throws.** Reason codes
+`shipDestroyed`, `outOfRange`) and the value actually applied, in `appliedValue`. **Rejection never throws.** Reason codes
 are stable strings so they can double as localization keys (6.12).
 
 **Spawning is token-based** (Engine Lead, pending the mission-runtime contract in `docs/engine/`). `ships.requestSpawn(...)` returns a **spawn token**, not an entity id.
@@ -414,7 +414,7 @@ interface TeamApi {
 ### 6.5 Ships
 
 Ships are spawned by a **ship key: race + short class name** from the CE 2.670 shiplist, written
-`{ race, className }` (Asset & Formats decision, [PR #38](https://github.com/danielsegan/sfc2-browser-edition/pull/38)). The key comes from the player's own
+`{ race, className }` (Asset & Formats decision, [PR #38](https://github.com/danielsegan/sfc2.js/pull/38)). The key comes from the player's own
 `shiplist.txt` as parsed by the Asset & Formats parser and is validated at load. **Unverified:** that race +
 short class name is unique across the whole CE 2.670 shiplist. The PR #38 checklist confirms this, and the
 parser flags any duplicates as `duplicateClassKey` diagnostics. Spawning is token-based (4.3).
@@ -425,9 +425,10 @@ in **sorted string order** so every peer gets the same mapping. The sim and repl
 integer**; mission files and `requestSpawn` keep the string key. **Duplicate keys** are reported in the
 load diagnostics and **block multiplayer sessions**. The diagnostic is `{ code: "duplicateClassKey",
 source: "shiplist" }`, severity `error`, with the race, className and shiplist row numbers involved as
-details. A related warning, `duplicateClassName` (same class name under different races, [PR #42](https://github.com/danielsegan/sfc2-browser-edition/pull/42)), is reported as
-a warning only. Codes are stable camelCase and add-only, and are
-defined in `docs/engine/data-loader.md` (Engine Lead).
+details. A related warning, `duplicateClassName` (same class name under different races, [PR #42](https://github.com/danielsegan/sfc2.js/pull/42)), is reported as
+a warning only. Both are emitted by the shiplist parser (`source: "shiplist"`, rules V15 and V4 in
+`docs/formats/shiplist.md`). Codes are stable camelCase and add-only; the single registry is the planned
+`docs/engine/diagnostics.md` (Engine Lead).
 
 **Shield facings** (studio convention, matching `docs/ui/hud-spec.md` in PR #39 and Combat's rules): the
 engine model's `shields` is an array indexed **0 to 5, where 0 is the front facing and the indices go
@@ -528,7 +529,7 @@ type MissionEvent =
   | { kind: "spawned"; token: SpawnToken; entityId: ShipHandle }
   | { kind: "placed"; token: CommandToken; objectId: MapObjectHandle }
   | { kind: "ruleResult"; token: CommandToken; status: "applied" | "clamped" | "rejected";
-      reason?: RuleReason; applied?: number }      // value actually applied (e.g. boxes, points)
+      reason?: RuleReason; appliedValue?: number }  // value actually applied (e.g. boxes, points)
   | { kind: "shipDestroyed"; ship: ShipHandle; by?: ShipHandle }
   | { kind: "shipCaptured"; ship: ShipHandle; by: TeamId }
   | { kind: "shipDisengaged"; ship: ShipHandle }
@@ -670,7 +671,7 @@ resolve to text is in 6.12.
 
 **Panels** (UI & Art Director). The briefing, debrief and hail panels are HTML components owned by the
 UI & Art Director and specced in `docs/ui/hud-spec.md`. Each takes a string key plus two optional fields
-([PR #40](https://github.com/danielsegan/sfc2-browser-edition/pull/40), `hud-spec.md` §14):
+([PR #40](https://github.com/danielsegan/sfc2.js/pull/40), `hud-spec.md` §14):
 
 - **`speakerKey?: string`**: the speaker's name or string key.
 - **`portraitKey?: string`**: a portrait asset key.
@@ -836,9 +837,9 @@ These are kept strictly apart (Asset & Formats Engineer):
 **(a) Our own mission files: JSON with a schema.**
 - The Mission & Campaign Designer owns the schema (planned at `docs/missions/mission.schema.json`, JSON
   Schema, versioned with `schemaVersion`). It covers scenario metadata, teams, relations, ships by
-  ship key (`{ "race": ..., "className": ... }`, [PR #38](https://github.com/danielsegan/sfc2-browser-edition/pull/38)), map, objectives, victory preset, prestige table, string-table references and the optional
+  ship key (`{ "race": ..., "className": ... }`, [PR #38](https://github.com/danielsegan/sfc2.js/pull/38)), map, objectives, victory preset, prestige table, string-table references and the optional
   script entry. Briefing and debrief entries can carry the same optional `speakerKey` and `portraitKey`
-  as the UI events ([PR #40](https://github.com/danielsegan/sfc2-browser-edition/pull/40)), for example:
+  as the UI events ([PR #40](https://github.com/danielsegan/sfc2.js/pull/40)), for example:
 
   ```json
   { "briefings": { "federation": { "text": "mission.example-patrol.briefing.federation",
@@ -847,16 +848,49 @@ These are kept strictly apart (Asset & Formats Engineer):
 
   (Key values are placeholders; real speaker and portrait key naming is unverified until checked against
   CE 2.670.)
+
+  **Map bounds (provisional).** The map block gets an optional `mapBounds` field. The Engine Lead's
+  proposal, **provisional until `docs/engine/sim-core.md` (planned) commits the scale and pending Combat's
+  maximum weapon range**: sim positions are **16.16 fixed point** (`FX_SHIFT = 16`), and one whole unit is
+  one range unit. Authors write `mapBounds` in **whole range units**; the loader converts them to 16.16 at
+  load:
+
+  ```json
+  { "map": { "mapBounds": { "minX": 0, "minY": 0, "maxX": 100, "maxY": 100 }, "objects": [] } }
+  ```
+
+  (Field names and numbers are illustrative.)
+
+  **Range rule (Engine Lead; to be committed in `docs/engine/sim-core.md`):** each `mapBounds` axis value
+  must satisfy **|v| <= 8192 range units**. Position differences can reach twice the bound and the sim
+  computes differences in i64, which leaves about a 4x margin on the 2D squared distance. A value outside
+  that range, or a non-integer, emits `{ code: "badMapBounds", source: "mission", severity: "error" }`, with
+  `location.field` pointing at the offending value. (This supersedes an earlier 32767 proposal.)
+
+  Test-fixture context only, not a limit on bounds: the provisional longest weapon range is **75 range
+  units** (the Star Fleet Battles long-range phaser band), pending playtest.
+
+  Positions (ships, map objects, bounds) come **only from our own mission files**. They are never
+  extracted from CE `.scr` modules.
 - The Asset & Formats importer validates these files and returns **`{ data, diagnostics }`**: `data` is
   the typed scenario (or `null` if it can't be used), and `diagnostics` is a list of
-  `{ code, source, severity: "error" | "warning" | "info", path, message, details? }` entries. This
-  follows the studio convention (Engine Lead): a stable camelCase **`code`** plus a separate **`source`**,
-  for example `{ code: "duplicateClassKey", source: "shiplist" }`. Diagnostics about our own mission files
-  use `source: "mission"` (for example an unknown ship key, an off-map cell or a missing string key); ones
-  inherited from the shiplist keep `source: "shiplist"`, such as `duplicateClassKey` (severity `error`) and
-  `duplicateClassName` (severity `warning`: the same class name under different races, [PR #42](https://github.com/danielsegan/sfc2-browser-edition/pull/42)). Codes are
-  add-only; the engine's codes are defined in `docs/engine/data-loader.md`. The loader refuses to start a mission with any
-  `error` diagnostic and shows the list to the author.
+  diagnostics in the studio shape already used by `docs/formats/` (#42, #45): exactly
+  **`{ code, source, severity, details?, location? }`**. There is **no `path` and no `message` field**; the
+  HUD looks up human-readable text by the locale key `source.code` (`docs/ui/hud-spec.md` §14d).
+  - `code`: flat, stable camelCase, add-only, never renamed.
+  - `source`: **who emits it**. Our own mission files use `source: "mission"` (for example an unknown ship
+    key, an off-map cell or a missing string key). `duplicateClassKey` (error) and `duplicateClassName`
+    (warning) come from the shiplist parser, `source: "shiplist"`, as `docs/formats/shiplist.md` defines
+    them. `unknownWeapon` and `unknownArc` come from the engine loader, `source: "loader"`. `"mission"` is
+    not yet in the shared `DiagnosticSource` list in `docs/formats/README.md`; it gets added there
+    (add-only) when the mission importer lands.
+  - `severity`: `"error" | "warning" | "info"`.
+  - `details?`: structured context, e.g. `{ race, className, rows }`.
+  - `location?` (optional): a 1-based `line` and `column` for text files, or, **for our JSON mission files,
+    a JSON-pointer-style field path** in `location.field` (for example `/teams/1/ships/0/ship`).
+
+  The single registry of codes is the planned `docs/engine/diagnostics.md` (Engine Lead). The loader
+  refuses to start a mission with any `error` diagnostic and shows the list to the author.
 - Test fixtures in the repo are synthetic files we write ourselves.
 
 **(b) Original community FMSE `.fms` files: a separate reverse-engineering job.**
@@ -1004,12 +1038,12 @@ Still open:
 4. Capture and disengage semantics that victory presets depend on.
 Answered (pending the rules spec in `docs/rules/`, #24): the rules entry points missions call
 (`damageSystem`, `damageShield`, `repairSystem`, `setShields`, `setEnergy`, AI orders via the captain's
-order queue) and the `ruleResult` event (token, applied/clamped/rejected, reason code, applied value; never
+order queue) and the `ruleResult` event (token, applied/clamped/rejected, reason code, `appliedValue`; never
 throws). Still open: items 1 to 4 above, plus the full reason-code list in `docs/rules/`.
 
 ### Asset & Formats Engineer
 
-Answered: the ship key is race + short class name from the CE 2.670 shiplist ([PR #38](https://github.com/danielsegan/sfc2-browser-edition/pull/38)); uniqueness is
+Answered: the ship key is race + short class name from the CE 2.670 shiplist ([PR #38](https://github.com/danielsegan/sfc2.js/pull/38)); uniqueness is
 unverified until the PR #38 checklist confirms it, and the parser flags duplicates as `duplicateClassKey`. Still open:
 
 1. Where mission text lives in the installed data (if anywhere outside compiled `.scr` files), and the
