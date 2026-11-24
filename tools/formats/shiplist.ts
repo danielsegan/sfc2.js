@@ -646,7 +646,7 @@ function buildRow(
         makeDiagnostic(
           "shieldTotalMismatch",
           "shiplist",
-          "info",
+          "warning",
           file,
           { line: line.line, column: at?.column, field: at?.field },
           { expected, actual },
