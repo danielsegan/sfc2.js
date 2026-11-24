@@ -15,7 +15,7 @@ import {
 } from '@sfc2js/formats';
 import { normalizeInstallPath, type ImportResult, type Vfs } from '@sfc2js/platform';
 import { Mesh, type Material, type Texture } from 'three';
-import { buildShipMesh, type BuiltShipMesh } from './ship-mesh.ts';
+import { buildShipMesh, placeholderShipMesh, type BuiltShipMesh } from './ship-mesh.ts';
 import type { RenderTier } from './ship-texture.ts';
 
 export interface LoadedShip {
@@ -26,6 +26,8 @@ export interface LoadedShip {
   mesh: BuiltShipMesh;
   textured: boolean;
   selfIlluminated: boolean;
+  /** True when the mesh is the stand-in for a hull that has no model. */
+  placeholder: boolean;
   diagnostics: Diagnostic[];
 }
 
@@ -52,6 +54,9 @@ export interface LoadShipCatalogOptions {
 }
 
 const HULL_HEADERS = new Set(['hull type', 'hulltype', 'hull']);
+const RACE_HEADERS = new Set(['race']);
+/** Neutral hulls that ship with no geometry. */
+const MODEL_OPTIONAL = new Set(['cy', 'cr', 'cw']);
 
 export async function loadShipCatalog(
   imported: ImportResult,
@@ -154,8 +159,13 @@ async function loadRow(
   tier: RenderTier,
 ): Promise<RowOutcome> {
   const hullType = stringField(row, columns, HULL_HEADERS, 1);
+  const race = stringField(row, columns, RACE_HEADERS, 0);
   const geometryField = fieldName(columns, 'geometry', 151);
   const geometry = stringField(row, columns, new Set(['geometry']), 151);
+  const optional = modelOptional(race, hullType);
+  if (optional && geometry === '') {
+    return placeholderRow(row, hullType, race, shiplistPath, geometryField);
+  }
   if (geometry === '') {
     const existing = parsedDiagnostics.find((item) => item.code === 'missingGeometry' && item.location?.line === row.line);
     const item =
@@ -181,6 +191,7 @@ async function loadRow(
 
   const resolved = vfs.resolve(normalized.path);
   if (resolved === null) {
+    if (optional) return placeholderRow(row, hullType, race, shiplistPath, geometryField);
     const item = diagnostic('missingModel', 'loader', 'error', {
       details: { spawnKey: row.spawnKey },
       location: { file: normalized.path },
@@ -196,6 +207,7 @@ async function loadRow(
     return { failure: failureFrom(row.spawnKey, row.line, item), diagnostics: [item] };
   }
   if (bytes === null) {
+    if (optional) return placeholderRow(row, hullType, race, shiplistPath, geometryField);
     const item = diagnostic('missingModel', 'loader', 'error', {
       details: { spawnKey: row.spawnKey },
       location: { file: resolved },
@@ -241,6 +253,7 @@ async function loadRow(
       mesh: built.data,
       textured: flags.textured,
       selfIlluminated: flags.selfIlluminated,
+      placeholder: false,
       diagnostics: rowDiagnostics,
     },
     diagnostics: rowDiagnostics,
@@ -287,6 +300,37 @@ function disposeBuilt(built: BuiltShipMesh): void {
   built.root.traverse((obj) => {
     if (obj instanceof Mesh) obj.geometry.dispose();
   });
+}
+
+function modelOptional(race: string, hullType: string): boolean {
+  return race.toLowerCase() === 'neutral' && MODEL_OPTIONAL.has(hullType.toLowerCase());
+}
+
+function placeholderRow(
+  row: ShiplistRow,
+  hullType: string,
+  race: string,
+  shiplistPath: string,
+  geometryField: string,
+): RowOutcome {
+  const item = diagnostic('noHullModel', 'loader', 'warning', {
+    details: { spawnKey: row.spawnKey, hullType, race },
+    location: { file: shiplistPath, line: row.line, ...(geometryField ? { field: geometryField } : {}) },
+  });
+  return {
+    ship: {
+      spawnKey: row.spawnKey,
+      line: row.line,
+      hullType,
+      geometry: '',
+      mesh: placeholderShipMesh(),
+      textured: false,
+      selfIlluminated: false,
+      placeholder: true,
+      diagnostics: [item],
+    },
+    diagnostics: [item],
+  };
 }
 
 function stringField(row: ShiplistRow, columns: readonly string[], aliases: ReadonlySet<string>, indexFallback: number): string {

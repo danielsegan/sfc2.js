@@ -85,6 +85,46 @@ describe('loadShipCatalog', () => {
     disposeShipCatalog(catalog);
   });
 
+  it('shows a placeholder for neutral CY, CR, and CW hulls that have no model', async () => {
+    const table = new TextEncoder().encode(
+      [
+        'Race\tHull Type\tClass\tGeometry',
+        'Neutral\tCY\tTEST-CY-01\t',
+        'Neutral\tCR\tTEST-CR-02\tAssets/Models/test/Missing.mod',
+        'neutral\tcw\tTEST-CW-03\t',
+        'Federation\tCA\tTEST-CA-04\t',
+        'Klingon\tCY\tTEST-CY-05\t',
+      ].join('\n'),
+    );
+    const catalog = await loadShipCatalog(
+      await importInstall([
+        picked('Starfleet2CE.exe', Uint8Array.of(0)),
+        picked('Assets/Specs/shiplist.txt', table),
+      ]),
+    );
+    expect(catalog.ships.map((ship) => [ship.spawnKey, ship.placeholder, ship.hullType])).toEqual([
+      ['Neutral:TEST-CY-01', true, 'CY'],
+      ['Neutral:TEST-CR-02', true, 'CR'],
+      ['neutral:TEST-CW-03', true, 'cw'],
+    ]);
+    expect(catalog.ships.every((ship) => ship.mesh.lods.length === 1)).toBe(true);
+    expect(catalog.failures.map((failure) => [failure.spawnKey, failure.reason])).toEqual([
+      ['Federation:TEST-CA-04', 'shiplist.missingGeometry'],
+      ['Klingon:TEST-CY-05', 'shiplist.missingGeometry'],
+    ]);
+    const noted = catalog.diagnostics.filter((item) => item.code === 'noHullModel');
+    expect(noted.map((item) => item.details)).toEqual([
+      { spawnKey: 'Neutral:TEST-CY-01', hullType: 'CY', race: 'Neutral' },
+      { spawnKey: 'Neutral:TEST-CR-02', hullType: 'CR', race: 'Neutral' },
+      { spawnKey: 'neutral:TEST-CW-03', hullType: 'cw', race: 'neutral' },
+    ]);
+    expect(noted.every((item) => item.source === 'loader' && item.severity === 'warning')).toBe(true);
+    expect(noted.every((item) => item.location?.file === 'Assets/Specs/shiplist.txt')).toBe(true);
+    expect(machinePathLeak(catalog.diagnostics)).toBeNull();
+    expect(machinePathLeak(catalog.ships.map((ship) => ship.geometry))).toBeNull();
+    disposeShipCatalog(catalog);
+  });
+
   it('reports a missing geometry column and an unrecognized install without throwing', async () => {
     const table = new TextEncoder().encode('Race\tClass\nFederation\tTEST-NO-GEO\n');
     const noColumn = await loadShipCatalog(
