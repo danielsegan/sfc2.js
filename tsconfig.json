@@ -17,12 +17,13 @@
     "moduleDetection": "force",
     "noUnusedLocals": true,
     "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
     "rootDir": "."
   },
   "include": [
     "tools/formats/**/*.ts",
-    "engine/platform/src/**/*.ts",
-    "engine/render/src/**/*.ts",
+    "engine/**/*.ts",
+    "tests/**/*.ts",
     "docs/rules/data/weapon-arcs.json",
     "vitest.config.ts"
   ]
