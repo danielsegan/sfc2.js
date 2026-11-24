@@ -26,6 +26,9 @@ export class DuelScene {
   private readonly scene = new Scene();
   private readonly hulls: Group[] = [];
   private mode: 'chase' | 'overhead' = 'chase';
+  private orbitYaw = 0;
+  private orbitPitch = 0.42;
+  private distance = 9;
   private readonly beams: { line: Line; until: number }[] = [];
   private readonly shotPositions = new Float32Array(96);
   private readonly shotAttr = new BufferAttribute(this.shotPositions, 3);
@@ -61,6 +64,24 @@ export class DuelScene {
 
   cycleCamera(): void {
     this.mode = this.mode === 'chase' ? 'overhead' : 'chase';
+  }
+
+  orbitBy(dx: number, dy: number): void {
+    this.orbitYaw += dx * 0.005;
+    const next = this.orbitPitch + dy * 0.005;
+    this.orbitPitch = next < 0.12 ? 0.12 : next > 1.2 ? 1.2 : next;
+  }
+
+  dolly(delta: number): void {
+    const next = this.distance + delta;
+    this.distance = next < 4 ? 4 : next > 40 ? 40 : next;
+  }
+
+  resetView(): void {
+    this.mode = 'chase';
+    this.orbitYaw = 0;
+    this.orbitPitch = 0.42;
+    this.distance = 9;
   }
 
   resize(width: number, height: number, ratio: number): void {
@@ -103,15 +124,19 @@ export class DuelScene {
   }
 
   private place(self: ContactView): void {
-    const heading = (self.heading16 / FULL) * Math.PI * 2;
-    const dx = Math.cos(heading);
-    const dz = -Math.sin(heading);
     if (this.mode === 'overhead') {
       this.camera.position.set(self.x, 26, -self.y + 0.01);
       this.camera.up.set(0, 0, -1);
     } else {
+      const heading = (self.heading16 / FULL) * Math.PI * 2 + this.orbitYaw;
+      const pitch = this.orbitPitch;
+      const dist = this.distance;
       this.camera.up.set(0, 1, 0);
-      this.camera.position.set(self.x - dx * 9, 4.2, -self.y - dz * 9);
+      this.camera.position.set(
+        self.x - Math.cos(heading) * Math.cos(pitch) * dist,
+        Math.sin(pitch) * dist,
+        -self.y - Math.sin(heading) * Math.cos(pitch) * dist,
+      );
     }
     this.camera.lookAt(self.x, 0, -self.y);
   }

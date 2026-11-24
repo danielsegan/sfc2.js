@@ -1,0 +1,13 @@
+This fixture is invented for the parser. It is not a game sound list.
+
+class	Test Effects	1	8		
+class	Test Shields	2	2	Never	1
+format	Primary Identifier	Filename	Description
+wave	testPhaserFire	sounds/test-phaser.wav	invented phaser fire		1	40							11			90	Test Effects	21000	23000	60	70			y	
+wave	testPhaserAlt	sounds/test-phaser-alt.wav	invented phaser fire		1	40							12			90	Test Effects	21000	23000	55	65			y	
+wave	testPhotonFire	sounds/test-photon.wav	invented photon fire										13			80	Test Effects			70	70			y	
+wave	testShieldHit	sounds/test-shield-hit.wav	invented shield hit										20			70	Test Shields			40	80			y	
+wave	testHullHit	sounds/test-hull-hit.wav	invented hull hit										21			70	Test Effects			50	90			y	
+wave	testRedAlert	sounds/test-red-alert.wav	invented red alert										30			100	Test Effects			100	100			y	
+wave	testRaiseShield	sounds/test-raise-shield.wav	invented raise shield										31			60	Test Shields			80	80			y	
+

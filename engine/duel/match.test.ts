@@ -122,4 +122,14 @@ describe('duel match', () => {
     const target = vm.contacts.find((contact) => contact.hostility === 'hostile');
     expect(target?.shields[0]?.current).toBe(11);
   });
+
+  it('keeps facing reinforcement on the plan until the next step', () => {
+    const match = boot();
+    match.frame(TICK);
+    match.view();
+    const before = match.stateHash();
+    match.setFacing(0, 3);
+    expect(match.plan.specific).toEqual([3, 0, 0, 0, 0, 0]);
+    expect(match.stateHash()).toBe(before);
+  });
 });

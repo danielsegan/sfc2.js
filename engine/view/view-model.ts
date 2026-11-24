@@ -54,6 +54,7 @@ export interface WeaponReadout {
   readonly cost: number;
   readonly ready: boolean;
   readonly status: string;
+  readonly mode: number;
   readonly boxes: number;
   readonly boxesMax: number;
 }
@@ -195,6 +196,7 @@ function weaponReadout(slot: number, mount: { weaponId: number; arcId: number; c
     cost,
     ready,
     status,
+    mode: mount.mode,
     boxes: mount.boxes,
     boxesMax: mount.boxesMax,
   };

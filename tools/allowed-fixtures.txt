@@ -14,6 +14,10 @@ tools/fixtures/formats/shiplist/weapons.txt
 tools/fixtures/formats/ftrlist/minimal.txt
 tools/fixtures/formats/ftrlist/edges.txt
 
+# Invented sounds.txt rows (docs/formats/sounds.md). No game filenames.
+tools/fixtures/formats/sounds/minimal.txt
+tools/fixtures/formats/sounds/edges.txt
+
 # Synthetic Phase 2 rules cases (docs/rules). Invented test-* ships only.
 docs/rules/tests/add-rack.json
 docs/rules/tests/heavy-slot-phaser.json
