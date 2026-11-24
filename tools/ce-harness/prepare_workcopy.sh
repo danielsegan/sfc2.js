@@ -14,6 +14,6 @@ fi
 ini="$work/sfc.ini"
 # windowed DirectDraw (works under Xvfb), Miles audio off, sound off,
 # heading overlay and grid on (visual references for screen measurements)
-sed -i 's/^windowed=.*/windowed=1/; s/^UseMiles=.*/UseMiles=0/; s/^HeadingDisplay=.*/HeadingDisplay=1/; s/^Grid=.*/Grid=1/' "$ini"
+sed -i 's/^windowed=.*/windowed=1/; s/^UseMiles=.*/UseMiles=0/; s/^HeadingDisplay=.*/HeadingDisplay=1/; s/^Grid=.*/Grid=1/; s/^backdrop=.*/backdrop=0/; s/^spacedust=.*/spacedust=0/' "$ini"
 sed -i '/^\[Sound\]/,/^\[/ s/^disable=.*/disable=1/' "$ini"
 echo "work copy ready: $work"

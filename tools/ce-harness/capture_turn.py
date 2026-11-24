@@ -4,7 +4,7 @@ record timestamped screenshots. Usage: capture_turn.py <label> <target_speed> <b
 import json, os, subprocess, sys, time
 BUTTONS = {"port": (31, 82), "stbd": (139, 82), "hard_port": (31, 118), "hard_stbd": (139, 118), "u_turn": (84, 118)}
 if os.environ.get("HUD") == "klingon":  # Klingon HUD skin places the helm buttons differently
-    BUTTONS = {"port": (48, 80), "stbd": (124, 80), "hard_port": (48, 112), "hard_stbd": (124, 112), "u_turn": (86, 112)}
+    BUTTONS = {"port": (60, 80), "stbd": (117, 80), "hard_port": (60, 112), "hard_stbd": (117, 112), "u_turn": (84, 112)}
 PARK = ("100", "700")
 def sh(*a): return subprocess.run(a, capture_output=True, text=True).stdout
 def grab(p): subprocess.run(["import", "-window", "root", p], check=True)

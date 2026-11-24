@@ -17,7 +17,7 @@ licensed install lives at `/srv/sfc2/reference/2.670`.
   checks the artifact folder before it uploads.
 - **The reference tree is read-only.** `prepare_workcopy.sh` copies it to a
   scratch folder and changes `sfc.ini` there. The changes are: windowed mode,
-  Miles audio off, sound off, the heading overlay on, and the grid on.
+  Miles audio off, sound off, the heading overlay on, the grid on, and the space backdrop and space dust off. The bright nebula backdrop was confusing the pixel heading estimate.
 - **No game data in git.** Nothing in this folder is derived from game data.
   The scripts contain only screen coordinates of UI controls.
 
@@ -28,10 +28,12 @@ licensed install lives at `/srv/sfc2/reference/2.670`.
 | `docker/Dockerfile` | Ubuntu 24.04, Wine (32-bit prefix), Xvfb, xdotool, ImageMagick and Tesseract. No game data. |
 | `session.sh` | Container entrypoint: starts Xvfb `:99` (1024x768x16) and runs `wine Starfleet2CE.exe` in `/game`. |
 | `prepare_workcopy.sh` | Makes a writable working copy and sets the `sfc.ini` display and sound options. |
-| `run_scenario.sh` | Starts the container, walks the menus to an Advanced Custom Skirmish, and picks the ship. `fed` flies F-CA and `klingon` flies K-D7. The opponent is one Klingon frigate at LOW BPV. Then it runs a port turn at each requested speed. |
+| `run_scenario.sh` | Starts the container, walks the menus to an Advanced Custom Skirmish, and picks the ship. `fed` flies F-CA and `klingon` flies K-D7. The opponent is one Klingon frigate at LOW BPV. Then it runs a port High-Energy Turn at each requested speed. |
 | `capture_turn.py` | Sets the target speed with the S/A hotkeys, waits until the HUD speed settles, and snapshots the energy panel. Then it clicks a helm turn button and records timestamped frames. |
 | `heading.py` | Finds the ship's heading on the overhead camera from screen pixels. It takes the principal axis of the bright, low-saturation hull pixels in a circle around the camera centre. |
 | `analyze_turn.py` | Unwraps the heading, applies a median filter, and works out the total turn, the order delay and the 10/50/90% times. It also computes the mean turn rate (deg/s, wall clock and game clock) and reads the HUD clock, speed and energy panel with OCR. |
+| `mouse_helm.py` | Clicks a point in the overhead tactical view and records the heading series. This is the normal mouse-set heading turn. |
+| `weapons_probe.py` | Federation HUD only. Arms weapons (NORMAL), fires repeatedly, and OCRs the game's own on-screen volley readout and the target range tag. |
 | `summarize.py` | Collects the per-run JSON files into `results.json` and `results.csv`. |
 
 ## Run on the VM by hand
@@ -55,6 +57,8 @@ gh workflow run "Private CE harness capture" -f scenario=fed -f speeds="5 10 15 
 ```
 
 ## Known limits
+
+- The helm-panel turn arrows order **High-Energy Turns**. A HET power bar appears and the ship turns fast after a delay of about 5 s. A normal turn is set by left-clicking a bearing in the tactical view (`mouse_helm.py`), and it is far slower. Measure the two separately.
 
 - The heading comes from pixels, so it has a few degrees of noise. The
   analysis uses a 5-sample median and the 10% to 90% part of each turn.
