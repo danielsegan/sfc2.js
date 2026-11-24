@@ -1,7 +1,8 @@
 import {
+  AdditiveBlending,
   AmbientLight,
   BufferGeometry,
-  BufferAttribute,
+  CanvasTexture,
   DirectionalLight,
   DoubleSide,
   Float32BufferAttribute,
@@ -12,11 +13,14 @@ import {
   Points,
   PointsMaterial,
   Scene,
+  Sprite,
+  SpriteMaterial,
   WebGLRenderer,
   type Material,
   type Mesh,
 } from 'three';
 import type { ContactView, ViewModel } from '../../engine/view/view-model.ts';
+import { photonMarks, rememberPhotonSample, type PhotonSample } from './photon-visual.ts';
 
 const FULL = 65536;
 
@@ -30,9 +34,9 @@ export class DuelScene {
   private orbitPitch = 0.42;
   private distance = 9;
   private readonly beams: { line: Line; until: number }[] = [];
-  private readonly shotPositions = new Float32Array(96);
-  private readonly shotAttr = new BufferAttribute(this.shotPositions, 3);
-  private readonly shots: Points;
+  private readonly photonGlow: CanvasTexture;
+  private readonly photonSlots: { sprite: Sprite; material: SpriteMaterial }[] = [];
+  private readonly photonHistory = new Map<number, PhotonSample[]>();
   private readonly reduced: boolean;
 
   constructor(canvas: HTMLCanvasElement) {
@@ -44,11 +48,7 @@ export class DuelScene {
     sun.position.set(12, 18, 8);
     this.scene.add(sun);
     this.scene.add(starfield(900));
-    const shotGeo = new BufferGeometry();
-    shotGeo.setAttribute('position', this.shotAttr);
-    this.shots = new Points(shotGeo, new PointsMaterial({ color: 0xf2b33d, size: 0.45 }));
-    this.shots.frustumCulled = false;
-    this.scene.add(this.shots);
+    this.photonGlow = photonGlowTexture();
     this.reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }
 
@@ -92,15 +92,15 @@ export class DuelScene {
   }
 
   render(vm: ViewModel, now: number): void {
-    let shots = 0;
+    const seen = new Set<number>();
+    const marks: { x: number; y: number; z: number; size: number; opacity: number }[] = [];
     for (const contact of vm.contacts) {
       if (contact.kind === 'shot') {
-        if (shots < 32) {
-          this.shotPositions[shots * 3] = contact.x;
-          this.shotPositions[shots * 3 + 1] = 0.3;
-          this.shotPositions[shots * 3 + 2] = -contact.y;
-          shots += 1;
-        }
+        seen.add(contact.id);
+        const sample = { x: contact.x, y: 0.7, z: -contact.y };
+        const history = rememberPhotonSample(this.photonHistory.get(contact.id) ?? [], sample);
+        this.photonHistory.set(contact.id, history);
+        marks.push(...photonMarks(history));
         continue;
       }
       const hull = this.hulls[contact.index];
@@ -109,7 +109,10 @@ export class DuelScene {
       hull.position.set(contact.x, 0, -contact.y);
       hull.rotation.y = (contact.heading16 / FULL) * Math.PI * 2;
     }
-    this.shotGeoCount(shots);
+    for (const id of [...this.photonHistory.keys()]) {
+      if (!seen.has(id)) this.photonHistory.delete(id);
+    }
+    this.placePhotons(marks);
     if (!this.reduced) this.noteHits(vm, now);
     this.expire(now);
     const self = vm.contacts.find((contact) => contact.kind === 'ship' && contact.hostility === 'self');
@@ -117,10 +120,32 @@ export class DuelScene {
     this.renderer.render(this.scene, this.camera);
   }
 
-  private shotGeoCount(count: number): void {
-    this.shotAttr.needsUpdate = true;
-    this.shots.geometry.setDrawRange(0, count);
-    this.shots.visible = count > 0;
+  private placePhotons(marks: readonly { x: number; y: number; z: number; size: number; opacity: number }[]): void {
+    while (this.photonSlots.length < marks.length) {
+      const material = new SpriteMaterial({
+        map: this.photonGlow,
+        color: 0xffffff,
+        transparent: true,
+        depthWrite: false,
+        blending: AdditiveBlending,
+      });
+      const sprite = new Sprite(material);
+      sprite.frustumCulled = false;
+      this.scene.add(sprite);
+      this.photonSlots.push({ sprite, material });
+    }
+    for (let i = 0; i < this.photonSlots.length; i++) {
+      const slot = this.photonSlots[i]!;
+      const mark = marks[i];
+      if (!mark) {
+        slot.sprite.visible = false;
+        continue;
+      }
+      slot.sprite.visible = true;
+      slot.sprite.position.set(mark.x, mark.y, mark.z);
+      slot.sprite.scale.set(mark.size, mark.size, 1);
+      slot.material.opacity = mark.opacity;
+    }
   }
 
   private place(self: ContactView): void {
@@ -180,6 +205,26 @@ function forceDoubleSide(group: Group): void {
     const list = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
     for (const material of list) (material as Material & { side: number }).side = DoubleSide;
   });
+}
+
+/** Original glow. A white core, gold body, and a soft orange falloff. Not a game texture. */
+function photonGlowTexture(): CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 128;
+  const paint = canvas.getContext('2d');
+  if (!paint) return new CanvasTexture(canvas);
+  const glow = paint.createRadialGradient(64, 64, 0, 64, 64, 62);
+  glow.addColorStop(0, 'rgba(255, 255, 236, 1)');
+  glow.addColorStop(0.16, 'rgba(255, 220, 120, 0.98)');
+  glow.addColorStop(0.38, 'rgba(242, 160, 48, 0.72)');
+  glow.addColorStop(0.68, 'rgba(242, 120, 32, 0.28)');
+  glow.addColorStop(1, 'rgba(242, 120, 32, 0)');
+  paint.fillStyle = glow;
+  paint.fillRect(0, 0, 128, 128);
+  const texture = new CanvasTexture(canvas);
+  texture.needsUpdate = true;
+  return texture;
 }
 
 function starfield(count: number): Points {
