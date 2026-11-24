@@ -1,0 +1,23 @@
+{
+  "status": "fallback",
+  "note": "Drop Community Edition 2.670 measurements into the override fields. A null shield override, and a turn letter absent from measuredMaxYawPerTick, keep today's fallback. While a letter is absent, spawn still emits turnModeUnverified and yaw uses fallbackMaxYawPerTick from turn-modes.json. No code change is required to replace a fallback.",
+  "shields": {
+    "sideColumnFactor": null,
+    "fallbackSideColumnFactor": 2,
+    "endFactor": null,
+    "fallbackEndFactor": 2,
+    "sideColumnFactorNote": "Multiplies the paired side cells (forwardSide and aftSide) after fan-out. Unverified on CE 2.670. The fallback is the SFC1-lineage ×2. Set sideColumnFactor to a measured non-negative integer to replace it. endFactor does the same for the front and rear cells.",
+    "pairing": null,
+    "fallbackPairing": {
+      "front": [0],
+      "forwardSide": [1, 5],
+      "aftSide": [2, 4],
+      "rear": [3]
+    },
+    "pairingNote": "forwardSide is the Shield 2 _ 6 column. aftSide is Shield 3 _ 5. Indexes are shield facings, 0 = front, clockwise. Unverified. Set pairing to an object with those four keys, each a list of facings 0–5 used once, to replace the fallback."
+  },
+  "turnYaw": {
+    "measuredMaxYawPerTick": {},
+    "measuredNote": "Keys are the letters AA and A–G. A value is max yaw per tick for that letter. A letter with a value uses it and does not emit turnModeUnverified. Letters left out keep the shared fallback."
+  }
+}

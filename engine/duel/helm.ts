@@ -16,24 +16,12 @@ import type { World } from '../sim/world.ts';
 import { H, readHull } from '../sim/hull.ts';
 import {
   CLASS_FIGHTER,
-  FALLBACK_YAW_PER_TICK,
-  TURN_H,
-  TURN_TEST_A,
-  TURN_TEST_C,
   turnHasRate,
   turnImmobile,
+  turnYawCap,
 } from '../sim/rules-tables.ts';
 
-/**
- * Per-tick yaw cap. TEST-* and H come from the synthetic table.
- * Any other mode, including an unverified letter, uses the documented fallback.
- */
-export function turnYawCap(mode: number): number {
-  if (mode === TURN_TEST_A) return 8000;
-  if (mode === TURN_TEST_C) return 2000;
-  if (mode === TURN_H) return 0;
-  return FALLBACK_YAW_PER_TICK;
-}
+export { turnYawCap };
 
 /** Duel yaw order. Combat's verbs stay 1–5; this match registers 6 beside them. */
 export const VERB_ORDER_HELM = 6;

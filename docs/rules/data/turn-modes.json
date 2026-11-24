@@ -2,7 +2,7 @@
   "status": "placeholder",
   "note": "TEST-* rows exist so fixtures can move. Letters AA and A–G are recognised because docs/formats/shiplist.md already names them. Their per-letter rates stay unverified until playtest against Community Edition 2.670 (issue #37). Movement does not wait on that playtest: an unverified letter, and any other token that is not H or a TEST-* row, uses fallbackMaxYawPerTick. The sim emits turnModeUnverified once when that hull is spawned, then keeps speed and yaw. H is the stationary token from the format spec.",
   "fallbackMaxYawPerTick": 2000,
-  "fallbackNote": "Placeholder yaw per tick, the same integer as TEST-C. Not a measured CE rate. One value for every unverified letter until playtest splits them.",
+  "fallbackNote": "Placeholder yaw per tick, the same integer as TEST-C. Not a measured CE rate. One value for every unverified letter until a letter is set under measured.json turnYaw.measuredMaxYawPerTick.",
   "modes": {
     "TEST-A": { "maxYawPerTick": 8000, "immobile": false },
     "TEST-C": { "maxYawPerTick": 2000, "immobile": false },

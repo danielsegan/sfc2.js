@@ -4,7 +4,7 @@ import { cross, distSq, dot, fx } from '../core/fx.ts';
 import { LocalSession } from '../net/session.ts';
 import { createSim, type Sim, type StepResult } from './sim.ts';
 import { bearingInArc, facingForRelative, relativeBearing, shotInArc, withinRange } from './arcs.ts';
-import { bindShiplistRow, parseHundredths, type ShipSetup } from './bind-shiplist.ts';
+import { bindShiplistRow, parseHundredths, shieldMaxFromCells, type ShipSetup } from './bind-shiplist.ts';
 import type { Diagnostic } from '../../tools/formats/diagnostics.ts';
 import { parseShiplist } from '../../tools/formats/shiplist.ts';
 import {
@@ -23,6 +23,7 @@ import {
   TURN_H,
   TURN_TEST_C,
   TURN_UNVERIFIED,
+  classifyTurnLetter,
   ARC_CODES,
   WEAPON_CODES,
   arcDef,
@@ -277,6 +278,15 @@ describe('shiplist binding', () => {
     expect(ship.minCrew).toBe(1);
     expect(ship.acceleration).toBe(4);
     expect(ship.turnMode).toBe(TURN_H);
+    expect(shieldMaxFromCells(10, 8, 6, 4)).toEqual([20, 16, 12, 8, 12, 16]);
+    expect(shieldMaxFromCells(10, 8, 6, 4, {
+      sideColumnFactor: 1,
+      endFactor: 3,
+      pairing: { front: [0], forwardSide: [1], aftSide: [2, 4], rear: [3, 5] },
+    })).toEqual([30, 8, 6, 12, 6, 12]);
+    expect(classifyTurnLetter('C', {})).toEqual({ id: TURN_UNVERIFIED, yaw: 2000, unverified: 1 });
+    expect(classifyTurnLetter('C', { C: 1800 })).toEqual({ id: 8, yaw: 1800, unverified: 0 });
+    expect(classifyTurnLetter('A', { C: 1800 }).unverified).toBe(1);
     expect(ship.classCode).toBe(CLASS_SHIP);
     expect(ship.mounts).toEqual([
       {
