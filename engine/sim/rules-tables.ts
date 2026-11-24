@@ -3,6 +3,7 @@
  * docs/rules/data/weapon-arcs.json, which this module reads directly.
  * Numeric costs stay integer rule-points. Empty cost rows stay 0.
  */
+import constants from '../../docs/rules/data/constants.json' with { type: 'json' };
 import table from '../../docs/rules/data/weapon-arcs.json' with { type: 'json' };
 
 /** One rule point, stored as hundredths so a two-decimal move cost stays exact. */
@@ -37,6 +38,55 @@ export const DEFAULT_FIRE_CONTROL = 1;
 export const DEFAULT_REINFORCE_PER_ENERGY = 1;
 export const DEFAULT_REINFORCE_CAP = 100;
 export const DEFAULT_CREW_LOSS = 1;
+
+/** Chart row codes. 0 is unused so a zeroed field is not a row. */
+export const ROW_BRIDGE = 1;
+export const ROW_HULL = 2;
+export const ROW_SENSORS = 3;
+export const ROW_EXCESS = 4;
+
+const HULL_SECTION_NAMES = [
+  'hullForward',
+  'hullForward',
+  'hullCenter',
+  'hullAft',
+  'hullCenter',
+  'hullForward',
+] as const;
+
+function buildChart(): readonly number[] {
+  const names = constants.damageChart;
+  if (names.length < 1) throw new Error('damage chart');
+  const out: number[] = [];
+  for (const name of names) {
+    if (name === 'bridge') out.push(ROW_BRIDGE);
+    else if (name === 'hullStruck') out.push(ROW_HULL);
+    else if (name === 'sensors') out.push(ROW_SENSORS);
+    else if (name === 'excess') out.push(ROW_EXCESS);
+    else throw new Error('damage chart row');
+  }
+  return out;
+}
+
+function chartPointSize(): number {
+  const size = constants.chartPointSize;
+  if (!Number.isInteger(size) || size <= 0) throw new Error('chart point size');
+  return size;
+}
+
+export const DAMAGE_CHART: readonly number[] = buildChart();
+export const CHART_POINT_SIZE = chartPointSize();
+
+const FACING_KEYS = ['0', '1', '2', '3', '4', '5'] as const;
+
+function assertHullMap(): void {
+  const map = constants.hullStruckByFacing;
+  for (let i = 0; i < FACING_KEYS.length; i++) {
+    if (map[FACING_KEYS[i]!] !== HULL_SECTION_NAMES[i]) throw new Error('hull section map');
+  }
+}
+
+assertHullMap();
 
 const SHIP_WEAPON_CODES = [
   'TEST-PH', 'TEST-PHOT', 'TEST-DRN', 'Phot',

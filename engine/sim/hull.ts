@@ -1,9 +1,9 @@
 /**
  * Per-ship component layout. Every field is an int32 in the world tables,
- * so the sim state hash covers allocation, shields, and mounts.
+ * so the sim state hash covers allocation, shields, mounts, and photon shots.
  */
 import type { EntityId } from '../core/brands.ts';
-import type { World, WorldSnap } from './world.ts';
+import { ENTITY_KIND, type World, type WorldSnap } from './world.ts';
 
 export const HULL = 'hull';
 export const MOUNT = 'mount';
@@ -38,9 +38,37 @@ export const H = {
   lastReason: 39,
   lastStatus: 40,
   lastApplied: 41,
+  armor: 42,
+  bridge: 43,
+  hullForward: 44,
+  hullCenter: 45,
+  hullAft: 46,
+  sensors: 47,
+  extra: 48,
+  lastHitFacing: 49,
+  lastHitDamage: 50,
+  lastHitAbsorbed: 51,
+  lastHitPen: 52,
+  shotSeq: 53,
 } as const;
 
-export const HULL_FIELDS = 42;
+export const HULL_FIELDS = 54;
+
+/** One in-flight heavy weapon. Rows live on seeker entities, not on the ship. */
+export const SHOT = 'shot';
+export const SHOT_FIELDS = 9;
+
+export const S = {
+  live: 0,
+  owner: 1,
+  target: 2,
+  remaining: 3,
+  speed: 4,
+  damage: 5,
+  prox: 6,
+  mode: 7,
+  seq: 8,
+} as const;
 
 export const M = {
   weaponId: 0,
@@ -66,6 +94,35 @@ export interface MountMem {
   mode: number;
   budget100: number;
   ticksCharging: number;
+}
+
+export interface ShotMem {
+  live: number;
+  owner: number;
+  target: number;
+  remaining: number;
+  speed: number;
+  damage: number;
+  prox: number;
+  mode: number;
+  seq: number;
+}
+
+export interface ShipSystems {
+  armor: number;
+  bridge: number;
+  hullForward: number;
+  hullCenter: number;
+  hullAft: number;
+  sensors: number;
+  extraDamage: number;
+}
+
+export interface LastHit {
+  facing: number;
+  damage: number;
+  absorbed: number;
+  penetrating: number;
 }
 
 export function emptyHull(): number[] {
@@ -115,6 +172,35 @@ export function readMounts(world: World, id: EntityId): MountMem[] {
     row.ticksCharging = raw[b + M.ticksCharging]!;
   }
   return out;
+}
+
+export function readShot(world: World, id: EntityId): ShotMem {
+  const raw = world.getFields(id, SHOT);
+  return {
+    live: raw[S.live]!,
+    owner: raw[S.owner]!,
+    target: raw[S.target]!,
+    remaining: raw[S.remaining]!,
+    speed: raw[S.speed]!,
+    damage: raw[S.damage]!,
+    prox: raw[S.prox]!,
+    mode: raw[S.mode]!,
+    seq: raw[S.seq]!,
+  };
+}
+
+export function writeShot(world: World, id: EntityId, shot: ShotMem): void {
+  world.setFields(id, SHOT, [
+    shot.live,
+    shot.owner,
+    shot.target,
+    shot.remaining,
+    shot.speed,
+    shot.damage,
+    shot.prox,
+    shot.mode,
+    shot.seq,
+  ]);
 }
 
 export function writeMounts(world: World, id: EntityId, mounts: readonly MountMem[]): void {
@@ -187,6 +273,8 @@ export interface ShipView {
   readonly lastReason: number;
   readonly lastStatus: number;
   readonly lastApplied: number;
+  readonly systems: ShipSystems;
+  readonly lastHit: LastHit;
   readonly heading: number;
   readonly mounts: readonly MountMem[];
 }
@@ -248,7 +336,50 @@ export function shipView(snap: WorldSnap, index: number): ShipView {
     lastReason: fields[H.lastReason]!,
     lastStatus: fields[H.lastStatus]!,
     lastApplied: fields[H.lastApplied]!,
+    systems: {
+      armor: fields[H.armor]!,
+      bridge: fields[H.bridge]!,
+      hullForward: fields[H.hullForward]!,
+      hullCenter: fields[H.hullCenter]!,
+      hullAft: fields[H.hullAft]!,
+      sensors: fields[H.sensors]!,
+      extraDamage: fields[H.extra]!,
+    },
+    lastHit: {
+      facing: fields[H.lastHitFacing]!,
+      damage: fields[H.lastHitDamage]!,
+      absorbed: fields[H.lastHitAbsorbed]!,
+      penetrating: fields[H.lastHitPen]!,
+    },
     heading: live && heading ? heading[index]! : 0,
     mounts,
   };
+}
+
+function shotFrom(raw: readonly number[], base: number): ShotMem {
+  return {
+    live: raw[base + S.live]!,
+    owner: raw[base + S.owner]!,
+    target: raw[base + S.target]!,
+    remaining: raw[base + S.remaining]!,
+    speed: raw[base + S.speed]!,
+    damage: raw[base + S.damage]!,
+    prox: raw[base + S.prox]!,
+    mode: raw[base + S.mode]!,
+    seq: raw[base + S.seq]!,
+  };
+}
+
+/** In-flight seekers, in ascending entity index. Detonated shots are already freed. */
+export function liveShots(snap: WorldSnap): ShotMem[] {
+  const kind = tableData(snap, 'kind');
+  const shot = tableData(snap, SHOT);
+  const out: ShotMem[] = [];
+  if (!kind || !shot) return out;
+  for (let i = 0; i < snap.live.length; i++) {
+    if (snap.live[i] !== 1) continue;
+    if (kind[i] !== ENTITY_KIND.seeker) continue;
+    out.push(shotFrom(shot, i * SHOT_FIELDS));
+  }
+  return out;
 }

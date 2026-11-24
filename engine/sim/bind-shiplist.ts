@@ -25,6 +25,16 @@ export interface MountSetup {
   ticksCharging: number;
 }
 
+export interface ShipSystemsSetup {
+  readonly armor?: number;
+  readonly bridge?: number;
+  readonly hullForward?: number;
+  readonly hullCenter?: number;
+  readonly hullAft?: number;
+  readonly sensors?: number;
+  readonly extraDamage?: number;
+}
+
 export interface ShipSetup {
   classCode: number;
   warp: number;
@@ -44,6 +54,7 @@ export interface ShipSetup {
   fcPaid: number;
   destroyed: number;
   disabled: number;
+  systems?: ShipSystemsSetup;
   mounts: readonly MountSetup[];
 }
 
