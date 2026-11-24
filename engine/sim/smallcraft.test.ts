@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { parseFtrlist } from '../../tools/formats/ftrlist.ts';
 import { LocalSession } from '../net/session.ts';
-import { createCruise, CRUISE_TABLE } from '../duel/cruise.ts';
+import { createCruise, CRUISE_TABLE } from './cruise.ts';
 import { fx } from '../core/fx.ts';
 import type { ShipSetup } from './bind-shiplist.ts';
 import { EVENT_SPAWN, VERB_SET_SHIELDS, VERB_SPAWN, createCombat, setShieldsPayload } from './combat.ts';

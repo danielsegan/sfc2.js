@@ -36,6 +36,8 @@ Playback restores the snapshot, checks it matches a fresh `createSim` for the se
 
 `simSourceHash` is xxHash32 over `engine/core/**/*.ts` and `engine/sim/**/*.ts`, tests excluded, in sorted repo-relative POSIX paths. Each file is `utf8(path) ‖ 0x00 ‖ fileBytes`, which is the function already in `engine/core/version.ts`. Docs, `engine/driver`, `engine/net`, `engine/replay`, and tests are not included, so a doc-only commit does not invalidate a replay.
 
+A file that defines a `SimSystem`, `CommandHandler`, or `TableSpec` lives under those trees, so a behavior change moves this hash. `tools/check-sim-home.mjs` fails the lint otherwise. Synthetic scripts under `engine/replay/scenarios` stay out of this hash on purpose; `scenarioHash` covers them. See determinism.md §8.
+
 `scenarioHash` covers the scenario sources listed on that scenario (the synthetic script and, when it uses them, `engine/replay/scenarios/kit.ts`). V1's `versionHash` formula is only format + sim sources + data, so a script edit must not be folded into that formula. The separate stamp makes a script edit fail as a stale replay instead of a tick divergence that looks like a sim bug.
 
 `.gitattributes` forces LF on text and marks `*.s2replay` binary so the source hash does not depend on `core.autocrlf`.
@@ -63,4 +65,4 @@ The browser job loads the same files in Chromium, Firefox, and WebKit and compar
 | `replays/ai-regen.s2replay` | `ai-regen` | Empty player log. Slot 8 respawns its commands inside the sim. |
 | `replays/skirmish-3v3.s2replay` | `skirmish-3v3` | Empty player log. Six AI ships, three a side, captains on slots 8–13. |
 | `replays/every-empire.s2replay` | `every-empire` | Empty player log. Six AI ships, one per line empire. The run uses EW, overload, boarding, a tractor, a cloak, a mine, a fighter, and a PF. |
-| `replays/heading-order.s2replay` | `heading-order` | Two ships. A heading order turns at the TEST-C cap, a yaw replaces it, then a later heading order replaces that. The stored heading is fixed. The per-tick steer is in `engine/sim/heading.ts`. |
+| `replays/heading-order.s2replay` | `heading-order` | Two ships. A heading order turns at the TEST-C cap, a yaw replaces it, then a later heading order replaces that. The stored heading is fixed. The yaw handler is `engine/sim/helm.ts` and the per-tick steer is `engine/sim/heading.ts`. |

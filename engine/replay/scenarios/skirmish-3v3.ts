@@ -8,8 +8,8 @@ import {
   allegiancePayload,
 } from '../../sim/allegiance.ts';
 import { createCaptain } from '../../sim/captain.ts';
-import { CRUISE_TABLE, createCruise } from '../../duel/cruise.ts';
-import { helmHandler } from '../../duel/helm.ts';
+import { CRUISE_TABLE, createCruise } from '../../sim/cruise.ts';
+import { helmHandler } from '../../sim/helm.ts';
 import { CLASS_SHIP, ENERGY_SCALE, MODE_NORMAL, TURN_TEST_C } from '../../sim/rules-tables.ts';
 import { createSim, type SimSystem } from '../../sim/sim.ts';
 import type { CorpusScript, Scenario } from './types.ts';

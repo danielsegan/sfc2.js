@@ -4,15 +4,14 @@
  * so a full turn of shares sums to the speed. The remainder lives in the
  * `cruise` table and is hashed with the rest of the world.
  *
- * setEnergy writes the speed. This system only reads it. Replay scenarios
- * do not register it, so the headless corpus is unchanged.
+ * setEnergy writes the speed. This system only reads it.
  */
 import { cos16, sin16 } from '../core/angle.ts';
 import { add, FX_ONE, fxRaw, mul } from '../core/fx.ts';
-import type { SimSystem } from '../sim/sim.ts';
-import type { TableSpec } from '../sim/world.ts';
-import { H, readHull } from '../sim/hull.ts';
-import { rulesDiv } from '../sim/rules-div.ts';
+import type { SimSystem } from './sim.ts';
+import type { TableSpec } from './world.ts';
+import { H, readHull } from './hull.ts';
+import { rulesDiv } from './rules-div.ts';
 
 export const CRUISE = 'cruise';
 

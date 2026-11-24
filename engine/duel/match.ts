@@ -50,8 +50,8 @@ import {
   setWeaponModePayload,
 } from '../sim/phase3.ts';
 import type { ShipSetup } from '../sim/bind-shiplist.ts';
-import { CRUISE_TABLE, createCruise } from './cruise.ts';
-import { VERB_ORDER_HELM, helmHandler, helmPayload } from './helm.ts';
+import { CRUISE_TABLE, createCruise } from '../sim/cruise.ts';
+import { VERB_ORDER_HELM, helmHandler, helmPayload } from '../sim/helm.ts';
 import {
   HEADING_ORDER_TABLE,
   VERB_ORDER_HEADING,

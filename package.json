@@ -16,7 +16,7 @@
     "ship-audit": "node --experimental-strip-types tools/ship-audit/cli.ts",
     "test": "pnpm test:formats && pnpm test:ship-audit && pnpm test:engine",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "lint:sim": "node tools/check-sim-syntax.mjs && eslint .",
+    "lint:sim": "node tools/check-sim-syntax.mjs && node tools/check-sim-home.mjs && eslint .",
     "lut:check": "node tools/generate-angle-lut.mjs --check",
     "replay:check": "node --experimental-strip-types engine/replay/cli.ts check replays",
     "replay:record": "node --experimental-strip-types engine/replay/cli.ts record replays",

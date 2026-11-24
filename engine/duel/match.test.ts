@@ -1,9 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { VERB_FIRE, firePayload } from '../sim/combat.ts';
-import { FALLBACK_YAW_PER_TICK, TURN_H, TURN_TEST_A, TURN_TEST_C, TURN_UNVERIFIED } from '../sim/rules-tables.ts';
+import { FALLBACK_YAW_PER_TICK, TURN_H, TURN_TEST_A, TURN_TEST_C, TURN_UNVERIFIED, turnYawCap } from '../sim/rules-tables.ts';
 import { syntheticSetups, SYNTHETIC_SPAWNS } from './fixture.ts';
-import { turnYawCap } from './helm.ts';
 import { createDuelMatch, createSyntheticDuel } from './match.ts';
 
 const TICK = 1000 / 30;

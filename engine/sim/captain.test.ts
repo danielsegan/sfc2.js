@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { command } from '../core/codec.ts';
 import { readU32 } from '../core/bytes.ts';
-import { VERB_ORDER_HELM, helmHandler, helmPayload } from '../duel/helm.ts';
+import { VERB_ORDER_HELM, helmHandler, helmPayload } from './helm.ts';
 import { createSim } from './sim.ts';
 import { createCombat, VERB_FIRE, VERB_SET_ENERGY, VERB_SPAWN, firePayload, spawnPayload } from './combat.ts';
-import { CRUISE_TABLE, createCruise } from '../duel/cruise.ts';
+import { CRUISE_TABLE, createCruise } from './cruise.ts';
 import { CLASS_SHIP, ENERGY_SCALE, MODE_NORMAL, MODE_OVERLOAD, TURN_TEST_A } from './rules-tables.ts';
 import type { ShipSetup } from './bind-shiplist.ts';
 import {

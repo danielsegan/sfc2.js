@@ -37,7 +37,11 @@ import {
   HELM_OK,
   HELM_UNVERIFIED,
   HELM_YAW_CLAMPED,
-} from '../duel/helm.ts';
+  readHelmView,
+  type HelmView,
+} from '../sim/helm.ts';
+
+export type { HelmView };
 import {
   EVENT_HEADING,
   HEADING_DESTROYED,
@@ -148,6 +152,8 @@ export interface SelfView {
   readonly turnRateLimit16PerTick: number;
   /** Remaining-angle band. 0 under 22.5°, then 45°, 90°, and at least 90°. Null when there is no order. */
   readonly turnBand: 0 | 1 | 2 | 3 | null;
+  /** Current tick's helm readout. `mode` is never `het` until a high-energy turn exists. */
+  readonly helm: HelmView;
   readonly destroyed: boolean;
   readonly disabled: boolean;
   readonly ecm: number;
@@ -586,6 +592,7 @@ export function buildViewModel(input: ViewBuildInput): ViewModel {
       }
       const reason = ship.lastVerb === 0 ? '' : (REASON_NAME[ship.lastReason] ?? '');
       const helm = helmReadout(input.curr.world, input.selfIndex, ship.turnMode);
+      const helmView = readHelmView(input.curr.world, input.selfIndex);
       self = {
         id: entityId(curr, input.selfIndex),
         index: input.selfIndex,
@@ -608,6 +615,7 @@ export function buildViewModel(input: ViewBuildInput): ViewModel {
         heading16: ship.heading,
         ...helm,
         headingOrdered16: helm.orderedHeading16 ?? undefined,
+        helm: helmView,
         destroyed: ship.destroyed === 1,
         disabled: ship.disabled === 1,
         ecm: ship.ecmPaid,

@@ -7,22 +7,27 @@
  * uses the documented fallback cap and still turns. The hull's last-verb
  * fields are left to the combat verbs.
  */
-import { angle16 } from '../core/angle.ts';
+import { angle16, shortestArc } from '../core/angle.ts';
 import { asEntityId } from '../core/brands.ts';
 import { readU32, writeU32 } from '../core/bytes.ts';
 import type { Command } from '../core/codec.ts';
-import type { CommandHandler, TickContext } from '../sim/sim.ts';
-import type { World } from '../sim/world.ts';
-import { H, readHull } from '../sim/hull.ts';
+import type { CommandHandler, TickContext } from './sim.ts';
+import type { World, WorldSnap } from './world.ts';
+import { H, readHull } from './hull.ts';
 import {
   CLASS_FIGHTER,
   turnHasRate,
   turnImmobile,
   turnYawCap,
-} from '../sim/rules-tables.ts';
-import { holdHeading } from '../sim/heading.ts';
-
-export { turnYawCap };
+} from './rules-tables.ts';
+import {
+  HEADING_FIELDS,
+  HEADING_HOLD,
+  HEADING_ORDER,
+  HEADING_STEER,
+  HORD,
+  holdHeading,
+} from './heading.ts';
 
 /** Duel yaw order. Combat's verbs stay 1–5 and 7–10; this match registers 6 beside them. */
 export const VERB_ORDER_HELM = 6;
@@ -113,3 +118,51 @@ export const helmHandler: CommandHandler = {
     apply(world, cmd, ctx);
   },
 };
+
+/** `het` is reserved for a later high-energy turn. Nothing in the sim produces it yet. */
+export const HELM_MODES = ['none', 'heading', 'het'] as const;
+
+export type HelmMode = (typeof HELM_MODES)[number];
+
+/**
+ * Read-only helm picture for one ship, taken from the snapshot the sim
+ * just wrote. It is not stored, so it does not enter the state hash.
+ * There is no tracked target.
+ */
+export interface HelmView {
+  readonly mode: HelmMode;
+  /**
+   * Signed short-way arc still to turn, in the same BAM units as heading.ts.
+   * 65536 is a full turn. The half-turn tie is −32768, matching shortestArc.
+   */
+  readonly remainingTurn16: number;
+  /** Ticks left before a high-energy turn may begin. 0 until HET exists. */
+  readonly hetDelayTicks: number;
+}
+
+function tableOf(snap: WorldSnap, id: string): { readonly data: readonly number[]; readonly fieldCount: number } | undefined {
+  for (const table of snap.tables) {
+    if (table.id === id) return table;
+  }
+  return undefined;
+}
+
+/** Current tick only. Positions are not blended here. */
+export function readHelmView(snap: WorldSnap, index: number): HelmView {
+  const idle: HelmView = { mode: 'none', remainingTurn16: 0, hetDelayTicks: 0 };
+  if (index < 0 || snap.live[index] !== 1) return idle;
+  const order = tableOf(snap, HEADING_ORDER);
+  if (!order || order.fieldCount < HEADING_FIELDS) return idle;
+  const base = index * order.fieldCount;
+  const mode = order.data[base + HORD.mode] ?? 0;
+  if (mode !== HEADING_STEER && mode !== HEADING_HOLD) return idle;
+  const aim = (order.data[base + HORD.heading] ?? 0) & 0xffff;
+  const heading = tableOf(snap, 'heading');
+  const width = heading && heading.fieldCount > 0 ? heading.fieldCount : 1;
+  const current = heading ? (heading.data[index * width] ?? 0) : 0;
+  return {
+    mode: 'heading',
+    remainingTurn16: shortestArc(angle16(current), angle16(aim)) | 0,
+    hetDelayTicks: 0,
+  };
+}
