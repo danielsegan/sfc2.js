@@ -73,7 +73,7 @@ Tokens live in one TypeScript table used by the HUD overlay canvas and WebGL, mi
 | Token | Value | Use |
 | --- | --- | --- |
 | `--panel-bg` | `#0B1118` | Plates |
-| `--panel-edge` | `#3A4A5C` | Borders, dividers |
+| `--panel-edge` | `#627488` | Borders, dividers. At least 3:1 against every skin `panelBg` (`hud-layout.md` §6); also the neutral skin accent |
 | `--text` | `#D8E2EC` | Primary text |
 | `--text-dim` | `#8A9AAB` | Secondary text |
 | `--state-normal` | `#5FD3A0` | Systems nominal, weapon ready |

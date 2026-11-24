@@ -4,7 +4,7 @@
  */
 import type { RosterEntry } from '../../engine/duel/fixture.ts';
 import type { ViewModel } from '../../engine/view/view-model.ts';
-import { empireBadge } from './tactical/empire.ts';
+import { empireMarkFor, renderEmpireMark } from './empire-marks.ts';
 import {
   alertLamp,
   barSize,
@@ -168,7 +168,7 @@ function paintTags(input: FieldHudInput): void {
     const contact = input.vm.contacts.find((item) => item.id === tag.id);
     if (!contact) continue;
     const name = input.roster[contact.index]?.name ?? 'Contact';
-    const badge = empireBadge(input.roster[contact.index]?.empire ?? '');
+    const badge = empireMarkFor(input.roster[contact.index]?.empire ?? '');
     const range = formatRangeTag(contact.rangeFromSelf);
     const button = document.createElement('button');
     button.type = 'button';
@@ -179,7 +179,7 @@ function paintTags(input: FieldHudInput): void {
     button.title = `${badge.code}  ${name}  ${range}`;
     button.style.left = `${String(tag.x)}px`;
     button.style.top = `${String(tag.y)}px`;
-    button.append(empireMark(badge.mark), empireCode(badge.code));
+    button.append(renderEmpireMark(badge, 'tag-mark'), empireCode(badge.code));
     const shape = document.createElement('span');
     shape.className = `tag-shape ${contact.hostility === 'hostile' ? 'chevron' : contact.hostility === 'friendly' ? 'chevron solid' : 'diamond'}`;
     shape.setAttribute('aria-hidden', 'true');
@@ -195,21 +195,6 @@ function paintTags(input: FieldHudInput): void {
     button.append(shape, arrow, label, readout);
     host.append(button);
   }
-}
-
-/** Off-screen tag mark. Follow-up: reuse the empire skin marks instead of this path. */
-function empireMark(path: string): SVGSVGElement {
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.setAttribute('viewBox', '0 0 16 16');
-  svg.setAttribute('class', 'tag-mark');
-  svg.setAttribute('aria-hidden', 'true');
-  const stroke = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  stroke.setAttribute('d', path);
-  stroke.setAttribute('fill', 'none');
-  stroke.setAttribute('stroke', 'currentColor');
-  stroke.setAttribute('stroke-width', '1.5');
-  svg.append(stroke);
-  return svg;
 }
 
 function empireCode(code: string): HTMLSpanElement {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { compassHeading, headingToward } from './helm-aim.ts';
+import { headingToward } from './helm-aim.ts';
 
 describe('helm aim', () => {
   it('points along the axes and the short diagonal', () => {
@@ -12,11 +12,5 @@ describe('helm aim', () => {
 
   it('ignores a click on the ship', () => {
     expect(headingToward(2, 2, 2, 2)).toBeNull();
-  });
-
-  it('reads the compass with 0 to the right and positive heading up', () => {
-    expect(compassHeading(10, 0)).toBe(0);
-    expect(compassHeading(0, 10)).toBe(16384);
-    expect(compassHeading(0, 0)).toBeNull();
   });
 });

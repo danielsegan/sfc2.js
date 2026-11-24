@@ -34,7 +34,9 @@ import { markerHeading } from './tactical/tags.ts';
 import {
   FIELD_FOV,
   FIELD_GRID,
+  GRID_MAJOR_ALPHA,
   GRID_MAJOR_FACTOR,
+  GRID_MINOR_ALPHA,
   GRID_MINOR_UNIT,
   MAJOR_CELLS_ACROSS,
   OVERHEAD_PITCH,
@@ -92,6 +94,9 @@ export class DuelScene {
   private readonly pointer = new Vector2();
   private readonly headingPositions = new Float32Array(HEADING_STEPS * 9);
   private readonly headingWedge: Mesh;
+  /** Full-opacity outline (nose radius, bearing radius, outer arc) so the dark-red band stays visible on black. */
+  private readonly headingEdge: LineSegments;
+  private readonly headingEdgePositions = new Float32Array((HEADING_STEPS + 2) * 6);
   private preview: number | null = null;
 
   constructor(canvas: HTMLCanvasElement, options?: { preserveDrawingBuffer?: boolean }) {
@@ -109,8 +114,8 @@ export class DuelScene {
     this.scene.add(sun);
     this.stars = starDisk(220);
     this.scene.add(this.stars);
-    this.minorMaterial = new LineBasicMaterial({ color: FIELD_GRID, transparent: true, opacity: 0.25 });
-    this.majorMaterial = new LineBasicMaterial({ color: FIELD_GRID, transparent: true, opacity: 0.4 });
+    this.minorMaterial = new LineBasicMaterial({ color: FIELD_GRID, transparent: true, opacity: GRID_MINOR_ALPHA });
+    this.majorMaterial = new LineBasicMaterial({ color: FIELD_GRID, transparent: true, opacity: GRID_MAJOR_ALPHA });
     this.gridMinor = new LineSegments(new BufferGeometry(), this.minorMaterial);
     this.gridMajor = new LineSegments(new BufferGeometry(), this.majorMaterial);
     this.gridMinor.frustumCulled = false;
@@ -145,6 +150,14 @@ export class DuelScene {
     this.headingWedge.visible = false;
     this.headingWedge.renderOrder = 2;
     this.scene.add(this.headingWedge);
+    const edgeGeo = new BufferGeometry();
+    edgeGeo.setAttribute('position', new BufferAttribute(this.headingEdgePositions, 3));
+    edgeGeo.setDrawRange(0, 0);
+    this.headingEdge = new LineSegments(edgeGeo, new LineBasicMaterial({ color: 0xe08a2e }));
+    this.headingEdge.frustumCulled = false;
+    this.headingEdge.visible = false;
+    this.headingEdge.renderOrder = 2;
+    this.scene.add(this.headingEdge);
     this.reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }
 
@@ -292,6 +305,7 @@ export class DuelScene {
       this.drawHeadingWedge(self, vm.self?.orderedHeading16 ?? null, refused);
     } else {
       this.headingWedge.visible = false;
+      this.headingEdge.visible = false;
     }
     this.noteReported(vm, now);
     this.expire(now);
@@ -303,12 +317,14 @@ export class DuelScene {
     const material = this.headingWedge.material;
     if (aim === null || !(material instanceof MeshBasicMaterial)) {
       this.headingWedge.visible = false;
+      this.headingEdge.visible = false;
       return;
     }
     const arc = remainingArc16(self.heading16, aim);
     const mag = arc < 0 ? -arc : arc;
     if (mag < 8) {
       this.headingWedge.visible = false;
+      this.headingEdge.visible = false;
       return;
     }
     const steps = Math.max(2, Math.min(HEADING_STEPS, Math.ceil(mag / 1400)));
@@ -333,8 +349,42 @@ export class DuelScene {
     const attr = this.headingWedge.geometry.getAttribute('position');
     attr.needsUpdate = true;
     this.headingWedge.geometry.setDrawRange(0, steps * 3);
-    material.color.setHex(wedgeColor(arc));
+    const color = wedgeColor(arc);
+    material.color.setHex(color);
     this.headingWedge.visible = true;
+    this.drawHeadingEdge(self, arc, steps, radius, y, color);
+  }
+
+  private drawHeadingEdge(self: ContactView, arc: number, steps: number, radius: number, y: number, color: number): void {
+    const out = this.headingEdgePositions;
+    let write = 0;
+    const point = (a16: number): [number, number] => {
+      const t = (a16 / FULL) * Math.PI * 2;
+      return [self.x + Math.cos(t) * radius, -self.y - Math.sin(t) * radius];
+    };
+    const push = (ax: number, az: number, bx: number, bz: number) => {
+      out[write++] = ax;
+      out[write++] = y;
+      out[write++] = az;
+      out[write++] = bx;
+      out[write++] = y;
+      out[write++] = bz;
+    };
+    const nose = point(self.heading16);
+    const aim = point(self.heading16 + arc);
+    push(self.x, -self.y, nose[0], nose[1]);
+    push(self.x, -self.y, aim[0], aim[1]);
+    for (let i = 0; i < steps; i++) {
+      const a = point(self.heading16 + (arc * i) / steps);
+      const b = point(self.heading16 + (arc * (i + 1)) / steps);
+      push(a[0], a[1], b[0], b[1]);
+    }
+    const attr = this.headingEdge.geometry.getAttribute('position');
+    attr.needsUpdate = true;
+    this.headingEdge.geometry.setDrawRange(0, write / 3);
+    const material = this.headingEdge.material;
+    if (material instanceof LineBasicMaterial) material.color.setHex(color);
+    this.headingEdge.visible = true;
   }
 
   private aimHeading(ordered: number | null, refused: boolean): number | null {

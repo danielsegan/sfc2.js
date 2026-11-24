@@ -9,7 +9,7 @@
   <body data-empire="fed">
     <header class="top">
       <div class="brand">
-        <img id="empire-mark" src="./art/skins/fed/mark.svg" width="16" height="16" alt="" />
+        <span id="empire-mark" class="empire-mark" aria-hidden="true"></span>
         <span id="empire-code" class="empire-code">FED</span>
         <div>
           <p class="wordmark">SFC2.js</p>
@@ -191,7 +191,7 @@
           <input id="ordered-speed" type="number" min="0" max="32" step="1" value="4" />
         </label>
         <div class="presets">
-          <button type="button" id="helm-orbit" data-action="view.camera">Orbit</button>
+          <button type="button" id="helm-camera" data-action="view.camera" title="Cycle the camera (V)">Camera</button>
           <button type="button" id="helm-go" disabled title="Go waits for a later helm change. Speed stays on the ordered-speed control.">Go</button>
           <button type="button" data-action="helm.stop">Stop</button>
         </div>

@@ -393,7 +393,7 @@ function drawMap(vm: ViewModel, hud: HudHandles): void {
   const x = hud.mapFull ? Math.floor((width - size) / 2) : width - size - 16;
   const y = hud.mapFull ? 16 : 16;
   ctx.fillStyle = 'rgba(11, 17, 24, 0.85)';
-  ctx.strokeStyle = '#3a4a5c';
+  ctx.strokeStyle = '#627488';
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(x + 6, y);
@@ -430,7 +430,7 @@ function drawMap(vm: ViewModel, hud: HudHandles): void {
     const offset = mapOffset({ x: wx, y: wy }, selfPose, hud.headingUp);
     return [cx + offset.x * scale, cy - offset.y * scale];
   };
-  ctx.strokeStyle = '#3a4a5c';
+  ctx.strokeStyle = '#627488';
   ctx.font = '10px ui-monospace, monospace';
   ctx.textAlign = 'left';
   for (const ring of [5, 10]) {
