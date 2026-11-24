@@ -23,7 +23,7 @@ Uncertain, and marked pending playtest in the spec:
 - Shiplist weapon codes, arc codes, and header detection. Still pending #6. The ship section of the mapping table is synthetic `TEST-*` codes only.
 - Whether ftrlist `Shots` is a loaded magazine or a reload stock, and whether `ADD_6` does anything on a fighter.
 
-Phase 3 systems are specified only as model shape, not as resolution rules. They are **not yet verified** against the original: electronic warfare, to-hit rolls, overload behaviour beyond the photon warhead check, hit-and-run, boarding, tractors, cloaks, mines, seeking weapons, plasma, hellbores, fighters as flying entities, PF small-craft modifiers, high-energy turns, and breakdown.
+[phase3-systems.md](phase3-systems.md) now resolves electronic warfare, overload arming cost, tractors, and cloaks with synthetic numbers. Those numbers are **not yet verified** against the original. Still unspecified as resolution rules: hit-and-run, boarding, mines, seeking weapons, plasma, hellbores, fighters as flying entities, PF small-craft modifiers, high-energy turns, and breakdown.
 
 ## How we verify
 

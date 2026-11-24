@@ -30,19 +30,12 @@ export interface CommandHost {
 const LATER: Record<string, string> = {
   'helm.reverse': 'Reverse is not in this duel.',
   'helm.erratic': 'Erratic maneuvers are not in this duel.',
-  'ops.tractor': 'Tractor is not in this duel.',
-  'ops.repel': 'Tractor is not in this duel.',
   'ops.board': 'Boarding is not in this duel.',
   'ops.hitAndRun': 'Hit and run is not in this duel.',
-  'ops.cloak': 'Cloak is not in this duel.',
   'craft.launch': 'Fighters are not in this duel.',
   'craft.recall': 'Fighters are not in this duel.',
   'craft.drone': 'Drones are not in this duel.',
   'craft.mine': 'Mines are not in this duel.',
-  'ew.shiftEcm': 'EW is not in this duel.',
-  'ew.shiftEccm': 'EW is not in this duel.',
-  'ew.totalDown': 'EW is not in this duel.',
-  'ew.totalUp': 'EW is not in this duel.',
 };
 
 const PRESETS: Record<string, Partial<DuelPlan>> = {
@@ -68,6 +61,13 @@ export function runAction(host: CommandHost, id: string): void {
   else if (id === 'helm.stop') host.match.setSpeed(0);
   else if (id === 'weapons.fire') fireGroup(host);
   else if (id === 'weapons.overload') toggleMode(host, MODE_OVERLOAD);
+  else if (id === 'ops.tractor') host.match.setTractor(1, host.match.plan.tractorEnergy);
+  else if (id === 'ops.repel') repelOrRelease(host);
+  else if (id === 'ops.cloak') toggleCloak(host);
+  else if (id === 'ew.shiftEcm') shiftEw(host, 1);
+  else if (id === 'ew.shiftEccm') shiftEw(host, -1);
+  else if (id === 'ew.totalDown') changeEw(host, -1, 0);
+  else if (id === 'ew.totalUp') changeEw(host, 0, 1);
   else if (id === 'weapons.proximity') toggleMode(host, MODE_PROXIMITY);
   else if (id.startsWith('weapons.assign')) assignGroup(host, Number(id.slice('weapons.assign'.length)) - 1);
   else if (id.startsWith('weapons.group')) selectGroup(host, Number(id.slice('weapons.group'.length)) - 1);
@@ -115,6 +115,34 @@ function reinforce(host: CommandHost, facing: number): void {
   host.match.setFacing(facing, current + 1);
 }
 
+function clampEw(points: number): number {
+  if (!Number.isInteger(points) || points < 0) return 0;
+  return points > 12 ? 12 : points;
+}
+
+function changeEw(host: CommandHost, ecmDelta: number, eccmDelta: number): void {
+  host.match.setEw(clampEw(host.match.plan.ecm + ecmDelta), clampEw(host.match.plan.eccm + eccmDelta));
+}
+
+function shiftEw(host: CommandHost, towardEcm: number): void {
+  if (towardEcm > 0 && host.match.plan.eccm > 0) changeEw(host, 1, -1);
+  else if (towardEcm < 0 && host.match.plan.ecm > 0) changeEw(host, -1, 1);
+}
+
+function repelOrRelease(host: CommandHost): void {
+  if (host.view()?.self?.tractorLink) host.match.setTractor(0, 0);
+  else host.match.setTractor(2, host.match.plan.tractorEnergy);
+}
+
+function toggleCloak(host: CommandHost): void {
+  const self = host.view()?.self;
+  if (!self?.cloakFitted) {
+    host.note('This hull has no cloak.');
+    return;
+  }
+  host.match.setCloak(self.cloakState === 0);
+}
+
 function toggleMode(host: CommandHost, mode: number): void {
   const slot = host.getSlot();
   const weapon = host.view()?.self?.weapons.find((item) => item.slotIndex === slot);
@@ -129,7 +157,11 @@ function toggleMode(host: CommandHost, mode: number): void {
 function cycleTarget(host: CommandHost, step: number, kind: 'hostile' | 'friendly'): void {
   const vm = host.view();
   if (!vm) return;
-  const list = vm.contacts.filter((contact) => contact.kind === 'ship' && (kind === 'hostile' ? contact.hostility === 'hostile' : contact.hostility !== 'hostile' && contact.hostility !== 'self'));
+  const list = vm.contacts.filter((contact) => {
+    if (contact.kind !== 'ship' || !contact.detected) return false;
+    if (kind === 'hostile') return contact.hostility === 'hostile';
+    return contact.hostility !== 'hostile' && contact.hostility !== 'self';
+  });
   if (list.length === 0) {
     host.note(kind === 'hostile' ? 'No hostile contact.' : 'No friendly contact.');
     return;
@@ -146,7 +178,7 @@ function nearestHostile(host: CommandHost): void {
   if (!vm) return;
   let best: { id: number; range: number } | null = null;
   for (const contact of vm.contacts) {
-    if (contact.kind !== 'ship' || contact.hostility !== 'hostile') continue;
+    if (contact.kind !== 'ship' || contact.hostility !== 'hostile' || !contact.detected) continue;
     if (!best || contact.rangeFromSelf < best.range) best = { id: contact.id, range: contact.rangeFromSelf };
   }
   if (!best) {

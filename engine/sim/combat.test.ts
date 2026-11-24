@@ -242,7 +242,7 @@ describe('facing, range, and arcs', () => {
     expect(DEFAULT_REINFORCE_PER_ENERGY).toBe(constants.reinforcePerEnergy);
     expect(DEFAULT_REINFORCE_CAP).toBe(constants.reinforceCapPerTurn);
     expect(DEFAULT_RULES_TURN_TICKS).toBe(constants.rulesTurnSeconds * constants.tickHz);
-    expect(REASON_NAME).toHaveLength(23);
+    expect(REASON_NAME).toHaveLength(35);
     expect(REASON_NAME[R.outOfArc]).toBe('outOfArc');
     expect(parseHundredths('0.75')).toBe(75);
     expect(parseHundredths('0.4')).toBe(40);
@@ -1201,5 +1201,5 @@ describe('CE weapon codes', () => {
   });
 });
 
-const GOLDEN_HASHES = [2950761822, 1332927196, 1523297669, 2082387381];
+const GOLDEN_HASHES = [4281461520, 839740439, 3179577620, 3837719086];
 const GOLDEN_EVENTS = [304015889, 2931359003, 4167057522];

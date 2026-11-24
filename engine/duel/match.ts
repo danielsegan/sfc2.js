@@ -38,6 +38,17 @@ import {
   MODE_PROXIMITY,
   weaponDef,
 } from '../sim/rules-tables.ts';
+import {
+  VERB_SET_CLOAK,
+  VERB_SET_EW,
+  VERB_SET_TRACTOR,
+  VERB_SET_WEAPON_MODE,
+  mountEnergyCost,
+  setCloakPayload,
+  setEwPayload,
+  setTractorPayload,
+  setWeaponModePayload,
+} from '../sim/phase3.ts';
 import type { ShipSetup } from '../sim/bind-shiplist.ts';
 import { CRUISE_TABLE, createCruise } from './cruise.ts';
 import { VERB_ORDER_HELM, helmHandler, helmPayload } from './helm.ts';
@@ -64,6 +75,9 @@ export interface DuelPlan {
   specific: number[];
   /** Per-slot weapon mode. Missing slots stay on MODE_KEEP. */
   modes: number[];
+  ecm: number;
+  eccm: number;
+  tractorEnergy: number;
 }
 
 export interface FleetSlot {
@@ -113,6 +127,10 @@ export interface DuelMatch {
   setFacing(facing: number, points: number): void;
   setWeaponMode(slot: number, mode: number): void;
   setAllocation(next: Partial<DuelPlan>): void;
+  setEw(ecm: number, eccm: number): void;
+  toggleOverload(slotIndex: number): void;
+  setTractor(mode: number, energy: number): void;
+  setCloak(on: boolean): void;
   orderYaw(yaw16: number): void;
   orderFire(slotIndex: number): void;
   setTarget(id: number): void;
@@ -218,7 +236,10 @@ class Match implements DuelMatch {
       general: clampPoints(options.plan?.general ?? base.general),
       weaponRequest: options.plan?.weaponRequest === undefined ? base.weaponRequest : options.plan.weaponRequest,
       specific: normalizeSpecific(options.plan?.specific),
-      modes: (options.plan?.modes ?? []).map((mode) => clampMode(mode)),
+      modes: (options.plan?.modes ?? base.modes).map((mode) => clampMode(mode)),
+      ecm: clampPoints(options.plan?.ecm ?? base.ecm),
+      eccm: clampPoints(options.plan?.eccm ?? base.eccm),
+      tractorEnergy: clampPoints(options.plan?.tractorEnergy ?? base.tractorEnergy),
     };
     const spawns = fleet
       ? fleet.map((slot) => ({
@@ -322,11 +343,15 @@ class Match implements DuelMatch {
   }
 
   setWeaponMode(slot: number, mode: number): void {
-    if (!Number.isInteger(slot) || slot < 0) return;
+    if (!Number.isInteger(slot) || slot < 0 || !Number.isInteger(mode)) return;
     const modes = this.plan.modes.slice();
     while (modes.length <= slot) modes.push(MODE_KEEP);
     modes[slot] = clampMode(mode);
-    this.setAllocation({ modes });
+    this.plan.modes = modes;
+    if (this.selfEntity !== null) {
+      this.session.issue(VERB_SET_WEAPON_MODE, setWeaponModePayload(this.selfEntity, slot, modes[slot]!));
+    }
+    this.userCommit();
   }
 
   setAllocation(next: Partial<DuelPlan>): void {
@@ -340,6 +365,36 @@ class Match implements DuelMatch {
     if (next.specific !== undefined) this.plan.specific = normalizeSpecific(next.specific);
     if (next.modes !== undefined) this.plan.modes = next.modes.map((mode) => clampMode(mode));
     this.userCommit();
+  }
+
+  setEw(ecm: number, eccm: number): void {
+    if (this.selfEntity === null) return;
+    this.plan.ecm = clampPoints(ecm);
+    this.plan.eccm = clampPoints(eccm);
+    this.session.issue(VERB_SET_EW, setEwPayload(this.selfEntity, this.plan.ecm, this.plan.eccm));
+  }
+
+  toggleOverload(slotIndex: number): void {
+    if (this.selfEntity === null) return;
+    const ship = shipView(this.sim.snapshot().world, this.selfIndex);
+    const mount = ship.mounts[slotIndex];
+    const next = mount && mount.mode === MODE_OVERLOAD ? MODE_NORMAL : MODE_OVERLOAD;
+    this.setWeaponMode(slotIndex, next);
+  }
+
+  setTractor(mode: number, energy: number): void {
+    if (this.selfEntity === null || !Number.isInteger(mode)) return;
+    if (mode !== 0 && this.targetEntity === null) return;
+    this.plan.tractorEnergy = clampPoints(energy);
+    this.session.issue(
+      VERB_SET_TRACTOR,
+      setTractorPayload(this.selfEntity, this.targetEntity ?? 0, mode, mode === 0 ? 0 : this.plan.tractorEnergy),
+    );
+  }
+
+  setCloak(on: boolean): void {
+    if (this.selfEntity === null) return;
+    this.session.issue(VERB_SET_CLOAK, setCloakPayload(this.selfEntity, on ? 1 : 0));
   }
 
   orderYaw(yaw16: number): void {
@@ -453,10 +508,11 @@ class Match implements DuelMatch {
       if (!mount || mount.weaponId === 0) continue;
       const def = weaponDef(mount.weaponId);
       if (!def || (def.internal !== INTERNAL_PHASER && def.internal !== INTERNAL_PHOTON)) continue;
-      const cost = def.internal === INTERNAL_PHASER ? def.chargeCost : def.armCost;
       const stored = clampMode(this.plan.modes[slot] ?? MODE_KEEP);
       let mode = stored;
       if (def.internal === INTERNAL_PHASER && mode !== MODE_KEEP && mode !== MODE_NORMAL) mode = MODE_NORMAL;
+      const priced = mode === MODE_KEEP ? mount.mode : mode;
+      const cost = mountEnergyCost(def, priced);
       const request = this.plan.weaponRequest === null ? cost : this.plan.weaponRequest;
       if (request <= 0 && mode === MODE_KEEP) continue;
       weapons.push({ slot, request: request > 0 ? request : 0, mode });

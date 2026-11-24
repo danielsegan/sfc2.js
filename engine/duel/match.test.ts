@@ -132,4 +132,30 @@ describe('duel match', () => {
     expect(match.plan.specific).toEqual([3, 0, 0, 0, 0, 0]);
     expect(match.stateHash()).toBe(before);
   });
+
+  it('sends EW, overload, tractor, and cloak through the duel commands', () => {
+    const match = boot({
+      plan: { speed: 0, lifeSupport: false, fireControl: true, general: 0, weaponRequest: null },
+    });
+    match.frame(TICK);
+    match.setEw(2, 1);
+    match.frame(TICK);
+    expect(match.view().self?.ecm).toBe(2);
+    expect(match.view().self?.eccm).toBe(1);
+    expect(match.view().self?.netShift).toBe(1);
+    match.toggleOverload(1);
+    match.frame(TICK);
+    const photon = match.view().self?.weapons.find((weapon) => weapon.slotIndex === 1);
+    expect(photon?.mode).toBe(1);
+    expect(photon?.status).toBe('overload arming');
+    match.setTractor(1, 2);
+    match.frame(TICK);
+    const tractored = match.view();
+    expect(tractored.self?.tractorLink).toBe(false);
+    expect(tractored.events.some((event) => event.kind === 'alert' && event.id === 'outOfRange')).toBe(true);
+    match.setCloak(true);
+    match.frame(TICK);
+    expect(match.view().self?.cloakState).toBe(1);
+    expect(match.view().self?.cloakFitted).toBe(true);
+  });
 });

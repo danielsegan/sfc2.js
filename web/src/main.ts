@@ -158,6 +158,19 @@ document.getElementById('ordered-speed')?.addEventListener('change', (event) => 
   match.setSpeed(Number((event.target as HTMLInputElement).value));
 });
 
+document.getElementById('ew-ecm')?.addEventListener('change', (event) => {
+  const value = Number((event.target as HTMLInputElement).value);
+  match.setEw(Number.isInteger(value) && value > 0 ? value : 0, match.plan.eccm);
+});
+document.getElementById('ew-eccm')?.addEventListener('change', (event) => {
+  const value = Number((event.target as HTMLInputElement).value);
+  match.setEw(match.plan.ecm, Number.isInteger(value) && value > 0 ? value : 0);
+});
+document.getElementById('tractor-energy')?.addEventListener('change', (event) => {
+  const value = Number((event.target as HTMLInputElement).value);
+  match.plan.tractorEnergy = Number.isInteger(value) && value > 0 ? value : 0;
+});
+
 let catalog: LoadedDuel | null = null;
 let fillingShips = false;
 

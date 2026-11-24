@@ -30,7 +30,8 @@ export function createCruise(rulesTurnTicks: number): SimSystem {
       for (const id of world.liveIds()) {
         const fields = readHull(world, id);
         if (fields[H.classCode] === 0 || fields[H.destroyed] === 1) continue;
-        const speed = fields[H.speed]!;
+        const override = fields[H.speedOverride]!;
+        const speed = override >= 0 ? override : fields[H.speed]!;
         if (speed <= 0) {
           world.setFields(id, CRUISE, [0]);
           continue;

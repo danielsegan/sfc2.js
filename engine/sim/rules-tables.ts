@@ -78,6 +78,28 @@ export const DEFAULT_RULES_TURN_TICKS = TICK_HZ * RULES_TURN_SECONDS;
 
 export const DEFAULT_LIFE_SUPPORT = 1;
 export const DEFAULT_FIRE_CONTROL = 1;
+
+function tableInt(value: number | undefined, name: string, min: number, max: number): number {
+  if (value === undefined || !Number.isInteger(value) || value < min || value > max) throw new Error(name);
+  return value;
+}
+
+/** Synthetic EW, cloak, and tractor numbers. See docs/rules/phase3-systems.md. */
+export const EW_HIT_DENOM = tableInt(constants.ewHitDenom, 'ewHitDenom', 1, 1000000);
+export const EW_PENALTY_PER_POINT = tableInt(constants.ewPenaltyPerPoint, 'ewPenaltyPerPoint', 1, EW_HIT_DENOM);
+export const EW_HIT_FLOOR = tableInt(constants.ewHitFloor, 'ewHitFloor', 0, EW_HIT_DENOM);
+export const CLOAK_TICKS = tableInt(constants.cloakTicks, 'cloakTicks', 1, 100000);
+export const CLOAK_BASE_DETECT = tableInt(constants.cloakBaseDetect, 'cloakBaseDetect', 0, 32767);
+export const CLOAK_SCAN_PER_BOX = tableInt(constants.cloakScanPerBox, 'cloakScanPerBox', 0, 32767);
+export const SPECIAL_SENSOR_CHANCE_PER_BOX = tableInt(
+  constants.specialSensorChancePerBox,
+  'specialSensorChancePerBox',
+  0,
+  EW_HIT_DENOM,
+);
+export const TRACTOR_RANGE = tableInt(constants.tractorRange, 'tractorRange', 0, 32767);
+export const TRACTOR_SELF_SLOW = tableInt(constants.tractorSelfSlow, 'tractorSelfSlow', 0, 32);
+export const TRACTOR_PULL_PER_POINT = tableInt(constants.tractorPullPerPoint, 'tractorPullPerPoint', 0, 32);
 export const DEFAULT_REINFORCE_PER_ENERGY = 1;
 export const DEFAULT_REINFORCE_CAP = 100;
 export const DEFAULT_CREW_LOSS = 1;

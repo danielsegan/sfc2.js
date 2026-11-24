@@ -131,6 +131,18 @@ interface Diagnostic {
 | rules | `shieldDepleted` | warning | Combat | `damageShield` stopped at zero on that facing |
 | rules | `chargeCapped` | warning | Combat | Weapon request was cut to what the mount can store |
 | rules | `reinforceCapped` | warning | Combat | Reinforcement was cut by the per-turn cap or shield room |
+| rules | `ewMiss` | warning | Combat | Shot fired and missed on the ECM shift |
+| rules | `noEw` | warning | Combat | No sensor boxes to power ECM or ECCM |
+| rules | `ewCapped` | warning | Combat | EW request cut to remaining sensor boxes |
+| rules | `noOverload` | warning | Combat | Mount has no overload arming cost |
+| rules | `noTractor` | warning | Combat | Hull has no tractor boxes |
+| rules | `badTarget` | warning | Combat | Tractor target is the projecting ship |
+| rules | `tractorBroken` | warning | Combat | Tractor contest or range lost |
+| rules | `noCloak` | warning | Combat | Cloak cost is empty |
+| rules | `cloaked` | warning | Combat | Weapons locked during the cloak cycle |
+| rules | `notDetected` | warning | Combat | Cloaked target is not detected |
+| rules | `cloakCollapsed` | warning | Combat | Battery missed a cloak payment |
+| rules | `tractorCapped` | warning | Combat | Tractor bid cut to tractor boxes |
 
 The loader emits `unknownWeapon` and `unknownArc` with `source: "loader"` (not the format parser). One problem has one code; there are no separate `...Code` variants.
 

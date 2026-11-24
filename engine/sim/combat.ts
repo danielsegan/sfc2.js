@@ -45,6 +45,15 @@ import {
   type ShotMem,
 } from './hull.ts';
 import {
+  EVENT_MISS,
+  P3,
+  createPhase3,
+  fireBlocked,
+  shotMisses,
+  stampPhase3,
+  targetHidden,
+} from './phase3.ts';
+import {
   CHART_POINT_SIZE,
   CLASS_FIGHTER,
   DAMAGE_CHART,
@@ -113,6 +122,18 @@ export const R = {
   shieldDepleted: 20,
   chargeCapped: 21,
   reinforceCapped: 22,
+  ewMiss: P3.ewMiss,
+  noEw: P3.noEw,
+  ewCapped: P3.ewCapped,
+  noOverload: P3.noOverload,
+  noTractor: P3.noTractor,
+  badTarget: P3.badTarget,
+  tractorBroken: P3.tractorBroken,
+  noCloak: P3.noCloak,
+  cloaked: P3.cloaked,
+  notDetected: P3.notDetected,
+  cloakCollapsed: P3.cloakCollapsed,
+  tractorCapped: P3.tractorCapped,
 } as const;
 
 export const REASON_NAME = [
@@ -139,6 +160,18 @@ export const REASON_NAME = [
   'shieldDepleted',
   'chargeCapped',
   'reinforceCapped',
+  'ewMiss',
+  'noEw',
+  'ewCapped',
+  'noOverload',
+  'noTractor',
+  'badTarget',
+  'tractorBroken',
+  'noCloak',
+  'cloaked',
+  'notDetected',
+  'cloakCollapsed',
+  'tractorCapped',
 ] as const;
 
 const REASON_STATUS = [
@@ -163,6 +196,18 @@ const REASON_STATUS = [
   STATUS_CLAMPED,
   STATUS_CLAMPED,
   STATUS_CLAMPED,
+  STATUS_CLAMPED,
+  STATUS_CLAMPED,
+  STATUS_CLAMPED,
+  STATUS_REJECTED,
+  STATUS_CLAMPED,
+  STATUS_REJECTED,
+  STATUS_REJECTED,
+  STATUS_REJECTED,
+  STATUS_CLAMPED,
+  STATUS_REJECTED,
+  STATUS_REJECTED,
+  STATUS_REJECTED,
   STATUS_CLAMPED,
   STATUS_CLAMPED,
 ] as const;
@@ -524,6 +569,7 @@ function applySpawn(world: World, cmd: Command, ctx: TickContext, setups: readon
   fields[H.sensors] = systemBoxes(setup.systems?.sensors);
   fields[H.extra] = systemBoxes(setup.systems?.extraDamage);
   fields[H.lastHitFacing] = -1;
+  stampPhase3(fields, setup);
   const mounts = emptyMounts();
   for (const mount of setup.mounts) {
     if (mount.slotIndex < 0 || mount.slotIndex >= MOUNT_SLOTS) throw new Error('slot');
@@ -932,6 +978,11 @@ function applyFire(world: World, cmd: Command, ctx: TickContext): void {
     emitRule(ctx, id as number, R.noFireControl, -1);
     return;
   }
+  const cloakBlock = fireBlocked(fields);
+  if (cloakBlock !== null) {
+    emitRule(ctx, id as number, cloakBlock, -1);
+    return;
+  }
   const target = liveFields(world, targetId);
   if (!target) {
     emitRule(ctx, id as number, R.noSuchShip, -1);
@@ -956,6 +1007,10 @@ function applyFire(world: World, cmd: Command, ctx: TickContext): void {
   const damage = shotDamage(def, mount.mode, dx, dy);
   if (damage === undefined) {
     emitRule(ctx, id as number, R.outOfRange, -1);
+    return;
+  }
+  if (targetHidden(world, id, targetId, fields, target)) {
+    emitRule(ctx, id as number, R.notDetected, -1);
     return;
   }
   mount.charge100 = 0;
@@ -988,6 +1043,14 @@ function applyFire(world: World, cmd: Command, ctx: TickContext): void {
   const facing = facingForRelative(incoming);
   const same = (id as number) === (targetId as number);
   const victim = same ? fields : target;
+  if (shotMisses(ctx, fields, victim)) {
+    remember(fields, VERB_FIRE, R.ewMiss, 0);
+    writeMounts(world, id, mounts);
+    writeHull(world, id, fields);
+    if (!same) writeHull(world, targetId, target);
+    emitRule(ctx, id as number, R.ewMiss, 0);
+    return;
+  }
   const hit = applyWeaponHit(victim, facing, damage, ctx);
   writeMounts(world, id, mounts);
   writeHull(world, id, fields);
@@ -1033,6 +1096,11 @@ function impactShot(world: World, shot: ShotMem, ctx: TickContext): void {
     delta(from.x, to.x),
     delta(from.y, to.y),
   );
+  const ownerFields = readHull(world, owner);
+  if (shotMisses(ctx, ownerFields, target)) {
+    ctx.emit({ kind: EVENT_MISS, entity: targetId as number, a: 0, b: shot.damage });
+    return;
+  }
   const facing = facingForRelative(incoming);
   const hit = applyWeaponHit(target, facing, shot.damage, ctx);
   writeHull(world, targetId, target);
@@ -1163,5 +1231,10 @@ export function createCombat(setups: readonly ShipSetup[], options?: CombatOptio
       },
     },
   ];
-  return { tables: COMBAT_TABLES, systems: [allocation, flight], handlers };
+  const phase3 = createPhase3(resolved.rulesTurnTicks);
+  return {
+    tables: COMBAT_TABLES,
+    systems: [allocation, flight, ...phase3.systems],
+    handlers: [...handlers, ...phase3.handlers],
+  };
 }

@@ -35,6 +35,7 @@ import {
 } from '../sim/rules-tables.ts';
 import { blendScalar, toDisplayEnergy, toDisplayRange, FULL_CIRCLE } from './units.ts';
 import { readAllegiance } from '../sim/allegiance.ts';
+import { CLOAK_OFF, EVENT_MISS, cloakVisible, ewShift } from '../sim/phase3.ts';
 
 export type Facing = 0 | 1 | 2 | 3 | 4 | 5;
 
@@ -89,6 +90,16 @@ export interface SelfView {
   readonly heading16: number;
   readonly destroyed: boolean;
   readonly disabled: boolean;
+  readonly ecm: number;
+  readonly eccm: number;
+  readonly stealth: number;
+  readonly cloakState: number;
+  readonly cloakTicks: number;
+  readonly cloakFitted: boolean;
+  readonly tractorMode: number;
+  readonly tractorPaid: number;
+  readonly tractorLink: boolean;
+  readonly netShift: number | null;
 }
 
 export interface ContactView {
@@ -107,6 +118,8 @@ export interface ContactView {
   readonly kind: 'ship' | 'shot';
   readonly shields: readonly ShieldReadout[];
   readonly rangeFromSelf: number;
+  readonly cloaked: boolean;
+  readonly detected: boolean;
 }
 
 export interface ViewModel {
@@ -190,6 +203,7 @@ function weaponReadout(slot: number, mount: { weaponId: number; arcId: number; c
   else if (!def) status = 'unknown';
   else if (!inSlice) status = 'outside this duel';
   else if (cost <= 0) status = 'no cost yet';
+  else if (mount.mode === MODE_OVERLOAD) status = ready ? 'overload' : 'overload arming';
   else if (ready) status = 'ready';
   return {
     slotIndex: slot,
@@ -238,6 +252,9 @@ function toHud(event: SimEvent): HudEvent | null {
   if (event.kind === EVENT_HIT) {
     const facing = event.a >= 0 && event.a <= 5 ? (event.a as Facing) : 0;
     return { kind: 'hit', tick: event.tick as number, ship: event.entity, facing, amount: event.b };
+  }
+  if (event.kind === EVENT_MISS) {
+    return { kind: 'alert', tick: event.tick as number, id: 'ewMiss', severity: 'warn', ship: event.entity, amount: event.b };
   }
   if (event.kind === EVENT_RULE) {
     const id = REASON_NAME[event.a] ?? 'rule';
@@ -292,9 +309,24 @@ function shotContacts(
       kind: 'shot',
       shields: [],
       rangeFromSelf: selfPose ? hypot(dx, dy) : 0,
+      cloaked: false,
+      detected: true,
     });
   }
   return out;
+}
+
+function shiftAgainst(
+  curr: WorldSnap,
+  self: ReturnType<typeof shipView>,
+  contacts: readonly ContactView[],
+): number | null {
+  for (const contact of contacts) {
+    if (contact.kind !== 'ship' || contact.hostility !== 'hostile' || !contact.detected) continue;
+    const foe = shipView(curr, contact.index);
+    return ewShift(self.eccmPaid, foe.ecmPaid, foe.stealth);
+  }
+  return null;
 }
 
 export function buildViewModel(input: ViewBuildInput): ViewModel {
@@ -330,6 +362,22 @@ export function buildViewModel(input: ViewBuildInput): ViewModel {
     if (index === input.selfIndex) selfPose = { x, y };
     const allegiance = readAllegiance(curr, index);
     const id = entityId(curr, index);
+    const allied = index === input.selfIndex || (selfSide >= 0 && allegiance.side >= 0 && allegiance.side === selfSide);
+    const selfShip = input.selfIndex >= 0 && input.selfIndex < count && curr.live[input.selfIndex] === 1
+      ? shipView(curr, input.selfIndex)
+      : null;
+    const selfRaw = rawPos(curr, input.selfIndex);
+    const otherRaw = rawPos(curr, index);
+    const seen = allied || !selfShip || !selfRaw || !otherRaw
+      ? true
+      : cloakVisible(
+          ship.cloakState,
+          ship.spottedBy,
+          input.selfIndex,
+          selfShip.scanners,
+          (otherRaw.x - selfRaw.x) | 0,
+          (otherRaw.y - selfRaw.y) | 0,
+        );
     contacts.push({
       id,
       index,
@@ -345,6 +393,8 @@ export function buildViewModel(input: ViewBuildInput): ViewModel {
       kind: 'ship',
       shields: shieldsOf(ship),
       rangeFromSelf: 0,
+      cloaked: ship.cloakState !== CLOAK_OFF,
+      detected: seen,
     });
   }
   contacts.sort((a, b) => a.id - b.id);
@@ -388,6 +438,16 @@ export function buildViewModel(input: ViewBuildInput): ViewModel {
         heading16: ship.heading,
         destroyed: ship.destroyed === 1,
         disabled: ship.disabled === 1,
+        ecm: ship.ecmPaid,
+        eccm: ship.eccmPaid,
+        stealth: ship.stealth,
+        cloakState: ship.cloakState,
+        cloakTicks: ship.cloakTicks,
+        cloakFitted: ship.cloakCost > 0,
+        tractorMode: ship.tractorMode,
+        tractorPaid: ship.tractorPaid,
+        tractorLink: ship.tractorLink === 1,
+        netShift: shiftAgainst(curr, ship, contacts),
       };
     }
   }

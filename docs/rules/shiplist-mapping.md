@@ -72,18 +72,18 @@ Provisional keys, pending real headers. Fan-out and ×2 happen in the loader, in
 | `hullType` | `class` | `ship` until the CE PF token is identified, then `pf`. |
 | `bpv`, years, `specialRole`, `cost`, refit fields | identity block, same names | ×1. |
 | `sizeClass`, `turnMode`, `moveCost`, `acceleration`, `hetChance`, `hetBreakdown` | `movement.*` | ×1. Empty acceleration means the hull does not move. |
-| `stealth` | `movement.stealth` | Stored. Rules ignore it until CE 2.670 is seen using it. |
+| `stealth` | `stealth` | Free ECM added to paid ECM. Negative is allowed. The sum floors at 0. See [phase3-systems.md](phase3-systems.md). |
 | `crew` | `crew.crewUnits` | ×1. Observed CE header: `Regular Crew`. |
 | `boardingPartiesBase` | `crew.boardingParties` | Current parties. `boardingPartiesMax` kept beside it. |
 | `minCrew`, `deckCrews` | `crew.minCrew`, `crew.deckCrews` | ×1. |
 | shield front, forward-side, aft-side, rear | `shieldsMax[0..5]` | Fan out, then ×2. See the scale table. Observed CE headers: `Shield 1`, `Shield 2 _ 6`, `Shield 3 _ 5`, `Shield 4`. |
-| `cloakCost` | `systems.cloakCost` | Empty means no cloak. Cloak resolution is Phase 3. |
+| `cloakCost` | `cloakCost` | Empty means no cloak. Resolution is [phase3-systems.md](phase3-systems.md). |
 | hardpoint `slotIndex`, `weapon`, `arc`, `count` | `weapons[]` | Codes stay exact, including case. File slot 1 is `slotIndex` 0. Empty slots drop only after `slotIndex` is kept. |
 | hardpoint numeric `Arc` on `DroA`/`DroB`/`DroC`/`DroF`/`DroG`/`ADD6`/`ADD12` | `weapons[].reloads` | The cell is a whole number (1–3 observed; ADD only ever shows 1). Those racks have no firing arc. A number on any other weapon, or a letter or empty cell on these weapons, is `unknownArc`. |
 | `warpSide`, `warpCenter` | `power.warp` | Side term ×2, centre term ×1, then add. Observed CE headers: `R_L_Warp`, `C_Warp`. |
 | `impulse`, `apr` | `power.impulse`, `power.apr` | ×1. |
 | `battery` | `power.battery` and `power.batteryCapacity` | The file number is both the starting charge and the capacity (ship starts full). Pending playtest. |
-| `armor`, `hullForward`, `hullCenter`, `hullAft`, `cargo`, `barracks`, `repair`, `bridge`, `security`, `lab`, `transporters`, `tractors`, `mechTractors`, `specialSensors`, `sensors`, `scanners`, `damageControl`, `extraDamage` | `systems.<same key>` | Flat box counts. The lab key is `lab`, lowercase and singular. |
+| `armor`, `hullForward`, `hullCenter`, `hullAft`, `cargo`, `barracks`, `repair`, `bridge`, `security`, `lab`, `transporters`, `tractors`, `mechTractors`, `specialSensors`, `sensors`, `scanners`, `damageControl`, `extraDamage` | `systems.<same key>` | Flat box counts. The lab key is `lab`, lowercase and singular. Phase 3 also reads `sensors` + `scanners` + `specialSensors` as the EW cap, `scanners` and `specialSensors` for cloak detection, and `tractors` as the tractor bid cap. `mechTractors` stays stored and unresolved. |
 | `probes`, mine and shuttle counts, `fighterBays` | `systems` or `bays`, same names | Carried stores. Not resolved in the duel slice. |
 | `geometry`, `uiKey` | `geometry`, `uiKey` | Art. Passed through. |
 

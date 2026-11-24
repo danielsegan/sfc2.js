@@ -57,6 +57,16 @@ export interface ShipSetup {
   fcPaid: number;
   destroyed: number;
   disabled: number;
+  /** Free ECM from the stealth column. May be negative. Omitted means 0. */
+  stealth?: number;
+  /** Scanner boxes. Each one extends cloak detection. Omitted means 0. */
+  scanners?: number;
+  /** Special-sensor boxes. They can spot a cloak the range check missed. */
+  specialSensors?: number;
+  /** Tractor boxes. Empty or omitted means the hull has no tractor. */
+  tractors?: number;
+  /** Energy per rules-turn to run a cloak. Empty or omitted means no cloak. */
+  cloakCost?: number;
   systems?: ShipSystemsSetup;
   mounts: readonly MountSetup[];
 }
@@ -301,6 +311,14 @@ export function bindShiplistRow(
     fcPaid: 0,
     destroyed: 0,
     disabled: 0,
+    stealth: wholeCell(columns, raw, ['stealth', 'stealth (+ecm)'], 0),
+    scanners: wholeCell(columns, raw, ['scanners'], 0),
+    specialSensors: wholeCell(columns, raw, ['special sensors'], 0),
+    tractors: wholeCell(columns, raw, ['tractors'], 0),
+    cloakCost: wholeCell(columns, raw, ['cloak', 'cloak cost', 'cloakcost'], 0),
+    systems: {
+      sensors: wholeCell(columns, raw, ['sensors'], 0),
+    },
     mounts,
   };
 }

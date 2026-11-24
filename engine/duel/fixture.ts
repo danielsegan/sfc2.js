@@ -48,6 +48,12 @@ function hull(mounts: ShipSetup['mounts']): ShipSetup {
     fcPaid: 0,
     destroyed: 0,
     disabled: 0,
+    stealth: 0,
+    scanners: 2,
+    specialSensors: 1,
+    tractors: 3,
+    cloakCost: 2,
+    systems: { sensors: 4 },
     mounts,
   };
 }
@@ -106,4 +112,9 @@ export const SYNTHETIC_PLAN = {
   speed: 4,
   general: 0,
   weaponRequest: null as number | null,
+  specific: [0, 0, 0, 0, 0, 0],
+  modes: [] as number[],
+  ecm: 0,
+  eccm: 0,
+  tractorEnergy: 1,
 };

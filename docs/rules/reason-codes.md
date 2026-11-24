@@ -44,3 +44,15 @@ Canonical machine list: [`data/reason-codes.json`](data/reason-codes.json).
 | `chargeCapped` | clamped | A weapon request was reduced to what the mount (and capacitor, when enabled) can store. |
 | `reinforceCapped` | clamped | Shield reinforcement was reduced by the per-turn cap or by remaining shield room. |
 | `yawClamped` | clamped | The heading change was reduced to the turn mode's per-tick yaw limit. |
+| `ewMiss` | clamped | The shot was fired and missed because defender ECM beat attacker ECCM. |
+| `noEw` | rejected | No sensor boxes, so ECM and ECCM cannot be bought. |
+| `ewCapped` | clamped | The EW request was cut to the sensor boxes still fitted. |
+| `noOverload` | rejected | The mount has no overload arming cost. |
+| `noTractor` | rejected | The hull has no tractor boxes. |
+| `badTarget` | rejected | A tractor cannot lock onto the ship projecting it. |
+| `tractorBroken` | clamped | The bid lost the contest, or a live beam lost range or the contest. |
+| `noCloak` | rejected | Cloak cost is empty. |
+| `cloaked` | rejected | Weapons are locked for the whole cloak cycle. |
+| `notDetected` | rejected | The target is cloaked and not currently detected. |
+| `cloakCollapsed` | clamped | The battery missed a cloak payment, so the cloak dropped. |
+| `tractorCapped` | clamped | The tractor bid was cut to the tractor boxes. |

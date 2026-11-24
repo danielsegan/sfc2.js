@@ -1,5 +1,5 @@
 /**
- * One tick of yaw for the duel. Combat verbs 1–5 stay in combat.ts.
+ * One tick of yaw for the duel. Combat verbs 1–5 and 7–10 stay in combat.ts.
  * This handler is registered beside them. The payload is entity and yaw
  * only. The session stamps tick, slot, and seq.
  *
@@ -23,7 +23,7 @@ import {
 
 export { turnYawCap };
 
-/** Duel yaw order. Combat's verbs stay 1–5; this match registers 6 beside them. */
+/** Duel yaw order. Combat's verbs stay 1–5 and 7–10; this match registers 6 beside them. */
 export const VERB_ORDER_HELM = 6;
 
 export const EVENT_HELM = 16;

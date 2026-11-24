@@ -43,7 +43,7 @@ type HudEvent =
   | { kind: 'objectiveUpdated' | 'missionTimer' | 'hail'; tick: Tick; [k: string]: unknown }; // payloads: Missions + UI, OPEN
 ```
 
-Section types beyond these (EW, tractor/transporter, cloak, craft) follow hud-spec.md §§8–11 field proposals, and get finalized when Phase 3 rules land.
+EW, tractor, and cloak readouts now follow [docs/rules/phase3-systems.md](../rules/phase3-systems.md). The duel `SelfView` carries `ecm`, `eccm`, `stealth`, `cloakState`, `cloakTicks`, `cloakFitted`, `tractorMode`, `tractorPaid`, `tractorLink`, and `netShift`. A contact carries `cloaked` and `detected`. Transporters, boarding, and craft stay on the hud-spec proposals.
 
 ## 4. Self-illumination maps
 

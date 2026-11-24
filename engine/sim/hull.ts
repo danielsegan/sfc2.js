@@ -50,9 +50,27 @@ export const H = {
   lastHitAbsorbed: 51,
   lastHitPen: 52,
   shotSeq: 53,
+  stealth: 54,
+  scanners: 55,
+  specialSensors: 56,
+  ecmPaid: 57,
+  eccmPaid: 58,
+  cloakCost: 59,
+  cloakState: 60,
+  cloakTicks: 61,
+  cloakNextPay: 62,
+  tractors: 63,
+  tractorMode: 64,
+  tractorTarget: 65,
+  tractorPaid: 66,
+  tractorLink: 67,
+  tractorRest: 68,
+  /** -1 means cruise uses ordered speed. A non-negative value replaces it for this tick. */
+  speedOverride: 69,
+  spottedBy: 70,
 } as const;
 
-export const HULL_FIELDS = 54;
+export const HULL_FIELDS = 71;
 
 /** One in-flight heavy weapon. Rows live on seeker entities, not on the ship. */
 export const SHOT = 'shot';
@@ -277,6 +295,21 @@ export interface ShipView {
   readonly lastHit: LastHit;
   readonly heading: number;
   readonly mounts: readonly MountMem[];
+  readonly stealth: number;
+  readonly scanners: number;
+  readonly specialSensors: number;
+  readonly ecmPaid: number;
+  readonly eccmPaid: number;
+  readonly cloakCost: number;
+  readonly cloakState: number;
+  readonly cloakTicks: number;
+  readonly tractors: number;
+  readonly tractorMode: number;
+  readonly tractorTarget: number;
+  readonly tractorPaid: number;
+  readonly tractorLink: number;
+  readonly speedOverride: number;
+  readonly spottedBy: number;
 }
 
 export function shipView(snap: WorldSnap, index: number): ShipView {
@@ -353,6 +386,21 @@ export function shipView(snap: WorldSnap, index: number): ShipView {
     },
     heading: live && heading ? heading[index]! : 0,
     mounts,
+    stealth: fields[H.stealth]!,
+    scanners: fields[H.scanners]!,
+    specialSensors: fields[H.specialSensors]!,
+    ecmPaid: fields[H.ecmPaid]!,
+    eccmPaid: fields[H.eccmPaid]!,
+    cloakCost: fields[H.cloakCost]!,
+    cloakState: fields[H.cloakState]!,
+    cloakTicks: fields[H.cloakTicks]!,
+    tractors: fields[H.tractors]!,
+    tractorMode: fields[H.tractorMode]!,
+    tractorTarget: fields[H.tractorTarget]!,
+    tractorPaid: fields[H.tractorPaid]!,
+    tractorLink: fields[H.tractorLink]!,
+    speedOverride: fields[H.speedOverride]!,
+    spottedBy: fields[H.spottedBy]!,
   };
 }
 
