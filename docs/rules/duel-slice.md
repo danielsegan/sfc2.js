@@ -65,7 +65,7 @@ A worked balance, all integers, generation 10: speed 4 at `moveCost` 1, life sup
 
 ## 4. Movement and turn modes
 
-`speed` is rule-units per rules-turn of travel. Acceleration limits how far ordered speed may move in one `setEnergy`. Turn letters `AA` and `A`–`G` are recognised and have **no rate** until playtest; speed or yaw on them is `turnModeUnverified`. `H` is immobile: speed and yaw become 0, reason `immobile`.
+`speed` is rule-units per rules-turn of travel. Acceleration limits how far ordered speed may move in one `setEnergy`. Turn letters `AA` and `A`–`G`, and any other token that is not `H` or a `TEST-*` row, have no per-letter rate until playtest. They use `fallbackMaxYawPerTick` from [`data/turn-modes.json`](data/turn-modes.json) (placeholder 2000, the same integer as `TEST-C`, not a measured CE rate). The sim emits `turnModeUnverified` once, when that hull is spawned, and then keeps speed and yaw orders. `H` is immobile: speed and yaw become 0, reason `immobile`.
 
 Synthetic rates used by fixtures only ([`data/turn-modes.json`](data/turn-modes.json)):
 

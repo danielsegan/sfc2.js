@@ -31,7 +31,7 @@ Canonical machine list: [`data/reason-codes.json`](data/reason-codes.json).
 | `outOfArc` | rejected | The target bearing is outside the mount's mapped arc. |
 | `outOfRange` | rejected | The target is beyond the weapon's last range band, or beyond `photonMaxRange`. |
 | `weaponDestroyed` | rejected | The mount has no boxes left. |
-| `turnModeUnverified` | rejected | The turn-mode letter has no playtest rate, so speed and yaw orders are refused. |
+| `turnModeUnverified` | rejected | The turn-mode letter has no playtest rate. Emitted once when the hull is spawned. Speed and yaw then use the documented fallback and are kept. |
 | `crewDisabled` | rejected | Crew is below the minimum. Helm and fire are refused. |
 | `overDraw` | clamped | Requested energy exceeded generation plus battery. Lower-priority draws were reduced. |
 | `speedClamped` | clamped | Ordered speed was reduced to the acceleration limit. |

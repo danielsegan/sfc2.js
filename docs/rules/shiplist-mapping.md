@@ -73,14 +73,14 @@ Provisional keys, pending real headers. Fan-out and ×2 happen in the loader, in
 | `bpv`, years, `specialRole`, `cost`, refit fields | identity block, same names | ×1. |
 | `sizeClass`, `turnMode`, `moveCost`, `acceleration`, `hetChance`, `hetBreakdown` | `movement.*` | ×1. Empty acceleration means the hull does not move. |
 | `stealth` | `movement.stealth` | Stored. Rules ignore it until CE 2.670 is seen using it. |
-| `crew` | `crew.crewUnits` | ×1. |
+| `crew` | `crew.crewUnits` | ×1. Observed CE header: `Regular Crew`. |
 | `boardingPartiesBase` | `crew.boardingParties` | Current parties. `boardingPartiesMax` kept beside it. |
 | `minCrew`, `deckCrews` | `crew.minCrew`, `crew.deckCrews` | ×1. |
-| shield front, forward-side, aft-side, rear | `shieldsMax[0..5]` | Fan out, then ×2. See the scale table. |
+| shield front, forward-side, aft-side, rear | `shieldsMax[0..5]` | Fan out, then ×2. See the scale table. Observed CE headers: `Shield 1`, `Shield 2 _ 6`, `Shield 3 _ 5`, `Shield 4`. |
 | `cloakCost` | `systems.cloakCost` | Empty means no cloak. Cloak resolution is Phase 3. |
 | hardpoint `slotIndex`, `weapon`, `arc`, `count` | `weapons[]` | Codes stay exact, including case. File slot 1 is `slotIndex` 0. Empty slots drop only after `slotIndex` is kept. |
 | hardpoint numeric `Arc` on `DroA`/`DroB`/`DroC`/`DroF`/`DroG`/`ADD6`/`ADD12` | `weapons[].reloads` | The cell is a whole number (1–3 observed; ADD only ever shows 1). Those racks have no firing arc. A number on any other weapon, or a letter or empty cell on these weapons, is `unknownArc`. |
-| `warpSide`, `warpCenter` | `power.warp` | Side term ×2, centre term ×1, then add. |
+| `warpSide`, `warpCenter` | `power.warp` | Side term ×2, centre term ×1, then add. Observed CE headers: `R_L_Warp`, `C_Warp`. |
 | `impulse`, `apr` | `power.impulse`, `power.apr` | ×1. |
 | `battery` | `power.battery` and `power.batteryCapacity` | The file number is both the starting charge and the capacity (ship starts full). Pending playtest. |
 | `armor`, `hullForward`, `hullCenter`, `hullAft`, `cargo`, `barracks`, `repair`, `bridge`, `security`, `lab`, `transporters`, `tractors`, `mechTractors`, `specialSensors`, `sensors`, `scanners`, `damageControl`, `extraDamage` | `systems.<same key>` | Flat box counts. The lab key is `lab`, lowercase and singular. |
@@ -113,6 +113,10 @@ Shield fan-out, file order front, forward-side, aft-side, rear:
 | 5 | front-left (SFB #6) | forward-side |
 
 Worked synthetic case: file cells 10, 8, 6, 4 and `warpSide` 5, `warpCenter` 3 become shields `[20, 16, 12, 8, 12, 16]` and `power.warp` 13. Fixture: `tests/scale-factors.json`.
+
+The observed CE 2.670 header (inventory metadata, no rows copied) has four shield columns, not six: `Shield 1`, `Shield 2 _ 6`, `Shield 3 _ 5`, `Shield 4`. Side values are not separate columns. The loader reads `Shield 2 _ 6` as the forward-side cell and `Shield 3 _ 5` as the aft-side cell, fans each out to the two facings in the table above, then applies ×2. A row that shows bow and stern filled and all four sides at 0 is that paired header left unbound.
+
+Still unverified against CE play: the ×2 factor, and that the underscore pairs name SFB shields 2 with 6 and 3 with 5 rather than some other split. No sixth shield column was in the observed header.
 
 ## 4. Weapon and arc mapping
 

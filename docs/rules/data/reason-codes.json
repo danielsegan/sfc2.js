@@ -19,7 +19,7 @@
     { "code": "outOfArc", "status": "rejected", "logSeverity": "warning", "summary": "The target bearing is outside the mount's mapped arc." },
     { "code": "outOfRange", "status": "rejected", "logSeverity": "warning", "summary": "The target is beyond the weapon's last range band, or beyond photonMaxRange." },
     { "code": "weaponDestroyed", "status": "rejected", "logSeverity": "warning", "summary": "The mount has no boxes left." },
-    { "code": "turnModeUnverified", "status": "rejected", "logSeverity": "warning", "summary": "The turn-mode letter has no playtest rate yet, so speed and yaw orders are refused." },
+    { "code": "turnModeUnverified", "status": "rejected", "logSeverity": "warning", "summary": "The turn-mode letter has no playtest rate. Emitted once when the hull is spawned. Speed and yaw then use the documented fallback and are kept." },
     { "code": "crewDisabled", "status": "rejected", "logSeverity": "warning", "summary": "Crew is below the minimum. Helm and fire are refused. Power and repair commands still run." },
     { "code": "overDraw", "status": "clamped", "logSeverity": "warning", "summary": "Requested energy exceeded generation plus battery. Lower-priority draws were reduced." },
     { "code": "speedClamped", "status": "clamped", "logSeverity": "warning", "summary": "Ordered speed was reduced to the acceleration limit." },

@@ -97,8 +97,8 @@ Units: "file units" means the number exactly as written. The data-model layer co
 | # | Proposed field | Type | Units | Meaning | Confidence (source) |
 | --- | --- | --- | --- | --- | --- |
 | 19 | `shields[0]` | number | file shield units | Front facing. S1 says the game doubles file values in play; the factor lives in the docs/rules scale table. | unverified (S1) |
-| 20 | `shields[1]` and `shields[5]` | number | file shield units | One file value shared by front-right and front-left. | unverified (S1) |
-| 21 | `shields[2]` and `shields[4]` | number | file shield units | One file value shared by rear-right and rear-left. | unverified (S1) |
+| 20 | `shields[1]` and `shields[5]` | number | file shield units | One file value shared by front-right and front-left. Observed CE header `Shield 2 _ 6`. | unverified (S1; header name from the CE inventory) |
+| 21 | `shields[2]` and `shields[4]` | number | file shield units | One file value shared by rear-right and rear-left. Observed CE header `Shield 3 _ 5`. | unverified (S1; header name from the CE inventory) |
 | 22 | `shields[3]` | number | file shield units | Rear facing. | unverified (S1) |
 | 23 | `shieldTotal` | number | file shield units | Sum over all six facings, stored in the file. Checked by rule V8. | unverified (S1) |
 

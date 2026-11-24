@@ -1,9 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { VERB_FIRE, firePayload } from '../sim/combat.ts';
-import { TURN_H, TURN_TEST_A, TURN_TEST_C } from '../sim/rules-tables.ts';
+import { FALLBACK_YAW_PER_TICK, TURN_H, TURN_TEST_A, TURN_TEST_C, TURN_UNVERIFIED } from '../sim/rules-tables.ts';
+import { syntheticSetups, SYNTHETIC_SPAWNS } from './fixture.ts';
 import { turnYawCap } from './helm.ts';
-import { createSyntheticDuel } from './match.ts';
+import { createDuelMatch, createSyntheticDuel } from './match.ts';
 
 const TICK = 1000 / 30;
 
@@ -20,11 +21,14 @@ describe('duel match', () => {
   it('keeps the yaw caps on the synthetic turn-mode table', () => {
     const table = JSON.parse(readFileSync('docs/rules/data/turn-modes.json', 'utf8')) as {
       modes: Record<string, { maxYawPerTick: number }>;
+      fallbackMaxYawPerTick: number;
     };
     expect(turnYawCap(TURN_TEST_A)).toBe(table.modes['TEST-A']?.maxYawPerTick);
     expect(turnYawCap(TURN_TEST_C)).toBe(table.modes['TEST-C']?.maxYawPerTick);
     expect(turnYawCap(TURN_H)).toBe(table.modes.H?.maxYawPerTick);
-    expect(turnYawCap(4)).toBe(-1);
+    expect(turnYawCap(TURN_UNVERIFIED)).toBe(table.fallbackMaxYawPerTick);
+    expect(FALLBACK_YAW_PER_TICK).toBe(table.fallbackMaxYawPerTick);
+    expect(turnYawCap(99)).toBe(FALLBACK_YAW_PER_TICK);
   });
 
   it('does not let the view change the sim hash', () => {
@@ -54,6 +58,34 @@ describe('duel match', () => {
     expect(vm.self?.shields[0]?.current).toBe(12);
     expect(vm.self?.energy.fireControl).toBe(true);
     expect(vm.tick).toBe(2);
+  });
+
+  it('keeps an unverified turn mode moving and warns once', () => {
+    const player = syntheticSetups()[0]!;
+    const opponent = syntheticSetups()[1]!;
+    const match = createDuelMatch({
+      seed: 1,
+      setups: [{ ...player, turnMode: TURN_UNVERIFIED }, opponent],
+      spawns: SYNTHETIC_SPAWNS,
+      rulesTurnTicks: 2,
+      renew: true,
+      timeScale: 1,
+      plan: { speed: 4, lifeSupport: true, fireControl: false, general: 0, weaponRequest: 0 },
+    });
+    let warnings = 0;
+    for (let i = 0; i < 8; i++) {
+      match.frame(TICK);
+      const vm = match.view();
+      warnings += vm.events.filter((event) => event.kind === 'alert' && event.id === 'turnModeUnverified').length;
+    }
+    expect(warnings).toBe(1);
+    expect(match.view().self?.speed).toBe(4);
+    match.orderYaw(9000);
+    match.frame(TICK);
+    const turned = match.view();
+    expect(turned.self?.heading16).toBe(FALLBACK_YAW_PER_TICK);
+    expect(turned.events.some((event) => event.kind === 'alert' && event.id === 'turnModeUnverified')).toBe(false);
+    expect(turned.events.some((event) => event.kind === 'alert' && event.id === 'yawClamped')).toBe(true);
   });
 
   it('clamps helm to the turn mode and stamps the tick on the session', () => {

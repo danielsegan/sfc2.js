@@ -18,6 +18,7 @@ import {
   MODE_NORMAL,
   MODE_OVERLOAD,
   MODE_PROXIMITY,
+  FALLBACK_YAW_PER_TICK,
   TURN_H,
   TURN_TEST_C,
   TURN_UNVERIFIED,
@@ -280,6 +281,21 @@ describe('shiplist binding', () => {
     expect(fighter.acceleration).toBe(-1);
     expect(fighter.mounts).toEqual([]);
   });
+
+  it('fans the observed CE side headers into the four side facings', () => {
+    const ce = [
+      'Race\tHull Type\tClass\tTurn Mode\tMove Cost\tShield 1\tShield 2 _ 6\tShield 3 _ 5\tShield 4\tR_L_Warp\tC_Warp\tRegular Crew\tAcceleration',
+      'Federation\tCA\tTEST-CE-CA\tC\t1\t40\t30\t20\t40\t5\t3\t12\t4',
+    ].join('\n');
+    const parsed = parseShiplist(ce, { file: 'Assets/Specs/shiplist.txt' });
+    const ship = bindShiplistRow(parsed.data.rows[0]!, parsed.data.columns);
+    // File cells 40, 30, 20, 40. Sides are the paired columns, then ×2.
+    expect(ship.shieldsMax).toEqual([80, 60, 40, 80, 40, 60]);
+    expect(ship.shields).toEqual(ship.shieldsMax);
+    expect(ship.warp).toBe(13);
+    expect(ship.crew).toBe(12);
+    expect(ship.turnMode).toBe(TURN_UNVERIFIED);
+  });
 });
 
 describe('energy, shields, and fire', () => {
@@ -520,17 +536,31 @@ describe('energy, shields, and fire', () => {
     expect(viewAt(sim, 0).shields).toEqual([4, 4, 4, 4, 4, 4]);
   });
 
-  it('rejects an unverified turn letter and an unknown draw', () => {
-    const sim = boot([cruiser({ turnMode: TURN_UNVERIFIED })]);
-    play(sim, [
+  it('moves an unverified turn letter, warns once, and keeps the speed', () => {
+    const sim = boot([cruiser({ turnMode: TURN_UNVERIFIED })], { rulesTurnTicks: 2 });
+    const spawned = play(sim, [
 { kind: VERB_SPAWN, payload: spawnPayload(0, 0, 0, 0) }
 ]);
-    const refused = play(sim, [
+    const warnings = spawned.events.filter((event) => event.kind === EVENT_RULE && event.a === R.turnModeUnverified);
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]?.b).toBe(FALLBACK_YAW_PER_TICK);
+    expect(turnModeId('C')).toBe(TURN_UNVERIFIED);
+    expect(turnModeId('Z')).toBe(TURN_UNVERIFIED);
+    const moved = play(sim, [
 { kind: VERB_SET_ENERGY, payload: setEnergyPayload(65536, { speed: 4 }) }
 ]);
-    expect(refused.events.find((event) => event.kind === EVENT_RULE)?.a).toBe(R.turnModeUnverified);
-    expect(viewAt(sim, 0).speed).toBe(0);
-    expect(turnModeId('C')).toBe(TURN_UNVERIFIED);
+    expect(moved.events.some((event) => event.a === R.turnModeUnverified)).toBe(false);
+    expect(moved.events.find((event) => event.kind === EVENT_RULE)?.a).toBe(R.ok);
+    expect(viewAt(sim, 0).speed).toBe(4);
+    const again = play(sim, [
+{ kind: VERB_SET_ENERGY, payload: setEnergyPayload(65536, { speed: 4 }) }
+]);
+    expect(again.events.some((event) => event.a === R.turnModeUnverified)).toBe(false);
+    for (let i = 0; i < 4; i++) {
+      const quiet = play(sim, []);
+      expect(quiet.events.some((event) => event.a === R.turnModeUnverified)).toBe(false);
+    }
+    expect(viewAt(sim, 0).speed).toBe(4);
     const unknown = play(sim, [
 { kind: VERB_SET_ENERGY, payload: setEnergyPayload(65536, { unknownDraw: true, lifeSupport: true }) }
 ]);

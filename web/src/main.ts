@@ -8,7 +8,8 @@ import { SYNTHETIC_FIXTURE_PATH, SYNTHETIC_ROSTER, type RosterEntry } from '../.
 import { createSyntheticDuel, type DuelMatch } from '../../engine/duel/match.ts';
 import { loadSyntheticHulls } from '../../engine/duel/meshes.ts';
 import { updateHud } from './hud.ts';
-import { duelFromFiles, duelFromZip } from './install.ts';
+import { assembleDuel, duelFromFiles, duelFromZip, type LoadedDuel } from './install.ts';
+import { filesFromDevInstall } from './dev-install-client.ts';
 import { DuelScene } from './scene.ts';
 
 const space = document.getElementById('space');
@@ -68,6 +69,16 @@ document.getElementById('ordered-speed')?.addEventListener('change', (event) => 
   match.setSpeed(Number((event.target as HTMLInputElement).value));
 });
 
+let catalog: LoadedDuel | null = null;
+let fillingShips = false;
+
+document.getElementById('player-ship')?.addEventListener('change', () => {
+  void rebuildFromPicker();
+});
+document.getElementById('opponent-ship')?.addEventListener('change', () => {
+  void rebuildFromPicker();
+});
+
 document.getElementById('load')?.addEventListener('click', () => {
   void preferredDirectoryPicker().pick().then(async (picked) => {
     if (picked.status !== 'picked') return;
@@ -77,7 +88,7 @@ document.getElementById('load')?.addEventListener('click', () => {
       if (alert) alert.textContent = loaded.error;
       return;
     }
-    adopt(loaded.match, loaded.groups, loaded.roster, loaded.note);
+    adoptLoaded(loaded);
   });
 });
 
@@ -91,7 +102,7 @@ document.getElementById('zip')?.addEventListener('change', (event) => {
       if (alert) alert.textContent = loaded.error;
       return;
     }
-    adopt(loaded.match, loaded.groups, loaded.roster, loaded.note);
+    adoptLoaded(loaded);
   });
 });
 
@@ -134,6 +145,72 @@ function syncSpeedInput(): void {
   }
 }
 
+function fillShipPicker(loaded: LoadedDuel): void {
+  const player = document.getElementById('player-ship');
+  const opponent = document.getElementById('opponent-ship');
+  if (!(player instanceof HTMLSelectElement) || !(opponent instanceof HTMLSelectElement)) return;
+  fillingShips = true;
+  player.replaceChildren();
+  opponent.replaceChildren();
+  for (let i = 0; i < loaded.candidates.length; i++) {
+    const candidate = loaded.candidates[i];
+    if (!candidate) continue;
+    const label = `${candidate.race} ${candidate.className} (${candidate.hullType})`;
+    const weapon = candidate.supported ? '' : ' — no phaser or photon';
+    for (const select of [player, opponent]) {
+      const option = document.createElement('option');
+      option.value = String(i);
+      option.textContent = `${label}${weapon}`;
+      select.append(option);
+    }
+  }
+  player.value = String(loaded.player);
+  opponent.value = String(loaded.opponent);
+  fillingShips = false;
+}
+
+function appendNote(note: string): void {
+  const list = document.getElementById('log');
+  if (!list) return;
+  const item = document.createElement('li');
+  item.textContent = note;
+  list.append(item);
+}
+
+function adoptLoaded(loaded: LoadedDuel): void {
+  catalog = loaded;
+  fillShipPicker(loaded);
+  adopt(loaded.match, loaded.groups, loaded.roster, loaded.note);
+  appendNote(loaded.note);
+}
+
+async function rebuildFromPicker(): Promise<void> {
+  if (fillingShips || !catalog) return;
+  const player = document.getElementById('player-ship');
+  const opponent = document.getElementById('opponent-ship');
+  if (!(player instanceof HTMLSelectElement) || !(opponent instanceof HTMLSelectElement)) return;
+  const playerIndex = Number(player.value);
+  const opponentIndex = Number(opponent.value);
+  if (!Number.isInteger(playerIndex) || !Number.isInteger(opponentIndex) || playerIndex === opponentIndex) {
+    player.value = String(catalog.player);
+    opponent.value = String(catalog.opponent);
+    return;
+  }
+  const left = catalog.candidates[playerIndex];
+  const right = catalog.candidates[opponentIndex];
+  if (!left || !right) return;
+  const note = `Chosen ${left.spawnKey} (line ${String(left.line)}) vs ${right.spawnKey} (line ${String(right.line)}).`;
+  const loaded = await assembleDuel(catalog.vfs, catalog.candidates, playerIndex, opponentIndex, note);
+  if ('error' in loaded) {
+    const alert = document.getElementById('alert');
+    if (alert) alert.textContent = loaded.error;
+    player.value = String(catalog.player);
+    opponent.value = String(catalog.opponent);
+    return;
+  }
+  adoptLoaded(loaded);
+}
+
 function adopt(next: DuelMatch, groups: readonly Group[], nextRoster: readonly RosterEntry[], note: string): void {
   match = next;
   roster = nextRoster;
@@ -161,6 +238,18 @@ function frame(now: number): void {
 
 window.addEventListener('resize', () => {
   scene.resize(canvas.clientWidth, canvas.clientHeight, window.devicePixelRatio || 1);
+});
+
+const pageInstall = new URLSearchParams(location.search).get('install');
+void filesFromDevInstall(pageInstall).then(async (files) => {
+  if (!files) return;
+  const loaded = await duelFromFiles(files);
+  if ('error' in loaded) {
+    const alert = document.getElementById('alert');
+    if (alert) alert.textContent = loaded.error;
+    return;
+  }
+  adoptLoaded(loaded);
 });
 
 requestAnimationFrame(frame);

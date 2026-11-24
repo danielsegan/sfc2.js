@@ -122,10 +122,11 @@ function turnDef(letter) {
   if (Object.prototype.hasOwnProperty.call(TURNS.modes, letter)) {
     return { known: true, unverified: false, ...TURNS.modes[letter] };
   }
-  if (TURNS.unverifiedLetters.includes(letter)) {
-    return { known: true, unverified: true, maxYawPerTick: null, immobile: false };
+  const fallback = TURNS.fallbackMaxYawPerTick;
+  if (!Number.isInteger(fallback) || fallback <= 0) {
+    throw new Error("fallback yaw");
   }
-  return { known: false, unverified: true, maxYawPerTick: null, immobile: false };
+  return { known: true, unverified: true, maxYawPerTick: fallback, immobile: false };
 }
 
 function mergeConstants(over) {
@@ -398,9 +399,6 @@ function settleAllocation(ship, allocation, constants) {
   }
 
   const turn = turnDef(ship.turnMode);
-  if (speedReq > 0 && (!turn.known || turn.unverified)) {
-    return result("rejected", "turnModeUnverified", null, { details: { turnMode: ship.turnMode } });
-  }
 
   let speed = speedReq;
   let immobileClamp = false;
@@ -804,9 +802,6 @@ function commandHelm(world, cmd) {
   const ship = found.ship;
   if (ship.disabled) return result("rejected", "crewDisabled", null);
   const turn = turnDef(ship.turnMode);
-  if (!turn.known || turn.unverified) {
-    return result("rejected", "turnModeUnverified", null, { details: { turnMode: ship.turnMode } });
-  }
   const yaw = cmd.yaw16 ?? 0;
   if (!Number.isInteger(yaw)) return result("rejected", "precisionExceeded", null);
   if (turn.immobile) {

@@ -67,7 +67,7 @@ A mount is the system key `weapon:<slotIndex>`. Hitting an overloaded photon wit
 
 Sets the standing power plan. Recognised keys: `speed`, `lifeSupport`, `fireControl`, `shields` (`general` and `specific` keyed by facing `"0"`..`"5"`), `weapons` (`slotIndex`, `request`, optional `mode`). Any other key → `unknownDraw` and the previous plan stands.
 
-Magnitude checks before any write: negative numbers, milli-unit precision, `badFacing`, `unknownWeaponSlot`, `notInDuelSlice` (drones, disruptors, and any mode other than `normal` / `overload` / `proximity`; phasers accept only `normal`). A speed above 0 on a turn letter with no rate → `turnModeUnverified`.
+Magnitude checks before any write: negative numbers, milli-unit precision, `badFacing`, `unknownWeaponSlot`, `notInDuelSlice` (drones, disruptors, and any mode other than `normal` / `overload` / `proximity`; phasers accept only `normal`). A turn letter with no per-letter rate uses the documented fallback yaw. Spawn emits `turnModeUnverified` once. The speed order is kept.
 
 Then the plan is settled for one rules-turn:
 
@@ -87,7 +87,7 @@ Life-support failure (demanded and unpaid) removes `crewLossIfLifeSupportUnpaid`
 
 These are player and AI commands, not mission entry points. They use the same `ruleResult`.
 
-`orderHelm({ yaw16 })` — one tick of yaw. Disabled crew → `crewDisabled`. Unrated turn letter → `turnModeUnverified`. Immobile hull and non-zero yaw → `immobile`, `appliedValue` 0. Yaw past `maxYawPerTick` → `yawClamped`.
+`orderHelm({ yaw16 })` — one tick of yaw. Disabled crew → `crewDisabled`. An unrated turn letter uses the documented fallback cap; the one-time `turnModeUnverified` warning is the spawn notice, not a refused helm order. Immobile hull and non-zero yaw → `immobile`, `appliedValue` 0. Yaw past `maxYawPerTick` → `yawClamped`.
 
 `fire({ slotIndex, target })` — check order after identity: `crewDisabled`, `unknownWeaponSlot`, `notInDuelSlice`, `weaponDestroyed`, `notCharged`, `noFireControl`, missing or destroyed target (`noSuchShip` / `shipDestroyed`), `outOfArc`, `outOfRange`, then the shot. A rejection does not spend charge. Phaser damage is applied on this tick. Photon shots launch a projectile; the impact is a later sim consequence and does not emit a second `ruleResult` in this slice. The sim follows that split: the phaser hit is part of the fire command, and the photon is a seeker the weapons phase flies on the launch tick and after.
 

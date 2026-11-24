@@ -95,14 +95,15 @@
       { "token": 9, "status": "rejected", "reason": "notInDuelSlice", "appliedValue": null },
       { "token": 10, "status": "rejected", "reason": "weaponDestroyed", "appliedValue": null },
       { "token": 11, "status": "rejected", "reason": "notCharged", "appliedValue": null },
-      { "token": 12, "status": "rejected", "reason": "turnModeUnverified", "appliedValue": null },
-      { "token": 13, "status": "rejected", "reason": "turnModeUnverified", "appliedValue": null },
+      { "token": 12, "status": "applied", "reason": "ok", "appliedValue": 1 },
+      { "token": 13, "status": "applied", "reason": "ok", "appliedValue": 100 },
       { "token": 14, "status": "rejected", "reason": "shipDestroyed", "appliedValue": null },
       { "token": 15, "status": "rejected", "reason": "notAShip", "appliedValue": null },
       { "token": 16, "status": "rejected", "reason": "crewDisabled", "appliedValue": null }
     ],
     "state": {
-      "test-empire-a:test-ca-01": { "shields": [20, 20, 20, 20, 20, 20] }
+      "test-empire-a:test-ca-01": { "shields": [20, 20, 20, 20, 20, 20] },
+      "test-empire-a:test-dd-03": { "speed": 1, "heading16": 100 }
     }
   }
 }
