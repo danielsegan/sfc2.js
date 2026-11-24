@@ -103,7 +103,7 @@ Example, cap not binding: general 8 and specific 3 on facing 0. General becomes 
 
 ## 6. Phasers
 
-A mount is a phaser because its **code** maps to internal type `phaser`, not because of which slot it sits in. `Ph1`, `Ph2`, `Ph3`, `Ph4`, `PhG` and the synthetic `TEST-PH` are phasers. `Ph3` also occurs on heavy-weapon slots. Real phaser codes have empty cost rows until playtest. `TEST-PH` costs 4 and has two range bands (3 damage out to 10, 1 damage out to 20) so the fixtures can run.
+A mount is a phaser because its **code** maps to internal type `phaser`, not because of which slot it sits in. `Ph1`, `Ph2`, `Ph3`, `Ph4`, `PhG` and the synthetic `TEST-PH` are phasers. `Ph3` also occurs on heavy-weapon slots. A real phaser row that omits `chargeCost` takes `costFallback.phaser` in [`data/weapon-arcs.json`](data/weapon-arcs.json): the same integers as `TEST-PH` (charge 4, damage 3 out to 10 and 1 out to 20). Those numbers are not a CE measurement. Writing `chargeCost` on the code's own row replaces the fallback without a code change. A code that is not in the catalog is `unknownWeapon` and is not mounted at cost 0.
 
 Charging is the dripped weapon budget. There is no minimum tick count beyond receiving the energy. When `charge` reaches the cost the mount is ready. `holdCost` is 0 in the placeholder, so a ready phaser does not bleed energy while it waits. A non-zero hold cost would come off the weapon budget first. Whether CE charges to hold is unverified.
 
@@ -125,7 +125,7 @@ The one heavy weapon. Internal type `photon`. Placeholder `TEST-PHOT`:
 | `projectileSpeed` | 2 | Range units per tick. |
 | `maxRange` | 30 | Synthetic launch limit for `TEST-PHOT` only. Not the 75-unit probe. |
 
-`PhoF` is the same internal type. Its cost row is empty until playtest.
+`Phot` and `PhoF` are the same internal type. A photon row that omits `armCost` takes `costFallback.photon`, the same integers as `TEST-PHOT`. A row that names `armCost` keeps its own numbers. The fallback is not a measured CE arming cost.
 
 Modes are `normal`, `overload`, and `proximity`. Proximity uses the normal arming cost and the proximity damage row. Overload uses the overload cost and damage. Combining them is `notInDuelSlice`. Switching mode zeroes charge.
 
@@ -172,6 +172,6 @@ The CE 2.670 shiplist has 15 `FTR` hull rows and no PF rows. The `class: "pf"` f
 
 ## 10. Pending playtest (values)
 
-Every balance number in `data/constants.json`, `data/turn-modes.json`, and the `TEST-*` rows. How many seconds a CE rules-turn lasts. The ×2 scale factors. Shield bins versus model cones, and every arc facing set. Whether the numeric Arc on `Dro*` and ADD means reloads or rack capacity. Pay order. Battery dump and refill. Phaser hold cost and travel time. Photon arming, overload odds, proximity radius. Chart rows and the hull-section map. In-place yaw. ftrlist `Shots` versus reloads. The 75-unit range probe.
+Every balance number in `data/constants.json`, `data/turn-modes.json`, the `TEST-*` rows, and `costFallback`. How many seconds a CE rules-turn lasts. The ×2 scale factors. Shield bins versus model cones, and every arc facing set. Whether the numeric Arc on `Dro*` and ADD means reloads or rack capacity. Pay order. Battery dump and refill. Phaser hold cost and travel time. Photon arming, overload odds, proximity radius. Chart rows and the hull-section map. In-place yaw. ftrlist `Shots` versus reloads. The 75-unit range probe.
 
 Verification method: [`fidelity-risk.md`](fidelity-risk.md).

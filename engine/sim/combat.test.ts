@@ -5,6 +5,7 @@ import { LocalSession } from '../net/session.ts';
 import { createSim, type Sim, type StepResult } from './sim.ts';
 import { bearingInArc, facingForRelative, relativeBearing, shotInArc, withinRange } from './arcs.ts';
 import { bindShiplistRow, parseHundredths, type ShipSetup } from './bind-shiplist.ts';
+import type { Diagnostic } from '../../tools/formats/diagnostics.ts';
 import { parseShiplist } from '../../tools/formats/shiplist.ts';
 import {
   CLASS_FIGHTER,
@@ -27,6 +28,8 @@ import {
   arcDef,
   arcId,
   turnModeId,
+  weaponDef,
+  weaponId,
 } from './rules-tables.ts';
 import { liveShots, shipView } from './hull.ts';
 import {
@@ -222,6 +225,16 @@ describe('facing, range, and arcs', () => {
       ...Object.keys(table.ship.weapons),
       ...Object.keys(table.fighter.weapons),
     ]);
+    const phaser = weaponDef(weaponId('Ph1'));
+    const photon = weaponDef(weaponId('Phot'));
+    const syntheticPhaser = weaponDef(weaponId('TEST-PH'));
+    const syntheticPhoton = weaponDef(weaponId('TEST-PHOT'));
+    expect(phaser?.chargeCost).toBe(syntheticPhaser?.chargeCost);
+    expect(phaser?.chargeCost).toBeGreaterThan(0);
+    expect(photon?.armCost).toBe(syntheticPhoton?.armCost);
+    expect(photon?.armCost).toBeGreaterThan(0);
+    expect(weaponDef(weaponId('Dis1'))?.chargeCost).toBe(0);
+    expect(weaponDef(weaponId('PhoF'))?.armCost).toBe(syntheticPhoton?.armCost);
     expect(ARC_CODES).toEqual(Object.keys(table.ship.arcs));
     expect(DEFAULT_LIFE_SUPPORT).toBe(constants.lifeSupportCost);
     expect(DEFAULT_FIRE_CONTROL).toBe(constants.fireControlCost);
@@ -1101,6 +1114,80 @@ describe('energy, shields, and fire', () => {
     expect(play(restored).hash).toBe(play(left.sim).hash);
     expect(left.hashes).toEqual(GOLDEN_HASHES);
     expect(left.eventHashes).toEqual(GOLDEN_EVENTS);
+  });
+});
+
+describe('CE weapon codes', () => {
+  it('arms and fires a CA-shaped cruiser, and diagnoses an unknown code', () => {
+    const text = [
+      'Race\tHull Type\tClass\tTurn Mode\tMove Cost\tShield 1\tShield 2 _ 6\tShield 3 _ 5\tShield 4\tR_L_Warp\tC_Warp\tImpulse\tAPR\tBattery\tRegular Crew\tMin Crew\tAcceleration\tNum\tHeavy Weapon 1\tArc\tNum\tHeavy Weapon 2\tArc\tNum\tWeapon 11\tArc\tNum\tWeapon 12\tArc\tNum\tWeapon 13\tArc\tNum\tWeapon 14\tArc',
+      'Federation\tCA\tTEST-CA-01\tTEST-C\t1\t10\t8\t6\t4\t11\t0\t0\t0\t0\t6\t1\t8\t1\tPhot\tFA\t1\tPhot\tFA\t1\tPh1\tFH\t1\tPh1\tFRRX\t1\tPh1\tFLLX\t1\tNOT-A-CODE\tFA',
+    ].join('\n');
+    const parsed = parseShiplist(text, { file: 'Assets/Specs/shiplist.txt' });
+    const diagnostics: Diagnostic[] = [];
+    const attacker = bindShiplistRow(parsed.data.rows[0]!, parsed.data.columns, diagnostics);
+    expect(attacker.shieldsMax).toEqual([20, 16, 12, 8, 12, 16]);
+    expect(attacker.warp).toBe(22);
+    expect(attacker.mounts.map((mount) => [mount.slotIndex, mount.weapon, mount.arc])).toEqual([
+      [0, 'Phot', 'FA'],
+      [1, 'Phot', 'FA'],
+      [10, 'Ph1', 'FH'],
+      [11, 'Ph1', 'FRRX'],
+      [12, 'Ph1', 'FLLX'],
+    ]);
+    expect(diagnostics).toEqual([
+      {
+        code: 'unknownWeapon',
+        source: 'loader',
+        severity: 'warning',
+        details: { spawnKey: 'Federation:TEST-CA-01', slotIndex: 13, code: 'NOT-A-CODE' },
+        location: { line: parsed.data.rows[0]!.line },
+      },
+    ]);
+    const target = cruiser({
+      warp: 0,
+      shields: [20, 20, 20, 20, 20, 20],
+      shieldsMax: [20, 20, 20, 20, 20, 20],
+      mounts: [],
+    });
+    const sim = boot([attacker, target], { rulesTurnTicks: 4 });
+    const spawned = play(sim, [
+      { kind: VERB_SPAWN, payload: spawnPayload(0, 0, 0, 0) },
+      { kind: VERB_SPAWN, payload: spawnPayload(1, 6, 0, 32768) },
+    ]);
+    const ids = spawned.events.filter((event) => event.kind === EVENT_SPAWN).map((event) => event.entity);
+    const weapons = attacker.mounts.map((mount) => ({ slot: mount.slotIndex, request: 4, mode: MODE_NORMAL }));
+    play(sim, [
+      {
+        kind: VERB_SET_ENERGY,
+        payload: setEnergyPayload(ids[0]!, { fireControl: true, weapons }),
+      },
+    ]);
+    play(sim);
+    play(sim);
+    play(sim);
+    for (const slot of [0, 1, 10, 11, 12]) {
+      const mount = viewAt(sim, 0).mounts[slot];
+      expect(mount?.weaponId).not.toBe(0);
+      expect(mount?.charge100).toBe(4 * ENERGY_SCALE);
+      expect(mount?.ticksCharging).toBe(4);
+    }
+    const phaser = play(sim, [{ kind: VERB_FIRE, payload: firePayload(ids[0]!, 10, ids[1]!) }]);
+    expect(phaser.events.find((event) => event.kind === EVENT_RULE)).toMatchObject({ a: R.ok, b: 3 });
+    expect(phaser.events.find((event) => event.kind === EVENT_HIT)).toMatchObject({ entity: ids[1], a: 0, b: 3 });
+    expect(viewAt(sim, 1).shields[0]).toBe(17);
+    expect(viewAt(sim, 0).mounts[10]?.charge100).toBe(0);
+    const launched = play(sim, [{ kind: VERB_FIRE, payload: firePayload(ids[0]!, 0, ids[1]!) }]);
+    expect(launched.events.find((event) => event.kind === EVENT_RULE)).toMatchObject({ a: R.ok, b: 8 });
+    expect(launched.events.find((event) => event.kind === EVENT_HIT)).toBeUndefined();
+    expect(viewAt(sim, 0).mounts[0]?.charge100).toBe(0);
+    expect(viewAt(sim, 1).shields[0]).toBe(17);
+    play(sim);
+    const impact = play(sim);
+    expect(impact.events.find((event) => event.kind === EVENT_HIT)).toMatchObject({ entity: ids[1], a: 0, b: 8 });
+    expect(viewAt(sim, 1).shields[0]).toBe(9);
+    expect(viewAt(sim, 0).mounts[1]?.charge100).toBe(4 * ENERGY_SCALE);
+    expect(viewAt(sim, 0).mounts[11]?.charge100).toBe(4 * ENERGY_SCALE);
   });
 });
 
