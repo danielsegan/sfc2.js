@@ -9,6 +9,7 @@ pnpm-debug.log*
 package-lock.json.bak
 
 # Build and test output
+verify-output/
 dist/
 build/
 out/
