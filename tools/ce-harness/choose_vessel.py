@@ -56,15 +56,18 @@ SKINS = {
         "title_crop": "320x50+430+200",
     },
     "romulan": {
-        # Class + DONE live in a right-hand block, not the bottom-centre bar.
-        # Ship arrows sit on a low bar under the bird-of-prey diagram (~y 600).
-        "ship_prev": (360, 600),
-        "ship_next": (440, 600),
-        "class_prev": (590, 550),
-        "class_next": (810, 550),
-        "done": (740, 600),
+        # Class + DONE live in a right-hand block. The left green arrow in that
+        # block is BACK (leaves CHOOSE VESSEL), not ship-prev. Ship arrows are
+        # the two plates under the bird-of-prey diagram; (440, 600) only grazed
+        # the top-right corner of ship-next. The previous stats crop started at
+        # x=640 and cut off "DESIGNATION:".
+        "ship_prev": (342, 606),
+        "ship_next": (427, 606),
+        "class_prev": (598, 557),
+        "class_next": (806, 557),
+        "done": (746, 606),
         "stats_side": "right",
-        "stats_crop": "220x400+640+150",
+        "stats_crop": "300x400+520+130",
         "title_crop": "320x50+230+200",
     },
     "hydran": {
