@@ -1,7 +1,8 @@
 /**
- * One-ship-against-one match. Orders go through the session, which
- * stamps tick, slot, and seq. Frame time goes through the driver only.
- * The view reads snapshots. It does not step the sim.
+ * A duel or a skirmish of up to six ships. Orders go through the session,
+ * which stamps tick, slot, and seq. AI captains queue the same verbs from
+ * inside the sim. Frame time goes through the driver only. The view reads
+ * snapshots. It does not step the sim.
  */
 import type { Sim, SimEvent } from '../sim/sim.ts';
 import { createSim, type CommandHandler } from '../sim/sim.ts';
@@ -18,6 +19,15 @@ import {
   createCombat,
 } from '../sim/combat.ts';
 import { H, HULL, HULL_FIELDS, shipView } from '../sim/hull.ts';
+import {
+  ALLEGIANCE_TABLE,
+  CONTROL_AI,
+  VERB_SET_ALLEGIANCE,
+  allegianceHandler,
+  allegiancePayload,
+  readAllegiance,
+} from '../sim/allegiance.ts';
+import { createCaptain } from '../sim/captain.ts';
 import {
   DEFAULT_RULES_TURN_TICKS,
   INTERNAL_PHASER,
@@ -41,6 +51,7 @@ import {
 
 const SPEED_CAP = 32;
 const EVENT_CAP = 256;
+export const FLEET_MAX = 6;
 
 export interface DuelPlan {
   lifeSupport: boolean;
@@ -55,17 +66,30 @@ export interface DuelPlan {
   modes: number[];
 }
 
+export interface FleetSlot {
+  readonly setupIndex: number;
+  readonly x: number;
+  readonly y: number;
+  readonly heading: number;
+  /** 0 and 1. Ships on the same side do not fire on each other from the helm. */
+  readonly side: 0 | 1;
+  /** `ai` queues captain orders. `manual` waits for the session. */
+  readonly control: 'manual' | 'ai';
+}
+
 export interface DuelMatchOptions {
   readonly seed?: number;
   readonly setups: readonly ShipSetup[];
   readonly spawns?: readonly SpawnPoint[];
+  /** When set, replaces `spawns` and assigns sides. Length 1..6. */
+  readonly fleet?: readonly FleetSlot[];
   readonly rulesTurnTicks?: number;
   readonly timeScale?: number;
   readonly selfIndex?: number;
   readonly plan?: Partial<DuelPlan>;
   /** Keep paying the standing plan when a rules-turn ends. */
   readonly renew?: boolean;
-  /** Send the plan on the tick after both hulls exist. */
+  /** Send the plan on the tick after the player hull exists. */
   readonly opening?: boolean;
 }
 
@@ -92,6 +116,8 @@ export interface DuelMatch {
   orderYaw(yaw16: number): void;
   orderFire(slotIndex: number): void;
   setTarget(id: number): void;
+  /** Step through hostile contacts. Negative steps go backwards. */
+  cycleTarget(step: number): void;
   /** Raw verb. The payload must not carry a tick. */
   issue(kind: number, payload: Uint8Array): void;
 }
@@ -155,12 +181,22 @@ class Match implements DuelMatch {
 
   constructor(options: DuelMatchOptions) {
     const period = options.rulesTurnTicks ?? DEFAULT_RULES_TURN_TICKS;
+    const fleet = options.fleet;
+    if (fleet && (fleet.length < 1 || fleet.length > FLEET_MAX)) throw new Error('fleet size');
     const combat = createCombat(options.setups, { rulesTurnTicks: period });
+    const tables = [...combat.tables, CRUISE_TABLE];
+    const systems = [...combat.systems, createCruise(period)];
+    const handlers = withHelm(combat.handlers);
+    if (fleet) {
+      tables.push(ALLEGIANCE_TABLE);
+      systems.push(createCaptain());
+      handlers.push(allegianceHandler);
+    }
     const sim = createSim({
       seed: options.seed ?? 1,
-      tables: [...combat.tables, CRUISE_TABLE],
-      systems: [...combat.systems, createCruise(period)],
-      handlers: withHelm(combat.handlers),
+      tables,
+      systems,
+      handlers,
     });
     this.sim = sim;
     this.session = new LocalSession({ localSlot: 0, inputDelay: 0, currentTick: () => sim.tick as number });
@@ -171,7 +207,7 @@ class Match implements DuelMatch {
       speed: options.timeScale ?? 1,
     });
     this.driver.ring.push(sim.snapshot());
-    this.selfIndex = options.selfIndex ?? 0;
+    this.selfIndex = resolveSelf(options.selfIndex, fleet);
     this.renew = options.renew ?? true;
     this.wantOpening = options.opening ?? true;
     const base = { ...SYNTHETIC_PLAN };
@@ -184,8 +220,26 @@ class Match implements DuelMatch {
       specific: normalizeSpecific(options.plan?.specific),
       modes: (options.plan?.modes ?? []).map((mode) => clampMode(mode)),
     };
-    for (const spawn of options.spawns ?? []) {
+    const spawns = fleet
+      ? fleet.map((slot) => ({
+          setupIndex: slot.setupIndex,
+          x: slot.x,
+          y: slot.y,
+          heading: slot.heading,
+        }))
+      : (options.spawns ?? []);
+    for (const spawn of spawns) {
+      if (spawn.setupIndex < 0 || spawn.setupIndex >= options.setups.length) throw new Error('setup index');
       this.session.issue(VERB_SPAWN, spawnPayload(spawn.setupIndex, spawn.x, spawn.y, spawn.heading));
+    }
+    if (fleet) {
+      for (let i = 0; i < fleet.length; i++) {
+        const slot = fleet[i]!;
+        if (slot.side !== 0 && slot.side !== 1) throw new Error('side');
+        const id = (i & 0xffff) | (1 << 16);
+        const control = slot.control === 'ai' ? CONTROL_AI : 0;
+        this.session.issue(VERB_SET_ALLEGIANCE, allegiancePayload(id, slot.side, control));
+      }
     }
   }
 
@@ -232,6 +286,7 @@ class Match implements DuelMatch {
       alpha: this.lastAlpha,
       events,
       selfIndex: this.selfIndex,
+      targetId: this.targetEntity,
     });
   }
 
@@ -298,6 +353,7 @@ class Match implements DuelMatch {
   orderFire(slotIndex: number): void {
     if (this.selfEntity === null || this.targetEntity === null) return;
     if (!Number.isInteger(slotIndex) || slotIndex < 0) return;
+    if (this.sameSide(this.targetEntity)) return;
     this.session.issue(VERB_FIRE, firePayload(this.selfEntity, slotIndex, this.targetEntity));
   }
 
@@ -305,18 +361,68 @@ class Match implements DuelMatch {
     this.targetEntity = id;
   }
 
+  cycleTarget(step: number): void {
+    const ids = this.hostileIds();
+    if (ids.length === 0) {
+      this.targetEntity = null;
+      return;
+    }
+    const dir = step < 0 ? -1 : 1;
+    let at = -1;
+    for (let i = 0; i < ids.length; i++) {
+      if (ids[i] === this.targetEntity) at = i;
+    }
+    let next = at < 0 ? (dir < 0 ? ids.length - 1 : 0) : at + dir;
+    if (next < 0) next = ids.length - 1;
+    if (next >= ids.length) next = 0;
+    this.targetEntity = ids[next] ?? null;
+  }
+
   issue(kind: number, payload: Uint8Array): void {
     this.session.issue(kind, payload);
+  }
+
+  private refreshTarget(): void {
+    const ids = this.hostileIds();
+    if (this.targetEntity !== null) {
+      for (const id of ids) {
+        if (id === this.targetEntity) return;
+      }
+    }
+    this.targetEntity = ids[0] ?? null;
+  }
+
+  private hostileIds(): number[] {
+    const world = this.sim.snapshot().world;
+    const selfSide = this.selfIndex >= 0 ? readAllegiance(world, this.selfIndex).side : -1;
+    const out: number[] = [];
+    for (let index = 0; index < world.live.length; index++) {
+      if (world.live[index] !== 1 || index === this.selfIndex) continue;
+      const ship = shipView(world, index);
+      if (!ship.live || ship.classCode === 0 || ship.destroyed === 1) continue;
+      const side = readAllegiance(world, index).side;
+      if (selfSide >= 0 && side >= 0 && side === selfSide) continue;
+      const gen = world.generations[index] ?? 0;
+      out.push((index & 0xffff) | ((gen & 0xffff) << 16));
+    }
+    return out;
+  }
+
+  private sameSide(entity: number): boolean {
+    const world = this.sim.snapshot().world;
+    const selfSide = this.selfIndex >= 0 ? readAllegiance(world, this.selfIndex).side : -1;
+    const side = readAllegiance(world, entity & 0xffff).side;
+    return selfSide >= 0 && side >= 0 && side === selfSide;
   }
 
   private noteSpawn(entity: number): void {
     const index = entity & 0xffff;
     if (index === this.selfIndex) this.selfEntity = entity;
-    else if (this.targetEntity === null) this.targetEntity = entity;
   }
 
   private afterFrame(): void {
-    if (this.wantOpening && !this.opened && this.selfEntity !== null && this.targetEntity !== null) {
+    this.refreshTarget();
+    if (this.wantOpening && !this.opened && this.selfEntity !== null) {
       this.opened = true;
       this.userCommit();
     }
@@ -375,6 +481,18 @@ function hullField(snap: { tables: readonly { id: string; data: readonly number[
   return 0;
 }
 
+function resolveSelf(requested: number | undefined, fleet: readonly FleetSlot[] | undefined): number {
+  if (!fleet) return requested ?? 0;
+  if (requested !== undefined) {
+    if (!Number.isInteger(requested) || requested < 0 || requested >= fleet.length) throw new Error('self index');
+    return requested;
+  }
+  for (let i = 0; i < fleet.length; i++) {
+    if (fleet[i]!.control === 'manual') return i;
+  }
+  return 0;
+}
+
 function withHelm(handlers: readonly CommandHandler[]): CommandHandler[] {
   for (const handler of handlers) {
     if (handler.kind === VERB_ORDER_HELM) return handlers.slice();
@@ -384,6 +502,10 @@ function withHelm(handlers: readonly CommandHandler[]): CommandHandler[] {
 
 export function createDuelMatch(options: DuelMatchOptions): DuelMatch {
   return new Match(options);
+}
+
+export function createFleetMatch(options: DuelMatchOptions & { readonly fleet: readonly FleetSlot[] }): DuelMatch {
+  return createDuelMatch(options);
 }
 
 export function createSyntheticDuel(options?: Omit<DuelMatchOptions, 'setups' | 'spawns'>): DuelMatch {

@@ -4,7 +4,7 @@ Browser application. Two pages, two Vite configs:
 
 | Page | Command | Port | What it is |
 | --- | --- | --- | --- |
-| Tactical duel | `pnpm dev:web` | 5174 | Phase 2 one-ship-against-one view |
+| Tactical duel | `pnpm dev:web` | 5174 | Skirmish of up to six ships |
 | Ship viewer | `pnpm dev:viewer` | 4174 | Phase 1 catalog. Every shiplist row, spun with its texture |
 
 The install picker is `@sfc2js/platform`: `preferredDirectoryPicker()` uses the File System Access API when the browser has it, and a `webkitdirectory` input otherwise. `importZipArchive` reads a zip the player supplies. `pickAndImport` indexes the result. Textures are loaded with `@sfc2js/render`'s `loadShipTexture`. Nothing is uploaded. See [docs/formats/bmp.md](../docs/formats/bmp.md).
@@ -28,7 +28,7 @@ A headless browser can open `http://127.0.0.1:5174/?install=/path/to/install` (v
 
 ## Tactical duel
 
-The tactical page is the duel console: target and sensor over the 3D view, then energy, six shields, weapons, and helm, plus slots for EW, tractor, cloak, fighters, and mines. Chrome uses the project's own plates and accent colours. It is not an Orion Pirates skin. Art under `art/` is original placeholder art.
+The tactical page is a skirmish of up to six ships on the duel console: target and sensor over the 3D view, then energy, six shields, weapons, and helm, plus slots for EW, tractor, cloak, fighters, and mines. A setup row for each slot picks side, empire, ship, and whether you or a captain drives it. **Synthetic 3v3** fills three a side from the placeholder catalog. Chrome uses the project's own plates and accent colours. It is not an Orion Pirates skin. Art under `art/` is original placeholder art.
 
 `pnpm build:web` writes `web/dist/`.
 
@@ -36,9 +36,9 @@ The tactical page is the duel console: target and sensor over the 3D view, then 
 
 Path: [`engine/duel/fixture.ts`](../engine/duel/fixture.ts).
 
-Two original hulls, `Test CA` and `Test D7`, with the placeholder phaser and photon. The first is a saucer cruiser and the second is a long-boom cruiser. The coordinates are invented. They spawn 16 range units apart, facing each other. The hull bytes are built in memory by `engine/duel/placeholder-mod.ts` and loaded with `parseMod` and `buildShipMesh`. No game file is required.
+The page boots a Federation fixture cruiser against a Klingon fixture cruiser, 24 range units apart. The second ship is an AI captain. The cruiser is the saucer placeholder and the frigate is the long-boom placeholder, both with invented coordinates. The hull bytes are built in memory by `engine/duel/placeholder-mod.ts` and loaded with `parseMod` and `buildShipMesh`. No game file is required. The one-on-one harness `createSyntheticDuel()` is still the inert pair used by the duel tests.
 
-Orders go through the session. The payload does not carry a tick. The default keymap is the modern profile in [docs/ui/keymap.md](../docs/ui/keymap.md): `W`/`S` speed, `A`/`D` yaw, `X` stop, `Space` fires the selected group, `1`–`6` pick a group, and the **Keys** button rebinds any of them. The time-scale control only changes how many 30 Hz ticks the driver runs per second. A photon launch is the combat verb; the shot then flies on its own.
+Orders go through the session. The payload does not carry a tick. The default keymap is the modern profile in [docs/ui/keymap.md](../docs/ui/keymap.md): `W`/`S` speed, `A`/`D` yaw, `X` stop, `Space` fires the selected group, `1`–`6` pick a group, `Tab` cycles hostile targets, and the **Keys** button rebinds any of them. Click a contact in the target list to select it. Ships on your side are not fired on. AI captains queue the same energy, helm, and fire verbs from inside the sim. The time-scale control only changes how many 30 Hz ticks the driver runs per second. A photon launch is the combat verb; the shot then flies on its own.
 
 The console follows the SFC2 arrangement: target and sensor above the 3D view, then energy allocation, six shields, weapons, and helm, with a second row of EW, tractor, cloak, fighter, and mine slots. Those five slots are present and bound. This duel does not simulate them, so the slots say so and their keys do not issue an order. Art under `art/` is original placeholder art. Chrome uses the project's own plates.
 
@@ -50,4 +50,4 @@ A headless harness is `createSyntheticDuel()` in `engine/duel/match.ts`. Call `f
 
 ### Player files
 
-**Load install folder** uses the platform directory picker. **Zip** reads an archive the player supplies. Both stay in the browser. The default pair is the Federation heavy cruiser (race Federation, hull CA, class `F-CA` when that row exists) against the Klingon D7 (class `K-D7`, or the closest Klingon cruiser hull). If either row is missing, the duel takes the first two ships of different empires that have a phaser or photon, and the log names the rows. The two ship menus can pick any other pair. Models load through `parseMod` and `buildShipMesh` when the geometry file is in the folder. A missing model keeps the placeholder hull. A turn letter with no playtest rate uses the documented fallback yaw, warns once, and keeps the ordered speed.
+**Load install folder** uses the platform directory picker. **Zip** reads an archive the player supplies. Both stay in the browser. The default pair is the Federation heavy cruiser (race Federation, hull CA, class `F-CA` when that row exists) against the Klingon D7 (class `K-D7`, or the closest Klingon cruiser hull). If either row is missing, the duel takes the first two ships of different empires that have a phaser or photon, and the log names the rows. The two ship menus can pick any other pair. That opponent is an AI captain. With an install loaded, the six skirmish slots list those ships by empire. Models load through `parseMod` and `buildShipMesh` when the geometry file is in the folder. A missing model keeps the placeholder hull. A turn letter with no playtest rate uses the documented fallback yaw, warns once, and keeps the ordered speed.

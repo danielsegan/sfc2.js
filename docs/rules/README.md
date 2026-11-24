@@ -7,6 +7,7 @@ Clean-room. These docs describe mechanisms in our own words. Synthetic fixtures 
 | Doc | Contents |
 | --- | --- |
 | [duel-slice.md](duel-slice.md) | Energy, movement, six shields, phasers, photons, damage, and where the real-time slice differs from tabletop play. |
+| [fleet-ai.md](fleet-ai.md) | Up to six ships, two sides, and the synthetic captain policy. |
 | [shiplist-mapping.md](shiplist-mapping.md) | Raw field → engine field, scale-factor table, weapon and arc table, ftrlist's 36-column header. |
 | [reason-codes.md](reason-codes.md) | `source: "rules"` reason codes. Copied later into `docs/engine/diagnostics.md`. |
 | [mission-entry-points.md](mission-entry-points.md) | `damageSystem`, `damageShield`, `repairSystem`, `setShields`, `setEnergy`, and `ruleResult`. |

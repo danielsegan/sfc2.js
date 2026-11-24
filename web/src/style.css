@@ -63,6 +63,32 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .top-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
 .ship-pick { font-size: 12px; color: var(--text-dim); display: flex; gap: 6px; align-items: center; }
 .ship-pick select { max-width: 240px; }
+
+.skirmish {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--panel-edge);
+  background: rgba(11, 17, 24, 0.92);
+}
+.skirmish-head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.skirmish-head h2 {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.slot-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.skirmish-slot { display: grid; grid-template-columns: 16px 72px 84px minmax(0, 1fr) minmax(0, 1.2fr); gap: 4px; align-items: center; }
+.skirmish-slot select { width: 100%; max-width: none; }
+#target-list { display: flex; flex-direction: column; gap: 2px; margin-top: 6px; max-height: 180px; overflow: auto; }
+#target-list button { text-align: left; font-size: 12px; }
+#target-list button.selected { outline: 2px solid var(--focus); outline-offset: 1px; }
+#target-list button.friendly { color: var(--state-friendly); }
+#target-list button.hostile { color: var(--state-hostile); }
+#target-list button.self { color: var(--state-friendly); }
 .file { font-size: 12px; color: var(--text-dim); }
 
 #stage { position: relative; flex: 1; min-height: 280px; }
@@ -87,7 +113,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 }
 
 .float { position: absolute; z-index: 2; width: 220px; }
-.target { top: 12px; left: 12px; }
+.target { top: 12px; left: 12px; max-height: 48%; overflow: auto; }
 .alerts { top: 12px; left: 244px; width: 280px; }
 .log-wrap { left: 12px; bottom: 36px; width: 320px; max-height: 160px; }
 #log { margin: 0; padding-left: 0; list-style: none; max-height: 110px; overflow: auto; font-size: 12px; }
@@ -161,4 +187,9 @@ dialog h2, dialog h3 { margin: 8px 0 4px; letter-spacing: 0.08em; text-transform
 @media (max-width: 1100px) {
   .console-row.primary, .console-row.systems { grid-template-columns: 1fr 1fr; }
   .alerts { display: none; }
+  .slot-grid { grid-template-columns: 1fr; }
+  .target { max-height: 34%; }
+  #target-list { max-height: 96px; }
+  .log-wrap { max-height: 88px; width: 240px; }
+  #log { max-height: 52px; }
 }

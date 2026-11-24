@@ -34,6 +34,7 @@ import {
   type WeaponDef,
 } from '../sim/rules-tables.ts';
 import { blendScalar, toDisplayEnergy, toDisplayRange, FULL_CIRCLE } from './units.ts';
+import { readAllegiance } from '../sim/allegiance.ts';
 
 export type Facing = 0 | 1 | 2 | 3 | 4 | 5;
 
@@ -98,7 +99,11 @@ export interface ContactView {
   readonly heading16: number;
   readonly speed: number;
   readonly destroyed: boolean;
-  readonly hostility: 'self' | 'hostile';
+  readonly hostility: 'self' | 'friendly' | 'hostile';
+  /** -1 when the ship was spawned without a side. Otherwise 0 or 1. */
+  readonly side: number;
+  readonly control: 'manual' | 'ai' | 'none';
+  readonly targeted: boolean;
   readonly kind: 'ship' | 'shot';
   readonly shields: readonly ShieldReadout[];
   readonly rangeFromSelf: number;
@@ -108,6 +113,7 @@ export interface ViewModel {
   readonly tick: number;
   readonly alpha: number;
   readonly self: SelfView | null;
+  readonly targetId: number | null;
   readonly contacts: readonly ContactView[];
   readonly mission: { readonly objectives: readonly never[]; readonly timers: readonly never[] };
   readonly events: readonly HudEvent[];
@@ -119,6 +125,7 @@ export interface ViewBuildInput {
   readonly alpha: number;
   readonly events: readonly SimEvent[];
   readonly selfIndex: number;
+  readonly targetId?: number | null;
 }
 
 function fieldAt(snap: WorldSnap, index: number, field: number): number {
@@ -279,6 +286,9 @@ function shotContacts(
       speed: 0,
       destroyed: false,
       hostility: 'hostile',
+      side: -1,
+      control: 'none',
+      targeted: false,
       kind: 'shot',
       shields: [],
       rangeFromSelf: selfPose ? hypot(dx, dy) : 0,
@@ -299,6 +309,8 @@ export function buildViewModel(input: ViewBuildInput): ViewModel {
 
   const contacts: ContactView[] = [];
   const count = curr.live.length;
+  const targetId = input.targetId ?? null;
+  const selfSide = input.selfIndex >= 0 ? readAllegiance(curr, input.selfIndex).side : -1;
   let selfPose: { x: number; y: number } | null = null;
   for (let index = 0; index < count; index++) {
     if (curr.live[index] !== 1) continue;
@@ -316,15 +328,20 @@ export function buildViewModel(input: ViewBuildInput): ViewModel {
       ? blendHeading(shipView(prev, index).heading, ship.heading, alpha)
       : ship.heading;
     if (index === input.selfIndex) selfPose = { x, y };
+    const allegiance = readAllegiance(curr, index);
+    const id = entityId(curr, index);
     contacts.push({
-      id: entityId(curr, index),
+      id,
       index,
       x,
       y,
       heading16,
       speed: ship.speed,
       destroyed: ship.destroyed === 1,
-      hostility: index === input.selfIndex ? 'self' : 'hostile',
+      hostility: hostilityOf(index, input.selfIndex, selfSide, allegiance.side),
+      side: allegiance.side,
+      control: allegiance.control === 1 ? 'ai' : allegiance.side >= 0 ? 'manual' : 'none',
+      targeted: targetId !== null && id === targetId,
       kind: 'ship',
       shields: shieldsOf(ship),
       rangeFromSelf: 0,
@@ -379,8 +396,15 @@ export function buildViewModel(input: ViewBuildInput): ViewModel {
     tick: input.curr.tick,
     alpha,
     self,
+    targetId,
     contacts: posed,
     mission: { objectives: [], timers: [] },
     events,
   };
+}
+
+function hostilityOf(index: number, selfIndex: number, selfSide: number, side: number): ContactView['hostility'] {
+  if (index === selfIndex) return 'self';
+  if (selfSide >= 0 && side >= 0 && side === selfSide) return 'friendly';
+  return 'hostile';
 }

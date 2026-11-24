@@ -16,6 +16,7 @@ export interface HudHandles {
   mapFull: boolean;
   targetId: number | null;
   onSelect(slot: number): void;
+  onTarget?(id: number): void;
 }
 
 export interface MapFrame {
@@ -57,6 +58,7 @@ export function updateHud(vm: ViewModel, roster: readonly RosterEntry[], hud: Hu
   text('target-range', target ? fmt(target.rangeFromSelf) : '—');
   text('target-bearing', target && self ? formatDeg(bearing(self.heading16, selfContact(vm), target)) : '—');
   text('target-shields', target ? target.shields.map((facing) => String(facing.current)).join(' · ') : '');
+  renderTargetList(vm, roster, hud);
   const alert = latestAlert(vm.events);
   text('alert', alert);
   appendLog(vm);
@@ -234,7 +236,9 @@ function renderContacts(vm: ViewModel, roster: readonly RosterEntry[]): void {
     if (contact.kind === 'shot') continue;
     const row = document.createElement('tr');
     const name = roster[contact.index]?.name ?? `Ship ${String(contact.index)}`;
-    row.append(cell(contact.hostility === 'self' ? `${name} (you)` : name));
+    const who = contact.hostility === 'self' ? 'you' : contact.control === 'ai' ? 'AI' : contact.hostility;
+    const side = contact.side < 0 ? '' : contact.side === 0 ? 'A ' : 'B ';
+    row.append(cell(`${side}${name} (${who})`));
     row.append(cell(fmt(contact.rangeFromSelf)));
     row.append(cell(String(contact.speed)));
     body.append(row);
@@ -414,7 +418,7 @@ function drawMap(vm: ViewModel, hud: HudHandles): void {
       return [px + sx, py - sy] as const;
     };
     const targeted = contact.id === hud.targetId;
-    ctx.fillStyle = contact.kind === 'shot' ? '#f2b33d' : contact.hostility === 'self' ? '#5fb7ff' : contact.hostility === 'hostile' ? '#ff6b5e' : '#c9c9c9';
+    ctx.fillStyle = contact.kind === 'shot' ? '#f2b33d' : contact.hostility === 'self' ? '#5fb7ff' : contact.hostility === 'friendly' ? '#5fd3a0' : '#ff6b5e';
     ctx.beginPath();
     if (contact.kind === 'shot') {
       ctx.moveTo(px, py - 3);
@@ -436,6 +440,30 @@ function drawMap(vm: ViewModel, hud: HudHandles): void {
       ctx.strokeStyle = '#ffffff';
       ctx.strokeRect(px - 7, py - 7, 14, 14);
     }
+  }
+}
+
+let targetKey = '';
+
+function renderTargetList(vm: ViewModel, roster: readonly RosterEntry[], hud: HudHandles): void {
+  const host = document.getElementById('target-list');
+  if (!host) return;
+  const ships = vm.contacts.filter((contact) => contact.kind === 'ship');
+  const key = ships.map((contact) => `${String(contact.id)}:${contact.hostility}:${contact.id === hud.targetId ? '1' : '0'}`).join('|');
+  if (key === targetKey) return;
+  targetKey = key;
+  host.replaceChildren();
+  for (const contact of ships) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    const name = roster[contact.index]?.name ?? `Ship ${String(contact.index)}`;
+    const side = contact.side < 0 ? '' : contact.side === 0 ? 'A · ' : 'B · ';
+    const who = contact.hostility === 'self' ? 'you' : contact.control === 'ai' ? 'AI' : contact.hostility;
+    const selected = contact.id === hud.targetId;
+    button.textContent = `${side}${name} · ${who}`;
+    button.className = `${contact.hostility}${selected ? ' selected' : ''}`;
+    button.addEventListener('click', () => hud.onTarget?.(contact.id));
+    host.append(button);
   }
 }
 
