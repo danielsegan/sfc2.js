@@ -1,7 +1,10 @@
 import { ByteBuf } from './bytes.ts';
 import { xxhash32 } from './xxhash32.ts';
 
-/** First replay envelope. Bump when the canonical state bytes change shape. */
+/**
+ * Replay envelope version. Bump when the file layout in docs/engine/replay.md changes.
+ * A change to canonical state bytes is caught by simSourceHash, so it does not need a bump.
+ */
 export const REPLAY_FORMAT = 1;
 
 export interface SourceFile {
