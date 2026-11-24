@@ -17,6 +17,8 @@ import { assembleDuel, duelFromFiles, duelFromZip, type LoadedDuel } from './ins
 import { filesFromDevInstall } from './dev-install-client.ts';
 import { devInstallUrl } from '../dev-install-shared.ts';
 import { DuelScene } from './scene.ts';
+import { hudScaleFromLocation, paintFieldHud } from './field-hud.ts';
+import { pickContact } from './tactical/tags.ts';
 import { createKeyTracker } from './input/keymap.ts';
 import { runAction, type CommandHost } from './commands.ts';
 import { mountKeymapDialog } from './keymap-dialog.ts';
@@ -29,7 +31,9 @@ const space = document.getElementById('space');
 if (!(space instanceof HTMLCanvasElement)) throw new Error('missing view');
 const canvas: HTMLCanvasElement = space;
 
-const scene = new DuelScene(canvas);
+const pageSearch = location.search;
+const hudScale = hudScaleFromLocation(pageSearch);
+const scene = new DuelScene(canvas, { preserveDrawingBuffer: new URLSearchParams(pageSearch).get('smoke') === '1' });
 let scale = 4;
 const opening = syntheticFleet(readDefaultDuel());
 let match: DuelMatch = opening.match;
@@ -222,6 +226,7 @@ window.addEventListener('keydown', (event) => {
   if (dialog instanceof HTMLDialogElement && dialog.open) return;
   if (event.code === 'Tab') event.preventDefault();
   const action = keys.press(event);
+  if (keys.held('view.orbitLeft') || keys.held('view.orbitRight')) event.preventDefault();
   if (!action) return;
   event.preventDefault();
   audio.unlock();
@@ -257,29 +262,74 @@ document.getElementById('shields')?.addEventListener('click', (event) => {
 });
 
 const stage = document.getElementById('stage');
-let dragging = false;
+let orbiting = false;
+let rightClick = false;
 let dragX = 0;
 let dragY = 0;
+let downX = 0;
+let downY = 0;
 stage?.addEventListener('pointerdown', (event) => {
-  if (event.button !== 2) return;
-  dragging = true;
-  dragX = event.clientX;
-  dragY = event.clientY;
-  audio.unlock();
+  if (event.button === 0 && event.altKey) {
+    orbiting = true;
+    dragX = event.clientX;
+    dragY = event.clientY;
+    downX = event.clientX;
+    downY = event.clientY;
+    audio.unlock();
+    return;
+  }
+  if (event.button === 2) {
+    rightClick = true;
+    downX = event.clientX;
+    downY = event.clientY;
+    audio.unlock();
+  }
 });
 stage?.addEventListener('pointermove', (event) => {
-  if (!dragging) return;
+  if (!orbiting) return;
   scene.orbitBy(event.clientX - dragX, event.clientY - dragY);
   dragX = event.clientX;
   dragY = event.clientY;
 });
-stage?.addEventListener('pointerup', () => {
-  dragging = false;
+stage?.addEventListener('pointerup', (event) => {
+  if (event.button === 0) orbiting = false;
+  if (event.button !== 2 || !rightClick) return;
+  rightClick = false;
+  const moved = Math.hypot(event.clientX - downX, event.clientY - downY);
+  if (moved > 4) return;
+  targetAt(event.clientX, event.clientY);
 });
 stage?.addEventListener('pointerleave', () => {
-  dragging = false;
+  orbiting = false;
+  rightClick = false;
 });
 stage?.addEventListener('contextmenu', (event) => event.preventDefault());
+document.getElementById('offscreen-tags')?.addEventListener('click', (event) => {
+  const node = event.target;
+  if (!(node instanceof Element)) return;
+  const button = node.closest<HTMLElement>('button[data-id]');
+  if (!button?.dataset.id) return;
+  match.setTarget(Number(button.dataset.id));
+});
+document.getElementById('field-speed-bar')?.addEventListener('pointerdown', (event) => {
+  if (event.button !== 0) return;
+  setSpeedFromBar(event.clientX);
+});
+document.getElementById('field-speed-bar')?.addEventListener('wheel', (event) => {
+  match.bumpSpeed(event.deltaY > 0 ? -1 : 1);
+  syncSpeedInput();
+  event.preventDefault();
+}, { passive: false });
+document.getElementById('field-cap')?.addEventListener('pointerdown', (event) => {
+  if (event.button !== 0) return;
+  const bar = event.currentTarget;
+  if (!(bar instanceof HTMLElement)) return;
+  const rect = bar.getBoundingClientRect();
+  const fraction = rect.width <= 0 ? 0 : (event.clientX - rect.left) / rect.width;
+  const request = Math.round(Math.max(0, Math.min(1, fraction)) * 20);
+  match.setWeaponRequest(request);
+  bar.setAttribute('aria-valuenow', String(request));
+});
 stage?.addEventListener('wheel', (event) => {
   const frame = mapFrame;
   const overlay = document.getElementById('overlay');
@@ -297,6 +347,7 @@ stage?.addEventListener('wheel', (event) => {
   event.preventDefault();
 }, { passive: false });
 stage?.addEventListener('click', (event) => {
+  if (event.altKey) return;
   const frame = mapFrame;
   const overlay = document.getElementById('overlay');
   if (!frame || !overlay || !latest || !frame.self) return;
@@ -307,6 +358,34 @@ stage?.addEventListener('click', (event) => {
   const id = nearestContact(latest.contacts, frame.self, frame.headingUp, frame.scale, x - frame.cx, y - frame.cy);
   if (id !== null) match.setTarget(id);
 });
+
+function setSpeedFromBar(clientX: number): void {
+  const bar = document.getElementById('field-speed-bar');
+  if (!bar) return;
+  const rect = bar.getBoundingClientRect();
+  const fraction = rect.width <= 0 ? 0 : (clientX - rect.left) / rect.width;
+  match.setSpeed(Math.round(Math.max(0, Math.min(1, fraction)) * 32));
+  syncSpeedInput();
+}
+
+function targetAt(clientX: number, clientY: number): void {
+  if (!latest || !stage) return;
+  const rect = stage.getBoundingClientRect();
+  const points = [];
+  for (const contact of latest.contacts) {
+    if (contact.kind === 'shot' || contact.hostility === 'self' || !contact.detected) continue;
+    const ndc = scene.projectNdc(contact.x, contact.y);
+    if (!ndc.inFront || ndc.x < -1 || ndc.x > 1 || ndc.y < -1 || ndc.y > 1) continue;
+    points.push({
+      id: contact.id,
+      x: (ndc.x * 0.5 + 0.5) * rect.width,
+      y: (1 - (ndc.y * 0.5 + 0.5)) * rect.height,
+      kind: contact.kind,
+    });
+  }
+  const id = pickContact(points, clientX - rect.left, clientY - rect.top, 28);
+  if (id !== null) match.setTarget(id);
+}
 
 function clampZoom(value: number): number {
   if (value < 3) return 3;
@@ -419,13 +498,33 @@ function frame(now: number): void {
   last = now;
   if (keys.held('helm.turnLeft')) match.orderYaw(-8000);
   if (keys.held('helm.turnRight')) match.orderYaw(8000);
+  if (keys.held('view.orbitLeft')) scene.orbitBy(-16, 0);
+  if (keys.held('view.orbitRight')) scene.orbitBy(16, 0);
   match.frame(dt);
   const vm = match.view();
   latest = vm;
   if (vm.contacts.some((contact) => contact.kind === 'ship')) document.body.dataset.ready = '1';
+  document.body.dataset.camera = scene.cameraMode;
   scene.resize(canvas.clientWidth, canvas.clientHeight, window.devicePixelRatio || 1);
-  scene.render(vm, now);
+  const groupSlots = groups[selectedGroup] ?? [];
+  const selection = groupSlots.includes(selectedSlot) ? groupSlots : [selectedSlot, ...groupSlots];
+  scene.render(vm, now, selection);
   updateHud(vm, roster, hud, match.plan, now);
+  const stageRect = stage?.getBoundingClientRect();
+  const obstacles = mapFrame
+    ? [{ left: mapFrame.left, top: mapFrame.top, right: mapFrame.left + mapFrame.size, bottom: mapFrame.top + mapFrame.size }]
+    : [];
+  paintFieldHud({
+    vm,
+    roster,
+    planSpeed: match.plan.speed,
+    now,
+    scale: hudScale,
+    width: stageRect?.width ?? canvas.clientWidth,
+    height: stageRect?.height ?? canvas.clientHeight,
+    obstacles,
+    project: (x, y) => scene.projectNdc(x, y),
+  });
   const heard = cuesForFrame(
     {
       events: vm.events,

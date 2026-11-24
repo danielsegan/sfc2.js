@@ -36,14 +36,15 @@ Mouse actions are presentation or targeting. They do not write the sim except **
 | EW toward ECM / ECCM | `[` / `]` |
 | EW power down / up | Ctrl+`[` / Ctrl+`]` |
 | Cycle camera | `V` |
+| Orbit the camera | Alt+drag the view, or Alt+Left / Alt+Right. Left-click steers and right-click targets (Daniel, 2026-11-24, `hud-layout.md` D1), so neither button orbits on its own. |
 | Toggle the sensor map size | `M` |
 | Toggle north-up / heading-up | `H` |
 | Reset the camera | `Home` |
 | Pause (single player) | `Esc` |
-| Orbit the camera | Not right-drag: right-click targets (Daniel, 2026-11-24, `hud-layout.md` D1); middle-drag or a modifier, final pick by the Engine Lead |
 | Zoom the camera | Wheel on the view |
 | Zoom the sensor map | Wheel on the map |
-| Target a contact | Left-click the contact on the map |
+| Change desired speed | Wheel or click the lower speed bar |
+| Target a contact | Right-click the ship in the 3D view, or click its off-screen tag. Left-click on the sensor map still selects a contact there. |
 | Add one point of reinforcement | Left-click a shield arc. Shift-click clears it. |
 
 EW, tractor, cloak, fighter, mine, and boarding keys send the same sim verbs the captain uses. Reverse, erratic maneuvers, and drones still only report that they are not in this duel.

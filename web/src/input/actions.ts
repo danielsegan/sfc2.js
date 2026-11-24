@@ -88,6 +88,8 @@ export const ACTIONS: readonly ActionDef[] = [
   { id: 'ew.totalDown', label: 'Lower EW power', group: 'EW', binding: chord('BracketLeft', { ctrl: true }) },
   { id: 'ew.totalUp', label: 'Raise EW power', group: 'EW', binding: chord('BracketRight', { ctrl: true }) },
   { id: 'view.camera', label: 'Cycle camera', group: 'View', binding: chord('KeyV') },
+  { id: 'view.orbitLeft', label: 'Orbit camera left', group: 'View', hold: true, binding: chord('ArrowLeft', { alt: true }) },
+  { id: 'view.orbitRight', label: 'Orbit camera right', group: 'View', hold: true, binding: chord('ArrowRight', { alt: true }) },
   { id: 'view.map', label: 'Toggle sensor map', group: 'View', binding: chord('KeyM') },
   { id: 'view.mapOrientation', label: 'Toggle map orientation', group: 'View', binding: chord('KeyH') },
   { id: 'view.reset', label: 'Reset camera', group: 'View', binding: chord('Home') },

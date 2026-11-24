@@ -66,6 +66,9 @@ export interface WeaponReadout {
   readonly arcFrom16: number;
   readonly arcTo16: number;
   readonly arcFull: boolean;
+  /** Display range units copied from the weapon table. 0 when the table has none. */
+  readonly rangeMax: number;
+  readonly rangeBands: readonly number[];
   readonly charge: number;
   readonly cost: number;
   readonly ready: boolean;
@@ -196,6 +199,23 @@ function armCost(def: WeaponDef, mode: number): number {
   return 0;
 }
 
+function rangeBandsOf(def: WeaponDef | undefined): number[] {
+  if (!def) return [];
+  const bands: number[] = [];
+  for (const band of def.bands) {
+    const reach = band[0] ?? 0;
+    if (reach > 0) bands.push(reach);
+  }
+  return bands;
+}
+
+function rangeMaxOf(def: WeaponDef | undefined): number {
+  if (!def) return 0;
+  if (def.maxRange > 0) return def.maxRange;
+  const bands = rangeBandsOf(def);
+  return bands.length > 0 ? bands[bands.length - 1]! : 0;
+}
+
 function familyOf(def: WeaponDef | undefined): string {
   if (!def) return 'unknown';
   if (def.internal === INTERNAL_PHASER) return 'phaser';
@@ -228,6 +248,8 @@ function weaponReadout(slot: number, mount: { weaponId: number; arcId: number; c
     arcFrom16: arc?.from16 ?? 0,
     arcTo16: arc?.to16 ?? 0,
     arcFull: arc?.full === 1,
+    rangeMax: rangeMaxOf(def),
+    rangeBands: rangeBandsOf(def),
     charge: toDisplayEnergy(mount.charge100),
     cost,
     ready,
