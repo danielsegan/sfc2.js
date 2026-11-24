@@ -2,10 +2,12 @@
 """Collect per-run JSON into results.json + results.csv (measured numbers only).
 Usage: summarize.py <runs_dir> <out_prefix> [label-glob]"""
 import csv, glob, json, os, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from turn_tags import apply_noop, turn_kind
 runs_dir, prefix = sys.argv[1], sys.argv[2]
 pat = sys.argv[3] if len(sys.argv) > 3 else "*"
-HET_BUTTONS = {"port", "stbd", "hard_port", "hard_stbd", "u_turn"}
-FIELDS = ["label", "button", "kind", "target_speed", "settled_speed", "speed_during_run", "fps", "game_s_per_wall_s",
+FIELDS = ["label", "button", "kind", "spawnKey", "target_speed", "settled_speed", "speed_key",
+          "noop", "noop_reason", "speed_during_run", "fps", "game_s_per_wall_s",
           "total_turn_deg", "order_delay_s", "t10_s", "t50_s", "t90_s",
           "mean_rate_deg_per_wall_s_10_90", "mean_rate_deg_per_game_s_10_90"]
 rows = []
@@ -13,8 +15,10 @@ for f in sorted(glob.glob(os.path.join(runs_dir, pat + ".json"))):
     if f.endswith(".r2.json"):
         continue
     d = json.load(open(f))
+    d["kind"] = d.get("kind") or turn_kind(d.get("button"))
+    if "noop" not in d:
+        apply_noop(d)
     r = {k: d.get(k) for k in FIELDS}
-    r["kind"] = d.get("kind") or ("het" if d.get("button") in HET_BUTTONS else "normal")
     r["energy_panel"] = d.get("energy_panel")
     rows.append(r)
 meta = {"source": "Star Trek: Starfleet Command II Community Edition 2.670, observed on screen under Wine",

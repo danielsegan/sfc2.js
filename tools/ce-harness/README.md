@@ -34,7 +34,36 @@ licensed install lives at `/srv/sfc2/reference/2.670`.
 | `analyze_turn.py` | Unwraps the heading, applies a median filter, and works out the total turn, the order delay and the 10/50/90% times. It also computes the mean turn rate (deg/s, wall clock and game clock) and reads the HUD clock, speed and energy panel with OCR. |
 | `mouse_helm.py` | Clicks a point in the overhead tactical view and records the heading series. This is the normal mouse-set heading turn. |
 | `weapons_probe.py` | Federation HUD only. Arms weapons (NORMAL), fires repeatedly, and OCRs the game's own on-screen volley readout and the target range tag. |
-| `summarize.py` | Collects the per-run JSON files into `results.json` and `results.csv`. Each run includes `kind`: `het` for helm-panel buttons, `normal` for mouse-heading turns. Ship-audit scores those separately, keyed by speed. |
+| `summarize.py` | Collects the per-run JSON files into `results.json` and `results.csv`. Each run includes `kind`, `noop`, `noop_reason`, `spawnKey` and `speed_key`. Ship-audit scores normal and HET turns separately, keyed by speed, and skips no-ops. |
+
+| `heading2.py` | Heading from silhouette rotation-registration (filled mask, heading wedge excluded). Use this in preference to the principal-axis estimate on dark or cluttered hulls. |
+| `analyze_turn2.py` | Same summary as `analyze_turn.py`, from heading2. Also emits `mean_rate_deg_per_game_s_10_90` from the HUD clock. |
+| `turn_tags.py` | Shared combat tags: `kind`, `noop` / `noop_reason`, and `speed_key`. |
+| `choose_vessel.py` | Per-empire CHOOSE VESSEL click targets (ship next/prev, class next/prev, DONE) and DESIGNATION OCR crops, measured from screenshots of each skin. |
+| `pbattle_hull.sh` | Start a game copy, page to a named hull, weak AI, Play, F1. Hard-fails (never "battle-ready") if DESIGNATION does not match, DONE leaves the menu closed, or the battle UI is not up. |
+| `battle_check.py` | Pre-capture check: CHOOSE VESSEL / Customize gone, helm or energy chrome present. |
+| `helm_status.py` | OCR `CHANCE FOR HET` and a "hull integrity has Broken Down" flag, used to skip later HETs. |
+| `tier2_one.sh` | One queued hull: normal turns, then HETs only while chance/integrity allow, weapons probe from speed 0. |
+| `library_sweep.py` | Vessel Library / CHOOSE VESSEL census using the same per-skin navigation and both-side stats OCR. |
+
+## Combat tagging
+
+Every turn run is tagged `kind` `normal` (mouse bearing) or `het` (helm-panel button) and carries `spawnKey`. Timing and rate fields are:
+
+- `noop: true`, `noop_reason: het_not_executed` or `het_failed_roll` when a HET's absolute sweep is under 45 deg or the order delay is outside 3.5–8.0 s. A delay inside that window with a short sweep is a failed roll; a delay outside it was not executed. Timing and rate fields are set to `null`.
+- `noop: true`, `noop_reason: already_facing` when a normal turn's absolute sweep is under 25 deg or the delay is under 0.4 s.
+- `speed_key` is `settled_speed` when it differs from `target_speed` by at least 0.5, otherwise `target_speed`. Ship-audit keys turns by this speed.
+
+`summarize.py` passes `noop`, `noop_reason`, `spawnKey` and `speed_key` through to `results-*.json`.
+
+## Hull select and the battle-UI check
+
+Federation DONE / class-next coordinates miss other skins (Klingon DONE was 18 px below the hex; class-next sat in empty space left of the chevron). `choose_vessel.py` holds measured targets for Federation, Klingon, Romulan, Lyran, Hydran, Gorn, ISC, Mirak, and Orion (Orion currently shares the Federation layout). `pbattle_hull.sh` re-reads DESIGNATION immediately before DONE, fails if the menu is still showing, and runs `battle_check.py` before any capture. Failures write `select_failed` or `battle_check_failed`, never `ok`.
+
+Weapons probes start from speed 0 (the wp4 setup), not leftover combat speed. Later HETs are skipped when `CHANCE FOR HET` is exhausted or the hull is broken down, with the reason recorded. If the CHANCE OCR is not confident (Klingon 100.0 often reads as 000 or 1000), the HET is still attempted and a no-op is tagged after analysis.
+
+POWER / SYSTEMS / OTHER / EXCESS OCR uses a wider crop, 600% scale and a white border. Values outside 0–80 are stored as `null` rather than three-digit misreads (for example 15.0 read as 115 on a frigate).
+
 
 ## Run on the VM by hand
 

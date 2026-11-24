@@ -3,8 +3,25 @@
 record timestamped screenshots. Usage: capture_turn.py <label> <target_speed> <button> <seconds>"""
 import json, os, subprocess, sys, time
 BUTTONS = {"port": (31, 82), "stbd": (139, 82), "hard_port": (31, 118), "hard_stbd": (139, 118), "u_turn": (84, 118)}
-if os.environ.get("HUD") == "klingon":  # Klingon HUD skin places the helm buttons differently
-    BUTTONS = {"port": (60, 80), "stbd": (117, 80), "hard_port": (60, 112), "hard_stbd": (117, 112), "u_turn": (84, 112)}
+# Per-skin helm-panel HET buttons (1024x768). Federation is the default.
+# Klingon coords were measured in battle. Others are from HUD screenshots and will be
+# confirmed on the first hull of that empire.
+HUD_BUTTONS = {
+    "federation": {"port": (31, 82), "stbd": (139, 82), "hard_port": (31, 118), "hard_stbd": (139, 118), "u_turn": (84, 118)},
+    "klingon":    {"port": (60, 80), "stbd": (117, 80), "hard_port": (60, 112), "hard_stbd": (117, 112), "u_turn": (84, 112)},
+    "romulan":    {"port": (49, 87), "stbd": (133, 87), "hard_port": (40, 112), "hard_stbd": (124, 112), "u_turn": (82, 112)},
+    "hydran":     {"port": (57, 94), "stbd": (114, 94), "hard_port": (57, 120), "hard_stbd": (114, 120), "u_turn": (85, 124)},
+    "isc":        {"port": (85, 87), "stbd": (120, 86), "hard_port": (85, 119), "hard_stbd": (120, 120), "u_turn": (85, 87)},
+    "lyran":      {"port": (31, 82), "stbd": (139, 82), "hard_port": (31, 118), "hard_stbd": (139, 118), "u_turn": (84, 118)},
+    "gorn":       {"port": (31, 82), "stbd": (139, 82), "hard_port": (31, 118), "hard_stbd": (139, 118), "u_turn": (84, 118)},
+    "mirak":      {"port": (31, 82), "stbd": (139, 82), "hard_port": (31, 118), "hard_stbd": (139, 118), "u_turn": (84, 118)},
+    "orion":      {"port": (31, 82), "stbd": (139, 82), "hard_port": (31, 118), "hard_stbd": (139, 118), "u_turn": (84, 118)},
+}
+hud = (os.environ.get("HUD") or "federation").strip().lower()
+if hud in HUD_BUTTONS:
+    BUTTONS = HUD_BUTTONS[hud]
+# Normal (mouse) turns: left-click a bearing in the overhead tactical view (camera centre ~612,384).
+MOUSE = {"mouse_n": (612, 150), "mouse_s": (612, 650), "mouse_w": (330, 384), "mouse_e": (900, 384)}
 PARK = ("100", "700")
 def sh(*a): return subprocess.run(a, capture_output=True, text=True).stdout
 def grab(p): subprocess.run(["import", "-window", "root", p], check=True)
@@ -36,7 +53,8 @@ sh("xdotool", "mousemove", "182", "15", "click", "1", "mousemove", *PARK); time.
 idx = []; start = time.time(); acted = None; i = 0
 while time.time() - start < secs:
     if acted is None and time.time() - start > 1.0:
-        x, y = BUTTONS[button]; sh("xdotool", "mousemove", str(x), str(y), "click", "1", "mousemove", *PARK); acted = time.time()
+        x, y = MOUSE[button] if button in MOUSE else BUTTONS[button]
+        sh("xdotool", "mousemove", str(x), str(y), "click", "1", "mousemove", *PARK); acted = time.time()
     p = f"{fdir}/{i:04d}.png"; t = time.time(); grab(p); idx.append([round(t, 4), p]); i += 1
 json.dump({"label": label, "target_speed": target, "button": button, "speed_history": hist,
            "action_wall": acted, "frames": idx}, open(f"{fdir}/capture.json", "w"), indent=1)
