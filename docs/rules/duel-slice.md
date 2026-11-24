@@ -135,6 +135,14 @@ On launch the projectile remembers range, speed, mode and damage. Each later fli
 
 Worked flight, range 6, speed 2: the fire tick leaves remaining 4; the next tick leaves 2; the tick after that reaches 0 and a normal warhead hits. A proximity fuse at radius 2 detonates on the middle tick. Fixtures: `tests/photon-arm.json`, `tests/photon-proximity.json`.
 
+**What the sim does** ([#23](https://github.com/danielsegan/sfc2.js/issues/23)). A phaser hit is resolved in the input phase of the fire tick, before that tick's energy drip. A photon `fire` spends the mount's charge and launches a seeker. The seeker stores the floored Q16.16 range (`isqrt64` of the exact distance squared), speed, mode, and damage. The weapons phase of every tick, including the launch tick, subtracts speed from the remaining range and detonates on the rule above. The impact emits a hit event on the detonation tick. The launch's `ruleResult` is the only rules result for that shot.
+
+The energy slice applied photon damage inside the fire command. Flight replaces that. The fixtures already lock arming-to-impact time, and a same-tick impact would skip it.
+
+A duel-slice miss is a rejected shot: `outOfArc` when the bearing is outside the mount, `outOfRange` when it is past the last phaser band or `maxRange`. The mount keeps its charge. This slice has no to-hit roll.
+
+Axis-aligned integer positions match the worked range-6 example. A diagonal uses the floored distance, the sim-core distance rule. The overload warhead roll runs when a point removes a box from a charged overload mount. The placeholder chart rows are bridge, the hull section, sensors, and excess, so a penetrating weapon hit stops on those rows.
+
 ## 8. Damage allocation
 
 Weapon hit:
@@ -153,6 +161,8 @@ Internal points (`damageSystem`, or bleed from a hit):
 6. A full chart with nowhere to put the point also destroys the ship.
 
 The production chart will be a data file filled after playtest. It must not be pasted from a book.
+
+The sim walks this chart for a penetrating weapon hit. Armor absorbs before any draw. Draws come from the `combat` xoshiro128** stream. The fixture checker still resolves `damageSystem` and `repairSystem`.
 
 Crew, boarding parties, and repair priority are state. Repair in combat is `repairSystem` (instant restore up to the original count). A damage-control rate over time is unverified and not run in this slice.
 

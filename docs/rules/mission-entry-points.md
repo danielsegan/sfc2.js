@@ -89,7 +89,7 @@ These are player and AI commands, not mission entry points. They use the same `r
 
 `orderHelm({ yaw16 })` — one tick of yaw. Disabled crew → `crewDisabled`. Unrated turn letter → `turnModeUnverified`. Immobile hull and non-zero yaw → `immobile`, `appliedValue` 0. Yaw past `maxYawPerTick` → `yawClamped`.
 
-`fire({ slotIndex, target })` — check order after identity: `crewDisabled`, `unknownWeaponSlot`, `notInDuelSlice`, `weaponDestroyed`, `notCharged`, `noFireControl`, missing or destroyed target (`noSuchShip` / `shipDestroyed`), `outOfArc`, `outOfRange`, then the shot. A rejection does not spend charge. Phaser damage is applied on this tick. Photon shots launch a projectile; the impact is a later sim consequence and does not emit a second `ruleResult` in this slice.
+`fire({ slotIndex, target })` — check order after identity: `crewDisabled`, `unknownWeaponSlot`, `notInDuelSlice`, `weaponDestroyed`, `notCharged`, `noFireControl`, missing or destroyed target (`noSuchShip` / `shipDestroyed`), `outOfArc`, `outOfRange`, then the shot. A rejection does not spend charge. Phaser damage is applied on this tick. Photon shots launch a projectile; the impact is a later sim consequence and does not emit a second `ruleResult` in this slice. The sim follows that split: the phaser hit is part of the fire command, and the photon is a seeker the weapons phase flies on the launch tick and after.
 
 ## AI orders
 

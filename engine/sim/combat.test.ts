@@ -17,6 +17,7 @@ import {
   ENERGY_SCALE,
   MODE_NORMAL,
   MODE_OVERLOAD,
+  MODE_PROXIMITY,
   TURN_H,
   TURN_TEST_C,
   TURN_UNVERIFIED,
@@ -26,7 +27,7 @@ import {
   arcId,
   turnModeId,
 } from './rules-tables.ts';
-import { shipView } from './hull.ts';
+import { liveShots, shipView } from './hull.ts';
 import {
   EVENT_HIT,
   EVENT_RULE,
@@ -634,8 +635,50 @@ describe('energy, shields, and fire', () => {
     expect(rule).toMatchObject({ a: R.ok, b: 3 });
     expect(impact).toMatchObject({ entity: ids[1], a: 0, b: 1 });
     expect(viewAt(sim, 1).shields).toEqual([0, 5, 6, 7, 8, 9]);
+    expect(viewAt(sim, 1).lastHit).toEqual({ facing: 0, damage: 3, absorbed: 1, penetrating: 2 });
+    expect(viewAt(sim, 1).destroyed).toBe(1);
     expect(viewAt(sim, 0).mounts[0]!.charge100).toBe(0);
     expect(viewAt(sim, 0).lastStatus).toBe(STATUS_APPLIED);
+  });
+
+  it('spends a charged phaser into one facing and lets the rest stop in armor', () => {
+    const ready = cruiser({
+      fcPaid: 1,
+      mounts: [
+        {
+          slotIndex: 0,
+          weapon: 'TEST-PH',
+          arc: 'TEST-FA',
+          chargePoints: 4,
+          boxes: 1,
+          mode: MODE_NORMAL,
+          ticksCharging: 0,
+        },
+      ],
+    });
+    const target = cruiser({
+      shields: [1, 9, 9, 9, 9, 9],
+      shieldsMax: [10, 10, 10, 10, 10, 10],
+      systems: { armor: 2 },
+      mounts: [],
+    });
+    const sim = boot([ready, target]);
+    const spawned = play(sim, [
+      { kind: VERB_SPAWN, payload: spawnPayload(0, 0, 0, 0) },
+      { kind: VERB_SPAWN, payload: spawnPayload(1, 10, 0, 32768) },
+    ]);
+    const ids = spawned.events.filter((event) => event.kind === EVENT_SPAWN).map((event) => event.entity);
+    const before = sim.snapshot().rng[1];
+    const hit = play(sim, [{ kind: VERB_FIRE, payload: firePayload(ids[0]!, 0, ids[1]!) }]);
+    expect(hit.events.find((event) => event.kind === EVENT_RULE)).toMatchObject({ a: R.ok, b: 3 });
+    expect(hit.events.find((event) => event.kind === EVENT_HIT)).toMatchObject({ entity: ids[1], a: 0, b: 1 });
+    const victim = viewAt(sim, 1);
+    expect(victim.shields).toEqual([0, 9, 9, 9, 9, 9]);
+    expect(victim.systems.armor).toBe(0);
+    expect(victim.systems.bridge).toBe(0);
+    expect(victim.destroyed).toBe(0);
+    expect(viewAt(sim, 0).mounts[0]!.charge100).toBe(0);
+    expect(sim.snapshot().rng[1]).toEqual(before);
   });
 
   it('charges a phaser across four ticks and then fires down the bow', () => {
@@ -747,6 +790,222 @@ describe('energy, shields, and fire', () => {
     expect(slot.events.find((event) => event.kind === EVENT_RULE)?.a).toBe(R.unknownWeaponSlot);
   });
 
+  it('arms a photon, flies it, and damages the bow shield', () => {
+    const attacker = cruiser({
+      warp: 5,
+      mounts: [
+        {
+          slotIndex: 0,
+          weapon: 'TEST-PHOT',
+          arc: 'TEST-ALL',
+          chargePoints: 0,
+          boxes: 1,
+          mode: MODE_NORMAL,
+          ticksCharging: 0,
+        },
+      ],
+    });
+    const target = cruiser({
+      warp: 0,
+      shields: [20, 20, 20, 20, 20, 20],
+      shieldsMax: [20, 20, 20, 20, 20, 20],
+      mounts: [],
+    });
+    const sim = boot([attacker, target], { rulesTurnTicks: 4 });
+    const spawned = play(sim, [
+      { kind: VERB_SPAWN, payload: spawnPayload(0, 0, 0, 0) },
+      { kind: VERB_SPAWN, payload: spawnPayload(1, 6, 0, 32768) },
+    ]);
+    const ids = spawned.events.filter((event) => event.kind === EVENT_SPAWN).map((event) => event.entity);
+    const planned = play(sim, [
+      {
+        kind: VERB_SET_ENERGY,
+        payload: setEnergyPayload(ids[0]!, {
+          fireControl: true,
+          weapons: [{ slot: 0, request: 4, mode: MODE_NORMAL }],
+        }),
+      },
+    ]);
+    expect(planned.events.find((event) => event.kind === EVENT_RULE)).toMatchObject({
+      a: R.ok,
+      b: 5 * ENERGY_SCALE,
+    });
+    play(sim);
+    play(sim);
+    play(sim);
+    expect(viewAt(sim, 0).mounts[0]!.charge100).toBe(4 * ENERGY_SCALE);
+    expect(viewAt(sim, 0).mounts[0]!.ticksCharging).toBe(4);
+    const launched = play(sim, [{ kind: VERB_FIRE, payload: firePayload(ids[0]!, 0, ids[1]!) }]);
+    expect(launched.events.find((event) => event.kind === EVENT_RULE)).toMatchObject({ a: R.ok, b: 8 });
+    expect(launched.events.find((event) => event.kind === EVENT_HIT)).toBeUndefined();
+    expect(viewAt(sim, 0).mounts[0]!.charge100).toBe(0);
+    expect(viewAt(sim, 1).shields).toEqual([20, 20, 20, 20, 20, 20]);
+    expect(liveShots(sim.snapshot().world)).toEqual([
+      expect.objectContaining({ remaining: raw(4), damage: 8, target: ids[1], mode: MODE_NORMAL }),
+    ]);
+    play(sim);
+    expect(liveShots(sim.snapshot().world)[0]!.remaining).toBe(raw(2));
+    expect(viewAt(sim, 1).shields[0]).toBe(20);
+    const impact = play(sim);
+    expect(impact.events.find((event) => event.kind === EVENT_HIT)).toMatchObject({
+      entity: ids[1],
+      a: 0,
+      b: 8,
+    });
+    expect(impact.events.find((event) => event.kind === EVENT_RULE)).toBeUndefined();
+    expect(viewAt(sim, 1).shields).toEqual([12, 20, 20, 20, 20, 20]);
+    expect(viewAt(sim, 1).lastHit).toEqual({ facing: 0, damage: 8, absorbed: 8, penetrating: 0 });
+    expect(liveShots(sim.snapshot().world)).toEqual([]);
+  });
+
+  it('rejects a photon outside the arc or past max range without launching', () => {
+    const ready = cruiser({
+      fcPaid: 1,
+      mounts: [
+        {
+          slotIndex: 0,
+          weapon: 'TEST-PHOT',
+          arc: 'TEST-FA',
+          chargePoints: 4,
+          boxes: 1,
+          mode: MODE_NORMAL,
+          ticksCharging: 4,
+        },
+        {
+          slotIndex: 1,
+          weapon: 'TEST-PHOT',
+          arc: 'TEST-ALL',
+          chargePoints: 4,
+          boxes: 1,
+          mode: MODE_NORMAL,
+          ticksCharging: 4,
+        },
+      ],
+    });
+    const abeam = cruiser({
+      shields: [10, 10, 10, 10, 10, 10],
+      shieldsMax: [10, 10, 10, 10, 10, 10],
+      mounts: [],
+    });
+    const far = cruiser({
+      shields: [10, 10, 10, 10, 10, 10],
+      shieldsMax: [10, 10, 10, 10, 10, 10],
+      mounts: [],
+    });
+    const sim = boot([ready, abeam, far]);
+    const spawned = play(sim, [
+      { kind: VERB_SPAWN, payload: spawnPayload(0, 0, 0, 0) },
+      { kind: VERB_SPAWN, payload: spawnPayload(1, 0, 10, 0) },
+      { kind: VERB_SPAWN, payload: spawnPayload(2, 31, 0, 0) },
+    ]);
+    const ids = spawned.events.filter((event) => event.kind === EVENT_SPAWN).map((event) => event.entity);
+    const idle = boot([ready, abeam, far]);
+    play(idle, [
+      { kind: VERB_SPAWN, payload: spawnPayload(0, 0, 0, 0) },
+      { kind: VERB_SPAWN, payload: spawnPayload(1, 0, 10, 0) },
+      { kind: VERB_SPAWN, payload: spawnPayload(2, 31, 0, 0) },
+    ]);
+    const arc = play(sim, [{ kind: VERB_FIRE, payload: firePayload(ids[0]!, 0, ids[1]!) }]);
+    const quietArc = play(idle);
+    expect(arc.events.find((event) => event.kind === EVENT_RULE)?.a).toBe(R.outOfArc);
+    expect(arc.hash).toBe(quietArc.hash);
+    expect(viewAt(sim, 0).mounts[0]!.charge100).toBe(4 * ENERGY_SCALE);
+    expect(viewAt(sim, 1).shields).toEqual([10, 10, 10, 10, 10, 10]);
+    expect(liveShots(sim.snapshot().world)).toEqual([]);
+    const range = play(sim, [{ kind: VERB_FIRE, payload: firePayload(ids[0]!, 1, ids[2]!) }]);
+    const quietRange = play(idle);
+    expect(range.events.find((event) => event.kind === EVENT_RULE)?.a).toBe(R.outOfRange);
+    expect(range.hash).toBe(quietRange.hash);
+    expect(viewAt(sim, 0).mounts[1]!.charge100).toBe(4 * ENERGY_SCALE);
+    expect(liveShots(sim.snapshot().world)).toEqual([]);
+  });
+
+  it('puts photon damage on the aft shield when that facing is presented', () => {
+    const attacker = cruiser({
+      fcPaid: 1,
+      mounts: [
+        {
+          slotIndex: 0,
+          weapon: 'TEST-PHOT',
+          arc: 'TEST-FA',
+          chargePoints: 4,
+          boxes: 1,
+          mode: MODE_NORMAL,
+          ticksCharging: 4,
+        },
+      ],
+    });
+    const target = cruiser({
+      shields: [20, 20, 20, 20, 20, 20],
+      shieldsMax: [20, 20, 20, 20, 20, 20],
+      mounts: [],
+    });
+    const sim = boot([attacker, target]);
+    const spawned = play(sim, [
+      { kind: VERB_SPAWN, payload: spawnPayload(0, 0, 0, 0) },
+      { kind: VERB_SPAWN, payload: spawnPayload(1, 6, 0, 0) },
+    ]);
+    const ids = spawned.events.filter((event) => event.kind === EVENT_SPAWN).map((event) => event.entity);
+    const launched = play(sim, [{ kind: VERB_FIRE, payload: firePayload(ids[0]!, 0, ids[1]!) }]);
+    expect(launched.events.find((event) => event.kind === EVENT_RULE)).toMatchObject({ a: R.ok, b: 8 });
+    expect(launched.events.find((event) => event.kind === EVENT_HIT)).toBeUndefined();
+    play(sim);
+    const impact = play(sim);
+    expect(impact.events.find((event) => event.kind === EVENT_HIT)).toMatchObject({ a: 3, b: 8 });
+    expect(viewAt(sim, 1).shields).toEqual([20, 20, 20, 12, 20, 20]);
+    expect(viewAt(sim, 1).destroyed).toBe(0);
+  });
+
+  it('detonates a proximity photon when the remaining range reaches the fuse', () => {
+    const attacker = cruiser({
+      warp: 5,
+      mounts: [
+        {
+          slotIndex: 0,
+          weapon: 'TEST-PHOT',
+          arc: 'TEST-ALL',
+          chargePoints: 0,
+          boxes: 1,
+          mode: MODE_NORMAL,
+          ticksCharging: 0,
+        },
+      ],
+    });
+    const target = cruiser({
+      warp: 0,
+      shields: [20, 20, 20, 20, 20, 20],
+      shieldsMax: [20, 20, 20, 20, 20, 20],
+      mounts: [],
+    });
+    const sim = boot([attacker, target], { rulesTurnTicks: 4 });
+    const spawned = play(sim, [
+      { kind: VERB_SPAWN, payload: spawnPayload(0, 0, 0, 0) },
+      { kind: VERB_SPAWN, payload: spawnPayload(1, 6, 0, 32768) },
+    ]);
+    const ids = spawned.events.filter((event) => event.kind === EVENT_SPAWN).map((event) => event.entity);
+    play(sim, [
+      {
+        kind: VERB_SET_ENERGY,
+        payload: setEnergyPayload(ids[0]!, {
+          fireControl: true,
+          weapons: [{ slot: 0, request: 4, mode: MODE_PROXIMITY }],
+        }),
+      },
+    ]);
+    play(sim);
+    play(sim);
+    play(sim);
+    const launched = play(sim, [{ kind: VERB_FIRE, payload: firePayload(ids[0]!, 0, ids[1]!) }]);
+    expect(launched.events.find((event) => event.kind === EVENT_RULE)).toMatchObject({ a: R.ok, b: 4 });
+    expect(liveShots(sim.snapshot().world)[0]!.remaining).toBe(raw(4));
+    expect(viewAt(sim, 1).shields[0]).toBe(20);
+    const impact = play(sim);
+    expect(impact.events.find((event) => event.kind === EVENT_HIT)).toMatchObject({ a: 0, b: 4 });
+    expect(viewAt(sim, 1).shields).toEqual([16, 20, 20, 20, 20, 20]);
+    expect(viewAt(sim, 1).lastHit.damage).toBe(4);
+    expect(liveShots(sim.snapshot().world)).toEqual([]);
+  });
+
   it('repeats a duel and restores it to the same hash', () => {
     const run = () => {
       const parsed = parseShiplist(
@@ -815,5 +1074,5 @@ describe('energy, shields, and fire', () => {
   });
 });
 
-const GOLDEN_HASHES = [3744944782, 3155292343, 3224427775, 2400783793];
+const GOLDEN_HASHES = [2950761822, 1332927196, 1523297669, 2082387381];
 const GOLDEN_EVENTS = [304015889, 2931359003, 4167057522];

@@ -25,6 +25,7 @@ Machine tables live in [`data/`](data/). The checker loads those files, so the J
 - Fixed point is 16.16, `FX_SHIFT = 16`, one unit = one range unit. The `combat` stream is registered in sim-core.
 - A phaser is a phaser by code. Every phaser feeds the capacitor, including a phaser in a heavy slot.
 - The CE 2.670 shiplist and ftrlist code lists in the mapping are the inventory names. Match is case-sensitive. Any other spelling is `unknownWeapon`.
+- Phaser damage is applied on the fire tick. A photon launches a seeker; the weapons phase flies it, including on the launch tick. A miss in this slice is `outOfArc` or `outOfRange`. The sim's chart draws use the `combat` xoshiro128** stream. The fixture checker still uses mulberry32, so its scripted and seeded draws are not the sim's draws.
 
 ## Open questions
 
@@ -36,4 +37,4 @@ Machine tables live in [`data/`](data/). The checker loads those files, so the J
 6. Does ftrlist `Shots` mean rounds loaded or reloads? Is fighter `ADD_6` live?
 7. Are phaser hits instantaneous in CE, or do they have travel time?
 8. Do plain player commands share `ruleResult` with mission commands? This spec says yes for every command the rules module resolves.
-9. The production RNG algorithm inside the registered `combat` stream, once sim-core names it. The checker uses mulberry32 until then.
+9. Whether the fixture checker should switch off mulberry32 onto the sim's xoshiro128** stream. The sim already uses the named stream.

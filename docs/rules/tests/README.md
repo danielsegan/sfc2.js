@@ -31,3 +31,5 @@ Command `entry` is one of `setShields`, `damageShield`, `repairSystem`, `damageS
 Tokens start at 1 in the order commands run. Tick mode also records `tick` on each result.
 
 Within a tick the harness applies due commands, drips reinforcement and charge, then flies projectiles. A photon launched on tick T moves on tick T.
+
+Headless vitest cases in `engine/sim/combat.test.ts` cover a phaser firing, an out-of-arc or out-of-range miss, damage to one chosen shield facing, and a photon that flies before it hits. Those cases use `TEST-*` ships. This checker stays the spec double and is not imported by the sim.

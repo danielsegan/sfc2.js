@@ -1,23 +1,22 @@
 /**
- * Energy allocation, six shield facings, and weapon arcs for the Phase 2 duel.
+ * Energy allocation, six shields, phasers, and photon torpedoes for the Phase 2 duel.
  *
- * Commands apply in the input phase. The `allocation` system runs in the energy
- * phase and drips the committed plan. Shield hits from a shot that passes the
- * arc and range gates are applied when the fire command resolves.
+ * Commands apply in the input phase. The allocation system drips the plan in the
+ * energy phase. A phaser hit resolves in the fire command, before that drip.
+ * A photon launch stores a seeker. The flight system in the weapons phase moves
+ * it, including on the launch tick, and applies the hit when it detonates.
  *
  * Payloads do not carry a tick. The session stamps tick, slot, and seq.
  * Every divisor is checked before the divide; fx saturation is not the rule.
- *
- * Choices the rules leave open are recorded in the PR that adds this file.
  */
 import { angle16 } from '../core/angle.ts';
 import { asEntityId, type EntityId } from '../core/brands.ts';
 import { readU32, writeU32 } from '../core/bytes.ts';
 import type { Command } from '../core/codec.ts';
-import { delta, fx } from '../core/fx.ts';
+import { delta, distSq, fx, fxRaw, isqrt64, sub } from '../core/fx.ts';
 import { divFloorI64byI32, mulU32ToI64 } from '../core/i64.ts';
 import type { CommandHandler, SimSystem, TickContext } from './sim.ts';
-import type { TableSpec, World } from './world.ts';
+import { ENTITY_KIND, type TableSpec, type World } from './world.ts';
 import { facingForRelative, relativeBearing, shotInArc, withinRange } from './arcs.ts';
 import { rulesDiv } from './rules-div.ts';
 import type { ShipSetup } from './bind-shiplist.ts';
@@ -32,16 +31,23 @@ import {
   MOUNT_STRIDE,
   readHull,
   readMounts,
+  readShot,
   setFacingBudgetAt,
   setShieldAt,
   shieldAt,
   shieldMaxAt,
   writeHull,
   writeMounts,
+  writeShot,
+  SHOT,
+  SHOT_FIELDS,
   type MountMem,
+  type ShotMem,
 } from './hull.ts';
 import {
+  CHART_POINT_SIZE,
   CLASS_FIGHTER,
+  DAMAGE_CHART,
   DEFAULT_CREW_LOSS,
   DEFAULT_FIRE_CONTROL,
   DEFAULT_LIFE_SUPPORT,
@@ -51,6 +57,10 @@ import {
   ENERGY_SCALE,
   INTERNAL_PHASER,
   INTERNAL_PHOTON,
+  ROW_BRIDGE,
+  ROW_EXCESS,
+  ROW_HULL,
+  ROW_SENSORS,
   MODE_KEEP,
   MODE_NORMAL,
   MODE_OVERLOAD,
@@ -199,7 +209,18 @@ export interface CombatBundle {
 export const COMBAT_TABLES: readonly TableSpec[] = [
   { id: HULL, fieldCount: HULL_FIELDS },
   { id: MOUNT, fieldCount: MOUNT_SLOTS * MOUNT_STRIDE },
+  { id: SHOT, fieldCount: SHOT_FIELDS },
 ];
+
+/** Facing 0, 1, and 5 are forward; 2 and 4 are centre; 3 is aft. */
+const HULL_FIELD_BY_FACING = [
+  H.hullForward,
+  H.hullForward,
+  H.hullCenter,
+  H.hullAft,
+  H.hullCenter,
+  H.hullForward,
+] as const;
 
 function resolveOptions(options: CombatOptions | undefined): ResolvedOptions {
   const rulesTurnTicks = options?.rulesTurnTicks ?? DEFAULT_RULES_TURN_TICKS;
@@ -249,6 +270,99 @@ export function tickShare(total: number, index: number, period: number): number 
 
 function scale(points: number): number {
   return points * ENERGY_SCALE;
+}
+
+function systemBoxes(value: number | undefined): number {
+  const n = value ?? 0;
+  if (!Number.isInteger(n) || n < 0) throw new Error('system boxes');
+  return n;
+}
+
+/** Floored Q16.16 distance. Axis-aligned integer positions stay on a whole range unit. */
+function launchRange(dx: number, dy: number): number {
+  const raw = isqrt64(distSq(dx | 0, dy | 0));
+  if (!Number.isInteger(raw) || raw < 0 || raw > 2147483647) throw new Error('range');
+  return raw;
+}
+
+function penetratingPoints(damage: number, absorbed: number): number {
+  const left = damage - absorbed;
+  if (left <= 0) return 0;
+  if (!Number.isInteger(CHART_POINT_SIZE) || CHART_POINT_SIZE <= 0) throw new Error('chart point size');
+  return rulesDiv(left, CHART_POINT_SIZE);
+}
+
+function hullField(facing: number): number {
+  if (facing < 0 || facing > 5) throw new Error('facing');
+  return HULL_FIELD_BY_FACING[facing]!;
+}
+
+/**
+ * Walk the placeholder chart once from `start`. A placed point returns false.
+ * An empty walk, or excess with no pool left, destroys the ship and returns true.
+ */
+function placeChartPoint(fields: number[], start: number, facing: number): boolean {
+  const n = DAMAGE_CHART.length;
+  if (n <= 0 || start < 0 || start >= n) throw new Error('chart draw');
+  let idx = start;
+  for (let k = 0; k < n; k++) {
+    const row = DAMAGE_CHART[idx]!;
+    idx += 1;
+    if (idx === n) idx = 0;
+    if (row === ROW_EXCESS) {
+      const extra = fields[H.extra]!;
+      if (extra > 0) {
+        fields[H.extra] = extra - 1;
+        return false;
+      }
+      fields[H.destroyed] = 1;
+      return true;
+    }
+    let index = 0;
+    if (row === ROW_HULL) index = hullField(facing);
+    else if (row === ROW_BRIDGE) index = H.bridge;
+    else if (row === ROW_SENSORS) index = H.sensors;
+    else throw new Error('chart row');
+    const boxes = fields[index]!;
+    if (boxes <= 0) continue;
+    fields[index] = boxes - 1;
+    return false;
+  }
+  fields[H.destroyed] = 1;
+  return true;
+}
+
+function applyInternal(fields: number[], points: number, facing: number, ctx: TickContext): void {
+  let left = points;
+  const armor = fields[H.armor]!;
+  const take = armor < left ? armor : left;
+  fields[H.armor] = armor - take;
+  left -= take;
+  const n = DAMAGE_CHART.length;
+  if (n <= 0) throw new Error('chart');
+  while (left > 0 && fields[H.destroyed] !== 1) {
+    left -= 1;
+    const draw = ctx.rng.stream('combat').int(n);
+    placeChartPoint(fields, draw, facing);
+  }
+}
+
+function applyWeaponHit(
+  fields: number[],
+  facing: number,
+  damage: number,
+  ctx: TickContext,
+): { absorbed: number; penetrating: number } {
+  const current = shieldAt(fields, facing);
+  const absorbed = current < damage ? current : damage;
+  setShieldAt(fields, facing, current - absorbed);
+  const penetrating = penetratingPoints(damage, absorbed);
+  fields[H.lastHitFacing] = facing;
+  fields[H.lastHitDamage] = damage;
+  fields[H.lastHitAbsorbed] = absorbed;
+  fields[H.lastHitPen] = penetrating;
+  if (penetrating > 0) applyInternal(fields, penetrating, facing, ctx);
+  return { absorbed, penetrating };
 }
 
 function emitRule(ctx: TickContext, entity: number, reason: number, applied: number): void {
@@ -400,6 +514,14 @@ function applySpawn(world: World, cmd: Command, ctx: TickContext, setups: readon
     setShieldAt(fields, i, setup.shields[i]!);
     fields[H.shieldMax0 + i] = setup.shieldsMax[i]!;
   }
+  fields[H.armor] = systemBoxes(setup.systems?.armor);
+  fields[H.bridge] = systemBoxes(setup.systems?.bridge);
+  fields[H.hullForward] = systemBoxes(setup.systems?.hullForward);
+  fields[H.hullCenter] = systemBoxes(setup.systems?.hullCenter);
+  fields[H.hullAft] = systemBoxes(setup.systems?.hullAft);
+  fields[H.sensors] = systemBoxes(setup.systems?.sensors);
+  fields[H.extra] = systemBoxes(setup.systems?.extraDamage);
+  fields[H.lastHitFacing] = -1;
   const mounts = emptyMounts();
   for (const mount of setup.mounts) {
     if (mount.slotIndex < 0 || mount.slotIndex >= MOUNT_SLOTS) throw new Error('slot');
@@ -828,28 +950,111 @@ function applyFire(world: World, cmd: Command, ctx: TickContext): void {
     emitRule(ctx, id as number, R.outOfRange, -1);
     return;
   }
-  const incoming = relativeBearing(world.heading(targetId) as number, delta(from.x, to.x), delta(from.y, to.y));
-  const facing = facingForRelative(incoming);
-  const current = shieldAt(target, facing);
-  const absorbed = current < damage ? current : damage;
-  setShieldAt(target, facing, current - absorbed);
   mount.charge100 = 0;
   mount.ticksCharging = 0;
   remember(fields, VERB_FIRE, R.ok, damage);
-  writeMounts(world, id, mounts);
-  if ((id as number) === (targetId as number)) {
-    for (let i = 0; i < 6; i++) setShieldAt(fields, i, shieldAt(target, i));
+  if (def.internal === INTERNAL_PHOTON) {
+    const seq = fields[H.shotSeq]! + 1;
+    if (seq <= 0) throw new Error('shot seq');
+    fields[H.shotSeq] = seq;
+    const shotId = world.alloc('seeker');
+    world.setPosition(shotId, from.x, from.y);
+    const shot: ShotMem = {
+      live: 1,
+      owner: id as number,
+      target: targetId as number,
+      remaining: launchRange(dx, dy),
+      speed: fx(def.projectileSpeed) as number,
+      damage,
+      prox: fx(def.proxRadius) as number,
+      mode: mount.mode,
+      seq,
+    };
+    writeShot(world, shotId, shot);
+    writeMounts(world, id, mounts);
     writeHull(world, id, fields);
-  } else {
-    writeHull(world, id, fields);
-    writeHull(world, targetId, target);
+    emitRule(ctx, id as number, R.ok, damage);
+    return;
   }
+  const incoming = relativeBearing(world.heading(targetId) as number, delta(from.x, to.x), delta(from.y, to.y));
+  const facing = facingForRelative(incoming);
+  const same = (id as number) === (targetId as number);
+  const victim = same ? fields : target;
+  const hit = applyWeaponHit(victim, facing, damage, ctx);
+  writeMounts(world, id, mounts);
+  writeHull(world, id, fields);
+  if (!same) writeHull(world, targetId, target);
   emitRule(ctx, id as number, R.ok, damage);
-  ctx.emit({ kind: EVENT_HIT, entity: targetId as number, a: facing, b: absorbed });
+  ctx.emit({ kind: EVENT_HIT, entity: targetId as number, a: facing, b: hit.absorbed });
+}
+
+function orderedShotIds(world: World): EntityId[] {
+  const ids: EntityId[] = [];
+  const owners: number[] = [];
+  const seqs: number[] = [];
+  for (const id of world.liveIds()) {
+    if (world.getFields(id, 'kind')[0] !== ENTITY_KIND.seeker) continue;
+    const shot = readShot(world, id);
+    if (shot.live !== 1) continue;
+    const owner = shot.owner & 0xffff;
+    let at = ids.length;
+    for (let i = 0; i < ids.length; i++) {
+      const earlier = owner < owners[i]! || (owner === owners[i] && (shot.seq >>> 0) < (seqs[i]! >>> 0));
+      if (earlier) {
+        at = i;
+        break;
+      }
+    }
+    ids.splice(at, 0, id);
+    owners.splice(at, 0, owner);
+    seqs.splice(at, 0, shot.seq);
+  }
+  return ids;
+}
+
+function impactShot(world: World, shot: ShotMem, ctx: TickContext): void {
+  const owner = asEntityId(shot.owner);
+  const targetId = asEntityId(shot.target);
+  if (!world.isLive(owner) || !world.isLive(targetId)) return;
+  const target = readHull(world, targetId);
+  if (target[H.classCode] === CLASS_FIGHTER || target[H.destroyed] === 1) return;
+  const from = world.position(owner);
+  const to = world.position(targetId);
+  const incoming = relativeBearing(
+    world.heading(targetId) as number,
+    delta(from.x, to.x),
+    delta(from.y, to.y),
+  );
+  const facing = facingForRelative(incoming);
+  const hit = applyWeaponHit(target, facing, shot.damage, ctx);
+  writeHull(world, targetId, target);
+  ctx.emit({ kind: EVENT_HIT, entity: targetId as number, a: facing, b: hit.absorbed });
+}
+
+function flyShots(world: World, ctx: TickContext): void {
+  const ids = orderedShotIds(world);
+  for (const id of ids) {
+    const shot = readShot(world, id);
+    if (shot.live !== 1) continue;
+    const remaining = sub(fxRaw(shot.remaining), fxRaw(shot.speed)) as number;
+    const prox = shot.mode === MODE_PROXIMITY && remaining <= shot.prox;
+    const direct = shot.mode !== MODE_PROXIMITY && remaining <= 0;
+    if (!prox && !direct) {
+      shot.remaining = remaining;
+      writeShot(world, id, shot);
+      continue;
+    }
+    shot.live = 0;
+    shot.remaining = remaining;
+    writeShot(world, id, shot);
+    world.despawn(id);
+    impactShot(world, shot, ctx);
+  }
 }
 
 function drip(world: World, options: ResolvedOptions): void {
   for (const id of world.liveIds()) {
+    if (world.getFields(id, 'kind')[0] === ENTITY_KIND.seeker) continue;
     const fields = readHull(world, id);
     if (fields[H.planTicksLeft]! <= 0) continue;
     const period = fields[H.planPeriod]!;
@@ -910,6 +1115,14 @@ export function createCombat(setups: readonly ShipSetup[], options?: CombatOptio
       drip(world, resolved);
     },
   };
+  const flight: SimSystem = {
+    id: 'flight',
+    phase: 'weapons',
+    priority: 0,
+    step(world, ctx) {
+      flyShots(world, ctx);
+    },
+  };
   const handlers: CommandHandler[] = [
     {
       kind: VERB_SPAWN,
@@ -942,5 +1155,5 @@ export function createCombat(setups: readonly ShipSetup[], options?: CombatOptio
       },
     },
   ];
-  return { tables: COMBAT_TABLES, systems: [allocation], handlers };
+  return { tables: COMBAT_TABLES, systems: [allocation, flight], handlers };
 }
