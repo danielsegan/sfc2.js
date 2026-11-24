@@ -38,6 +38,14 @@ import {
   type WeaponDef,
 } from './rules-tables.ts';
 import {
+  CLOAK_OFF,
+  VERB_SET_CLOAK,
+  VERB_SET_EW,
+  setCloakPayload,
+  setEwPayload,
+  targetHidden,
+} from './phase3.ts';
+import {
   VERB_FIRE,
   VERB_SET_ENERGY,
   firePayload,
@@ -116,6 +124,8 @@ function captain(
       kind: VERB_SET_ENERGY,
       payload: setEnergyPayload(id as number, energyOrder(hull, mounts, range, facing, retreat)),
     });
+    queueEw(ctx, slot, id as number, hull, retreat);
+    queueCloak(ctx, slot, id as number, hull, retreat);
   }
 
   const cap = turnYawCap(hull[H.turnMode]!);
@@ -126,9 +136,11 @@ function captain(
   }
 
   if (target.id === 0 || hull[H.fcPaid] !== 1) return;
+  const targetHull = world.isLive(asEntityId(target.id)) ? readHull(world, asEntityId(target.id)) : null;
   for (let mountSlot = 0; mountSlot < mounts.length; mountSlot++) {
     const mount = mounts[mountSlot]!;
     if (!readyToFire(mount, dx, dy, world.heading(id) as number, retreat)) continue;
+    if (targetHull && targetHidden(world, id, asEntityId(target.id), hull, targetHull)) continue;
     ctx.queue({
       slot,
       kind: VERB_FIRE,
@@ -269,6 +281,38 @@ function strongest(
   }
   if (n === 1) return ties[0]!;
   return ties[tieBreak(n)]!;
+}
+
+function sensorBoxes(hull: readonly number[]): number {
+  const sum = hull[H.sensors]! + hull[H.scanners]! + hull[H.specialSensors]!;
+  return sum > 0 ? sum : 0;
+}
+
+/** One battery point of ECCM while fighting, or ECM while running. Skipped when EW is already paid. */
+function queueEw(ctx: TickContext, slot: number, entity: number, hull: readonly number[], retreat: boolean): void {
+  if (sensorBoxes(hull) <= 0) return;
+  if (hull[H.ecmPaid]! + hull[H.eccmPaid]! > 0) return;
+  if (hull[H.battery100]! < ENERGY_SCALE) return;
+  ctx.queue({
+    slot,
+    kind: VERB_SET_EW,
+    payload: setEwPayload(entity, retreat ? 1 : 0, retreat ? 0 : 1),
+  });
+}
+
+/** A fitted cloak goes up on retreat and down when the ship turns back to fight. */
+function queueCloak(ctx: TickContext, slot: number, entity: number, hull: readonly number[], retreat: boolean): void {
+  const cost = hull[H.cloakCost]!;
+  if (cost <= 0) return;
+  const state = hull[H.cloakState]!;
+  if (retreat) {
+    if (state !== CLOAK_OFF) return;
+    if (hull[H.battery100]! < cost * ENERGY_SCALE) return;
+    ctx.queue({ slot, kind: VERB_SET_CLOAK, payload: setCloakPayload(entity, 1) });
+    return;
+  }
+  if (state === CLOAK_OFF) return;
+  ctx.queue({ slot, kind: VERB_SET_CLOAK, payload: setCloakPayload(entity, 0) });
 }
 
 function energyOrder(

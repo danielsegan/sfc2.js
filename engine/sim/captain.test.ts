@@ -16,6 +16,7 @@ import {
   allegiancePayload,
 } from './allegiance.ts';
 import { createCaptain } from './captain.ts';
+import { VERB_SET_CLOAK, VERB_SET_EW } from './phase3.ts';
 import { shipView } from './hull.ts';
 
 function hull(overrides: Partial<ShipSetup> = {}): ShipSetup {
@@ -39,6 +40,12 @@ function hull(overrides: Partial<ShipSetup> = {}): ShipSetup {
     fcPaid: overrides.fcPaid ?? 0,
     destroyed: overrides.destroyed ?? 0,
     disabled: overrides.disabled ?? 0,
+    stealth: overrides.stealth ?? 0,
+    scanners: overrides.scanners ?? 0,
+    specialSensors: overrides.specialSensors ?? 0,
+    tractors: overrides.tractors ?? 0,
+    cloakCost: overrides.cloakCost ?? 0,
+    systems: overrides.systems,
     mounts: overrides.mounts ?? [
       {
         slotIndex: 0,
@@ -195,5 +202,40 @@ describe('ai captains', () => {
     expect(shipView(sim.snapshot().world, 0).speed).toBe(0);
     expect(sim.snapshot().rng[0]).toEqual(idle.snapshot().rng[0]);
     expect(sim.snapshot().rng[1]).toEqual(idle.snapshot().rng[1]);
+  });
+
+  it('buys one ECCM while fighting and raises a cloak when it runs', () => {
+    const fighter = hull({
+      systems: { sensors: 4 },
+      battery: 4,
+      batteryCapacity: 8,
+      scanners: 0,
+      specialSensors: 0,
+    });
+    const sim = boot([fighter, hull()]);
+    step(sim, opening([
+      { x: 0, y: 0, heading: 0, side: 0, control: CONTROL_AI },
+      { x: 8, y: 0, heading: 32768, side: 1, control: CONTROL_MANUAL },
+    ]));
+    expect(sim.snapshot().queued.some((cmd) => cmd.kind === VERB_SET_EW)).toBe(true);
+    step(sim);
+    expect(shipView(sim.snapshot().world, 0).eccmPaid).toBe(1);
+    expect(shipView(sim.snapshot().world, 0).ecmPaid).toBe(0);
+
+    const runner = hull({
+      shields: [1, 1, 1, 1, 1, 1],
+      shieldsMax: [8, 8, 8, 8, 8, 8],
+      cloakCost: 2,
+      battery: 8,
+      batteryCapacity: 8,
+    });
+    const fleeing = boot([runner, hull()]);
+    step(fleeing, opening([
+      { x: 0, y: 0, heading: 0, side: 0, control: CONTROL_AI },
+      { x: 8, y: 0, heading: 32768, side: 1, control: CONTROL_MANUAL },
+    ]));
+    expect(fleeing.snapshot().queued.some((cmd) => cmd.kind === VERB_SET_CLOAK)).toBe(true);
+    step(fleeing);
+    expect(shipView(fleeing.snapshot().world, 0).cloakState).toBe(1);
   });
 });

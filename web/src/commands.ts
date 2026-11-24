@@ -157,7 +157,11 @@ function toggleMode(host: CommandHost, mode: number): void {
 function cycleTarget(host: CommandHost, step: number, kind: 'hostile' | 'friendly'): void {
   const vm = host.view();
   if (!vm) return;
-  const list = vm.contacts.filter((contact) => contact.kind === 'ship' && (kind === 'hostile' ? contact.hostility === 'hostile' : contact.hostility !== 'hostile' && contact.hostility !== 'self'));
+  const list = vm.contacts.filter((contact) => {
+    if (contact.kind !== 'ship' || !contact.detected) return false;
+    if (kind === 'hostile') return contact.hostility === 'hostile';
+    return contact.hostility !== 'hostile' && contact.hostility !== 'self';
+  });
   if (list.length === 0) {
     host.note(kind === 'hostile' ? 'No hostile contact.' : 'No friendly contact.');
     return;
@@ -174,7 +178,7 @@ function nearestHostile(host: CommandHost): void {
   if (!vm) return;
   let best: { id: number; range: number } | null = null;
   for (const contact of vm.contacts) {
-    if (contact.kind !== 'ship' || contact.hostility !== 'hostile') continue;
+    if (contact.kind !== 'ship' || contact.hostility !== 'hostile' || !contact.detected) continue;
     if (!best || contact.rangeFromSelf < best.range) best = { id: contact.id, range: contact.rangeFromSelf };
   }
   if (!best) {

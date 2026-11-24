@@ -83,7 +83,7 @@ Payloads are little-endian int32 words. The session stamps tick, slot, and seq.
 
 | Verb | Id | Words |
 | --- | --- | --- |
-| `setEw` | 7 | entity, ecm, eccm |
+| `setEw` | 11 | entity, ecm, eccm. 7 is `setAllegiance` |
 | `setWeaponMode` | 8 | entity, slot, mode (`0` normal, `1` overload, `2` proximity) |
 | `setTractor` | 9 | entity, target, mode (`0` off, `1` hold, `2` repel, `3` reinforce), energy |
 | `setCloak` | 10 | entity, on (`0` or `1`) |
