@@ -1,12 +1,13 @@
 # SFC2.js determinism contract (sim core)
 
-Project: **SFC2.js** (repo [`danielsegan/sfc2.js`](https://github.com/danielsegan/sfc2.js)). Status: **Draft v1.1**, agreed by the Engine Lead and the Audio/Netcode/QA Lead on 2026-11-23. Owner: Audio & Netcode QA Lead. Co-owner: Engine Lead.
+Project: **SFC2.js** (repo [`danielsegan/sfc2.js`](https://github.com/danielsegan/sfc2.js)). Status: **Draft v1.2**, agreed by the Engine Lead and the Audio/Netcode/QA Lead on 2026-11-23. Owner: Audio & Netcode QA Lead. Co-owner: Engine Lead.
 §9 is the exit criterion for [#21](https://github.com/danielsegan/sfc2.js/issues/21), the deterministic fixed-timestep sim core (Phase 2). This doc also supports #25 (deterministic replay + CI hash checks) and #27 (the determinism/math-policy risk).
 
 Language: **TypeScript (strict)**. The rules below are enforced by ESLint (typescript-eslint) on the sim packages, not by the type system alone.
 
 **Change log**
-- **Draft v1.1 (2026-11-23):** Settled N1 on **Q16.16 positions** (signed 32-bit, 16.16). Map bounds are held to ±8,192 world units per axis, which fits Q16.16's ±32,768 integer range with 4× headroom; data outside is rejected as `badMapBounds`. Added N1a: distance-squared and cross products MUST NOT be computed in int32 Q16.16 (8,192² overflows); a documented safe approach is required (a coarser shift, or a two-limb 64-bit helper without BigInt), pinned by a golden-vector test. **The Engine Lead should confirm the dist² approach.** Removed the obsolete mixed Q24.8×Q16.16 helper wording; velocities stay Q16.16. Repo name and links updated to [`danielsegan/sfc2.js`](https://github.com/danielsegan/sfc2.js). Follows the #53 squash merge (`a4bb10a`).
+- **Draft v1.2 (2026-11-24):** Settled N1a on the Engine Lead's exact-i64 approach recorded in [sim-core N1a](https://github.com/danielsegan/sfc2.js/blob/078f02e/docs/engine/sim-core.md#n1a-distance-squared) (#55, `078f02e`): i32 differences (per-axis |Δ| ≤ 2^30), `d² = dx·dx + dy·dy` as an exact i64 (≤ 2^61), no floats, no pre-shift, no rounding; WASM native i64; TypeScript a bit-identical 32-bit hi/lo split via `Math.imul`; BigInt in tests only; range checks compare `d²` with a precomputed i64 `r²` (no sqrt); a distance is `fx.isqrt64` (floor). Cross products and dot products use the same exact-i64 rule (MUST); the Engine Lead confirmed this. Combat arc checks use the cross-product sign. Helpers in `fx`: `delta`, `distSq`, `cross`, `dot`, `cmpI64`, `isqrt64`, returning `I64`. Added a golden-vector table with exact expected values. Closed the v1.1 request that the Engine Lead confirm the dist² approach (now recorded at `078f02e`, including cross and dot). Renamed "world units" to "range units" to match sim-core.md. Reference baseline updated to Community Edition 2.670 per [#37](https://github.com/danielsegan/sfc2.js/issues/37) and `docs/plan.md` (superseding EAW 2.036 + unofficial 2.037). Follows #55 and #56 (`d74ab2c`).
+- **Draft v1.1 (2026-11-23):** Settled N1 on **Q16.16 positions** (signed 32-bit, 16.16). Map bounds are held to ±8,192 range units per axis, which fits Q16.16's ±32,768 integer range with 4× headroom; data outside is rejected as `badMapBounds`. Added N1a: distance-squared and cross products MUST NOT be computed in int32 Q16.16 (8,192² overflows); a documented safe approach is required (a coarser shift, or a two-limb 64-bit helper without BigInt), pinned by a golden-vector test. Asked the Engine Lead to confirm the dist² approach. **(Closed in v1.2:** the Engine Lead recorded the exact-i64 approach, including cross and dot products, in [sim-core N1a](https://github.com/danielsegan/sfc2.js/blob/078f02e/docs/engine/sim-core.md#n1a-distance-squared) at `078f02e`.) Removed the obsolete mixed Q24.8×Q16.16 helper wording; velocities stay Q16.16. Repo name and links updated to [`danielsegan/sfc2.js`](https://github.com/danielsegan/sfc2.js). Follows the #53 squash merge (`a4bb10a`).
 - **Draft v1.0 (2026-11-23):** Initial contract, merged as [#53](https://github.com/danielsegan/sfc2.js/pull/53) (`a4bb10a`).
 
 **Status tags used below**
@@ -24,7 +25,7 @@ These are quoted from `docs/plan.md` (main, blob 536ef9f) and `engine/README.md`
 - Risk register, *Determinism for multiplayer (High)*: "Fixed timestep, seeded RNG, integer or WASM math in the sim, replay hash checks in CI from Phase 2."
 - Roadmap: the Phase 2 exit criteria include "deterministic replay passes". The Phase 7 exit is "Six-player match without desync".
 - Repo rule: "Tests use synthetic fixtures, and real-data tests run only on the private CI VM against the local install."
-- `plan.md` lists the language, reference game version and project name as open decisions for Daniel. Since then, Daniel has decided (as reported by the Producer, 2026-11-23): **TypeScript**; the reference build is the original **Empires at War 2.036 plus the unofficial 2.037 patch**; and the project name is **SFC2.js**. `plan.md` has not been updated to reflect these yet.
+- `plan.md` initially listed the language, reference game version and project name as open decisions for Daniel. Those are now decided: **TypeScript**; the reference build is *Star Fleet Command 2* **Community Edition 2.670** ([#37](https://github.com/danielsegan/sfc2.js/issues/37); also recorded in `docs/plan.md`), which supersedes the earlier Empires at War 2.036 + unofficial 2.037 baseline; and the project name is **SFC2.js**.
 
 Clean-room: everything here is original design. Any behaviour reference comes only from the sources `docs/LEGAL.md` allows.
 
@@ -83,8 +84,8 @@ Golden vector (reference C and the JS `Math.imul` port agree; generated 2026-11-
 
 | ID | Requirement | Verified by |
 |---|---|---|
-| N1 MUST | Formats: positions use **Q16.16 in signed int32** (16.16; representable range ±32,768 units at 1/65536 resolution). Velocities and fractions stay **Q16.16**. The studio holds **map bounds to ±8,192 world units per axis**, which fits the Q16.16 integer range with **4× headroom** (8,192 × 4 = 32,768). Map data (and any authored position that enters the sim) outside that box is rejected as `badMapBounds`. This scale is **settled** (studio decision, reported by the Producer, 2026-11-23). | Type/brand checks in `fx`; property tests for range; a data-layer test that extents and positions outside ±8,192 fail with `badMapBounds` and in-range values are accepted |
-| N1a MUST | Distance-squared and cross products MUST NOT be computed as int32 Q16.16 multiplies: a coordinate of 8,192 in Q16.16 is 8,192×2^16 = 2^29, and (2^29)² overflows int32 (a full-map axis delta of 16,384 overflows further). Implementations MUST use a documented safe approach, one of: (1) a two-limb 64-bit helper (16-bit hi/lo split, no BigInt in hot paths, per N3) whose result format is specified alongside the helper; or (2) computing the square on positions shifted down to a coarser format such that every intermediate and the result fit the documented integer width (if the result must live in int32 and the max \|delta\| is 16,384, the operands may be at most **Q16.1**; a Q16.8 shift still has a 2^42 raw product and needs a wide intermediate, though the final integer units-squared fits int32). The chosen approach is recorded in `fx`. **The Engine Lead should confirm which approach `fx` will use** (§10). | Golden-vector tests at map corners and at the maximum axis delta (±8,192 and Δ=16,384), pinning the helper's outputs |
+| N1 MUST | Formats: positions use **Q16.16 in signed int32** (16.16; representable range ±32,768 range units at 1/65536 resolution). Velocities and fractions stay **Q16.16**. The studio holds **map bounds to ±8,192 range units per axis**, which fits the Q16.16 integer range with **4× headroom** (8,192 × 4 = 32,768). Map data (and any authored position that enters the sim) outside that box is rejected as `badMapBounds`. This scale is **settled** (studio decision, reported by the Producer, 2026-11-23). | Type/brand checks in `fx`; property tests for range; a data-layer test that extents and positions outside ±8,192 fail with `badMapBounds` and in-range values are accepted |
+| N1a MUST | Distance-squared, cross products (`dx1·dy2 − dy1·dx2`) and dot products (`dx1·dx2 + dy1·dy2`) MUST NOT be computed as int32 Q16.16 multiplies. The settled path is the Engine Lead's exact-i64 rule in [sim-core N1a](https://github.com/danielsegan/sfc2.js/blob/078f02e/docs/engine/sim-core.md#n1a-distance-squared) (`078f02e`, #55). Form `dx` and `dy` in i32 (a per-axis difference is at most 2^30 and still fits signed i32, since 2^30 < 2^31). Then `d² = dx·dx + dy·dy` is an exact i64 (at most 2^61). Cross and dot products use the same exact-i64 approach (Engine Lead confirmed): each product term is at most 2^60, and the exact i64 result is at most 2^61. No floats, no pre-shift, and no rounding. The WASM sim-core hot path uses native i64. The TypeScript reference path uses a bit-identical 32-bit hi/lo split multiply via `Math.imul`. The result is an `I64` two-limb value and MUST NOT be stored as a JS `number` (it can exceed 2^53). BigInt is allowed in tests only, as a check against the limb helper [N3]. Range checks compare `d²` with a precomputed i64 `r²` via `fx.cmpI64` and MUST NOT take a square root. Where a distance itself is needed, take the floored integer square root `fx.isqrt64`. Combat arc checks use the sign of the cross product. Helpers live in `engine/core/fx.ts` and are recorded below. | Golden-vector table below (zero delta; corner-to-corner; single-axis Δ=16,384; off-by-one at a range boundary; cross-product signs, collinear 0, and opposite-sign operands; representative dots). WASM and TypeScript paths MUST hash identically on these fixtures |
 | N2 MUST | `mul` and `div` round toward **−∞** (floor). A right shift of int32 is floor. `div(a,b) = floor(a·2^F / b)` for all sign combinations. WASM ports must implement floor explicitly: AssemblyScript (and Rust) integer `/` truncates toward zero. | Property tests (fast-check) against a BigInt reference, run in tests only |
 | N3 MUST | No BigInt in hot paths. Wide products use a 16-bit hi/lo split so every partial product is exact below 2^53. | Lint ban on `BigInt` outside `*.test.*`; perf bench |
 | N4 MUST | Angles are **uint16 BAM** (65536 per turn). `sin`/`cos` come from a committed LUT. `atan2` is integer (CORDIC or an octant LUT) and returns BAM. `sqrt` is integer floor isqrt. | Golden-vector tests; the LUT content hash is pinned in a test |
@@ -92,6 +93,58 @@ Golden vector (reference C and the JS `Math.imul` port agree; generated 2026-11-
 | N6 MUST | Banned in sim packages: `Math.sin/cos/tan/asin/acos/atan/atan2/sinh/cosh/tanh/exp/expm1/log*/pow/sqrt/cbrt/hypot/fround/random`, the `**` operator, raw `/` (use `fx.div`/`idiv`), non-integer numeric literals, `Float32Array`/`Float64Array`, `parseFloat`, `Intl` and `toLocale*`/`localeCompare`. | Lint (§9.2) |
 | N7 MUST | **Agreed (Engine Lead, 2026-11-23)**: overflow saturates to the format's min/max (deterministic on every peer). Division by zero returns ±MAX by the sign of the numerator, and 0/0 = 0. **Dev builds also assert** on every saturation and divide by zero, and log the op, operands and tick. Release builds only saturate, so results are identical either way. | Unit tests at boundaries; a test that the dev assert fires and the release result equals the saturated value |
 | N8 MUST | Game data enters the sim as integers. Decimal text from data files is converted with integer parsing (no `parseFloat`) in the data layer, and the converted tables feed `dataHash` (§8). | Parser tests on synthetic fixtures |
+
+**N1a helpers** (in `engine/core/fx.ts`; names and `I64` format as in [sim-core N1a](https://github.com/danielsegan/sfc2.js/blob/078f02e/docs/engine/sim-core.md#n1a-distance-squared)). `fx.cross` and `fx.dot` are recorded here in the same style; sim-core.md at `078f02e` specified `distSq` / `delta` / `cmpI64` / `isqrt64` and forbade int32 Q16.16 cross products, and the Engine Lead later confirmed that cross and dot follow this same exact-i64 path.
+
+```ts
+// I64 is a signed i64 in two limbs (hi is signed int32, lo is uint32): value = hi * 2^32 + lo
+interface I64 { hi: number; lo: number }
+function delta(a: Fx, b: Fx): number;          // i32 raw difference; defined for in-bounds coords
+function distSq(dx: number, dy: number): I64;  // exact dx*dx + dy*dy
+function cross(dx1: number, dy1: number, dx2: number, dy2: number): I64; // exact dx1*dy2 - dy1*dx2
+function dot(dx1: number, dy1: number, dx2: number, dy2: number): I64;   // exact dx1*dx2 + dy1*dy2
+function cmpI64(a: I64, b: I64): number;       // -1 / 0 / 1; range checks use cmpI64(d2, r2)
+function isqrt64(x: I64): number;              // floor sqrt of a non-negative i64
+```
+
+**N1a golden vectors** (Q16.16 positions; 1 range unit = 65,536 raw. Values computed with Python arbitrary-precision ints. Map corners in range units: SW = (−8,192, −8,192), SE = (8,192, −8,192), NE = (8,192, 8,192), NW = (−8,192, 8,192). Raw corner magnitude C = 8,192 × 65,536 = 536,870,912 = 2^29. Full-map delta D = 16,384 × 65,536 = 1,073,741,824 = 2^30. `I64` is shown as `{hi, lo}` with value = hi·2^32 + lo. Hex is 64-bit two's complement.)
+
+`fx.distSq` (raw Q16.16 inputs, exact i64 `d²`, floored `isqrt64`):
+
+| Case | p0 raw (x, y) | p1 raw (x, y) | dx, dy | d² decimal | d² hex | I64 `{hi, lo}` | isqrt64 |
+|---|---|---|---|---|---|---|---|
+| Zero delta | (0, 0) | (0, 0) | (0, 0) | 0 | `0x0000000000000000` | {0, 0} | 0 |
+| Corner-to-corner, SW→NE | (−536870912, −536870912) | (536870912, 536870912) | (1073741824, 1073741824) | 2305843009213693952 | `0x2000000000000000` | {536870912, 0} | 1518500249 |
+| Single-axis Δ=16,384, (−8192, 0)→(8192, 0) | (−536870912, 0) | (536870912, 0) | (1073741824, 0) | 1152921504606846976 | `0x1000000000000000` | {268435456, 0} | 1073741824 |
+
+Off-by-one at a range boundary, with precomputed `r²` for `r_raw = 3` (3/65,536 range units; `r² = 9`). Integer range-unit radii do not yield an `r² − 1` that is a sum of two squares (checked for 1…500), so this fixture uses a raw radius of 3. `fx.cmpI64(d², r²)` is −1, 0 or +1.
+
+| Case | p0 raw (x, y) | p1 raw (x, y) | dx, dy | d² decimal | d² hex | I64 `{hi, lo}` | isqrt64 | cmpI64(d², r²) |
+|---|---|---|---|---|---|---|---|---|
+| d² = r² | (0, 0) | (3, 0) | (3, 0) | 9 | `0x0000000000000009` | {0, 9} | 3 | 0 |
+| d² = r² − 1 | (0, 0) | (2, 2) | (2, 2) | 8 | `0x0000000000000008` | {0, 8} | 2 | −1 |
+| d² = r² + 1 | (0, 0) | (3, 1) | (3, 1) | 10 | `0x000000000000000a` | {0, 10} | 3 | +1 |
+
+`fx.cross` (combat arc checks use the sign). Operands are i32 differences of in-bounds corners.
+
+| Case | u = (dx1, dy1), from → to | v = (dx2, dy2), from → to | cross decimal | cross hex | I64 `{hi, lo}` | sign |
+|---|---|---|---|---|---|---|
+| Positive, SW→SE × SW→NW | (1073741824, 0) | (0, 1073741824) | 1152921504606846976 | `0x1000000000000000` | {268435456, 0} | + |
+| Negative, SW→NW × SW→SE | (0, 1073741824) | (1073741824, 0) | −1152921504606846976 | `0xf000000000000000` | {−268435456, 0} | − |
+| Collinear, SW→NE × SW→origin | (1073741824, 1073741824) | (536870912, 536870912) | 0 | `0x0000000000000000` | {0, 0} | 0 |
+| Collinear axis, SW→SE × SW→(0, −8192) | (1073741824, 0) | (536870912, 0) | 0 | `0x0000000000000000` | {0, 0} | 0 |
+| Opposite signs, NW→SE × SW→NE | (1073741824, −1073741824) | (1073741824, 1073741824) | 2305843009213693952 | `0x2000000000000000` | {536870912, 0} | + |
+| Opposite signs, NE→SW × SE→NW | (−1073741824, −1073741824) | (−1073741824, 1073741824) | −2305843009213693952 | `0xe000000000000000` | {−536870912, 0} | − |
+
+`fx.dot` (same exact-i64 path and operands):
+
+| Case | u = (dx1, dy1) | v = (dx2, dy2) | dot decimal | dot hex | I64 `{hi, lo}` |
+|---|---|---|---|---|---|
+| Perpendicular, SW→SE · SW→NW | (1073741824, 0) | (0, 1073741824) | 0 | `0x0000000000000000` | {0, 0} |
+| Parallel, SW→SE · SW→SE | (1073741824, 0) | (1073741824, 0) | 1152921504606846976 | `0x1000000000000000` | {268435456, 0} |
+| Opposite signs, NW→SE · SW→NE (also perpendicular) | (1073741824, −1073741824) | (1073741824, 1073741824) | 0 | `0x0000000000000000` | {0, 0} |
+| Opposite signs, NW→SE · NW→SE | (1073741824, −1073741824) | (1073741824, −1073741824) | 2305843009213693952 | `0x2000000000000000` | {536870912, 0} |
+| Opposite signs, NW→SE · SE→NW | (1073741824, −1073741824) | (−1073741824, 1073741824) | −2305843009213693952 | `0xe000000000000000` | {−536870912, 0} |
 
 **Iteration-order hazards (MUST):** canonical state lives in typed-array ECS tables indexed by entity id (§5). `for…in`, `Object.keys/values/entries` iteration and integer-like object keys are banned in sim code. `Map`/`Set` may serve as transient lookup indexes but MUST NOT be iterated where the result affects state, and are never hashed. Every `sort` takes a total-order comparator that breaks ties on entity id (lint bans comparator-less `sort`). `WeakMap`, `WeakRef`, `FinalizationRegistry` and any GC or timing dependence are banned. *Verified by:* lint, plus an order-independence test (C5).
 
@@ -134,13 +187,13 @@ Golden vector (reference C and the JS `Math.imul` port agree; generated 2026-11-
 |---|---|---|
 | V1 MUST | The version hash always combines **both** parts, never either one alone (**Agreed (Engine Lead, 2026-11-23)**). `simSourceHash` = xxHash32 over the sim-package sources, in sorted path order as `utf8(path) ‖ 0x00 ‖ fileBytes` per file, so doc-only commits don't break replays. The commit SHA is kept for diagnostics only. `dataHash` = xxHash32 over the canonical converted game database, so a modded shiplist changes it. Combined: `versionHash = xxHash32("sfc2-ver\0" ‖ u32le(replayFormat) ‖ u32le(simSourceHash) ‖ u32le(dataHash))`. Replays, saves and the lobby store the two parts as well as the combined value, so a mismatch can say which part differs. | Tests: changing one ship stat changes `dataHash` and `versionHash`; changing one sim source line changes `simSourceHash` and `versionHash`; a docs change changes neither; the combine function has golden vectors |
 | V2 MUST | The lobby handshake compares `versionHash` and refuses to start a match on mismatch, naming the mismatching table. A replay plays only on a matching `versionHash`. | Lobby integration test; replay loader test |
-| V3 MUST | The reference game build is the original **Empires at War 2.036 plus the unofficial 2.037 patch** (Daniel). It affects only `dataHash` and the real-data hash runs, never this contract. | `dataHash` is recorded in every private real-data run log |
+| V3 MUST | The reference game build is **Community Edition 2.670** ([#37](https://github.com/danielsegan/sfc2.js/issues/37); Daniel). It affects only `dataHash` and the real-data hash runs, never this contract. | `dataHash` is recorded in every private real-data run log |
 | V4 MUST | Re-baselining golden hashes requires a `determinism-change` label, an explanation in the PR, and review by the Netcode QA Lead and the Engine Lead. | CODEOWNERS on golden files |
 
 ## 9. Verification plan (exit criterion for #21)
 
 #21 is done when all of the following pass on `main`:
-1. **Unit/golden:** PRNG vectors, per-stream fork vectors, `fx` property tests (N1, N1a, N2, N7), N1a dist²/cross-product golden vectors, LUT/atan2/isqrt vectors, hash vectors and codec round-trip/fuzz.
+1. **Unit/golden:** PRNG vectors, per-stream fork vectors, `fx` property tests (N1, N1a, N2, N7), N1a dist²/cross/dot golden vectors, LUT/atan2/isqrt vectors, hash vectors and codec round-trip/fuzz.
 2. **Lint:** ESLint (typescript-eslint) on sim packages with `no-restricted-globals`, `no-restricted-properties` and `no-restricted-syntax` covering everything in T3, R5, N3, N6 and the iteration-order list, plus custom rules for non-integer literals, raw `/` and comparator-less `sort`. CI fails on violations, and a fixture file of known violations proves each rule fires.
 3. **Isolation:** dependency rules (B1) and a headless Node run with no DOM.
 4. **Replay golden:** a corpus of scripted scenarios using **synthetic, test-authored ships and data only** (no original game data in the repo, per the plan and the no-game-files CI check). Each runs N ticks, and the full per-tick hash sequence plus the event hash must match the committed golden.
@@ -151,7 +204,7 @@ Golden vector (reference C and the JS `Math.imul` port agree; generated 2026-11-
 ## 10. Open questions
 
 **Engine Lead**
-1. *(N1 settled, 2026-11-23.)* Positions are Q16.16; map bounds are ±8,192 world units per axis, with `badMapBounds` outside. **Please confirm the dist² / cross-product approach in N1a:** a two-limb 64-bit helper (no BigInt, per N3), or a shift to a format coarse enough that squares fit the documented width (at most Q16.1 if the result must be int32 and the max |delta| is 16,384).
+1. *(N1 and N1a settled, 2026-11-24.)* Positions are Q16.16; map bounds are ±8,192 range units per axis, with `badMapBounds` outside. Dist², cross products and dot products use the Engine Lead's exact-i64 path in [sim-core N1a](https://github.com/danielsegan/sfc2.js/blob/078f02e/docs/engine/sim-core.md#n1a-distance-squared) (`078f02e`, #55): i32 differences (per-axis |Δ| ≤ 2^30), exact i64 result (≤ 2^61), no floats, no pre-shift, no rounding; WASM native i64; TypeScript a bit-identical `Math.imul` split; BigInt in tests only. Cross and dot products are included (Engine Lead confirmed). Helpers: `fx.delta`, `fx.distSq`, `fx.cross`, `fx.dot`, `fx.cmpI64`, `fx.isqrt64`.
 2. 64-bit replay hashes: should replay files (and the final-state check) carry a 64-bit hash alongside the per-tick xxHash32? Not needed for Phase 2.
 3. *(Resolved.)* Mission API: architecture draft v0.2.1 has an emit-only `MissionHost`, where `requestSpawn`/`requestObjective` are commands on slot 255 (C4). The plan's diagram arrow "Mission runtime ──events──► Sim core" should be read as commands.
 4. Free-list policy (FIFO/LIFO) and the maximum generation before an id is retired.
@@ -164,6 +217,6 @@ Golden vector (reference C and the JS `Math.imul` port agree; generated 2026-11-
 3. Dice model: are all to-hit and damage rolls expressible as `dice`/`chance` with integer tables? Canonical resolution order when several weapons fire in one tick (proposed: by firing ship id, then mount index).
 4. Confirm the 2D sim and continuous range/arcs (BAM) rather than hex-based ones.
 
-**Daniel:** none open for this contract. TypeScript, EAW 2.036 + 2.037 and SFC2.js are decided (§0).
+**Daniel:** none open for this contract. TypeScript, Community Edition 2.670 ([#37](https://github.com/danielsegan/sfc2.js/issues/37)) and SFC2.js are decided (§0).
 
 **Engine Lead architecture calls (open here; they will land via a PR that updates `docs/plan.md`):** the WASM language (the plan says AssemblyScript; draft v0.2.1 adopts AssemblyScript and withdraws Rust) and the exact `engine/` sub-folder layout that the lint and dependency globs target.
