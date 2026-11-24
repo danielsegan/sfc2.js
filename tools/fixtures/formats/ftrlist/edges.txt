@@ -1,0 +1,6 @@
+synthetic fighter catalog
+Race	Type	Speed	Num	Weapon1	Arc	Shots	Num	Weapon2	Arc	Shots	Num	Weapon3	Arc	Shots	Num	Weapon4	Arc	Shots	Num	Weapon5	Arc	Shots	Damage	ADD_6	Ground Attack Bonus	ECM	ECCM	BPV	Carrier Size Class	First Year Avail	Last Year Avail	Size	UI	Geometry	Name
+Hydran	TEST-FTR-01	12	1	Ph3	FH	2	1	DroVI	ALL	2	1	PhoF	FX	1	0				0				4	0	1.5	2	1	8	3	1	20	2	TF01	assets/models/test_ftr01/test_ftr01.mod	Test Fighter 01
+Hydran	TEST-FTR-01	9	1	PLAF	FA	1	1	DroI	ALL	1	1	DroA	2	3	1	TEST-NOPE	ZZ	1	1	Ph2	4	no	zz	1	0	0	0	2	1	8	1	1	TFX	assets/models/test_ftrbad/a.mod	Bad Row
+Tholian	TEST-FTR-03	5	1	DroI	ALL	1	1	PLaS	FA	1	0				0				0				3	0	0	0	0	1	1	2	4	1	TF03	assets/models/test_ftr03/a.mod	Tholian Test
+Gorn	TEST-FTR-04

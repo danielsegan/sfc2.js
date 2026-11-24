@@ -9,7 +9,10 @@
 # Hand-made, invented-value tab tables for the shiplist/ftrlist specs (#13, #14).
 # .txt does not trip the check; listed here so every fixture is accounted for.
 tools/fixtures/formats/shiplist/minimal.txt
+tools/fixtures/formats/shiplist/edges.txt
+tools/fixtures/formats/shiplist/weapons.txt
 tools/fixtures/formats/ftrlist/minimal.txt
+tools/fixtures/formats/ftrlist/edges.txt
 
 # Synthetic Phase 2 rules cases (docs/rules). Invented test-* ships only.
 docs/rules/tests/add-rack.json
