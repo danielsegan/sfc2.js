@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SFC2.js ship viewer</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%235fd3a0' d='M8 1 15 14H1z'/%3E%3C/svg%3E">
+    <link rel="stylesheet" href="./viewer.css">
+  </head>
+  <body>
+    <header>
+      <h1>SFC2.js ship viewer</h1>
+      <div class="actions">
+        <button id="open-folder" type="button">Open install folder</button>
+        <label class="file">
+          Open zip
+          <input id="zip-file" type="file" accept=".zip,application/zip">
+        </label>
+      </div>
+    </header>
+    <p id="banner" class="banner" hidden>Synthetic preview. These models were invented for the check. They are not a game install.</p>
+    <main>
+      <section id="stage">
+        <canvas id="view" aria-hidden="true"></canvas>
+        <p id="webgl-note" class="note" hidden></p>
+      </section>
+      <aside>
+        <label class="ships" for="ships">Loaded ships</label>
+        <select id="ships" size="8"></select>
+        <p id="status" role="status">Open a folder or a zip of an install you own. Nothing is uploaded.</p>
+        <h2>Could not load</h2>
+        <p id="failure-summary">No install opened.</p>
+        <ul id="failures"></ul>
+        <h2>Keys</h2>
+        <p id="keys"></p>
+      </aside>
+    </main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,123 @@
+:root {
+  color-scheme: dark;
+  --panel-bg: #0b1118;
+  --panel-edge: #3a4a5c;
+  --text: #d8e2ec;
+  --text-dim: #8a9aab;
+  --focus: #ffffff;
+  --state-damage: #e5484d;
+  --state-normal: #5fd3a0;
+  font-family: system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  background: var(--panel-bg);
+  color: var(--text);
+}
+
+body {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+
+header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--panel-edge);
+}
+
+h1, h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+h2 { margin-top: 16px; font-size: 14px; color: var(--text-dim); }
+
+.actions { display: flex; gap: 8px; align-items: center; }
+
+button, .file, select {
+  background: #121a24;
+  color: var(--text);
+  border: 1px solid var(--panel-edge);
+  border-radius: 2px;
+  min-height: 32px;
+  padding: 4px 12px;
+  font: inherit;
+}
+
+button { cursor: pointer; }
+
+.file { display: inline-flex; align-items: center; cursor: pointer; }
+
+.file input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+button:focus-visible, .file:focus-within, select:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.banner, .note {
+  margin: 0;
+  padding: 8px 16px;
+  background: #1a2430;
+  color: var(--text);
+}
+
+main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  min-height: 0;
+}
+
+#stage { position: relative; min-height: 240px; }
+
+canvas { width: 100%; height: 100%; display: block; touch-action: none; }
+
+aside {
+  overflow: auto;
+  padding: 16px;
+  border-left: 1px solid var(--panel-edge);
+}
+
+.ships { display: block; margin-bottom: 8px; }
+
+select { width: 100%; }
+
+#status, #failure-summary, #keys {
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+#failures { list-style: none; padding: 0; margin: 8px 0 0; }
+
+#failures li {
+  display: grid;
+  gap: 2px;
+  padding: 8px 0;
+  border-top: 1px solid var(--panel-edge);
+}
+
+#failures .reason { color: var(--state-damage); font-family: ui-monospace, monospace; font-size: 12px; }
+
+#failures .who { color: var(--text); }
+
+@media (max-width: 800px) {
+  main { grid-template-columns: 1fr; grid-template-rows: 50vh minmax(0, 1fr); }
+  aside { border-left: 0; border-top: 1px solid var(--panel-edge); }
+}

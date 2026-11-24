@@ -23,6 +23,7 @@
   "include": [
     "tools/formats/**/*.ts",
     "engine/**/*.ts",
+    "web/**/*.ts",
     "tests/**/*.ts",
     "docs/rules/data/weapon-arcs.json",
     "vitest.config.ts",

@@ -49,6 +49,10 @@ interface Diagnostic {
 | loader | `missingScaleEntry` | error | Engine | `{ field }` |
 | loader | `fixedPointSaturated` | warning | Engine | `{ spawnKey, field, raw }` |
 | loader | `buildUnknown` | warning | Engine | `{}`. Neither exe was found while loading the database |
+| loader | `missingModel` | error | Engine | `{ spawnKey }`. The shiplist geometry path is not in the install index. `location.file` is that install-relative path |
+| loader | `noDrawableMesh` | warning | Engine | `{ spawnKey }`. The model parsed and produced no triangles, so the viewer lists the row and continues. `location.file` is the model |
+| loader | `shipLoadFailed` | error | Engine | `{ spawnKey }`. One row threw while loading. The exception text is not copied. The viewer continues with the next row |
+| loader | `geometryColumnMissing` | error | Engine | `{ columns }`. The shiplist header has no column that binds to `geometry`. Each row is still listed. `location.file` is the shiplist |
 | importer | `buildUnknown` | warning | Formats | `{}`. Same code as the loader, emitted when the install index finds neither exe. The executable bytes are not read |
 | importer | `installNotRecognized` | error | Formats | `{ fileCount }`. The picked folder has neither an exe nor a shiplist |
 | importer | `missingShiplist` | error | Formats | `{ expected }`. Root found, shiplist absent. `location.file` is the expected install-relative path |
