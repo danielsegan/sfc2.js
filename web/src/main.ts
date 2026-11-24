@@ -2,11 +2,16 @@
  * The page clock lives here. It only calls match.frame(dt). The sim
  * never sees the wall clock. Orders go through the session.
  */
-import { preferredDirectoryPicker } from '@sfc2js/platform';
-import type { Group } from 'three';
-import { SYNTHETIC_FIXTURE_PATH, SYNTHETIC_ROSTER, type RosterEntry } from '../../engine/duel/fixture.ts';
-import { createSyntheticDuel, type DuelMatch } from '../../engine/duel/match.ts';
-import { loadSyntheticHulls } from '../../engine/duel/meshes.ts';
+import { preferredDirectoryPicker, type Vfs } from '@sfc2js/platform';
+import { Group } from 'three';
+import { classById, empireById, linePosition, syntheticRoster, syntheticSetup } from '../../engine/duel/catalog.ts';
+import { SYNTHETIC_FIXTURE_PATH, type RosterEntry } from '../../engine/duel/fixture.ts';
+import { createFleetMatch, type DuelMatch, type FleetSlot } from '../../engine/duel/match.ts';
+import { groupFromMod, loadFleetHulls } from '../../engine/duel/meshes.ts';
+import { FIXTURE_MODEL_DIR, placeholderHullMod, type PlaceholderShape } from '../../engine/duel/placeholder-mod.ts';
+import { cuesForFrame, emptyAudioMemory, type AudioMemory } from '../../engine/audio/cues.ts';
+import { readSoundIndex } from '../../engine/audio/load-index.ts';
+import type { ViewModel } from '../../engine/view/view-model.ts';
 import { updateHud, mapFrame } from './hud.ts';
 import { assembleDuel, duelFromFiles, duelFromZip, type LoadedDuel } from './install.ts';
 import { filesFromDevInstall } from './dev-install-client.ts';
@@ -16,27 +21,25 @@ import { createKeyTracker } from './input/keymap.ts';
 import { runAction, type CommandHost } from './commands.ts';
 import { mountKeymapDialog } from './keymap-dialog.ts';
 import { createGameAudio } from './audio-out.ts';
-import { cuesForFrame, emptyAudioMemory, type AudioMemory } from '../../engine/audio/cues.ts';
-import { readSoundIndex } from '../../engine/audio/load-index.ts';
 import { nearestContact } from './map-geom.ts';
 import { shieldFacingAt } from './shield-hit.ts';
-import type { ViewModel } from '../../engine/view/view-model.ts';
-import type { Vfs } from '@sfc2js/platform';
+import { fillShiplist, fillSynthetic, mountSkirmish, readSkirmish, type SlotChoice } from './skirmish-ui.ts';
 
 const space = document.getElementById('space');
 if (!(space instanceof HTMLCanvasElement)) throw new Error('missing view');
 const canvas: HTMLCanvasElement = space;
 
 const scene = new DuelScene(canvas);
-let match: DuelMatch = createSyntheticDuel({ timeScale: 4 });
-let roster: readonly RosterEntry[] = SYNTHETIC_ROSTER;
+let scale = 4;
+const opening = syntheticFleet(readDefaultDuel());
+let match: DuelMatch = opening.match;
+let roster: readonly RosterEntry[] = opening.roster;
 let selectedSlot = 0;
 let selectedGroup = 0;
 let mapZoom = 8;
 let headingUp = false;
 let mapFull = false;
 let paused = false;
-let scale = 4;
 let latest: ViewModel | null = null;
 let audioMemory: AudioMemory = emptyAudioMemory();
 const groups: number[][] = [[0], [1], [2], [3], [4], [5]];
@@ -44,9 +47,12 @@ const keys = createKeyTracker();
 const audio = createGameAudio();
 
 const source = document.getElementById('source');
-if (source) source.textContent = `Synthetic fixture · ${SYNTHETIC_FIXTURE_PATH}`;
+if (source) source.textContent = `Synthetic skirmish · ${SYNTHETIC_FIXTURE_PATH}`;
 
-void loadSyntheticHulls().then((groups) => scene.setHulls(groups));
+void opening.groups.then((groups) => scene.setHulls(groups));
+
+const slotsHost = document.getElementById('skirmish-slots');
+if (slotsHost) mountSkirmish(slotsHost);
 
 const hud = {
   get selectedSlot() {
@@ -70,6 +76,9 @@ const hud = {
   },
   onSelect(slot: number) {
     selectedSlot = slot;
+  },
+  onTarget(id: number) {
+    match.setTarget(id);
   },
 };
 
@@ -151,6 +160,14 @@ document.getElementById('ordered-speed')?.addEventListener('change', (event) => 
 
 let catalog: LoadedDuel | null = null;
 let fillingShips = false;
+
+document.getElementById('skirmish-start')?.addEventListener('click', () => {
+  void startSkirmish();
+});
+document.getElementById('skirmish-3v3')?.addEventListener('click', () => {
+  fillSynthetic('3v3');
+  void startSkirmish();
+});
 
 document.getElementById('player-ship')?.addEventListener('change', () => {
   void rebuildFromPicker();
@@ -331,6 +348,15 @@ function appendNote(note: string): void {
 function adoptLoaded(loaded: LoadedDuel): void {
   catalog = loaded;
   fillShipPicker(loaded);
+  fillShiplist(
+    loaded.candidates.map((candidate, index) => ({
+      index,
+      empire: candidate.race.length > 0 ? candidate.race : 'Empire',
+      label: `${candidate.className} (${candidate.hullType})`,
+    })),
+    loaded.player,
+    loaded.opponent,
+  );
   adopt(loaded.match, loaded.groups, loaded.roster, loaded.note);
   appendNote(loaded.note);
   void attachSounds(vfsRead(loaded.vfs));
@@ -383,7 +409,7 @@ function frame(now: number): void {
   match.frame(dt);
   const vm = match.view();
   latest = vm;
-  if (vm.contacts.length >= 2) document.body.dataset.ready = '1';
+  if (vm.contacts.some((contact) => contact.kind === 'ship')) document.body.dataset.ready = '1';
   scene.resize(canvas.clientWidth, canvas.clientHeight, window.devicePixelRatio || 1);
   scene.render(vm, now);
   updateHud(vm, roster, hud, match.plan, now);
@@ -464,3 +490,143 @@ function vfsRead(vfs: Vfs): (path: string) => Promise<Uint8Array | null> {
 }
 
 requestAnimationFrame(frame);
+
+function readDefaultDuel(): SlotChoice[] {
+  return [
+    { control: 'you', side: 0, kind: 'synthetic', empireId: 'federation', classId: 'cruiser' },
+    { control: 'ai', side: 1, kind: 'synthetic', empireId: 'klingon', classId: 'cruiser' },
+  ];
+}
+
+function syntheticFleet(choices: readonly SlotChoice[]): {
+  match: DuelMatch;
+  roster: RosterEntry[];
+  groups: Promise<Group[]>;
+} {
+  const built = layoutSynthetic(choices);
+  return {
+    match: createFleetMatch({
+      seed: 0x5f33,
+      setups: built.setups,
+      fleet: built.fleet,
+      timeScale: scale,
+    }),
+    roster: built.roster,
+    groups: loadFleetHulls(built.hulls),
+  };
+}
+
+function layoutSynthetic(choices: readonly SlotChoice[]): {
+  setups: ReturnType<typeof syntheticSetup>[];
+  fleet: FleetSlot[];
+  roster: RosterEntry[];
+  hulls: { tint: { r: number; g: number; b: number }; shape: PlaceholderShape }[];
+} {
+  const active = choices.filter((choice): choice is Extract<SlotChoice, { kind: 'synthetic' }> => {
+    return choice.control !== 'empty' && choice.kind === 'synthetic';
+  });
+  const counts = [0, 0];
+  for (const choice of active) counts[choice.side] = (counts[choice.side] ?? 0) + 1;
+  const seen = [0, 0];
+  const setups = [];
+  const fleet: FleetSlot[] = [];
+  const nextRoster: RosterEntry[] = [];
+  const hulls: { tint: { r: number; g: number; b: number }; shape: PlaceholderShape }[] = [];
+  for (const choice of active) {
+    const at = linePosition(seen[choice.side] ?? 0, counts[choice.side] ?? 1, choice.side);
+    seen[choice.side] = (seen[choice.side] ?? 0) + 1;
+    setups.push(syntheticSetup(choice.classId));
+    nextRoster.push(syntheticRoster(choice.empireId, choice.classId));
+    const empire = empireById(choice.empireId);
+    const hull = classById(choice.classId);
+    hulls.push({
+      tint: empire?.tint ?? { r: 79, g: 143, b: 214 },
+      shape: hull?.shape ?? 'ca',
+    });
+    fleet.push({
+      setupIndex: setups.length - 1,
+      x: at.x,
+      y: at.y,
+      heading: at.heading,
+      side: choice.side,
+      control: choice.control === 'you' ? 'manual' : 'ai',
+    });
+  }
+  return { setups, fleet, roster: nextRoster, hulls };
+}
+
+async function startSkirmish(): Promise<void> {
+  const choices = readSkirmish();
+  const occupied = choices.filter((choice) => choice.control !== 'empty');
+  const alert = document.getElementById('alert');
+  if (occupied.length < 1) {
+    if (alert) alert.textContent = 'Pick at least one ship.';
+    return;
+  }
+  if (!occupied.some((choice) => choice.control === 'you')) {
+    if (alert) alert.textContent = 'Mark one slot as you.';
+    return;
+  }
+  if (occupied.some((choice) => choice.kind === 'shiplist')) {
+    await startShiplist(choices);
+    return;
+  }
+  const built = syntheticFleet(choices);
+  adopt(built.match, await built.groups, built.roster, `Synthetic skirmish · ${String(occupied.length)} ships`);
+  if (alert) alert.textContent = '';
+}
+
+async function startShiplist(choices: readonly SlotChoice[]): Promise<void> {
+  if (!catalog) return;
+  const alert = document.getElementById('alert');
+  const active = choices.filter((choice): choice is Extract<SlotChoice, { kind: 'shiplist' }> => {
+    return choice.control !== 'empty' && choice.kind === 'shiplist';
+  });
+  const counts = [0, 0];
+  for (const choice of active) counts[choice.side] = (counts[choice.side] ?? 0) + 1;
+  const seen = [0, 0];
+  const setups = [];
+  const fleet: FleetSlot[] = [];
+  const nextRoster: RosterEntry[] = [];
+  const groups: Group[] = [];
+  for (const choice of active) {
+    const candidate = catalog.candidates[choice.candidateIndex];
+    if (!candidate) {
+      if (alert) alert.textContent = 'That ship is not in the list.';
+      return;
+    }
+    const at = linePosition(seen[choice.side] ?? 0, counts[choice.side] ?? 1, choice.side);
+    seen[choice.side] = (seen[choice.side] ?? 0) + 1;
+    setups.push(candidate.setup);
+    nextRoster.push({
+      name: candidate.className.length > 0 ? candidate.className : candidate.spawnKey,
+      empire: candidate.race.length > 0 ? candidate.race : 'Empire',
+      accent: '#4F8FD6',
+      modelFile: candidate.geometry,
+    });
+    const shape: PlaceholderShape = groups.length % 2 === 0 ? 'ca' : 'd7';
+    const path = candidate.geometry.replaceAll('\\', '/');
+    const resolved = path.length > 0 ? catalog.vfs.resolve(path) : null;
+    const modelBytes = resolved ? await catalog.vfs.read(resolved) : null;
+    const modelPath = resolved ?? `${FIXTURE_MODEL_DIR}/test-${shape}.mod`;
+    const tint = shape === 'd7' ? { r: 178, g: 58, b: 58 } : { r: 79, g: 143, b: 214 };
+    const group = await groupFromMod(modelBytes ?? placeholderHullMod(tint, shape), modelPath, catalog.vfs);
+    groups.push(group ?? new Group());
+    fleet.push({
+      setupIndex: setups.length - 1,
+      x: at.x,
+      y: at.y,
+      heading: at.heading,
+      side: choice.side,
+      control: choice.control === 'you' ? 'manual' : 'ai',
+    });
+  }
+  const next = createFleetMatch({
+    seed: 0x5f33,
+    setups,
+    fleet,
+    timeScale: scale,
+  });
+  adopt(next, groups, nextRoster, `Skirmish · ${String(active.length)} ships from the install.`);
+  if (alert) alert.textContent = '';
+}

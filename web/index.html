@@ -12,7 +12,7 @@
         <img src="./art/hull-glyph.svg" width="28" height="28" alt="" />
         <div>
           <p class="wordmark">SFC2.js</p>
-          <p class="sub">Tactical duel</p>
+          <p class="sub">Skirmish</p>
         </div>
       </div>
       <p id="source" class="source">Synthetic fixture</p>
@@ -52,6 +52,15 @@
         </label>
       </div>
     </header>
+    <section id="skirmish" class="skirmish" aria-label="Skirmish setup">
+      <div class="skirmish-head">
+        <h2>Skirmish</h2>
+        <button type="button" id="skirmish-start">Start</button>
+        <button type="button" id="skirmish-3v3">Synthetic 3v3</button>
+        <p class="source">Up to six ships. One slot is you. AI captains use the same orders.</p>
+      </div>
+      <div id="skirmish-slots" class="slot-grid"></div>
+    </section>
     <div id="stage">
       <canvas id="space"></canvas>
       <canvas id="overlay" aria-hidden="true"></canvas>
@@ -62,6 +71,7 @@
         <p class="read"><span>Range</span> <span id="target-range" class="num">—</span></p>
         <p class="read"><span>Bearing</span> <span id="target-bearing" class="num">—</span></p>
         <p id="target-shields" class="read"></p>
+        <div id="target-list"></div>
       </section>
       <section class="float alerts plate" aria-label="Alerts">
         <h2>Alerts</h2>
@@ -71,7 +81,7 @@
         <h2>Log</h2>
         <ol id="log"></ol>
       </section>
-      <p id="keys" class="keys">WASD helm · Space fire · 1–6 groups · mouse orbit and target · Keys to rebind</p>
+      <p id="keys" class="keys">WASD helm · Space fire · 1–6 groups · Tab target · mouse orbit · Keys to rebind</p>
       <p id="notice" class="keys" role="status"></p>
     </div>
     <section id="console" aria-label="Helm console">

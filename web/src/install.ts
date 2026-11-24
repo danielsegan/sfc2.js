@@ -6,7 +6,7 @@ import { parseShiplist } from '@sfc2js/formats';
 import { importInstall, importZipArchive, type PickedFile, type Vfs } from '@sfc2js/platform';
 import { Group } from 'three';
 import type { RosterEntry } from '../../engine/duel/fixture.ts';
-import { createDuelMatch, type DuelMatch } from '../../engine/duel/match.ts';
+import { createFleetMatch, type DuelMatch } from '../../engine/duel/match.ts';
 import { SYNTHETIC_SPAWNS } from '../../engine/duel/fixture.ts';
 import { groupFromMod } from '../../engine/duel/meshes.ts';
 import { placeholderHullMod, type PlaceholderShape } from '../../engine/duel/placeholder-mod.ts';
@@ -100,18 +100,24 @@ export async function assembleDuel(
     const group = await groupFromMod(modelBytes ?? placeholderHullMod(tint, shape), modelPath, vfs);
     groups.push(group ?? new Group());
   }
-  const match = createDuelMatch({
+  const west = SYNTHETIC_SPAWNS[0]!;
+  const east = SYNTHETIC_SPAWNS[1]!;
+  const match = createFleetMatch({
     seed: 0x0d0e1,
     setups: pair.map((item) => item.setup),
-    spawns: SYNTHETIC_SPAWNS,
     timeScale: 4,
+    fleet: [
+      { setupIndex: 0, x: west.x, y: west.y, heading: west.heading, side: 0, control: 'manual' },
+      { setupIndex: 1, x: east.x, y: east.y, heading: east.heading, side: 1, control: 'ai' },
+    ],
   });
   const hullNote = missingModel ? ' Placeholder hulls stand in where a model was missing.' : '';
+  const aiNote = ' The opponent is an AI captain.';
   return {
     match,
     groups,
     roster: pair.map((item) => rosterOf(item)),
-    note: `${note}${hullNote}`,
+    note: `${note}${hullNote}${aiNote}`,
     vfs,
     candidates,
     player,
