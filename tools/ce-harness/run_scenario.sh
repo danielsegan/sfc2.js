@@ -31,9 +31,10 @@ ocr() { dx bash -c "import -window root /tmp/f.png; convert /tmp/f.png -crop $1 
 docker rm -f "$C" >/dev/null 2>&1 || true
 USER_ARGS=()
 # CE_DOCKER_USER=uid:gid runs Wine as the calling user (CI runner); HOME then lives in /tmp.
-[[ -n "${CE_DOCKER_USER:-}" ]] && USER_ARGS=(--user "$CE_DOCKER_USER" -e HOME=/tmp -e WINEPREFIX=/home/wineuser/.wine)
+# The prefix is mounted at /wineprefix (not under /home/wineuser, which other uids cannot enter).
+[[ -n "${CE_DOCKER_USER:-}" ]] && USER_ARGS=(--user "$CE_DOCKER_USER" -e HOME=/tmp)
 docker run -d --rm --name "$C" -e WINEDEBUG=-all "${USER_ARGS[@]}" \
-  -v "$GAME":/game -v "$OUT":/out -v "$PFX":/home/wineuser/.wine \
+  -v "$GAME":/game -v "$OUT":/out -e WINEPREFIX=/wineprefix -v "$PFX":/wineprefix \
   -v "$HERE/session.sh":/session.sh:ro -v "$HERE":/h:ro "$IMG" /session.sh >/dev/null
 trap 'docker rm -f "$C" >/dev/null 2>&1 || true' EXIT
 sleep 22
