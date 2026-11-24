@@ -1,0 +1,22 @@
+{
+  "name": "sfc2.js",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "packageManager": "pnpm@10.33.4",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint:sim": "node tools/check-sim-syntax.mjs && eslint .",
+    "lut:check": "node tools/generate-angle-lut.mjs --check"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.16.0",
+    "@types/node": "^22.19.0",
+    "eslint": "^9.16.0",
+    "fast-check": "^3.23.2",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.0",
+    "vitest": "^3.0.5"
+  }
+}
