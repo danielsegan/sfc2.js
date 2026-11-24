@@ -180,18 +180,20 @@ Campaign layer ◄── MissionResult (victory, prestige, flags, fleet) ──�
 
 ## 4. Runtime model
 
-### 4.1 Determinism contract (provisional)
+### 4.1 Determinism contract
 
-These are the Engine Lead's working answers, **provisional until `docs/engine/sim-core.md` lands**.
-This doc will be updated to match whatever that contract finally says.
+The normative rules are in [`docs/engine/determinism.md`](../engine/determinism.md); the engine-side shapes are in
+[`docs/engine/sim-core.md`](../engine/sim-core.md). This table only summarizes what missions need; if it disagrees with
+those docs, they win.
 
 | Rule | Working answer | What it means for missions |
 | --- | --- | --- |
-| Tick rate | Fixed **30 Hz** | Mission time is a tick count. 1 second = 30 ticks |
+| Tick rate | Fixed **30 Hz** ([sim-core.md §1](../engine/sim-core.md#1-tick-and-driver)) | Mission time is a tick count. 1 second = 30 ticks |
 | Numbers | Fixed-point everywhere in the sim, **no floats** | Positions, distances, damage and timers are fixed-point or integer values; the API never hands a mission a float |
-| Distance | One swappable unit constant (scale to be fixed in `docs/engine/sim-core.md`, planned) | Missions use named helpers (`km(10)`, `cells(3)`) rather than raw numbers, so the unit can change |
-| Headings | `uint16`, 65536 per full circle | Facing values are integers; helpers like `deg(90)` convert at authoring time |
-| Randomness | Named seeded streams, e.g. `ctx.rng("combat").int(min, max)`; never `Math.random` | Missions get their **own stream**, `ctx.rng("mission")`, so mission rolls never shift combat rolls |
+| Positions | **Q16.16** (`FX_SHIFT = 16`), 1.0 = one range unit, each axis within **±8,192** range units (determinism.md N1; [sim-core.md §2](../engine/sim-core.md#2-numbers-enginecorefxts)) | Mission files give positions and `mapBounds` in whole range units; out-of-range values are `badMapBounds` (9.1a) |
+| Distance checks | Distance-squared and cross products (dot products the same way; to confirm with the Engine Lead) are exact **i64** from **i32** differences; range checks compare `d²` to `r²`, **no sqrt**. WASM uses native i64; TS uses a bit-identical 32-bit split (determinism.md N1a; [sim-core.md N1a](../engine/sim-core.md#n1a-distance-squared)) | Missions call helpers such as `map.distance` and range tests; they never multiply raw coordinates |
+| Headings | `uint16` BAM, 65536 per full circle (determinism.md N4; [sim-core.md §3](../engine/sim-core.md#3-angles-enginecoreanglets)) | Facing values are integers; helpers like `deg(90)` convert at authoring time |
+| Randomness | Named seeded streams ([sim-core.md §4](../engine/sim-core.md#4-rng-enginecorerngts)), e.g. `ctx.rng("combat").int(min, max)`; never `Math.random` | Missions get their **own stream**, `ctx.rng("mission")`, so mission rolls never shift combat rolls |
 
 Taldren timers took a float number of seconds or game turns. We convert at port time: a 30-second timer
 becomes 900 ticks. Taldren's "game turn" unit needs an exact tick length, which is an open question for
@@ -233,7 +235,7 @@ browser, the Tauri shell and on headless servers.
 ### 4.3 Commands, not mutations
 
 Missions never mutate sim state directly. Every API call that changes the world queues a command, for
-example `{ t: "spawnShip", team, ship: { race, className }, at, facing, tag, token }`. The ordering rule (Engine Lead, pending the mission-runtime contract in `docs/engine/`):
+example `{ t: "spawnShip", team, ship: { race, className }, at, facing, tag, token }`. The ordering rule ([sim-core.md §6–7](../engine/sim-core.md#6-phase-order)):
 
 - Commands a script issues during tick **T** apply in tick **T+1's input phase**.
 - Mission commands use **command slot 255** and are sorted by **(tick, slot, seq)**, so they apply **after
@@ -302,20 +304,20 @@ load ─► validate ─► setup ─► briefing ─► start ─► running (p
 
 ### 5.1 Engine hook points
 
-These wait on the Engine Lead's mission-runtime contract in `docs/engine/`, which isn't on `main` yet
-(sim core work is backlog #21; architecture changes go through decision issue #8). Four
-now have working answers from the Engine Lead, pending that contract; the rest are still placeholders. When
-the contract lands, this section gets replaced by a link and the names change to match.
+[`docs/engine/sim-core.md`](../engine/sim-core.md) now settles the tick phase, command slot 255 and the shared allocator.
+The sandbox, spawn tokens and the mission read API still wait on the Engine Lead's mission-host contract in
+`docs/engine/` (architecture changes go through decision issue #8). When it lands, those rows get replaced
+by links and the names change to match.
 
 | Hook | Status | Answer or what's needed |
 | --- | --- | --- |
-| `ENGINE_HOOK: tickPhase` | Answered (Engine Lead, pending the mission-runtime contract in `docs/engine/`) | Script runs in the AI/mission phase of tick T; its commands apply in T+1's input phase, slot 255, sorted by (tick, slot, seq) after all player slots (4.3) |
+| `ENGINE_HOOK: tickPhase` | Settled ([sim-core.md §6–7](../engine/sim-core.md#6-phase-order)) | Script runs in the AI/mission phase of tick T; its commands apply in T+1's input phase, slot 255, sorted by (tick, slot, seq) after all player slots (4.3) |
 | `ENGINE_HOOK: sandbox` | Answered (Engine Lead, pending the mission-runtime contract in `docs/engine/`) | Same thread, synchronous, SES-style isolation, no Worker; budget counts operations or calls, never wall-clock time; overrun is an error in dev builds (4.2) |
-| `ENGINE_HOOK: entityIds` | Answered (Engine Lead, pending the mission-runtime contract in `docs/engine/`) | `requestSpawn` and `map.place` return tokens; ships and map objects share one allocator (lowest free index with a bumped generation); `spawned {token, entityId}` and `placed {token, objectId}` arrive the next tick in the same tick-ordered event stream (4.3) |
+| `ENGINE_HOOK: entityIds` | Allocator settled ([sim-core.md §5](../engine/sim-core.md#5-state-soa-ecs-enginesimworldts)); tokens pending the mission-host contract | `requestSpawn` and `map.place` return tokens; ships and map objects share one allocator (lowest free index with a bumped generation); `spawned {token, entityId}` and `placed {token, objectId}` arrive the next tick in the same tick-ordered event stream (4.3) |
 | `ENGINE_HOOK: missionView` | Answered (Engine Lead, pending the mission-runtime contract in `docs/engine/`) | Read-only query API over the current tick's state, iterated in entity-id order; no copied snapshot (6.2) |
 | `ENGINE_HOOK: eventSource` | Placeholder | How sim events (death, damage, capture, disengage, proximity, orbit, tractor, transport, system and stores changes) reach the mission, and in what order |
 | `ENGINE_HOOK: rulesEntryPoints` | Answered (Combat Systems Designer, pending the rules spec in `docs/rules/`, backlog #24) | Same entry points as weapons and the player; `damageSystem`, `damageShield`, `repairSystem`, `setShields`, `setEnergy`, AI orders via the captain's order queue; results arrive as `ruleResult` events (4.3) |
-| `ENGINE_HOOK: rngStreams` | Placeholder | How `ctx.rng("mission")` is seeded and isolated from other streams |
+| `ENGINE_HOOK: rngStreams` | Seeding settled ([sim-core.md §4](../engine/sim-core.md#4-rng-enginecorerngts)) | The `mission` stream is a named stream seeded from the match seed, separate from `combat` and `ai`; whether it is per mission instance is still open (15) |
 | `ENGINE_HOOK: frameEvents` | Placeholder (with UI) | The engine's per-frame event list that carries typed UI events such as `objectiveUpdated`, `missionTimer` and `hail` (6.10) |
 | `ENGINE_HOOK: audioCue` | Placeholder | How a mission requests a sound or voice line (with Audio) |
 
@@ -349,7 +351,7 @@ export default defineMission({
 
 ```ts
 interface MissionContext {
-  readonly tick: Tick;                    // integer tick count since start; 30 per second (provisional)
+  readonly tick: Tick;                    // integer tick count since start; 30 per second
   readonly start: StartContext;           // what the campaign layer passed in (read-only)
   rng(stream: "mission"): Rng;            // the only randomness a mission gets
   teams: TeamApi;
@@ -419,16 +421,16 @@ Ships are spawned by a **ship key: race + short class name** from the CE 2.670 s
 short class name is unique across the whole CE 2.670 shiplist. The PR #38 checklist confirms this, and the
 parser flags any duplicates as `duplicateClassKey` diagnostics. Spawning is token-based (4.3).
 
-**Strings in files, integers in the sim** (Engine Lead, pending the `docs/engine/` contracts, #21 and
-#37). At load, the loader converts each `{ race, className }` key to a **small integer class id**, assigned
-in **sorted string order** so every peer gets the same mapping. The sim and replays store **only the
+**Strings in files, integers in the sim** ([data-loader.md §5](../engine/data-loader.md#5-spawn-keys--class-ids)). At load,
+the loader converts each `{ race, className }` key to a **small integer class id**: keys are
+ASCII-lowercased and sorted by code-unit order, so every peer gets the same mapping. The sim and replays store **only the
 integer**; mission files and `requestSpawn` keep the string key. **Duplicate keys** are reported in the
-load diagnostics and **block multiplayer sessions**. The diagnostic is `{ code: "duplicateClassKey",
+load diagnostics and **block multiplayer sessions** (single player may continue with the diagnostic shown). The diagnostic is `{ code: "duplicateClassKey",
 source: "shiplist" }`, severity `error`, with the race, className and shiplist row numbers involved as
 details. A related warning, `duplicateClassName` (same class name under different races, [PR #42](https://github.com/danielsegan/sfc2.js/pull/42)), is reported as
 a warning only. Both are emitted by the shiplist parser (`source: "shiplist"`, rules V15 and V4 in
-`docs/formats/shiplist.md`). Codes are stable camelCase and add-only; the single registry is the planned
-`docs/engine/diagnostics.md` (Engine Lead).
+`docs/formats/shiplist.md`; the registry also lists both under `loader`). Codes are stable camelCase and
+add-only; the single registry is [`docs/engine/diagnostics.md`](../engine/diagnostics.md).
 
 **Shield facings** (studio convention, matching `docs/ui/hud-spec.md` in PR #39 and Combat's rules): the
 engine model's `shields` is an array indexed **0 to 5, where 0 is the front facing and the indices go
@@ -441,7 +443,7 @@ interface ShipApi {
     team: TeamId;
     ship: ShipKey;                         // { race, className } from the CE 2.670 shiplist (PR #38); validated at load
     at: MapPoint;                          // grid cell or fixed-point position
-    facing?: Heading;                      // uint16, 65536 per circle (provisional)
+    facing?: Heading;                      // uint16 BAM, 65536 per circle
     name?: TextRef;
     tag?: string;                          // mission-local id, like Taldren's custom ID
     crew?: CrewQuality;
@@ -849,10 +851,9 @@ These are kept strictly apart (Asset & Formats Engineer):
   (Key values are placeholders; real speaker and portrait key naming is unverified until checked against
   CE 2.670.)
 
-  **Map bounds (provisional).** The map block gets an optional `mapBounds` field. The Engine Lead's
-  proposal, **provisional until `docs/engine/sim-core.md` (planned) commits the scale and pending Combat's
-  maximum weapon range**: sim positions are **16.16 fixed point** (`FX_SHIFT = 16`), and one whole unit is
-  one range unit. Authors write `mapBounds` in **whole range units**; the loader converts them to 16.16 at
+  **Map bounds.** The map block gets an optional `mapBounds` field. Sim positions are **16.16 fixed
+  point** (`FX_SHIFT = 16`), and one whole unit is one range unit ([sim-core.md §2](../engine/sim-core.md#2-numbers-enginecorefxts),
+  determinism.md N1). Authors write `mapBounds` in **whole range units**; the loader converts them to 16.16 at
   load:
 
   ```json
@@ -861,20 +862,20 @@ These are kept strictly apart (Asset & Formats Engineer):
 
   (Field names and numbers are illustrative.)
 
-  **Range rule (Engine Lead; to be committed in `docs/engine/sim-core.md`):** each `mapBounds` axis value
-  must satisfy **|v| <= 8192 range units**. Position differences can reach twice the bound and the sim
-  computes differences in i64, which leaves about a 4x margin on the 2D squared distance. A value outside
+  **Range rule ([sim-core.md §2](../engine/sim-core.md#2-numbers-enginecorefxts)):** each `mapBounds` axis value
+  must satisfy **|v| <= 8192 range units**, which leaves 4× headroom in Q16.16's integer range. Differences
+  fit in i32 and squared distances are exact i64 (4.1). A value outside
   that range, or a non-integer, emits `{ code: "badMapBounds", source: "mission", severity: "error" }`, with
   `location.field` pointing at the offending value. (This supersedes an earlier 32767 proposal.)
 
-  Test-fixture context only, not a limit on bounds: the provisional longest weapon range is **75 range
-  units** (the Star Fleet Battles long-range phaser band), pending playtest.
+  A range of **75 range units** appears in fixtures as test context only; it is not a weapon-range rule
+  and not a map limit (sim-core.md §2).
 
   Positions (ships, map objects, bounds) come **only from our own mission files**. They are never
   extracted from CE `.scr` modules.
 - The Asset & Formats importer validates these files and returns **`{ data, diagnostics }`**: `data` is
   the typed scenario (or `null` if it can't be used), and `diagnostics` is a list of
-  diagnostics in the studio shape already used by `docs/formats/` (#42, #45): exactly
+  diagnostics in the shape defined in [`docs/engine/diagnostics.md`](../engine/diagnostics.md#shape): exactly
   **`{ code, source, severity, details?, location? }`**. There is **no `path` and no `message` field**; the
   HUD looks up human-readable text by the locale key `source.code` (`docs/ui/hud-spec.md` §14d).
   - `code`: flat, stable camelCase, add-only, never renamed.
@@ -882,14 +883,14 @@ These are kept strictly apart (Asset & Formats Engineer):
     key, an off-map cell or a missing string key). `duplicateClassKey` (error) and `duplicateClassName`
     (warning) come from the shiplist parser, `source: "shiplist"`, as `docs/formats/shiplist.md` defines
     them. `unknownWeapon` and `unknownArc` come from the engine loader, `source: "loader"`. `"mission"` is
-    not yet in the shared `DiagnosticSource` list in `docs/formats/README.md`; it gets added there
-    (add-only) when the mission importer lands.
+    in the `DiagnosticSource` list in [`diagnostics.md`](../engine/diagnostics.md#shape); the copy in `docs/formats/README.md`
+    doesn't list it yet and is to be added there (add-only).
   - `severity`: `"error" | "warning" | "info"`.
   - `details?`: structured context, e.g. `{ race, className, rows }`.
   - `location?` (optional): a 1-based `line` and `column` for text files, or, **for our JSON mission files,
     a JSON-pointer-style field path** in `location.field` (for example `/teams/1/ships/0/ship`).
 
-  The single registry of codes is the planned `docs/engine/diagnostics.md` (Engine Lead). The loader
+  The single registry of codes is [`docs/engine/diagnostics.md`](../engine/diagnostics.md#registry). The loader
   refuses to start a mission with any `error` diagnostic and shows the list to the author.
 - Test fixtures in the repo are synthetic files we write ourselves.
 
@@ -1014,20 +1015,21 @@ without API changes.
 
 ### Engine Lead
 
-Answered, pending the mission-runtime contract in `docs/engine/`: when commands apply (T+1 input phase,
-slot 255), the sandbox (same thread, SES-style, no Worker, operation budget), spawn ids (token, lowest free
+Settled in [sim-core.md](../engine/sim-core.md): when commands apply (T+1 input phase, slot 255), the shared allocator,
+fixed-point positions and the `mission` RNG stream seeding. Answered, pending the mission-host contract in
+`docs/engine/`: the sandbox (same thread, SES-style, no Worker, operation budget), spawn ids (token, lowest free
 index with bumped generation, `spawned` next tick), and reads (query API in entity-id order, no snapshot).
 Still open:
 
-1. **The contract itself** in `docs/engine/`, so the answers above and the remaining hooks in 5.1 can be
+1. **The mission-host contract** in `docs/engine/`, so the answers above and the remaining hooks in 5.1 can be
    linked instead of restated.
 2. **Event source and ordering** within a tick (`ENGINE_HOOK: eventSource`).
 3. **How operations are counted** for the budget (API calls only, or also loop iterations through a code
    transform), and the default budget per tick.
-4. **Fixed-point types exposed to missions:** one `Fixed` type with helpers, or plain integers in the
-   swappable distance unit? Can mission code use floats at all?
-5. **RNG stream API:** is `ctx.rng("mission")` per mission instance, and how is it derived from the match
-   seed?
+4. **Fixed-point types exposed to missions:** the sim uses Q16.16 range units (4.1); do missions get one
+   `Fixed` type with helpers, or plain integers? Can mission code use floats at all?
+5. **RNG stream API:** is `ctx.rng("mission")` per mission instance? (Derivation from the match seed is in
+   sim-core.md §4.)
 6. **Per-frame event list:** the exact shape of `objectiveUpdated`, `missionTimer` and `hail` (with UI).
 
 ### Combat Systems Designer
