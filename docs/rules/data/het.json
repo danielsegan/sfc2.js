@@ -18,6 +18,8 @@
   },
   "energyCost": 0,
   "energyCostNote": "Placeholder: HET energy cost and breakdown roll are TO VERIFY.",
+  "hullOrder": ["F-CA", "K-D7", "default"],
+  "hullOrderNote": "Stable sim ids: engine/sim numbers hull rows by their position in this list, so append new hull keys at the end. Every key under hulls must be listed. default is the row for hulls with no entry of their own. Editing a row's speedPoints needs no code change.",
   "hulls": {
     "F-CA": {
       "status": "measured",

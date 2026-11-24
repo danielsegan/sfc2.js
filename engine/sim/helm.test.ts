@@ -23,7 +23,7 @@ function arc(from: number, to: number): number {
 }
 
 describe('helm view', () => {
-  it('keeps het in the mode list and never returns it', () => {
+  it('keeps het in the mode list and does not return it without the het table', () => {
     const modes: readonly HelmMode[] = HELM_MODES;
     expect(modes).toEqual(['none', 'heading', 'het']);
     expect(readHelmView(snap(HEADING_OFF, 50000, 0), 0).mode).toBe('none');

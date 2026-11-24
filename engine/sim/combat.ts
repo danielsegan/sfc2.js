@@ -19,6 +19,7 @@ import type { CommandHandler, SimSystem, TickContext } from './sim.ts';
 import { ENTITY_KIND, type TableSpec, type World } from './world.ts';
 import { facingForRelative, relativeBearing, shotInArc, withinRange } from './arcs.ts';
 import { rulesDiv } from './rules-div.ts';
+import { stampCurve, usesCurve } from './turn-curve.ts';
 import type { ShipSetup } from './bind-shiplist.ts';
 import {
   emptyMounts,
@@ -584,6 +585,7 @@ export function placeSetup(world: World, setup: ShipSetup, x: number, y: number,
   world.setHeading(id, angle16(heading));
   writeHull(world, id, fields);
   writeMounts(world, id, mounts);
+  stampCurve(world, id, setup.classCode === CLASS_FIGHTER ? undefined : setup.turnHull);
   return id;
 }
 
@@ -595,7 +597,8 @@ function applySpawn(world: World, cmd: Command, ctx: TickContext, setups: readon
   const id = placeSetup(world, setup, readI32(cmd.payload, 4), readI32(cmd.payload, 8), readI32(cmd.payload, 12));
   ctx.emit({ kind: EVENT_SPAWN, entity: id as number, a: index, b: 0 });
   // Once per hull. Later speed and yaw orders keep moving on the fallback cap.
-  if (setup.classCode !== CLASS_FIGHTER && setup.turnMode === TURN_UNVERIFIED) {
+  // A hull on the measured turn curve does not use that cap, so it is not warned.
+  if (setup.classCode !== CLASS_FIGHTER && setup.turnMode === TURN_UNVERIFIED && usesCurve(world, id) === 0) {
     emitRule(ctx, id as number, R.turnModeUnverified, FALLBACK_YAW_PER_TICK);
   }
 }

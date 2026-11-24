@@ -59,6 +59,9 @@ import {
   headingHandler,
   headingPayload,
 } from '../sim/heading.ts';
+import { createHetTurn, hetHandler, hetPayload } from '../sim/het.ts';
+import { HET_TABLE, TURN_CURVE_TABLE } from '../sim/turn-curve.ts';
+import { VERB_ORDER_HET } from '../sim/heading.ts';
 import { buildViewModel, type ViewModel } from '../view/view-model.ts';
 import {
   SYNTHETIC_PLAN,
@@ -165,6 +168,8 @@ export interface DuelMatch {
   orderYaw(yaw16: number): void;
   /** Turn toward this fixed heading at the hull's turn rate. */
   orderHeading(heading16: number): void;
+  /** High-Energy Turn. -1 port, +1 starboard. Sweep, rate, and delay come from the HET table. */
+  orderHet(dir: -1 | 1): void;
   orderFire(slotIndex: number): void;
   setTarget(id: number): void;
   /** Step through hostile contacts. Negative steps go backwards. */
@@ -244,8 +249,8 @@ class Match implements DuelMatch {
       fighters: options.fighters ?? [],
       setups: options.setups,
     });
-    const tables = [...combat.tables, CRUISE_TABLE, HEADING_ORDER_TABLE, ...craft.tables];
-    const systems = [...combat.systems, createHeadingSteer(), createCruise(period), ...craft.systems];
+    const tables = [...combat.tables, CRUISE_TABLE, HEADING_ORDER_TABLE, TURN_CURVE_TABLE, HET_TABLE, ...craft.tables];
+    const systems = [...combat.systems, createHetTurn(), createHeadingSteer(), createCruise(period), ...craft.systems];
     const handlers = [...withHeading(withHelm(combat.handlers)), ...craft.handlers];
     if (fleet) {
       tables.push(ALLEGIANCE_TABLE);
@@ -484,6 +489,14 @@ class Match implements DuelMatch {
     this.session.issue(VERB_ORDER_HEADING, headingPayload(this.selfEntity, heading16 & 0xffff));
   }
 
+  orderHet(dir: -1 | 1): void {
+    if (this.selfEntity === null || (dir !== -1 && dir !== 1)) return;
+    const target = this.tick + 1;
+    if (this.helmStamp === target) return;
+    this.helmStamp = target;
+    this.session.issue(VERB_ORDER_HET, hetPayload(this.selfEntity, dir));
+  }
+
   orderFire(slotIndex: number): void {
     if (this.selfEntity === null || this.targetEntity === null) return;
     if (!Number.isInteger(slotIndex) || slotIndex < 0) return;
@@ -663,7 +676,7 @@ function withHelm(handlers: readonly CommandHandler[]): CommandHandler[] {
 }
 
 function withHeading(handlers: readonly CommandHandler[]): CommandHandler[] {
-  const extra = [headingHandler];
+  const extra = [headingHandler, hetHandler];
   const next = handlers.slice();
   for (const handler of extra) {
     let found = false;

@@ -67,7 +67,7 @@ A mount is the system key `weapon:<slotIndex>`. Hitting an overloaded photon wit
 
 Sets the standing power plan. Recognised keys: `speed`, `lifeSupport`, `fireControl`, `shields` (`general` and `specific` keyed by facing `"0"`..`"5"`), `weapons` (`slotIndex`, `request`, optional `mode`). Any other key → `unknownDraw` and the previous plan stands.
 
-Magnitude checks before any write: negative numbers, milli-unit precision, `badFacing`, `unknownWeaponSlot`, `notInDuelSlice` (drones, disruptors, and any mode other than `normal` / `overload` / `proximity`; phasers accept only `normal`). A turn letter with no per-letter rate uses the documented fallback yaw. Spawn emits `turnModeUnverified` once. The speed order is kept.
+Magnitude checks before any write: negative numbers, milli-unit precision, `badFacing`, `unknownWeaponSlot`, `notInDuelSlice` (drones, disruptors, and any mode other than `normal` / `overload` / `proximity`; phasers accept only `normal`). A turn letter with no per-letter rate uses the documented fallback yaw unless the hull is on the measured turn curve ([turning.md](turning.md) §5). Spawn emits `turnModeUnverified` once for a hull on the fallback. The speed order is kept.
 
 Then the plan is settled for one rules-turn:
 

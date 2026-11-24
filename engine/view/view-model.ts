@@ -31,6 +31,7 @@ import {
   EVENT_HELM,
   HELM_DESTROYED,
   HELM_DISABLED,
+  HELM_HET_ACTIVE,
   HELM_IMMOBILE,
   HELM_NOT_SHIP,
   HELM_NO_SHIP,
@@ -47,6 +48,7 @@ import {
   HEADING_DESTROYED,
   HEADING_DISABLED,
   HEADING_FIELDS,
+  HEADING_HET_ACTIVE,
   HEADING_HOLD,
   HEADING_IMMOBILE,
   HEADING_NOT_SHIP,
@@ -63,10 +65,22 @@ import {
   INTERNAL_PHOTON,
   MODE_OVERLOAD,
   arcDef,
-  turnYawCap,
   weaponDef,
   type WeaponDef,
 } from '../sim/rules-tables.ts';
+import { curveRowOf, rateFromRow } from '../sim/turn-curve.ts';
+import {
+  EVENT_HET,
+  HET_ACTIVE,
+  HET_DESTROYED,
+  HET_DISABLED,
+  HET_DONE,
+  HET_IMMOBILE,
+  HET_INVALID_DIR,
+  HET_NOT_SHIP,
+  HET_NO_SHIP,
+  HET_ORDERED,
+} from '../sim/het.ts';
 import { blendScalar, toDisplayEnergy, toDisplayRange, FULL_CIRCLE } from './units.ts';
 import { readAllegiance } from '../sim/allegiance.ts';
 import { CLOAK_OFF, EVENT_MISS, cloakVisible, ewShift } from '../sim/phase3.ts';
@@ -322,13 +336,20 @@ function shieldsOf(ship: ReturnType<typeof shipView>): ShieldReadout[] {
   return out;
 }
 
-function helmReadout(snap: WorldSnap, index: number, turnMode: number): {
+function hullFieldsOf(snap: WorldSnap, index: number): number[] {
+  const hull = table(snap, 'hull');
+  const out: number[] = [];
+  for (let f = 0; f < HULL_FIELDS; f++) out.push(hull ? (hull[index * HULL_FIELDS + f] ?? 0) : 0);
+  return out;
+}
+
+function helmReadout(snap: WorldSnap, index: number): {
   orderedHeading16: number | null;
   turnTicksRemaining: number | null;
   turnRateLimit16PerTick: number;
   turnBand: 0 | 1 | 2 | 3 | null;
 } {
-  const cap = turnYawCap(turnMode);
+  const cap = rateFromRow(curveRowOf(snap, index), hullFieldsOf(snap, index));
   const blank = { orderedHeading16: null, turnTicksRemaining: null, turnRateLimit16PerTick: cap, turnBand: null as 0 | 1 | 2 | 3 | null };
   const data = table(snap, HEADING_ORDER);
   if (!data || snap.live[index] !== 1) return blank;
@@ -353,6 +374,7 @@ function headingId(code: number): string {
   if (code === HEADING_NO_SHIP) return 'noSuchShip';
   if (code === HEADING_NOT_SHIP) return 'notAShip';
   if (code === HEADING_DESTROYED) return 'shipDestroyed';
+  if (code === HEADING_HET_ACTIVE) return 'hetActive';
   return 'headingOrdered';
 }
 
@@ -365,7 +387,21 @@ function helmId(code: number): string {
   if (code === HELM_NO_SHIP) return 'noSuchShip';
   if (code === HELM_NOT_SHIP) return 'notAShip';
   if (code === HELM_DESTROYED) return 'shipDestroyed';
+  if (code === HELM_HET_ACTIVE) return 'hetActive';
   return 'helm';
+}
+
+function hetId(code: number): string {
+  if (code === HET_ORDERED) return 'hetOrdered';
+  if (code === HET_DONE) return 'hetDone';
+  if (code === HET_INVALID_DIR) return 'hetInvalidDir';
+  if (code === HET_ACTIVE) return 'hetActive';
+  if (code === HET_IMMOBILE) return 'immobile';
+  if (code === HET_DISABLED) return 'crewDisabled';
+  if (code === HET_NO_SHIP) return 'noSuchShip';
+  if (code === HET_NOT_SHIP) return 'notAShip';
+  if (code === HET_DESTROYED) return 'shipDestroyed';
+  return 'het';
 }
 
 function toHud(event: SimEvent): HudEvent | null {
@@ -390,6 +426,11 @@ function toHud(event: SimEvent): HudEvent | null {
   if (event.kind === EVENT_HEADING) {
     const id = headingId(event.a);
     const severity = event.a === HEADING_ORDERED ? 'info' : 'warn';
+    return { kind: 'alert', tick: event.tick as number, id, severity, ship: event.entity, amount: event.b };
+  }
+  if (event.kind === EVENT_HET) {
+    const id = hetId(event.a);
+    const severity = event.a === HET_ORDERED || event.a === HET_DONE ? 'info' : 'warn';
     return { kind: 'alert', tick: event.tick as number, id, severity, ship: event.entity, amount: event.b };
   }
   if (event.kind === EVENT_CRAFT) {
@@ -591,7 +632,7 @@ export function buildViewModel(input: ViewBuildInput): ViewModel {
         weapons.push(weaponReadout(slot, mount));
       }
       const reason = ship.lastVerb === 0 ? '' : (REASON_NAME[ship.lastReason] ?? '');
-      const helm = helmReadout(input.curr.world, input.selfIndex, ship.turnMode);
+      const helm = helmReadout(input.curr.world, input.selfIndex);
       const helmView = readHelmView(input.curr.world, input.selfIndex);
       self = {
         id: entityId(curr, input.selfIndex),

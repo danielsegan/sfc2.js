@@ -10,8 +10,8 @@ Clean-room. These docs describe mechanisms in our own words. Synthetic fixtures 
 | [fleet-ai.md](fleet-ai.md) | Up to six ships, two sides, and the synthetic captain policy. |
 | [phase3-systems.md](phase3-systems.md) | ECM/ECCM and hit chance, heavy-weapon overload, tractor contest, and cloak timing. Synthetic numbers. |
 | [smallcraft.md](smallcraft.md) | Fighters launched from a parsed ftrlist, PF launch, mines, and boarding / hit-and-run. Synthetic numbers. |
-| [turning.md](turning.md) | Normal turn curve: per-hull, speed-keyed integer table, fixed-point interpolation, audit expect for `turn.normal.<speed>`. |
-| [het.md](het.md) | High-Energy Turn (HET): `orderHet` `{ entity, dir }`, delay/turn ticks in 16-bit angle units, no speed cutoff, `HelmView` contract. |
+| [turning.md](turning.md) | Normal turn curve: per-hull, speed-keyed integer table, fixed-point interpolation, audit expect for `turn.normal.<speed>`, and how `engine/sim` uses it with the letter cap. |
+| [het.md](het.md) | High-Energy Turn (HET): `orderHet` `{ entity, dir }` (verb 13, live in `engine/sim/het.ts`), delay/turn ticks in 16-bit angle units, no speed cutoff, `HelmView` contract. |
 | [shiplist-mapping.md](shiplist-mapping.md) | Raw field → engine field, scale-factor table, weapon and arc table, ftrlist's 36-column header. |
 | [reason-codes.md](reason-codes.md) | `source: "rules"` reason codes. Copied later into `docs/engine/diagnostics.md`. |
 | [mission-entry-points.md](mission-entry-points.md) | `damageSystem`, `damageShield`, `repairSystem`, `setShields`, `setEnergy`, and `ruleResult`. |

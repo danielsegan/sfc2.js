@@ -4,7 +4,9 @@
  * only. The session stamps tick, slot, and seq.
  *
  * Caps come from the synthetic turn-mode table. An unverified letter
- * uses the documented fallback cap and still turns. The hull's last-verb
+ * uses the documented fallback cap and still turns. With the turnCurve
+ * table a hull that names a turn hull is capped by its measured normal-turn
+ * rate instead (still bounded by the letter cap). The hull's last-verb
  * fields are left to the combat verbs.
  */
 import { angle16, shortestArc } from '../core/angle.ts';
@@ -18,8 +20,8 @@ import {
   CLASS_FIGHTER,
   turnHasRate,
   turnImmobile,
-  turnYawCap,
 } from './rules-tables.ts';
+import { HS, HET_FIELDS, HET_STATE, hetActive, setCurveDelay, turnRateFor } from './turn-curve.ts';
 import {
   HEADING_FIELDS,
   HEADING_HOLD,
@@ -42,6 +44,8 @@ export const HELM_DISABLED = 4;
 export const HELM_NO_SHIP = 5;
 export const HELM_NOT_SHIP = 6;
 export const HELM_DESTROYED = 7;
+/** A High-Energy Turn is pending or running (hetActive). */
+export const HELM_HET_ACTIVE = 8;
 
 export function helmPayload(entity: number, yaw16: number): Uint8Array {
   const out = new Uint8Array(8);
@@ -87,11 +91,15 @@ function apply(world: World, cmd: Command, ctx: TickContext): void {
     reject(ctx, id as number, HELM_UNVERIFIED);
     return;
   }
+  if (hetActive(world, id) === 1) {
+    reject(ctx, id as number, HELM_HET_ACTIVE);
+    return;
+  }
   if (yaw !== 0 && turnImmobile(fields[H.turnMode]!) === 1) {
     ctx.emit({ kind: EVENT_HELM, entity: id as number, a: HELM_IMMOBILE, b: 0 });
     return;
   }
-  const cap = turnYawCap(fields[H.turnMode]!);
+  const cap = turnRateFor(world, id, fields);
   if (cap < 0) {
     reject(ctx, id as number, HELM_UNVERIFIED);
     return;
@@ -109,6 +117,7 @@ function apply(world: World, cmd: Command, ctx: TickContext): void {
     world.setHeading(id, angle16(heading));
   }
   holdHeading(world, id, world.heading(id) as number);
+  setCurveDelay(world, id, 0);
   ctx.emit({ kind: EVENT_HELM, entity: id as number, a: code, b: applied });
 }
 
@@ -119,7 +128,7 @@ export const helmHandler: CommandHandler = {
   },
 };
 
-/** `het` is reserved for a later high-energy turn. Nothing in the sim produces it yet. */
+/** `het` while a High-Energy Turn (het.ts) is in its delay or turn phase. */
 export const HELM_MODES = ['none', 'heading', 'het'] as const;
 
 export type HelmMode = (typeof HELM_MODES)[number];
@@ -136,7 +145,7 @@ export interface HelmView {
    * 65536 is a full turn. The half-turn tie is −32768, matching shortestArc.
    */
   readonly remainingTurn16: number;
-  /** Ticks left before a high-energy turn may begin. 0 until HET exists. */
+  /** Ticks left before a pending High-Energy Turn starts rotating. 0 outside `het` and once rotation starts. */
   readonly hetDelayTicks: number;
 }
 
@@ -151,6 +160,17 @@ function tableOf(snap: WorldSnap, id: string): { readonly data: readonly number[
 export function readHelmView(snap: WorldSnap, index: number): HelmView {
   const idle: HelmView = { mode: 'none', remainingTurn16: 0, hetDelayTicks: 0 };
   if (index < 0 || snap.live[index] !== 1) return idle;
+  const het = tableOf(snap, HET_STATE);
+  if (het && het.fieldCount >= HET_FIELDS) {
+    const at = index * het.fieldCount;
+    if (het.data[at + HS.active] === 1) {
+      return {
+        mode: 'het',
+        remainingTurn16: (het.data[at + HS.remaining] ?? 0) | 0,
+        hetDelayTicks: (het.data[at + HS.delayLeft] ?? 0) | 0,
+      };
+    }
+  }
   const order = tableOf(snap, HEADING_ORDER);
   if (!order || order.fieldCount < HEADING_FIELDS) return idle;
   const base = index * order.fieldCount;

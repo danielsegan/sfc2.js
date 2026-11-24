@@ -68,6 +68,12 @@ export interface ShipSetup {
   /** Energy per rules-turn to run a cloak. Empty or omitted means no cloak. */
   cloakCost?: number;
   systems?: ShipSystemsSetup;
+  /**
+   * Row key in docs/rules/data/turn-normal.json and het.json (the class name,
+   * e.g. `F-CA`). A key with no row uses `default`. Omitted means the hull
+   * keeps its turn-letter cap and the HET default row.
+   */
+  turnHull?: string;
   mounts: readonly MountSetup[];
 }
 
@@ -234,6 +240,12 @@ function wholeCell(columns: readonly string[], raw: readonly string[], aliases: 
   return parsed;
 }
 
+/** The class name is the part of `race:className` after the last colon. */
+export function classNameOf(spawnKey: string): string {
+  const at = spawnKey.lastIndexOf(':');
+  return at >= 0 ? spawnKey.slice(at + 1) : spawnKey;
+}
+
 /**
  * Bind one row. A non-empty weapon code that is not in the catalog is
  * `unknownWeapon` and is not mounted. It is not given a zero cost.
@@ -319,6 +331,7 @@ export function bindShiplistRow(
     systems: {
       sensors: wholeCell(columns, raw, ['sensors'], 0),
     },
+    turnHull: classNameOf(row.spawnKey),
     mounts,
   };
 }

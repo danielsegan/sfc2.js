@@ -19,7 +19,7 @@ All HET angles, durations, and rates follow [`docs/engine/sim-core.md`](../engin
 
 HET uses its **own sim verb**, separate from `orderHeading` (verb `12` in `engine/sim/heading.ts`) and `orderHelm` (verb `6`):
 
-- **Verb:** `orderHet`. The id is reserved as `VERB_ORDER_HET = 13` in `engine/sim/heading.ts`, next to `VERB_ORDER_HEADING`. No handler is registered yet.
+- **Verb:** `orderHet`, `VERB_ORDER_HET = 13` in `engine/sim/heading.ts`, next to `VERB_ORDER_HEADING`. The handler and the per-tick system are in `engine/sim/het.ts`. The duel and skirmish match registers them, with `DuelMatch.orderHet(dir)`. A sim that does not register `HET_TABLE` (the replay corpus) has no HET.
 - **Payload:** a single shape `{ entity: i32, dir: i32 }`. `dir` is `-1` (port / left) or `+1` (starboard / right). Any other value is rejected with `hetInvalidDir`. Sweep, rate, and delay come from [`data/het.json`](data/het.json) by hull and speed. There is no `delta16` override in the payload.
 - **UI trigger:** the helm panel's 3×3 arrow buttons ([`docs/ui/hud-layout.md`](../ui/hud-layout.md) §5). Left/right helm arrow buttons issue `orderHet` with `dir = ∓1`. The signed sweep is `dir × turnAngle16` from the table (e.g., `∓16384` for `F-CA`). Exact button set and `Go` behavior are **TO VERIFY**.
 
@@ -34,7 +34,11 @@ When `orderHet({ entity, dir })` arrives in the input phase:
 5. **No speed cutoff:** CE in-battle capture (2026-11-24) confirmed HET works at speeds `15`, `20`, and `31` as well as lower speeds (`5`, `10`). The earlier "no HET at speed 15+" observation was wrong and has been removed; there is no speed-cutoff rejection.
 6. Look up sweep (`turnAngle16`), rate (`turnRate16PerTick`), and delay (`delayTicks`) from [`data/het.json`](data/het.json) by hull and current speed (clamp or interpolate as in §4). The signed remaining turn is `dir × turnAngle16`. The command cannot override those table values.
 
-Accepted `orderHet` supersedes any active `orderHeading` for that ship. Whether `orderHeading` or manual `orderHelm` can cancel an active HET during its delay or turn phase is **TO VERIFY** (provisional: rejected/locked until the HET finishes).
+Accepted `orderHet` supersedes any active `orderHeading` for that ship (the heading order is cleared and any normal-turn start delay is dropped). Whether `orderHeading` or manual `orderHelm` can cancel an active HET during its delay or turn phase is **TO VERIFY**. The sim's provisional choice: both are refused with `hetActive` until the HET finishes, and so is a second `orderHet`.
+
+The sim's answer is event kind `20` (`EVENT_HET`): `a` is the code (`0` ordered, `2` immobile, `4` crew disabled, `5` no such ship, `6` not a ship, `7` destroyed, `8` `hetInvalidDir`, `9` `hetActive`, `10` finished), `b` is the signed sweep on an accepted order and the heading reached on finish. Heading and helm refusals during a HET use their own events with code `8` (`hetActive`).
+
+**Hull row.** The sweep, rate, and delay come from the hull's `turnCurve` row ([turning.md](turning.md) §5). A ship with no turn hull, including the synthetic duel ships, uses the `default` HET row. The speed key is the cruise override when set, else the ordered speed. Values are locked when the order is accepted.
 
 ## 4. Per-hull speed-keyed integer table and interpolation
 
@@ -90,17 +94,22 @@ Fixture: [`tests/het.json`](tests/het.json).
 
 ## 6. `HelmView` contract
 
-Consistent with Engine Lead's `engine/sim` heading/helm move PR. `VERB_ORDER_HET = 13` is reserved in `engine/sim/heading.ts`; the handler is not registered yet:
+`readHelmView` in `engine/sim/helm.ts` reads the `het` table first, then the heading order:
 
 | Field | Type / units | Meaning |
 | --- | --- | --- |
 | `mode` | `"none" \| "heading" \| "het"` | Active helm mode. `"none"` when idle or holding; `"heading"` while steering an `orderHeading`; `"het"` while an HET delay or turn is running. |
 | `remainingTurn16` | signed `i32` (16-bit angle units, `65536 = full turn`, **not** Q16.16) | Signed angle remaining from the current heading to the ordered target (`0` when `"none"`). |
-| `hetDelayTicksLeft` | integer tick count (`>= 0`) | Ticks remaining before a pending HET begins rotating (`0` when `mode !== "het"` or once rotation has started). |
+| `hetDelayTicks` | integer tick count (`>= 0`) | Ticks remaining before a pending HET begins rotating (`0` when `mode !== "het"` or once rotation has started). The fixture file calls this `hetDelayTicksLeft`. |
+
+During the HET `remainingTurn16` is the signed sweep still to turn. When it finishes the ship holds the heading it reached, so the view goes to `"heading"` with `remainingTurn16 = 0` (the fixture's `"none"`). The order tick is the first delay tick: right after an accepted F-CA order the view reads `{ mode: "het", remainingTurn16: 16384, hetDelayTicks: 170 }`.
+
+Tests: `engine/sim/het.test.ts` runs both directions, the §5 timing, `K-D7` and default rows, `hetInvalidDir`, `hetActive` for a second HET, a heading order and a manual yaw, immobile and missing ships, determinism with snapshot restore, and [`tests/het.json`](tests/het.json) through the engine. `engine/duel/heading.test.ts` drives `orderHet` from the match.
 
 ## 7. Pending playtest (TO VERIFY)
 
 - `K-D7` turn rate (`turn.het.<speed>.degPerSecond` / `turnRate16PerTick`) and HET sweep/rate for remaining empire hulls.
 - Exact per-speed variation within the `F-CA` `43–51°/s` band (and whether any hull varies `delayTicks`, `turnAngle16`, or `turnRate16PerTick` across speed points).
 - Whether 3×3 helm arrows trigger distinct sweep angles (45°/90°/180° or the hull-fixed table sweep already selected by `dir`) and whether `Go` executes a queued angle.
-- Energy cost, `hetChance` / `hetBreakdown` shiplist columns, breakdown effects, cooldowns, and whether `orderHeading` / `orderHelm` / a second `orderHet` can cancel an in-flight HET.
+- Energy cost, `hetChance` / `hetBreakdown` shiplist columns, breakdown effects, cooldowns, and whether `orderHeading` / `orderHelm` / a second `orderHet` can cancel an in-flight HET (the sim refuses all three for now).
+- Whether a crew-disabled or tractored ship finishes an HET already in flight (the sim lets it finish).
