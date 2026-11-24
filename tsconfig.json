@@ -1,22 +1,30 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "lib": ["ES2022"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["node"],
     "strict": true,
     "erasableSyntaxOnly": true,
-    "verbatimModuleSyntax": true,
-    "isolatedModules": true,
     "noEmit": true,
     "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "resolveJsonModule": true,
     "skipLibCheck": true,
+    "isolatedModules": true,
     "forceConsistentCasingInFileNames": true,
+    "moduleDetection": "force",
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "exactOptionalPropertyTypes": true,
     "noFallthroughCasesInSwitch": true,
-    "types": ["node"]
+    "rootDir": "."
   },
-  "include": ["engine/**/*.ts", "tests/**/*.ts", "vitest.config.ts"]
+  "include": [
+    "tools/formats/**/*.ts",
+    "engine/**/*.ts",
+    "tests/**/*.ts",
+    "docs/rules/data/weapon-arcs.json",
+    "vitest.config.ts"
+  ]
 }

@@ -56,7 +56,7 @@ interface SlotBinding {
 | Need | Detail |
 | --- | --- |
 | `sprites.q3` reader | List entries; decode each to RGBA (`ImageBitmap` or `Uint8ClampedArray` + width and height); expose sub-frames or animation frames if the format has them. The CE 2.670 archive is a proprietary `MDM!` container with no readable directory yet (see §3a), so this reader is blocked on a format spec (`docs/formats/sprites-q3.md`). Entry naming and palette handling remain **TO VERIFY**. |
-| BMP decoder | 8-bit palettised and 24-bit, plus 4-bit expanded to 8-bit on load. Colour-key / transparent colour convention: unknown (**TO VERIFY** by a pixel check against the CE install on sfc2-ci: magenta, black, or palette index 0?). Output premultiplied RGBA. |
+| BMP decoder | 8-bit palettised and 24-bit, plus 4-bit expanded to 8-bit on load, and 32-bit `BI_RGB`. Implemented in `@sfc2js/formats` ([docs/formats/bmp.md](../formats/bmp.md)). Colour-key default is **none** until a pixel check against the CE install on sfc2-ci (magenta, black, or palette index 0). Output premultiplied RGBA. |
 | Fonts | If the original UI fonts are bitmap sheets, a glyph-metrics reader. Otherwise we use our open fonts (style-guide §3). |
 | Inventory | A list of GUI entries with sizes so we can build the slot binding table without screenshots in the repo. |
 | Validation | Reports missing or unexpected entries so the HUD can log "using fallback for N slots". |

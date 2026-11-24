@@ -1,0 +1,9 @@
+synthetic shiplist edges
+Race	Hull Type	Class	BPV	Turn Mode	Year First	Year Last	Crew	Boarding Parties Base	Deck Crews	Total Crew	Shield 1	Shield 2	Shield 3	Shield 4	Shield Total	Geometry	Refit Base Class	Move Cost	Notes
+Federation	CA	TEST-EDGE-01	10	C	1	9	10	4	6	15	10	8	6	4	42	assets/models/test_edge01/a.mod		0.5	note-a	
+Federation	CA	TEST-EDGE-02	nope	Z	9	1	10	4	6	99	10	8	6	4	1		TEST-MISSING	0.25	note-b
+Andorian	ZZZ	TEST-EDGE-01	5	AA	1	2	1	0	0	1	0	0	0	0	0	assets/models/test_edge05/a.mod		1	note-c
+federation	FF	test-edge-01	1	A	1	1	0	0	0	0	0	0	0	0	0	assets/models/test_edge06/a.mod	TEST-EDGE-01	1	note-d
+Neutral	BS	TEST-EDGE-07	3
+Neutral	BS	TEST-EDGE-08	4	H	1	2	0	0	0	0	0	0	0	0	0	assets/models/test_edge08/a.mod		1	note-e	EXTRA-CELL
+Neutral	BS	TEST-EDGE-09	8	H	1	5	10	5	1	13	1	1	1	1	6			1	note-f

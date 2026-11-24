@@ -1,0 +1,4 @@
+packages:
+  - "tools/formats"
+  - "engine/platform"
+  - "engine/render"
