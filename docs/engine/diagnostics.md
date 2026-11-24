@@ -23,9 +23,11 @@ interface Diagnostic {
   source: DiagnosticSource;       // plain string
   severity: Severity;
   details?: Record<string, unknown>;
-  location?: { file?: string; line?: number; column?: number; field?: string; offset?: number }; // line/column 1-based; field = raw header name; offset = byte offset
+  location?: { file?: string; line?: number; column?: number; field?: string; offset?: number }; // file is install-root-relative with forward slashes, never a machine-local path; line/column 1-based; field = raw header name; offset = byte offset
 }
 ```
+
+`location.file`, when set, is a path relative to the player's install root, using forward slashes (for example `Specs/shiplist.txt`). It is never an absolute or machine-local path, so diagnostics never expose the player's machine. This matches [`docs/formats/README.md`](../formats/README.md) (#65).
 
 ## Rules
 
@@ -34,7 +36,7 @@ interface Diagnostic {
 - Locale key is `source.code` (e.g. `rules.noSuchSystem`, `shiplist.duplicateClassKey`), per the HUD spec.
 - No message text: display text comes from the locale key `source.code` (matches PR #45). Tests assert `source` + `code`.
 - Each owning role adds its codes here in the same PR that first emits them: Asset & Formats (parser sources), Engine Lead (`loader`, `mission` host), Combat (`rules`).
-- `location.file`, when set, is a path relative to the player's install root using forward slashes (for example `Assets/Specs/shiplist.txt` or `Specs/shiplist.txt`). It is never an absolute path, a drive letter, a UNC path, or any other machine-local path.
+- `location.file`, when set, is a path relative to the player's install root using forward slashes (for example `Assets/Specs/shiplist.txt` or `Specs/shiplist.txt`). It is never an absolute path, a drive letter, a UNC path, or any other machine-local path. This matches `docs/formats/README.md` (#65).
 
 ## Registry
 
@@ -71,8 +73,52 @@ interface Diagnostic {
 | bmp | `orphanSelfIllum` | warning | Formats | `{ illumPath }`. A `_<token>i` file with no base in the same directory |
 | bmp | `missingTexture` | error | Formats | `{ path }`. Requested install-relative path is not in the VFS |
 | bmp | `selfIllumSizeMismatch` | info | Formats | `{ baseWidth, baseHeight, illumWidth, illumHeight }`. Both maps are kept and sampled by UV |
+| mod | `emptyFile` | error | Formats | Zero-byte `.mod`. No `location` |
+| mod | `fileTooLarge` | error | Formats | `{ size, limit }`. Over 8 MiB; nothing is parsed |
+| mod | `badSignature` | error | Formats | The first four bytes are not a printable chunk id |
+| mod | `truncated` | error | Formats | `{ size?, expected? }`. Header, payload, or vertex block is short; bytes already read are kept |
+| mod | `missingHeader` | error | Formats | No `MDLS` chunk |
+| mod | `badCount` | error | Formats | `{ field, value }`. Negative, or over the ceiling (65,536 vertices or faces, 8 LODs, 256 materials, 4,096 points) |
+| mod | `unknownChunk` | warning | Formats | `{ type, size }`. Skipped. Also listed on `unknownChunks` |
+| mod | `duplicateChunk` | warning | Formats | `{ type }`. The first `STRS`, `MATS`, `PNTS`, `MDLS`, or `VTXS` wins |
+| mod | `raggedChunk` | warning | Formats | `{ type }`. `PNTS` or `MATS` did not end on a record boundary |
+| mod | `lodCountRange` | warning | Formats | `{ declared }`. `totalLODs` outside 1..5 |
+| mod | `lodCountMismatch` | warning | Formats | `{ declared, meshes }`. `MOD0` count differs from `totalLODs` |
+| mod | `faceCountMismatch` | warning | Formats | `{ declared, read, lod }` |
+| mod | `faceVertexCount` | warning | Formats | `{ count, min, max }`. A face whose corner count is not 3. Stored, not drawn |
+| mod | `vertexIndexOutOfRange` | warning | Formats | `{ count }` |
+| mod | `materialIndexOutOfRange` | warning | Formats | `{ count }` |
+| mod | `badStringOffset` | warning | Formats | `{ count }`. Name offset outside the string pool, or no NUL |
+| mod | `missingTextureName` | warning | Formats | `{ which }`. `diffuse` or `luminance` flag set and the resolved name is empty |
+| mod | `badNumber` | warning | Formats | `{ count }`. Non-finite floats are kept; the mesh builder writes 0 |
+| mod | `orphanChunk` | warning | Formats | `{ type }`. `VTXS` or `POLY` outside a `MOD0` |
+| mod | `modelPathRejected` | warning | Formats | The `.mod` path is not install-relative. The path is omitted |
+| mod | `textureNameRejected` | warning | Formats | `{ reason: 'texture-name' }`. The pool string is not a single basename. The name is omitted |
+| mod | `lodOutOfRange` | warning | Formats | `{ requested, lods }` |
 | mission | `badMapBounds` | error | Engine | axis not a whole number, or outside ±8,192 range units; `location.field` names the offending value (sim-core.md §2; merged PR #52) |
-| rules | `noSuchSystem` | (ruleResult reason) | Combat | example from Combat; full list to be added by Combat |
+| rules | `ok` | info | Combat | `ruleResult` applied. Not logged as a warning |
+| rules | `noSuchShip` | warning | Combat | Spawn id is not a live ship |
+| rules | `shipDestroyed` | warning | Combat | The ship is already destroyed |
+| rules | `notAShip` | warning | Combat | Fighter. Duel commands accept ship and pf |
+| rules | `negativeValue` | warning | Combat | A numeric input is negative |
+| rules | `badFacing` | warning | Combat | Shield index outside 0..5 |
+| rules | `unknownDraw` | warning | Combat | Allocation names a draw this slice does not recognise |
+| rules | `unknownWeaponSlot` | warning | Combat | `slotIndex` is not a mount |
+| rules | `notInDuelSlice` | warning | Combat | Weapon or mode is outside the Phase 2 duel |
+| rules | `notCharged` | warning | Combat | Mount has not finished charging or arming |
+| rules | `noFireControl` | warning | Combat | Fire control was not paid |
+| rules | `outOfArc` | warning | Combat | Target bearing is outside the mount arc |
+| rules | `outOfRange` | warning | Combat | Target is beyond the weapon's last range |
+| rules | `weaponDestroyed` | warning | Combat | Mount has no boxes left |
+| rules | `turnModeUnverified` | warning | Combat | Turn letter has no playtest rate |
+| rules | `crewDisabled` | warning | Combat | Crew is below the minimum |
+| rules | `overDraw` | warning | Combat | Generation plus battery could not pay the plan |
+| rules | `speedClamped` | warning | Combat | Speed was reduced to the acceleration limit |
+| rules | `immobile` | warning | Combat | Hull cannot move; ordered speed became 0 |
+| rules | `shieldAboveMax` | warning | Combat | `setShields` was clamped to the facing maximum |
+| rules | `shieldDepleted` | warning | Combat | `damageShield` stopped at zero on that facing |
+| rules | `chargeCapped` | warning | Combat | Weapon request was cut to what the mount can store |
+| rules | `reinforceCapped` | warning | Combat | Reinforcement was cut by the per-turn cap or shield room |
 
 The loader emits `unknownWeapon` and `unknownArc` with `source: "loader"` (not the format parser). One problem has one code; there are no separate `...Code` variants.
 
@@ -85,5 +131,7 @@ Codes shared by shiplist and ftrlist: `emptyFile`, `raggedRow`, `noHeader`, `mul
 Shiplist-specific: `duplicateClassKey`, `duplicateClassName`, `crewTotalMismatch`, `shieldTotalMismatch`, `hardpointCountRange`, `missingGeometry`, `missingRefitBase`, `unknownHullType`, `unknownTurnMode`.
 
 Ftrlist-specific: `duplicateFighterType`, `missingShipRef`.
+
+Mod-specific (spec in `docs/formats/mod.md`): `emptyFile`, `fileTooLarge`, `badSignature`, `truncated`, `missingHeader`, `badCount`, `unknownChunk`, `duplicateChunk`, `raggedChunk`, `lodCountRange`, `lodCountMismatch`, `faceCountMismatch`, `faceVertexCount`, `vertexIndexOutOfRange`, `materialIndexOutOfRange`, `badStringOffset`, `missingTextureName`, `badNumber`, `orphanChunk`, `modelPathRejected`, `textureNameRejected`, `lodOutOfRange`. Layout fields the public reader stores but does not interpret stay in the data and are not given a code.
 
 `unknownWeapon` and `unknownArc` are **not** parser codes. Format parsers keep the exact file strings. They currently append the vocabulary check onto the same result, still with `source: "loader"`, because `engine/data` is not in the repo yet. The loader remains the owner of those codes.

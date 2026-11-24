@@ -1,0 +1,217 @@
+/**
+ * Bind a parsed shiplist row into duel-slice ship state.
+ * The parser keeps file units. Scale factors from docs/rules are applied here:
+ * each shield cell ×2 after the six-facing fan-out, warp side ×2, warp centre ×1.
+ * Move cost is parsed from the raw cell into hundredths. No float conversion.
+ */
+import type { ShiplistRow } from '../../tools/formats/shiplist.ts';
+import {
+  CLASS_FIGHTER,
+  CLASS_PF,
+  CLASS_SHIP,
+  ENERGY_SCALE,
+  MODE_NORMAL,
+  turnModeId,
+  weaponId,
+} from './rules-tables.ts';
+
+export interface MountSetup {
+  slotIndex: number;
+  weapon: string;
+  arc: string | null;
+  chargePoints: number;
+  boxes: number;
+  mode: number;
+  ticksCharging: number;
+}
+
+export interface ShipSetup {
+  classCode: number;
+  warp: number;
+  impulse: number;
+  apr: number;
+  battery: number;
+  batteryCapacity: number;
+  moveCost100: number;
+  turnMode: number;
+  /** -1 when the file left acceleration empty: the hull does not move. */
+  acceleration: number;
+  speed: number;
+  shields: readonly number[];
+  shieldsMax: readonly number[];
+  crew: number;
+  minCrew: number;
+  fcPaid: number;
+  destroyed: number;
+  disabled: number;
+  mounts: readonly MountSetup[];
+}
+
+function normHeader(raw: string): string {
+  let out = '';
+  let prevSpace = false;
+  for (let i = 0; i < raw.length; i++) {
+    let c = raw.charCodeAt(i);
+    if (c >= 65 && c <= 90) c += 32;
+    if (c === 32 || c === 9) {
+      if (!prevSpace && out.length > 0) out += ' ';
+      prevSpace = true;
+      continue;
+    }
+    prevSpace = false;
+    out += String.fromCharCode(c);
+  }
+  while (out.length > 0 && out.charCodeAt(out.length - 1) === 95) out = out.slice(0, -1);
+  return out;
+}
+
+function upperAscii(text: string): string {
+  let out = '';
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i);
+    out += String.fromCharCode(c >= 97 && c <= 122 ? c - 32 : c);
+  }
+  return out;
+}
+
+function cell(columns: readonly string[], raw: readonly string[], aliases: readonly string[]): string | undefined {
+  for (let i = 0; i < columns.length; i++) {
+    const name = normHeader(columns[i] ?? '');
+    for (const alias of aliases) {
+      if (name === alias) return raw[i] ?? '';
+    }
+  }
+  return undefined;
+}
+
+/** Whole file integer. Empty is 0. A fraction or other text is rejected. */
+export function parseWhole(text: string): number | null {
+  const s = text.trim();
+  if (s.length === 0) return 0;
+  let i = 0;
+  let sign = 1;
+  const head = s.charCodeAt(0);
+  if (head === 45) {
+    sign = -1;
+    i = 1;
+  } else if (head === 43) i = 1;
+  if (i >= s.length) return null;
+  let value = 0;
+  for (; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    if (c < 48 || c > 57) return null;
+    value = value * 10 + (c - 48);
+  }
+  return sign < 0 ? -value : value;
+}
+
+/**
+ * File decimal with at most two digits after the point, as hundredths.
+ * "0.75" is 75, "1" is 100, "0.4" is 40. Empty is 0.
+ */
+export function parseHundredths(text: string): number | null {
+  const s = text.trim();
+  if (s.length === 0) return 0;
+  let i = 0;
+  let sign = 1;
+  const head = s.charCodeAt(0);
+  if (head === 45) {
+    sign = -1;
+    i = 1;
+  } else if (head === 43) i = 1;
+  let whole = 0;
+  let sawDigit = false;
+  for (; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    if (c === 46) {
+      i += 1;
+      break;
+    }
+    if (c < 48 || c > 57) return null;
+    sawDigit = true;
+    whole = whole * 10 + (c - 48);
+  }
+  let frac = 0;
+  let digits = 0;
+  for (; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    if (c < 48 || c > 57) return null;
+    digits += 1;
+    if (digits > 2) return null;
+    frac = frac * 10 + (c - 48);
+  }
+  if (!sawDigit && digits === 0) return null;
+  if (digits === 1) frac *= 10;
+  const hundredths = whole * ENERGY_SCALE + frac;
+  return sign < 0 ? -hundredths : hundredths;
+}
+
+function wholeCell(columns: readonly string[], raw: readonly string[], aliases: readonly string[], fallback: number): number {
+  const text = cell(columns, raw, aliases);
+  if (text === undefined) return fallback;
+  const parsed = parseWhole(text);
+  if (parsed === null) throw new Error(`bad integer cell ${aliases[0] ?? ''}`);
+  return parsed;
+}
+
+export function bindShiplistRow(row: ShiplistRow, columns: readonly string[]): ShipSetup {
+  const raw = row.raw;
+  const front = wholeCell(columns, raw, ['shield 1', 'shield front', 'front shield'], 0);
+  const forward = wholeCell(columns, raw, ['shield 2', 'shield forward side', 'forward side'], 0);
+  const aft = wholeCell(columns, raw, ['shield 3', 'shield aft side', 'aft side'], 0);
+  const rear = wholeCell(columns, raw, ['shield 4', 'shield rear', 'rear shield'], 0);
+  const shieldsMax = [front * 2, forward * 2, aft * 2, rear * 2, aft * 2, forward * 2];
+  const warpSide = wholeCell(columns, raw, ['warp side', 'side warp'], 0);
+  const warpCenter = wholeCell(columns, raw, ['warp center', 'warp centre'], 0);
+  const moveText = cell(columns, raw, ['move cost']);
+  const moveCost100 = parseHundredths(moveText ?? '');
+  if (moveCost100 === null) throw new Error('bad move cost');
+  const accelText = cell(columns, raw, ['acceleration']);
+  let acceleration = -1;
+  if (accelText !== undefined && accelText.trim() !== '') {
+    const parsed = parseWhole(accelText);
+    if (parsed === null) throw new Error('bad acceleration');
+    acceleration = parsed;
+  }
+  const turnText = (cell(columns, raw, ['turn mode']) ?? '').trim();
+  const hull = upperAscii((cell(columns, raw, ['hull type', 'hulltype', 'hull']) ?? '').trim());
+  let classCode = CLASS_SHIP;
+  if (hull === 'FTR') classCode = CLASS_FIGHTER;
+  else if (hull === 'PF') classCode = CLASS_PF;
+  const mounts: MountSetup[] = [];
+  for (const hardpoint of row.hardpoints) {
+    if (hardpoint.weapon == null || hardpoint.weapon === '') continue;
+    if (weaponId(hardpoint.weapon) === 0) continue;
+    const count = hardpoint.count != null && hardpoint.count > 0 ? hardpoint.count : 1;
+    mounts.push({
+      slotIndex: hardpoint.slotIndex,
+      weapon: hardpoint.weapon,
+      arc: hardpoint.arc,
+      chargePoints: 0,
+      boxes: count,
+      mode: MODE_NORMAL,
+      ticksCharging: 0,
+    });
+  }
+  const battery = wholeCell(columns, raw, ['battery'], 0);
+  return {
+    classCode,
+    warp: warpSide * 2 + warpCenter,
+    impulse: wholeCell(columns, raw, ['impulse'], 0),
+    apr: wholeCell(columns, raw, ['apr'], 0),
+    battery,
+    batteryCapacity: battery,
+    moveCost100,
+    turnMode: turnText === '' ? turnModeId('H') : turnModeId(turnText),
+    acceleration,
+    speed: 0,
+    shields: shieldsMax.slice(),
+    shieldsMax,
+    crew: wholeCell(columns, raw, ['crew'], 0),
+    minCrew: wholeCell(columns, raw, ['min crew'], 0),
+    fcPaid: 0,
+    destroyed: 0,
+    disabled: 0,
+    mounts,
+  };
+}

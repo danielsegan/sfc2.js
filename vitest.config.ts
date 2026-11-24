@@ -7,6 +7,8 @@ export default defineConfig({
       'tools/formats/src/**/*.test.ts',
       'engine/platform/src/**/*.test.ts',
       'engine/render/src/**/*.test.ts',
+      'engine/**/*.test.ts',
+      'tests/**/*.test.ts',
     ],
   },
 });

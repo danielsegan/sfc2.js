@@ -92,7 +92,7 @@ What the renderer needs from the importer for ships, bases and terrain (Phase 1 
 | Filtering | 3D: trilinear + anisotropic (HD) / bilinear (Period). HUD sprites: always nearest-neighbour at whole-number scale on the 2D overlay canvas (agreed with Engine Lead). |
 | Non-power-of-two | Allowed (WebGL2), but the importer reports them. |
 | Damage meshes | `_brk` meshes and their materials share the parent's texture set unless the data says otherwise. |
-| Hardpoints | Weapon mount positions and facings exported with the model so weapon VFX originate correctly. |
+| Hardpoints | Named points from the `.mod`: a position and a string-pool name. The file stores no facing. Whether a name is a weapon mount is unverified ([docs/formats/mod.md](../formats/mod.md)). |
 | Compression | Optional runtime transcode to GPU formats is a later optimisation. Caches stay local. |
 
 ## 5. Fallback art (original, in-repo)
