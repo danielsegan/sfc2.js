@@ -1,0 +1,104 @@
+# Private CE 2.670 behaviour capture (clean-room observation harness).
+#
+# Runs the original game under Wine + Xvfb on the sfc2-ci self-hosted runner,
+# drives a repeatable skirmish with xdotool, and measures on-screen behaviour
+# (own-ship turn timing by speed, HUD energy panel numbers) from screenshots.
+# See tools/ce-harness/README.md.
+#
+# workflow_dispatch only: never on push, pull_request or schedule.
+# The uploaded artifact holds measured numbers only (results.json/results.csv).
+# Screenshots, frames, the Wine prefix and the game working copy never leave
+# the runner and are deleted at the end of the job.
+name: Private CE harness capture
+
+on:
+  workflow_dispatch:
+    inputs:
+      scenario:
+        description: "Own ship: fed (F-CA) or klingon (K-D7); opponent is one LOW-BPV Klingon frigate"
+        type: choice
+        options: [fed, klingon]
+        default: fed
+      speeds:
+        description: "Space-separated target speeds for the port-turn runs"
+        type: string
+        default: "5 10 15 20"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: private-ce-harness
+  cancel-in-progress: false
+
+env:
+  SFC2_REFERENCE: /srv/sfc2/reference/2.670
+
+jobs:
+  capture:
+    name: Capture ${{ inputs.scenario }} turns
+    runs-on: [self-hosted, sfc2-ci, private-data]
+    timeout-minutes: 60
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate inputs
+        env:
+          SPEEDS: ${{ inputs.speeds }}
+        run: |
+          set -euo pipefail
+          [[ "$SPEEDS" =~ ^[0-9]+([[:space:]][0-9]+)*$ ]] || { echo "speeds must be integers separated by spaces"; exit 1; }
+
+      - name: Build harness image (no game data in the image)
+        run: docker build -t sfc2-ce-harness:ci tools/ce-harness/docker
+
+      - name: Prepare private working copy (runner-local)
+        run: tools/ce-harness/prepare_workcopy.sh "$SFC2_REFERENCE" "$RUNNER_TEMP/ce-game"
+
+      - name: Run scenario (observation only)
+        env:
+          CE_GAME_DIR: ${{ runner.temp }}/ce-game
+          CE_OUT_DIR: ${{ runner.temp }}/ce-out
+          CE_PREFIX: ${{ runner.temp }}/ce-prefix
+          CE_IMAGE: sfc2-ce-harness:ci
+          CE_CONTAINER: ce-harness-${{ github.run_id }}
+          SCENARIO: ${{ inputs.scenario }}
+          SPEEDS: ${{ inputs.speeds }}
+        run: |
+          set -euo pipefail
+          export CE_DOCKER_USER="$(id -u):$(id -g)"
+          # shellcheck disable=SC2086
+          tools/ce-harness/run_scenario.sh "$SCENARIO" "$SCENARIO" $SPEEDS 2>&1 | grep -v '^selector:' || true
+          ls "$CE_OUT_DIR/runs" >/dev/null
+
+      - name: Summarize to metadata-only JSON/CSV
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/ce-results"
+          python3 tools/ce-harness/summarize.py "$RUNNER_TEMP/ce-out/runs" "$RUNNER_TEMP/ce-results/results" "${{ inputs.scenario }}-*"
+
+      - name: Guard artifact contents
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/ce-results"
+          for f in *; do
+            case "$f" in results.json|results.csv) ;; *) echo "unexpected file in artifact dir: $f"; exit 1 ;; esac
+            [[ $(stat -c %s "$f") -lt 262144 ]] || { echo "$f is unexpectedly large"; exit 1; }
+          done
+
+      - name: Upload measured numbers
+        uses: actions/upload-artifact@v4
+        with:
+          name: ce-harness-${{ inputs.scenario }}-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/ce-results/results.json
+            ${{ runner.temp }}/ce-results/results.csv
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Clean up runner-local game copy, frames and prefix
+        if: always()
+        run: |
+          docker rm -f "ce-harness-${{ github.run_id }}" >/dev/null 2>&1 || true
+          rm -rf "$RUNNER_TEMP/ce-game" "$RUNNER_TEMP/ce-out" "$RUNNER_TEMP/ce-prefix" "$RUNNER_TEMP/ce-results"
