@@ -5,7 +5,7 @@ import json, os, sys, statistics
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from heading2 import track
 from analyze_turn import clock
-from turn_tags import apply_noop, turn_kind
+from turn_tags import apply_noop, sane_clock_ratio, turn_kind
 for label in sys.argv[1:]:
     cap = json.load(open(f"/out/frames/{label}/capture.json")); a0 = cap["action_wall"]
     fr = cap["frames"]; tr = track([p for _, p in fr])
@@ -32,7 +32,7 @@ for label in sys.argv[1:]:
         c = clock(path)
         if c is not None:
             cl.append((t - a0, c))
-    gr = (cl[-1][1] - cl[0][1]) / (cl[-1][0] - cl[0][0]) if len(cl) > 3 and cl[-1][0] > cl[0][0] else None
+    gr = sane_clock_ratio((cl[-1][1] - cl[0][1]) / (cl[-1][0] - cl[0][0]) if len(cl) > 3 and cl[-1][0] > cl[0][0] else None)
     res = {"label": label, "button": cap["button"], "kind": turn_kind(cap["button"]), "target_speed": cap["target_speed"],
            "settled_speed": cap["speed_history"][-1] if cap["speed_history"] else None,
            "frames": len(fr), "frames_tracked": len(raw), "match_score_median": round(statistics.median(scores), 3) if scores else None,

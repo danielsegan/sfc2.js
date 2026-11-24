@@ -66,3 +66,19 @@ def apply_noop(res):
         for k in RATE_FIELDS:
             res[k] = None
     return res
+
+def sane_clock_ratio(gr, lo=0.5, hi=1.5):
+    """Return gr if it is a plausible game/wall clock ratio, else None.
+
+    Klingon clock OCR is often unusable and can yield ratios like 0.07 or 6.2,
+    which must not be used to invent a game-clock turn rate.
+    """
+    if gr is None:
+        return None
+    try:
+        g = float(gr)
+    except (TypeError, ValueError):
+        return None
+    if lo <= g <= hi:
+        return g
+    return None

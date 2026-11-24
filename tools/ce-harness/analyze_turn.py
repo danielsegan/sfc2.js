@@ -4,7 +4,7 @@ Usage: analyze_turn.py <label> ...  -> /out/runs/<label>.json"""
 import json, os, subprocess, sys, statistics
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from heading import axis
-from turn_tags import apply_noop, turn_kind
+from turn_tags import apply_noop, sane_clock_ratio, turn_kind
 def sh(*a): return subprocess.run(a, capture_output=True, text=True).stdout
 def ocr(img, crop, wl):
     subprocess.run(["convert", img, "-crop", crop, "+repage", "-resize", "400%", "-separate", "-evaluate-sequence", "max", "-negate", "/tmp/ocr2.png"])
@@ -85,7 +85,7 @@ if __name__ == "__main__":
             den = sum((t - mt) ** 2 for t, _ in post)
             fit = sum((t - mt) * (v - mv) for t, v in post) / den if den else None
         cl = [(r["t"], r["clock"]) for r in rows if r["clock"] is not None]
-        gr = (cl[-1][1] - cl[0][1]) / (cl[-1][0] - cl[0][0]) if len(cl) > 3 and cl[-1][0] > cl[0][0] else None
+        gr = sane_clock_ratio((cl[-1][1] - cl[0][1]) / (cl[-1][0] - cl[0][0]) if len(cl) > 3 and cl[-1][0] > cl[0][0] else None)
         spd = [r["speed"] for r in rows if r["speed"] is not None]
         res = {"label": label, "energy_panel": energy(f"/out/frames/{label}/energy.png"), "button": cap["button"], "kind": turn_kind(cap["button"]), "target_speed": cap["target_speed"],
                "settled_speed": cap["speed_history"][-1] if cap["speed_history"] else None,

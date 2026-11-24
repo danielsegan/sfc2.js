@@ -20,12 +20,14 @@ SKINS = {
         "title_crop": "300x40+220+210",
     },
     "klingon": {
-        # DONE at (801,598) was 18 px below the hex (box y 569-593). Class next
-        # at (520,517) sat in empty space left of the right chevron at ~628,516.
+        # DONE at (801,598) was 18 px below the hex (box y 569-593).
+        # Class next at (628,516) hit the decorative frame cap, not the
+        # chevron; the live click that advances HC -> Dreadnought -> Frigate
+        # is the filled arrow at (560, 522). Class prev stays on the left arrow.
         "ship_prev": (396, 478),
         "ship_next": (445, 482),
         "class_prev": (300, 522),
-        "class_next": (628, 516),
+        "class_next": (560, 522),
         "done": (799, 580),
         "stats_side": "right",
         "stats_crop": "180x430+650+155",
