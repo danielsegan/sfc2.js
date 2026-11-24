@@ -7,6 +7,19 @@ settings:
 importers:
 
   .:
+    dependencies:
+      '@sfc2js/formats':
+        specifier: workspace:*
+        version: link:tools/formats
+      '@sfc2js/platform':
+        specifier: workspace:*
+        version: link:engine/platform
+      '@sfc2js/render':
+        specifier: workspace:*
+        version: link:engine/render
+      three:
+        specifier: ^0.181.0
+        version: 0.181.2
     devDependencies:
       '@eslint/js':
         specifier: ^9.16.0
@@ -17,6 +30,9 @@ importers:
       '@types/node':
         specifier: ^22.19.1
         version: 22.20.5
+      '@types/three':
+        specifier: ^0.181.0
+        version: 0.181.0
       eslint:
         specifier: ^9.16.0
         version: 9.39.5

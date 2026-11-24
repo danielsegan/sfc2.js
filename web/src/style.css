@@ -1,0 +1,143 @@
+:root {
+  --panel-bg: #0b1118;
+  --panel-edge: #3a4a5c;
+  --text: #d8e2ec;
+  --text-dim: #8a9aab;
+  --state-normal: #5fd3a0;
+  --state-charging: #4fa3e0;
+  --state-warning: #f2b33d;
+  --state-damage: #e5484d;
+  --state-disabled: #55606b;
+  --state-friendly: #5fb7ff;
+  --state-hostile: #ff6b5e;
+  --focus: #ffffff;
+  --accent: #4f8fd6;
+  --space: #070b10;
+  color: var(--text);
+  background: var(--space);
+  font-family: "Saira Semi Condensed", "Segoe UI", sans-serif;
+  font-size: 14px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(circle at 50% 30%, #122033 0%, var(--space) 58%);
+}
+
+button, input, select {
+  font: inherit;
+  color: var(--text);
+  background: #101820;
+  border: 1px solid var(--panel-edge);
+  border-radius: 0;
+}
+
+button, select, input[type="number"] { padding: 4px 8px; }
+button { cursor: pointer; }
+button:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.num { font-family: ui-monospace, "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+
+.top {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--panel-edge);
+  background: rgba(11, 17, 24, 0.92);
+}
+
+.brand { display: flex; gap: 8px; align-items: center; }
+.wordmark { margin: 0; letter-spacing: 0.08em; font-size: 16px; }
+.sub, .source { margin: 0; color: var(--text-dim); font-size: 12px; }
+.source { flex: 1; }
+.top-actions { display: flex; gap: 8px; align-items: center; }
+.file { font-size: 12px; color: var(--text-dim); }
+
+#stage { position: relative; flex: 1; min-height: 280px; }
+#space, #overlay { position: absolute; inset: 0; width: 100%; height: 100%; }
+#overlay { pointer-events: none; }
+
+.plate {
+  background: rgba(11, 17, 24, 0.85);
+  border: 1px solid var(--panel-edge);
+  border-top: 2px solid var(--accent);
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  padding: 8px;
+}
+
+.plate h2 {
+  margin: 0 0 6px;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  font-weight: 600;
+}
+
+.float { position: absolute; z-index: 2; width: 220px; }
+.target { top: 12px; left: 12px; }
+.alerts { top: 12px; left: 244px; width: 280px; }
+.log-wrap { left: 12px; bottom: 36px; width: 320px; max-height: 160px; }
+#log { margin: 0; padding-left: 0; list-style: none; max-height: 110px; overflow: auto; font-size: 12px; }
+#alert { min-height: 1.2em; margin: 0; }
+.keys {
+  position: absolute;
+  right: 12px;
+  bottom: 8px;
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 12px;
+  z-index: 2;
+}
+
+#console {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr 1.25fr 0.75fr;
+  gap: 8px;
+  padding: 8px;
+}
+
+.read { display: flex; justify-content: space-between; gap: 8px; margin: 2px 0; }
+.check, .step { display: flex; justify-content: space-between; gap: 8px; margin: 4px 0; font-size: 13px; }
+.step input { width: 72px; }
+.reason { min-height: 1.2em; color: var(--state-warning); font-size: 12px; }
+.name { margin: 0 0 4px; }
+
+.weapon {
+  display: grid;
+  grid-template-columns: 24px 1fr auto;
+  gap: 6px;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  margin-bottom: 4px;
+  padding: 4px;
+}
+.weapon.selected { outline: 2px solid var(--focus); outline-offset: 1px; }
+.weapon .copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.weapon .bar { height: 6px; background: #1a2633; }
+.weapon .bar > span { display: block; height: 100%; background: var(--state-charging); }
+.weapon.ready .bar > span { background: var(--state-normal); }
+.weapon .meta { color: var(--text-dim); font-size: 11px; }
+
+#shields { display: block; margin: 0 auto; width: 160px; height: 160px; }
+#shield-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+#shield-table td { padding: 1px 4px; }
+
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.sr-table { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+@media (max-width: 900px) {
+  #console { grid-template-columns: 1fr 1fr; }
+  .alerts { display: none; }
+}
