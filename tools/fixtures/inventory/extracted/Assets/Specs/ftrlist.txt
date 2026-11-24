@@ -1,0 +1,4 @@
+	SYNTHETIC FIXTURE ONLY. Keep the first column blank to write a comment. Do not treat this line as a header.						
+Race	Type	Ship Class	Year First	Year Last	Speed	Damage	Geometry
+Hydran	TEST-FTR-01	TEST-FTR-01	3	999	17	9	assets/models/test_ftr01/test_ftr01.mod
+Klingon	TEST-PF-02	TEST-PF-02	20	999	26	21	assets/models/test_pf02/test_pf02.mod

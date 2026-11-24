@@ -18,6 +18,22 @@ tools/fixtures/formats/ftrlist/edges.txt
 tools/fixtures/formats/sounds/minimal.txt
 tools/fixtures/formats/sounds/edges.txt
 
+# Hand-made inventory fixtures for tools/inventory tests (#6). Text and
+# extensionless tables only; no original assets and no forbidden extensions.
+tools/fixtures/inventory/srv-readme.md
+tools/fixtures/inventory/reference/.keep
+tools/fixtures/inventory/extracted/manifest.json
+tools/fixtures/inventory/extracted/Assets/Campaign/Conquest/readme.txt
+tools/fixtures/inventory/extracted/Assets/Sounds/sounds.txt
+tools/fixtures/inventory/extracted/Assets/Specs/WeaponGroups/DISRUPT
+tools/fixtures/inventory/extracted/Assets/Specs/WeaponGroups/PHASER
+tools/fixtures/inventory/extracted/Assets/Specs/ftrlist.txt
+tools/fixtures/inventory/extracted/Assets/Specs/shiplist.txt
+tools/fixtures/inventory/extracted/Assets/Strings/shipnames.txt
+tools/fixtures/inventory/extracted/Assets/Strings/strings.txt
+tools/fixtures/inventory/extracted/MetaAssets/ftrlist.txt
+tools/fixtures/inventory/extracted/MetaAssets/shiplist.txt
+
 # Synthetic Phase 2 rules cases (docs/rules). Invented test-* ships only.
 docs/rules/tests/add-rack.json
 docs/rules/tests/heavy-slot-phaser.json
