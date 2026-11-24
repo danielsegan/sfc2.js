@@ -53,7 +53,6 @@
     { "code": "badRaid", "status": "rejected", "logSeverity": "warning", "summary": "The raid mode is not hit-and-run or boarding." },
     { "code": "raidRepulsed", "status": "rejected", "logSeverity": "warning", "summary": "The hit-and-run dice lost. No party was spent." },
     { "code": "boardingRepulsed", "status": "rejected", "logSeverity": "warning", "summary": "The boarding dice lost. The committed parties stay spent." },
-    { "code": "hetTooFast", "status": "rejected", "logSeverity": "warning", "summary": "Provisional: High-Energy Turn requested above the hull's HET speed cutoff." },
     { "code": "hetActive", "status": "rejected", "logSeverity": "warning", "summary": "Provisional: a High-Energy Turn is already pending or executing, so steering or another HET is rejected." }
   ]
 }

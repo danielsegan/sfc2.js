@@ -24,7 +24,7 @@ Uncertain, and marked pending playtest in the spec:
 - Shiplist weapon codes, arc codes, and header detection. Still pending #6. The ship section of the mapping table is synthetic `TEST-*` codes only.
 - Whether ftrlist `Shots` is a loaded magazine or a reload stock, and whether `ADD_6` does anything on a fighter.
 
-[phase3-systems.md](phase3-systems.md) now resolves electronic warfare, overload arming cost, tractors, and cloaks with synthetic numbers. Those numbers are **not yet verified** against the original. [het.md](het.md) specifies High-Energy Turns with provisional numbers that are **not yet verified** against CE 2.670 (delay, turn sweep/rate, speed cutoff, energy cost, and breakdown). Still unspecified as resolution rules: seeking weapons, plasma, hellbores, and HET breakdown rolls.
+[phase3-systems.md](phase3-systems.md) now resolves electronic warfare, overload arming cost, tractors, and cloaks with synthetic numbers. Those numbers are **not yet verified** against the original. [het.md](het.md) specifies High-Energy Turns with CE 2.670 measurements (171-tick / 5.7 s delay, no speed cutoff — works at speeds 15, 20, and 31, F-CA ≈90° at 43–51°/s, K-D7 ≈82–84°) and remaining **TO VERIFY** items (K-D7 and other hulls' rates, per-speed curve variation, energy cost, and breakdown). Still unspecified as resolution rules: seeking weapons, plasma, hellbores, and HET breakdown rolls.
 
 ## How we verify
 
