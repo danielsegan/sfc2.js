@@ -17,7 +17,10 @@ export const RACE_TOKENS = [
   "Mirak",
 ] as const;
 
-/** S1 hull tokens named in docs/formats/shiplist.md §4.1. SFC2 DD/BC/PF stay unknown until observed. */
+/**
+ * S1 hull tokens plus the extra CE 2.670 tokens from the sfc2-ci inventory
+ * (names only). DD, BC and PF were not in that vocabulary.
+ */
 export const HULL_TOKENS = [
   "FF",
   "CL",
@@ -36,6 +39,14 @@ export const HULL_TOKENS = [
   "Asteroid",
   "Star",
   "UNKNOWN",
+  "BOX",
+  "MAM",
+  "MDM",
+  "MLC",
+  "MMT",
+  "MSG",
+  "MSS",
+  "SB",
 ] as const;
 
 /** Playable hulls that must name a geometry (V12). */
@@ -90,6 +101,12 @@ export const SHIP_STRING_ALIASES: Record<string, string> = {
   ui: "uiKey",
   "ui key": "uiKey",
   uikey: "uiKey",
+  "class type": "classType",
+  "full name": "displayName",
+  "fighter type 1": "fighterType0",
+  "fighter type 2": "fighterType1",
+  "fighter type 3": "fighterType2",
+  "fighter type 4": "fighterType3",
 };
 
 export const SHIP_NUMBER_ALIASES: Record<string, string> = {
@@ -111,10 +128,13 @@ export const SHIP_NUMBER_ALIASES: Record<string, string> = {
   movecost: "moveCost",
   "het chance": "hetChance",
   hetchance: "hetChance",
+  "het +2 turns & nimble": "hetChance",
   "het breakdown": "hetBreakdown",
   hetbreakdown: "hetBreakdown",
   stealth: "stealth",
+  "stealth (+ecm)": "stealth",
   crew: "crew",
+  "regular crew": "crew",
   "boarding parties base": "boardingPartiesBase",
   boardingpartiesbase: "boardingPartiesBase",
   "boarding parties": "boardingPartiesBase",
@@ -129,9 +149,11 @@ export const SHIP_NUMBER_ALIASES: Record<string, string> = {
   "shield front": "shieldFront",
   "front shield": "shieldFront",
   "shield 2": "shieldForwardSide",
+  "shield 2 _ 6": "shieldForwardSide",
   "shield forward side": "shieldForwardSide",
   "forward side": "shieldForwardSide",
   "shield 3": "shieldAftSide",
+  "shield 3 _ 5": "shieldAftSide",
   "shield aft side": "shieldAftSide",
   "aft side": "shieldAftSide",
   "shield 4": "shieldRear",
@@ -146,11 +168,15 @@ export const SHIP_NUMBER_ALIASES: Record<string, string> = {
   probes: "probes",
   "transporter bombs base": "tBombsBase",
   "t-bombs base": "tBombsBase",
+  "t bombs base": "tBombsBase",
   "tbombs base": "tBombsBase",
   "transporter bombs max": "tBombsMax",
   "t-bombs max": "tBombsMax",
+  "t bombs max": "tBombsMax",
   "nuclear mines base": "nuclearMinesBase",
+  "nuclear mine base": "nuclearMinesBase",
   "nuclear mines max": "nuclearMinesMax",
+  "nuclear mine max": "nuclearMinesMax",
   "drone control": "droneControl",
   "drone rack b": "droneControl",
   add6: "add6",
@@ -160,9 +186,12 @@ export const SHIP_NUMBER_ALIASES: Record<string, string> = {
   "add 12": "add12",
   add_12: "add12",
   "shuttle bay capacity": "shuttleBayCapacity",
+  "shuttles size": "shuttleBayCapacity",
   "launch rate": "launchRate",
   "admin shuttles base": "adminShuttlesBase",
+  "general base": "adminShuttlesBase",
   "admin shuttles max": "adminShuttlesMax",
+  "general max": "adminShuttlesMax",
   "suicide shuttles base": "suicideShuttlesBase",
   "suicide shuttles max": "suicideShuttlesMax",
   "scatter packs base": "scatterPacksBase",
@@ -176,16 +205,22 @@ export const SHIP_NUMBER_ALIASES: Record<string, string> = {
   "fighter bay 4": "fighterBay3",
   armor: "armor",
   "hull forward": "hullForward",
+  "forward hull": "hullForward",
   "hull center": "hullCenter",
   "hull centre": "hullCenter",
+  "center hull": "hullCenter",
+  "centre hull": "hullCenter",
   "hull aft": "hullAft",
+  "aft hull": "hullAft",
   cargo: "cargo",
   barracks: "barracks",
   repair: "repair",
   "warp side": "warpSide",
   "side warp": "warpSide",
+  r_l_warp: "warpSide",
   "warp center": "warpCenter",
   "warp centre": "warpCenter",
+  c_warp: "warpCenter",
   impulse: "impulse",
   apr: "apr",
   battery: "battery",
@@ -204,7 +239,10 @@ export const SHIP_NUMBER_ALIASES: Record<string, string> = {
   "damage control": "damageControl",
   "extra damage": "extraDamage",
   cost: "cost",
+  "ship cost": "cost",
   "refit cost": "refitCost",
+  "sfb year first available": "sfbYearFirstAvailable",
+  "sfb year last available": "sfbYearLastAvailable",
 };
 
 /** CE 2.670 ftrlist headers from docs/rules/shiplist-mapping.md §5, plus the minimal fixture's labels. */

@@ -7,8 +7,9 @@
 #
 # Dispatch this workflow with --ref formats/inventory-ce2670 (or another
 # branch that contains tools/inventory). A dispatch against main stops
-# cleanly after checkout if those tools are not present, and does not
-# read the private data trees.
+# the inventory jobs cleanly after checkout if those tools are not present.
+# The parse-shiplist-ftrlist job needs this repo's TypeScript parsers and
+# Node 22. It writes counts, header names, and hashes only.
 #
 # This workflow never commits (and never writes to main). It prints a
 # metadata-only summary to the job log (paths, sizes, hashes, counts,
@@ -136,5 +137,49 @@ jobs:
           path: |
             docs/formats/inventory/shiplist-ftrlist-ce-2.670.json
             docs/formats/inventory/shiplist-ftrlist-ce-2.670.md
+          if-no-files-found: error
+          retention-days: 7
+
+  parse-shiplist-ftrlist:
+    name: Parse shiplist and ftrlist (metadata only)
+    runs-on: [self-hosted, sfc2-ci, private-data]
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Require the TypeScript parsers on this ref
+        run: |
+          set -euo pipefail
+          if [[ ! -f tools/formats/verify-ce-metadata.ts ]]; then
+            echo "tools/formats/verify-ce-metadata.ts is not on this ref."
+            exit 1
+          fi
+          command -v node
+          node --version
+
+      - name: Confirm private data is present (paths only)
+        run: |
+          set -euo pipefail
+          if [[ -d "$SFC2_EXTRACTED" ]]; then
+            echo "present: $SFC2_EXTRACTED"
+          else
+            echo "missing: $SFC2_EXTRACTED"
+            exit 1
+          fi
+
+      - name: Parse spec tables and write counts only
+        run: |
+          set -euo pipefail
+          mkdir -p docs/formats/inventory
+          node --experimental-strip-types tools/formats/verify-ce-metadata.ts \
+            --extracted "$SFC2_EXTRACTED" \
+            --output docs/formats/inventory/parser-ce-2.670.json
+
+      - name: Upload parser metadata
+        uses: actions/upload-artifact@v4
+        with:
+          name: ce-2.670-parser-metadata
+          path: docs/formats/inventory/parser-ce-2.670.json
           if-no-files-found: error
           retention-days: 7
