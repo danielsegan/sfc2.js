@@ -6,7 +6,7 @@ The column map is [docs/formats/shiplist-field-map.md](../../docs/formats/shipli
 
 ## What it writes
 
-Given `SFC2_INSTALL`, it parses `Assets/Specs/shiplist.txt` (MetaAssets is used only to set `copiesDiffer`) and runs each row through `bindShiplistRow`.
+Given `SFC2_INSTALL`, it parses `Assets/Specs/shiplist.txt` and, when `MetaAssets/shiplist.txt` is also present, compares the two copies. `copiesDiffer` is 1 when those tables are not the same file. The following lines are counts only: row counts, column counts, spawn keys that exist in only one copy (`copies.onlyInOne`), shared keys whose cells differ (`copies.rowsDiffer`), header cells that differ (`copies.headerNamesDiffer`), and column indexes that differ on a shared key (`copies.columnsDiffer`). `copies.note` says which pair was compared. A single file, or a run with `--shiplist`, prints `copies.note not compared (one file)`.
 
 For each hull it records shields per facing (engine and measured 1:1), turn letter and yaw, spawn speed and cruise speed, power (warp, impulse, APR, battery, capacity, generation), weapons and arcs, and hull, armor, and crew. Cruise speed is the whole generation spent on movement.
 
@@ -18,11 +18,20 @@ Checks:
 | `powerSum` | Plants are whole and non-negative, warp = 2×R_L_Warp + C_Warp, and battery capacity equals the battery cell |
 | `weaponCount` | Each filled hardpoint is a known code whose Num matches the mount boxes. `W1`–`W25` are not mounts |
 
-`--harness` reads a `tools/ce-harness` `results-*.json` file (`summarize.py`: `source`, `method`, `heading_convention`, `runs[]`). `energy_panel.power` is compared to `power.generation`. `mean_rate_deg_per_game_s_10_90` is compared to `turn.degPerGameSecond` (default tolerance 1 degree per game second). A run may also set `spawnKey` and `fields` using the derived names (`shields.0` … `shields.5` are the engine facings, `shieldsMeasured.0` … are the 1:1 readings). Null measurements are skips.
+`--harness` reads a `tools/ce-harness` `results-*.json` file (`summarize.py`: `source`, `method`, `heading_convention`, `runs[]`). `energy_panel.power` is compared to `power.generation`. A run may also set `spawnKey` and `fields` (`shields.0` … `shields.5` are the engine facings, `shieldsMeasured.0` … are the 1:1 readings). Null measurements are skips.
+
+Turn captures are two different measurements, keyed by `target_speed` (or `settled_speed` when the target is absent). Set `turn` to `normal` or `het` (`turnKind` and `kind` are accepted too):
+
+| Kind | Fields |
+| --- | --- |
+| `normal` | `turn.normal.<speed>.degPerSecond` from `mean_rate_deg_per_game_s_10_90`, and `turn.normal.<speed>.delayS` from `order_delay_s` |
+| `het` | `turn.het.<speed>.deg` from `total_turn_deg`, `turn.het.<speed>.degPerSecond`, and `turn.het.<speed>.delayS` |
+
+A normal rate is not a High-Energy Turn, and a HET snap is not the hull's yaw cap. The engine has no speed-keyed curve for either, so a tagged sample is a skip unless that run's `expect` object gives a number for the same field. Tolerances on the run or `--turn-tolerance` (default 1) apply to `turn.*` fields. A sample that has a rate, a delay, or a swept angle and no `normal` or `het` kind is legacy: `harness.turnUntagged` counts it and the audit does not fail the run for it. A tagged sample with no speed is `harness.turnNoSpeed`, also a skip.
 
 Stdout is counts only: pass, fail, and skip per check and per harness field, plus column-status totals. Per-hull JSON and CSV go to `--out` (default `out/ship-audit`, gitignored). Do not commit, upload, or paste that directory. Only the printed summary may leave `sfc2-ci`.
 
-Exit 0 when every check passes and every harness run matches. Exit 1 when a check fails or a harness run does not match. Exit 2 when the install or the JSON cannot be read. The shield ×2 divergence does not by itself fail the run.
+Exit 0 when every check passes and every scored harness field matches. Exit 1 when a check fails, a harness field fails, or a run does not match a hull. Exit 2 when the install or the JSON cannot be read. The shield ×2 count, an untagged turn, and a tagged turn with no speed do not by themselves fail the run. `copiesDiffer` does not either.
 
 ## Wintermute on sfc2-ci
 
@@ -45,6 +54,8 @@ SFC2_INSTALL=/srv/sfc2/reference/2.670 pnpm ship-audit \
 ```
 
 A run label such as `ca-5` uses the map key `ca` (the text before the trailing speed). `spawnKey` on a run overrides the map. Vessel Library facings belong in `fields["shieldsMeasured.N"]`. Engine facings, still doubled, belong in `fields["shields.N"]`.
+
+Helm-button captures are High-Energy Turns. Mouse-heading captures are normal turns. Put `"turn": "het"` or `"turn": "normal"` on each run. A `results-*.json` from the current `summarize.py`, which has no kind field, counts as `harness.turnUntagged` and is not scored against yaw.
 
 Copy the stdout summary into the job log if you need a record. Leave `~/harness/out/ship-audit/hulls.json` and `hulls.csv` on the VM.
 

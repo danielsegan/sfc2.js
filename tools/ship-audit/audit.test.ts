@@ -7,9 +7,9 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import measured from "../../docs/rules/data/measured.json" with { type: "json" };
-import { CE_HEADERS, FIELD_COLUMNS, columnCounts, renderFieldMap } from "./columns.ts";
+import { CE_HEADERS, FIELD_COLUMNS, columnCounts, isKnownHeader, renderFieldMap } from "./columns.ts";
 import { auditText, readInstallShiplist } from "./run.ts";
-import { formatSummary } from "./summary.ts";
+import { formatSummary, summaryFailed } from "./summary.ts";
 import { yawToDegPerGameSecond } from "./derive.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -110,7 +110,8 @@ test("synthetic rows exercise shield, power, and weapon checks", () => {
   assert.equal(summary.harness?.unmatched, 1);
   assert.equal(summary.harness?.fields["power.generation"]?.pass, 1);
   assert.equal(summary.harness?.fields["power.generation"]?.fail, 1);
-  assert.equal(summary.harness?.fields["turn.degPerGameSecond"]?.fail, 1);
+  assert.equal(summary.harness?.turnUntagged, 2);
+  assert.equal(summary.harness?.fields["turn.degPerGameSecond"], undefined);
   assert.equal(summary.harness?.fields["shieldsMeasured.0"]?.fail, 1);
   assert.equal(summary.harness?.fields["shields.0"]?.pass, 1);
 
@@ -118,6 +119,7 @@ test("synthetic rows exercise shield, power, and weapon checks", () => {
   assert.doesNotMatch(printed, /TEST-|Federation|Phot/);
   assert.match(printed, /checks\.shieldTotal pass 3 fail 1 skip 0/);
   assert.match(printed, /harness\.fields\.power\.generation pass 1 fail 1 skip 0/);
+  assert.match(printed, /harness\.turnUntagged 2/);
 });
 
 test("a bad move cost fails the bind without dropping the shield identity", () => {
@@ -131,6 +133,118 @@ test("a bad move cost fails the bind without dropping the shield identity", () =
   assert.equal(hulls[0]?.checks.shieldTotal.status, "pass");
   assert.equal(hulls[0]?.checks.powerSum.status, "fail");
   assert.equal(hulls[0]?.checks.weaponCount.status, "fail");
+});
+
+test("Stealth (+ECM) spellings are mapped and an unknown header is not", () => {
+  assert.equal(isKnownHeader("Stealth (+ECM)"), true);
+  assert.equal(isKnownHeader("Stealth (+ECM)_"), true);
+  assert.equal(isKnownHeader("stealth  (+ecm)"), true);
+  const text = ["Race\tClass\tStealth (+ECM)_\tMystery Column", "Federation\tTEST-ST-01\t-2\t1"].join("\n");
+  const { summary } = auditText(text);
+  assert.deepEqual(summary.unmappedNames, ["Mystery Column"]);
+  assert.equal(summary.unmappedColumns, 1);
+  const stealth = FIELD_COLUMNS.find((column) => column.column === "Stealth (+ECM)");
+  assert.equal(stealth?.status, "assumed");
+  assert.equal(stealth?.ignored, false);
+  assert.equal(stealth?.parserField, "stealth");
+});
+
+test("normal and HET turns are separate metrics and untagged rows are skipped", () => {
+  const text = [
+    "Race\tHull Type\tClass\tTurn mode\tMove Cost\tAcceleration\tShield 1\tShield 2 _ 6\tShield 3 _ 5\tShield 4\tShield Total\tR_L_Warp\tC_Warp\tImpulse\tApr\tBattery",
+    "Federation\tCA\tTEST-CA-01\tC\t1\t3\t10\t8\t6\t4\t42\t5\t3\t4\t2\t6",
+  ].join("\n");
+  const harness = {
+    source: "synthetic",
+    method: "test",
+    heading_convention: "degrees, negative = port",
+    runs: [
+      {
+        label: "test-normal-8",
+        spawnKey: "Federation:TEST-CA-01",
+        turn: "normal",
+        target_speed: 8,
+        mean_rate_deg_per_game_s_10_90: 5.7,
+        order_delay_s: 0.75,
+        expect: { "turn.normal.8.degPerSecond": 5.75, "turn.normal.8.delayS": 0.75 },
+        tolerances: { "turn.normal.8.degPerSecond": 0.25, "turn.normal.8.delayS": 0.15 },
+      },
+      {
+        label: "test-normal-slow",
+        spawnKey: "Federation:TEST-CA-01",
+        turn: "normal",
+        target_speed: 8,
+        mean_rate_deg_per_game_s_10_90: 5.5,
+        order_delay_s: 0.6,
+        expect: { "turn.normal.8.degPerSecond": 5.75, "turn.normal.8.delayS": 0.75 },
+        tolerances: { "turn.normal.8.degPerSecond": 0.25, "turn.normal.8.delayS": 0.15 },
+      },
+      {
+        label: "test-normal-fast",
+        spawnKey: "Federation:TEST-CA-01",
+        turn: "normal",
+        target_speed: 8,
+        mean_rate_deg_per_game_s_10_90: 6,
+        order_delay_s: 0.9,
+        expect: { "turn.normal.8.degPerSecond": 5.75, "turn.normal.8.delayS": 0.75 },
+        tolerances: { "turn.normal.8.degPerSecond": 0.25, "turn.normal.8.delayS": 0.15 },
+      },
+      {
+        label: "test-het-5",
+        spawnKey: "Federation:TEST-CA-01",
+        turn: "het",
+        target_speed: 5,
+        total_turn_deg: -94,
+        mean_rate_deg_per_game_s_10_90: 51,
+        order_delay_s: 5.5,
+        expect: { "turn.het.5.deg": -94, "turn.het.5.degPerSecond": 51, "turn.het.5.delayS": 5.5 },
+        tolerances: { "turn.het.5.deg": 5, "turn.het.5.degPerSecond": 5, "turn.het.5.delayS": 0.5 },
+      },
+      {
+        label: "test-het-off",
+        spawnKey: "Federation:TEST-CA-01",
+        turnKind: "het",
+        target_speed: 5,
+        total_turn_deg: -40,
+        mean_rate_deg_per_game_s_10_90: 10,
+        order_delay_s: 1,
+        expect: { "turn.het.5.deg": -94, "turn.het.5.degPerSecond": 51, "turn.het.5.delayS": 5.5 },
+        tolerances: { "turn.het.5.deg": 5, "turn.het.5.degPerSecond": 5, "turn.het.5.delayS": 0.5 },
+      },
+      {
+        label: "test-legacy",
+        spawnKey: "Federation:TEST-CA-01",
+        target_speed: 5,
+        total_turn_deg: -94,
+        mean_rate_deg_per_game_s_10_90: 51,
+        order_delay_s: 5.5,
+      },
+      {
+        label: "test-normal-nospeed",
+        spawnKey: "Federation:TEST-CA-01",
+        kind: "normal",
+        mean_rate_deg_per_game_s_10_90: 5.7,
+      },
+    ],
+  };
+  const { summary } = auditText(text, { harness, tolerance: 0, turnTolerance: 1 });
+  assert.equal(summary.checks.shieldTotal.fail, 0);
+  assert.equal(summary.harness?.turnUntagged, 1);
+  assert.equal(summary.harness?.turnNoSpeed, 1);
+  assert.equal(summary.harness?.unmatched, 0);
+  assert.equal(summary.harness?.fields["turn.normal.8.degPerSecond"]?.pass, 3);
+  assert.equal(summary.harness?.fields["turn.normal.8.degPerSecond"]?.fail, 0);
+  assert.equal(summary.harness?.fields["turn.normal.8.delayS"]?.pass, 3);
+  assert.equal(summary.harness?.fields["turn.het.5.deg"]?.pass, 1);
+  assert.equal(summary.harness?.fields["turn.het.5.deg"]?.fail, 1);
+  assert.equal(summary.harness?.fields["turn.het.5.degPerSecond"]?.fail, 1);
+  assert.equal(summary.harness?.fields["turn.degPerGameSecond"], undefined);
+  assert.equal(summaryFailed(summary), true);
+  const printed = formatSummary(summary);
+  assert.doesNotMatch(printed, /TEST-|Federation|-94|5\.7/);
+  assert.match(printed, /harness\.turnUntagged 1/);
+  assert.match(printed, /harness\.fields\.turn\.normal\.8\.degPerSecond pass 3 fail 0 skip 0/);
+  assert.match(printed, /harness\.fields\.turn\.het\.5\.degPerSecond pass 1 fail 1 skip 0/);
 });
 
 test("a label prefix map correlates a harness run", () => {
@@ -179,7 +293,10 @@ test("install lookup prefers Assets/Specs and reports differing copies as a coun
   fs.writeFileSync(path.join(specs, "shiplist.txt"), body);
   fs.writeFileSync(path.join(meta, "shiplist.txt"), Buffer.from("other\n"));
   const loaded = await readInstallShiplist(dir);
-  assert.equal(loaded.copiesDiffer, 1);
+  assert.equal(loaded.copies.differ, 1);
+  assert.equal(loaded.copies.assetsRows, 4);
+  assert.equal(loaded.copies.metaRows, 0);
+  assert.match(loaded.copies.note, /assets\/specs and metaassets shiplist.txt differ/);
   assert.match(Buffer.from(loaded.bytes).toString("utf8"), /TEST-CA-01/);
   const out = fs.mkdtempSync(path.join(os.tmpdir(), "ship-audit-out-"));
   const cli = path.join(root, "tools/ship-audit/cli.ts");
@@ -191,6 +308,11 @@ test("install lookup prefers Assets/Specs and reports differing copies as a coun
   assert.equal(ran.status, 1, ran.stderr);
   assert.doesNotMatch(ran.stdout, new RegExp(dir.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   assert.match(ran.stdout, /copiesDiffer 1/);
+  assert.match(ran.stdout, /copies\.note assets\/specs and metaassets shiplist.txt differ/);
+  assert.match(ran.stdout, /copies\.assetsRows 4/);
+  assert.match(ran.stdout, /copies\.metaRows 0/);
+  assert.match(ran.stdout, /copies\.onlyInOne /);
+  assert.doesNotMatch(ran.stdout, /TEST-|other/);
   fs.rmSync(dir, { recursive: true, force: true });
   fs.rmSync(out, { recursive: true, force: true });
 });

@@ -5,7 +5,7 @@
  * Per-hull JSON and CSV go to --out (default out/ship-audit), which is gitignored.
  */
 import { readFile } from "node:fs/promises";
-import { readInstallShiplist, runAudit } from "./run.ts";
+import { readInstallShiplist, runAudit, type CopyReport } from "./run.ts";
 
 interface Args {
   install?: string;
@@ -89,7 +89,7 @@ async function main(): Promise<number> {
     return 0;
   }
   let text: string | Uint8Array;
-  let copiesDiffer = 0;
+  let copies: CopyReport | undefined;
   if (args.shiplist) {
     try {
       text = await readFile(args.shiplist);
@@ -101,7 +101,7 @@ async function main(): Promise<number> {
     if (!install) throw new Error("set SFC2_INSTALL or pass --install or --shiplist");
     const loaded = await readInstallShiplist(install);
     text = loaded.bytes;
-    copiesDiffer = loaded.copiesDiffer;
+    copies = loaded.copies;
   }
   const harness = args.harness ? await readJson(args.harness) : undefined;
   const hullMapRaw = args.hullMap ? await readJson(args.hullMap) : undefined;
@@ -119,7 +119,7 @@ async function main(): Promise<number> {
   const result = await runAudit({
     text,
     outDir: args.out,
-    copiesDiffer,
+    copies,
     harness,
     hullMap,
     tolerance: args.tolerance,
