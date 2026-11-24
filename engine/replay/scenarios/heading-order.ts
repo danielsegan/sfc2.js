@@ -3,7 +3,7 @@ import type { ShipSetup } from '../../sim/bind-shiplist.ts';
 import { VERB_SPAWN, createCombat, spawnPayload } from '../../sim/combat.ts';
 import { CLASS_SHIP, TURN_TEST_C } from '../../sim/rules-tables.ts';
 import { createSim } from '../../sim/sim.ts';
-import { VERB_ORDER_HELM, helmHandler, helmPayload } from '../../duel/helm.ts';
+import { VERB_ORDER_HELM, helmHandler, helmPayload } from '../../sim/helm.ts';
 import {
   HEADING_ORDER_TABLE,
   VERB_ORDER_HEADING,
@@ -14,7 +14,6 @@ import {
 import type { CorpusScript, Scenario } from './types.ts';
 
 const SCENARIO_PATH = 'engine/replay/scenarios/heading-order.ts';
-const HELM_PATH = 'engine/duel/helm.ts';
 
 /** First spawn in a fresh world: generation 1, index 0. */
 const SHIP = 65536;
@@ -46,11 +45,12 @@ function setup(): ShipSetup {
  * Two ships. A heading order turns at the TEST-C cap, a yaw replaces
  * that order, then a later heading order replaces the yaw. The stored
  * heading is fixed; the second ship is not tracked.
- * The per-tick yaw lives in engine/sim/heading.ts, which is in simSourceHash.
+ * The yaw handler is engine/sim/helm.ts and the per-tick steer is
+ * engine/sim/heading.ts. Both are in simSourceHash.
  */
 export const headingOrder: Scenario = {
   id: 'heading-order',
-  sourcePaths: [SCENARIO_PATH, HELM_PATH],
+  sourcePaths: [SCENARIO_PATH],
   create(seed: number) {
     const combat = createCombat([setup(), setup()], { rulesTurnTicks: 30 });
     return createSim({

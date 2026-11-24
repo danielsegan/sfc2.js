@@ -45,6 +45,18 @@ type HudEvent =
 
 EW, tractor, and cloak readouts now follow [docs/rules/phase3-systems.md](../rules/phase3-systems.md). The duel `SelfView` carries `ecm`, `eccm`, `stealth`, `cloakState`, `cloakTicks`, `cloakFitted`, `tractorMode`, `tractorPaid`, `tractorLink`, and `netShift`. A contact carries `cloaked` and `detected`. Transporters, boarding, and craft stay on the hud-spec proposals.
 
+`SelfView.helm` is the sim's `HelmView` (`engine/sim/helm.ts`), copied from the current tick and not blended. It is the turn readout, separate from the larger speed-and-heading sketch in hud-spec.md §7.
+
+```ts
+interface HelmView {
+  mode: 'none' | 'heading' | 'het'; // het is reserved; no system produces it yet
+  remainingTurn16: number;          // signed short-way BAM; 65536 is a full turn
+  hetDelayTicks: number;            // 0 until a high-energy turn exists
+}
+```
+
+There is no tracked-target field. `heading` means an ordered heading (steering or holding). A current heading of 0 and an ordered heading of 50000 leaves `remainingTurn16` at −15536. The half-turn tie is −32768, the same rule as `shortestArc` in `engine/sim/heading.ts`.
+
 ## 4. Self-illumination maps
 
 The three.js renderer samples `_i` self-illumination (glow) maps **by UV**. A glow map may differ in size from its base texture; never assume equal dimensions. One `_i` map is 4-bit; expand palettes to 8-bit at load. The loader that does this is [docs/formats/bmp.md](../formats/bmp.md).

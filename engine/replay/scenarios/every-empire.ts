@@ -9,8 +9,8 @@ import {
   allegiancePayload,
 } from '../../sim/allegiance.ts';
 import { createCaptain } from '../../sim/captain.ts';
-import { CRUISE_TABLE, createCruise } from '../../duel/cruise.ts';
-import { helmHandler } from '../../duel/helm.ts';
+import { CRUISE_TABLE, createCruise } from '../../sim/cruise.ts';
+import { helmHandler } from '../../sim/helm.ts';
 import {
   BAY_FIGHTER,
   BAY_PF,

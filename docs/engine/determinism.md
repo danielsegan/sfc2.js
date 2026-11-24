@@ -190,6 +190,8 @@ Off-by-one at a range boundary, with precomputed `r²` for `r_raw = 3` (3/65,536
 | V3 MUST | The reference game build is **Community Edition 2.670** ([#37](https://github.com/danielsegan/sfc2.js/issues/37); Daniel). It affects only `dataHash` and the real-data hash runs, never this contract. | `dataHash` is recorded in every private real-data run log |
 | V4 MUST | Re-baselining golden hashes requires a `determinism-change` label, an explanation in the PR, and review by the Netcode QA Lead and the Engine Lead. | CODEOWNERS on golden files |
 
+A file that defines a `SimSystem`, a `CommandHandler`, or a `TableSpec` lives under `engine/sim` or `engine/core`. Those trees are what `simSourceHash` covers, tests excluded. A definition in `engine/duel`, `engine/view`, `engine/driver`, `engine/net`, or `web` would let two peers disagree on match behavior while still reporting the same `versionHash`. `tools/check-sim-home.mjs` fails the lint when one appears outside those trees. Synthetic scripts under `engine/replay/scenarios` are the exception: they are not the lockstep sim, and `scenarioHash` stamps them (replay.md).
+
 ## 9. Verification plan (exit criterion for #21)
 
 #21 is done when all of the following pass on `main`:

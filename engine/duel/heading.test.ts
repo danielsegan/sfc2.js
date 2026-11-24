@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { angle16, shortestArc } from '../core/angle.ts';
 import { readU32 } from '../core/bytes.ts';
 import { TURN_H, TURN_TEST_C, turnYawCap } from '../sim/rules-tables.ts';
 import { syntheticSetups, SYNTHETIC_SPAWNS } from './fixture.ts';
@@ -113,6 +114,20 @@ describe('heading order', () => {
   it('uses the steer and hold markers', () => {
     expect(HEADING_STEER).not.toBe(HEADING_HOLD);
     expect(HEADING_ORDER).toBe('headingOrder');
+  });
+
+  it('fills the helm view from the tick the order was steered', () => {
+    const match = boot();
+    step(match);
+    expect(match.view().self?.helm).toEqual({ mode: 'none', remainingTurn16: 0, hetDelayTicks: 0 });
+    match.orderHeading(50000);
+    step(match);
+    const self = match.view().self;
+    if (!self) throw new Error('no self');
+    expect(self.helm.mode).toBe('heading');
+    expect(self.helm.hetDelayTicks).toBe(0);
+    expect(self.helm.remainingTurn16).toBe(shortestArc(angle16(self.heading16), angle16(50000)));
+    expect(self.helm.mode === 'het').toBe(false);
   });
 
   it('replaces the stored heading and does not follow a ship', () => {
