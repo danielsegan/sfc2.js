@@ -9,6 +9,16 @@ Browser application. Two pages, two Vite configs:
 
 The install picker is `@sfc2js/platform`: `preferredDirectoryPicker()` uses the File System Access API when the browser has it, and a `webkitdirectory` input otherwise. `importZipArchive` reads a zip the player supplies. `pickAndImport` indexes the result. Textures are loaded with `@sfc2js/render`'s `loadShipTexture`. Nothing is uploaded. See [docs/formats/bmp.md](../docs/formats/bmp.md).
 
+## Tests
+
+`pnpm test` runs every vitest suite. The empire skin hit-map test (`web/src/skins/hit-map.test.ts`) renders `web/index.html` in headless Chromium through Playwright, so install the browser once per machine first:
+
+```sh
+pnpm exec playwright install chromium
+```
+
+CI installs it in the Unit tests workflow.
+
 ## Pointing the dev server at an install
 
 `pnpm dev:web` and `pnpm dev:viewer` can read a folder without the picker. Set `SFC2_INSTALL` to an absolute path, or open the page with `?install=` set to that path. The dev server lists and reads the files in place under `/__dev/install/`. It does not copy them into the repo or into `web/dist`. The route is serve-only, so `pnpm build:web` does not embed an install.

@@ -6,6 +6,7 @@ import { loadInterfaceBitmap, type InterfaceBitmap } from '@sfc2js/render';
 import type { Vfs } from '@sfc2js/platform';
 import { skinForRace, type EmpireSkin } from './catalog.ts';
 import { resolvePlate, resolveReticle } from './resolve.ts';
+import { EMPIRE_MARKS, renderEmpireMark } from '../empire-marks.ts';
 
 let generation = 0;
 
@@ -35,7 +36,7 @@ export async function applyEmpireSkin(empireName: string, vfs: Vfs | null): Prom
   for (const [key, value] of Object.entries(vars)) root.style.setProperty(key, value);
   document.body.dataset.empire = skin.id;
   const mark = document.getElementById('empire-mark');
-  if (mark instanceof HTMLImageElement) mark.src = `./art/skins/${skin.id}/mark.svg`;
+  if (mark) mark.replaceChildren(renderEmpireMark(EMPIRE_MARKS[skin.id], 'empire-mark-svg'));
   const code = document.getElementById('empire-code');
   if (code) code.textContent = skin.glyphs.code;
   root.style.removeProperty('--reticle-image');

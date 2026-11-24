@@ -17,11 +17,3 @@ export function headingToward(fromX: number, fromY: number, toX: number, toY: nu
   return atan2_16(dy, dx) as number;
 }
 
-/** Compass click. dx is right of center. dyUp is above center. */
-export function compassHeading(dx: number, dyUp: number): number | null {
-  if (!Number.isFinite(dx) || !Number.isFinite(dyUp)) return null;
-  const x = Math.round(dx);
-  const y = Math.round(dyUp);
-  if (x === 0 && y === 0) return null;
-  return atan2_16(y, x) as number;
-}

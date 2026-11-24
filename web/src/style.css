@@ -1,6 +1,6 @@
 :root {
   --panel-bg: #0b1118;
-  --panel-edge: #3a4a5c;
+  --panel-edge: #627488;
   --text: #d8e2ec;
   --text-dim: #8a9aab;
   --state-normal: #5fd3a0;
@@ -123,7 +123,8 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   letter-spacing: 0.08em;
   color: var(--text-dim);
 }
-#empire-mark { width: 16px; height: 16px; }
+#empire-mark { display: inline-flex; width: 16px; height: 16px; color: var(--accent); }
+#empire-mark svg { width: 100%; height: 100%; }
 
 .plate {
   background-color: color-mix(in srgb, var(--panel-bg) var(--panel-alpha), transparent);

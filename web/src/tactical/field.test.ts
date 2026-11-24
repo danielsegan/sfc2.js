@@ -9,7 +9,6 @@ import {
   type ArcWeapon,
 } from './arcs.ts';
 import { reportedBeams, reportedFlashes } from './beams.ts';
-import { empireBadge } from './empire.ts';
 import {
   alertLamp,
   backingStore,
@@ -29,7 +28,10 @@ import { defaultOverheadDistance, gridLevel, gridSegments, latticeCoords, visibl
 import { avoidObstacles, formatRangeTag, markerHeading, offscreenPoint, pickContact, stackTags } from './tags.ts';
 import {
   FIELD_FOV,
+  FIELD_GRID,
+  GRID_MAJOR_ALPHA,
   GRID_MAJOR_FACTOR,
+  GRID_MINOR_ALPHA,
   GRID_MINOR_UNIT,
   MAJOR_CELLS_ACROSS,
   showsWedge,
@@ -64,10 +66,10 @@ describe('tactical field', () => {
     const wide = gridLevel(40);
     expect(wide.minorStep).toBe(1);
     expect(wide.majorStep).toBe(5);
-    expect(wide.minorAlpha).toBeCloseTo(0.25, 5);
+    expect(wide.minorAlpha).toBeCloseTo(GRID_MINOR_ALPHA, 5);
     const fading = gridLevel(14);
     expect(fading.minorStep).toBe(1);
-    expect(fading.minorAlpha).toBeLessThan(0.25);
+    expect(fading.minorAlpha).toBeLessThan(GRID_MINOR_ALPHA);
     expect(fading.minorAlpha).toBeGreaterThan(0);
     const promoted = gridLevel(10);
     expect(promoted.minorStep).toBe(5);
@@ -76,6 +78,17 @@ describe('tactical field', () => {
     const shifted = gridSegments(3.2, -2, 20, 20, 5, 0);
     expect(latticeCoords(parked, 0)).toEqual(latticeCoords(shifted, 0));
     for (const x of latticeCoords(parked, 0)) expect(Math.abs(x % 5)).toBeLessThan(1e-6);
+  });
+
+  it('meets the field-grid contrast targets on black (hud-layout.md §7.2, §7.6)', () => {
+    const channel = (c: number) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+    const onBlack = (alpha: number) => {
+      const rgb = [(FIELD_GRID >> 16) & 0xff, (FIELD_GRID >> 8) & 0xff, FIELD_GRID & 0xff].map((v) => channel((v / 255) * alpha));
+      const lum = 0.2126 * rgb[0]! + 0.7152 * rgb[1]! + 0.0722 * rgb[2]!;
+      return (lum + 0.05) / 0.05;
+    };
+    expect(onBlack(GRID_MAJOR_ALPHA)).toBeGreaterThanOrEqual(1.5);
+    expect(onBlack(GRID_MINOR_ALPHA)).toBeLessThan(onBlack(GRID_MAJOR_ALPHA));
   });
 
   it('draws wedges from the view arc and skips reload-counted racks', () => {
@@ -166,9 +179,6 @@ describe('tactical field', () => {
     expect(hudScaleFromLocation('?hudScale=1.2')).toBe(1.25);
     expect(hudScaleFromLocation('?hudScale=1.5')).toBe(1.5);
     expect(hudScaleFromLocation('?hudScale=4.4')).toBe(4);
-    expect(empireBadge('Klingon')).toMatchObject({ id: 'kli', code: 'KLI' });
-    expect(empireBadge('Federation').mark.length).toBeGreaterThan(0);
-    expect(empireBadge('unknown').code).toBe('NEU');
     expect(soonestCountdown([])).toBe('');
     expect(soonestCountdown([{ ticks: 90 }, { remaining: 30 }])).toBe('00:01');
     expect(speedScale(null).max).toBe(32);

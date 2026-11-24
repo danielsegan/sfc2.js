@@ -6,7 +6,7 @@ Bindings use `KeyboardEvent.code` (the physical key), so the same binding works 
 
 Held keys (turn) are sampled every frame. Speed up and speed down also accept key repeat. Everything else fires once per keydown.
 
-Mouse actions on the 3D view and the sensor map follow the original grammar. A plain left-click stores a fixed heading toward the clicked point, including when a ship is under the cursor. Alt+left-drag and middle-drag orbit and never steer. A right-click under 4 logical pixels targets. The gate grows with `--hud-scale`. Shield facing clicks still send reinforcement.
+Mouse actions on the 3D view and the sensor map follow the original grammar, and a left-click does send an order: a plain left-click sends `orderHeading` toward the clicked point, including when a hostile is under the cursor, and the order holds until the next click replaces it (no target-follow). Alt+left-drag and middle-drag orbit and never steer. Right-click never steers. A right-click under 4 logical pixels targets. The gate grows with `--hud-scale`. Shield facing clicks still send reinforcement.
 
 | Action | Default |
 | --- | --- |

@@ -10,8 +10,9 @@ export const FIELD_GRID_CSS = '#2A4C7A';
 export const GRID_MINOR_UNIT = 1;
 export const GRID_MAJOR_FACTOR = 5;
 
-export const GRID_MINOR_ALPHA = 0.25;
-export const GRID_MAJOR_ALPHA = 0.4;
+/** Minor lines are texture: about 1.26:1 on black. Majors meet the 1.5:1 field-grid target (hud-layout.md §7.2, §7.6). */
+export const GRID_MINOR_ALPHA = 0.4;
+export const GRID_MAJOR_ALPHA = 0.6;
 /** Logical px. Minors fade once they would be closer than this. */
 export const GRID_FADE_PX = 16;
 /** Fade completes across the next 25% of zoom-out. */

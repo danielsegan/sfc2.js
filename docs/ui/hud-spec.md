@@ -273,7 +273,7 @@ interface HelmView {
 }
 ```
 
-**Drawing.** Vertical speed tape with the ordered speed caret and a "max for current power" marker. The console helm panel is a 3×3 of arrow buttons plus Orbit and Go. The turn itself is a wedge in the 3D view from the current nose to the ordered heading, coloured by the angle still left.
+**Drawing.** Vertical speed tape with the ordered speed caret and a "max for current power" marker. The console helm panel is a 3×3 of HET arrow buttons plus Camera and Go, with no compass (`hud-layout.md` §5). The turn itself is a wedge in the 3D view from the current nose to the ordered heading, coloured by the angle still left.
 
 **Interactions.** `W/S` or `+/-` raises or lowers ordered speed; `A/D` turn left or right; `X` all stop; `R` reverse; left-click in the 3D view sets a fixed ordered heading; `E` erratic maneuvers if supported. All of these send `setSpeed` / `setHeading` / `helmToggle`. The arrow buttons stay disabled until the high-energy turn exists.
 

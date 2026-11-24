@@ -1,6 +1,6 @@
 # Tactical HUD layout: preserved arrangement, clean-up and empire skins
 
-Status: draft v0.1 (2026-11-24). Owner: UI & Art Director. Baseline: Community Edition (CE) 2.670.
+Status: draft v0.2 (2026-11-24, CE 2.670 capture findings recorded). Owner: UI & Art Director. Baseline: Community Edition (CE) 2.670.
 
 Why this exists: Daniel's playtest feedback was that the ship should be moved and turned with the mouse as in the original, that the original UI should be **cleaned up and preserved**, and that the main UI should **change with the selected empire**. This file sets the panel arrangement, the clean-up rules, the per-empire skin contract, the HUD side of mouse helm and the play-field overlays. It refines the "Layout overview" sketch in `hud-spec.md` and the regions in `style-guide.md` §1, which were drawn before this research.
 
@@ -9,20 +9,23 @@ Related files:
 - `hud-spec.md`: what each component reads from the `ViewModel` and which `Command`s it sends. Unchanged by this file.
 - `style-guide.md`: tokens, fonts, chrome and icons. §4.2 accent values are reused here.
 - `modern-ux.md`: HUD scale, safe area, ultrawide, accessibility settings.
+- `asset-pipeline.md`: sprite slots and the per-slot source fallback.
+- `keymap.md`: the modern default bindings.
+- `empire-skins.md`: how the skin layer is built. This file is the **spec** that the skin layer implements. Where the two disagree, raise it in review rather than silently diverging.
 
 **Decisions (Daniel, 2026-11-24):**
 
-- **D1 Mouse:** the original scheme is the default. Left-click in the 3D view or on the sensor map sets a persistent fixed heading toward the clicked point. A ship under the cursor is only that bearing. Right-click targets. Camera orbit must not use right-click (§5).
+- **D1 Mouse:** the original scheme is the default. Left-click in the 3D view or on the sensor map sends a persistent heading order toward the clicked point. A ship under the cursor is only that bearing; there is no target-follow. Right-click targets and never steers (§5).
 - **D2 Mini map:** an officer page only. It can't be pinned, in any mode including Wide (§3.2).
 - **D3 Scaling:** fractional UI scaling is allowed, 1.0–4.0× (§6).
-- `asset-pipeline.md`: sprite slots and the per-slot source fallback.
-- `keymap.md`: the modern default bindings.
-- `empire-skins.md` (being written in a separate PR alongside the mouse-helm and skin-layer code): how the skin layer is built. This file is the **spec** that the skin layer implements. Where the two disagree, raise it in review rather than silently diverging.
+- **Orbit (Engine Lead, 2026-11-24):** middle-drag and Alt+left-drag are equal options, both remappable. Neither starts on a plain left-press and neither ever steers (§5).
+
+**CE 2.670 capture (2026-11-24).** Daniel's capture of CE 2.670 confirmed the layout facts below. Findings that rest only on that capture are marked "per CE capture, 2026-11-24". The capture itself stays with Daniel; nothing from it is committed.
 
 Rules that apply throughout:
 
 - **Clean room.** The description of the original below is our own paraphrase of public manuals and community guides, cited by page or section. No screenshots, art or long text are reproduced. We never consult decompiled code.
-- **TO VERIFY** marks every claim about where something sits on the original screen. Our main source is the original 2000 release manual, so the CE 2.670 layout may differ. Each item stays TO VERIFY until it has been checked against CE 2.670 notes (Wintermute's per-empire HUD reference notes; the screenshots themselves stay with Daniel).
+- **TO VERIFY** marks every claim about where something sits on the original screen that the CE capture has not settled. Our main source is the original 2000 release manual, so the CE 2.670 layout may differ. Each item stays TO VERIFY until it has been checked against CE 2.670 notes (Wintermute's per-empire HUD reference notes; the screenshots themselves stay with Daniel).
 - **HUD reads, never writes.** The HUD reads the per-frame read-only `ViewModel` and sends `Command`s to the input queue (`hud-spec.md` §0). Nothing in this file defines sim behaviour. Turn rates, acceleration and what a heading order does belong to Combat (`docs/rules`) and Engine (`docs/engine`).
 
 ---
@@ -64,9 +67,9 @@ Four sections (M2 p. 108):
    - The **energy allocation panel** is the Energy Management page: sliders for movement, weapons, shields, tractors, sensors, other, plus excess energy and battery (M2 pp. 144–146).
    - The **message log** is the Communication page: four filter toggles at the top (engineering, mission, science, fleet), newest message at the bottom, scrollable, with reply buttons below (M2 p. 131).
    - The **tactical map / sensor view** is the Tactical Map page, a mini map with your ship as a dot in the centre, a heading tick and zoom buttons (M2 p. 138). Contacts are colour-coded per race (G2). In the original it is **one officer page among eleven, not a permanently visible radar**.
-   - The **helm** page holds the special movement commands: emergency deceleration, erratic maneuvers and the high-energy turn buttons, including a free-angle HET set by clicking in the 3D view. Ordinary turns are made in the 3D view and ordinary speed on the lower speed bar (M2 pp. 117–119).
+   - The **helm** page holds the special movement commands: emergency deceleration, erratic maneuvers and the high-energy turn buttons, including a free-angle HET set by clicking in the 3D view. Ordinary turns are made in the 3D view and ordinary speed on the lower speed bar (M2 pp. 117–119). The helm panel is a 3×3 grid of arrow buttons plus Camera and Go, with no compass; the arrows are the HET buttons (per CE capture, 2026-11-24).
    - Placement: G1 places the MFD with the energy panel at the **top left** of the screen, and M2 p. 169 says the shuttle conversion panel appears in the **upper portion of the screen along with the officer panels**. Officer MFD in the upper left: **TO VERIFY**.
-2. **Ship schematic.** Your ship's schematic, with the **six shield indicators around it**, a highlight on the arc facing your target, and the **weapon hardpoint icons on top of the schematic**. Each icon shows weapon type, sub-type and a dot per weapon at the hardpoint, plus charge bars. Clicking icons selects weapons (M2 pp. 150–152). This is the **shield display**, the **weapon status** and the visible half of the **ship systems display**.
+2. **Ship schematic.** Your ship's schematic, with the **six shield indicators around it** (in battle a six-segment ring, per CE capture, 2026-11-24), a highlight on the arc facing your target, and the **weapon hardpoint icons on top of the schematic**. Each icon shows weapon type, sub-type and a dot per weapon at the hardpoint, plus charge bars. Clicking icons selects weapons (M2 pp. 150–152). This is the **shield display**, the **weapon status** and the visible half of the **ship systems display**.
 3. **System MFD.** Opened from **six system buttons on the left side of the schematic**: Shields, Electronic Warfare, Transporters, Tractors, Shuttles, Shuttle Conversion (M2 p. 150). The Shields page has raise, lower and normal, a reinforcement slider, reinforce and reinforce-all, and the six arcs to select (M2 pp. 153–155).
 4. **Target schematic.** The target's schematic and the status of its weapons, at a detail level that depends on range and scan (M2 pp. 111–112).
 
@@ -75,7 +78,7 @@ Four sections (M2 p. 108):
 ### 2.4 3D space view
 
 - **Turn by left-clicking** where you want to head (M2 pp. 109–110). CE 2.670 playtest: the click stores a fixed heading toward that point. A ship under the cursor supplies the bearing only. The ship keeps turning the short way at its table turn rate until it arrives or a later click replaces the heading.
-- While turning, an **arc is drawn between the current and the desired heading** (M2 p. 110). CE 2.670 playtest: the colour bands follow the angle still left, orange for a smaller turn and dark red from about 150°. They are not remaining-time bands.
+- While turning, an **arc is drawn between the current and the desired heading** (M2 p. 110). The wedge is orange, runs from the nose to the bearing and shrinks as the turn closes; it turns dark red for big turns. Colour goes by the angle still left, not by time, and is the same for every empire (per CE capture, 2026-11-24). The dark-red threshold is about 150° of remaining angle as implemented.
 - **Right-click** a unit or its tag to target it. A reticle appears on the target and the target schematic updates (M2 p. 111).
 - Floating **unit tags** show class or name, range, speed and damage per volley, depending on the HUD information level set by three keys (M2 pp. 111–112).
 - Off-screen targets get an edge icon (Q1, SFC1; **TO VERIFY** in SFC2).
@@ -86,7 +89,7 @@ Four sections (M2 p. 108):
 | hud-spec component | Where the original puts it (all **TO VERIFY**) |
 | --- | --- |
 | 1 Energy allocation | Lower display power/systems bars (always) + Officer MFD Energy Management page |
-| 2 Shields | Ring around the ship schematic (always) + System MFD Shields page |
+| 2 Shields | Six-segment ring around the ship schematic in battle (always; per CE capture, 2026-11-24) + System MFD Shields page |
 | 3 Weapons | Hardpoint icons on the schematic (always) + Officer MFD Weapons page + fire button in the lower display |
 | 4 Target info | Unit tag in 3D view + target hull bar (upper) + target schematic |
 | 5 Damage / ship systems | Ship schematic + Officer MFD Repair page |
@@ -130,7 +133,7 @@ Our drawing, not a trace. Every position above is the working assumption from §
 2. **Officer MFD is paged.** One page at a time, chosen from the strip, in the original page order. The tactical map and message log are pages, as in the original.
 3. **The interface bar can be hidden** with one action (`hud.toggleInterfaceBar`, binding to be added to `keymap.md`). The upper and lower displays stay.
 4. **Shield arcs sit around the ship schematic** and hardpoint icons sit on it, with the facing-the-target highlight.
-5. **Mouse grammar in the 3D view:** left-click sets a fixed heading toward the clicked point, right-click targets (§5). A ship under the cursor is a bearing, not a tracked target.
+5. **Mouse grammar in the 3D view:** left-click sends a persistent heading order toward the clicked point, right-click targets (§5). A ship under the cursor is a bearing, not a tracked target.
 6. **The speed bar with a desired-speed marker**, and **power vs systems bars on one scale**.
 7. **Panel names and icons stay recognisable.** Labels use the original wording paraphrased only where needed (strings come from the player's install where available, `hud-spec.md` §12a).
 
@@ -200,25 +203,29 @@ interface EmpireSkin {
 }
 ```
 
+- **Same layout for all nine empires** (per CE capture, 2026-11-24). The capture shows one HUD layout for every race: the panel set, panel rectangles and reading order do not move. What changes per race is the plate shape and colour: Federation blue rounded panels, Klingon red hexagons, Romulan green and pink parallelograms. Our plates stay **original art** (§4.5); we follow only the fact that plate shape may differ, never the original shapes' drawing.
+- **Per-skin button tables.** Panel rectangles and reading order are fixed, but a skin may place the buttons inside its own panels from a per-skin button table (`web/src/skins/hit-map.ts` `SKIN_BUTTON_TABLES`). Today every skin uses one shared table. A table may move a button within its panel; it may not move, add or remove a panel, drop a button, or shrink a hit target below §4.3 item 2.
+- **Text and state colours never change with the skin.** Only the accent, plate and panel background do.
+- **Marks and codes** come from one shared original set, `web/src/empire-marks.ts`, used by both the console (`#empire-mark`) and the off-screen tags (§7.5). `interceptor` is an alias of `ori`; unknown tokens, including Monster, get `NEU`.
 - **Sounds hook:** ids only. The audio cue mapper (Audio & Netcode QA Lead, `style-guide.md` §7) resolves each id from the player's install, then neutral cues. The HUD never plays files directly.
 - **Fonts:** families stay as in `style-guide.md` §3 for readability. Skins change weight, case and tracking only.
 
 ### 4.3 Layout invariants (skins must not change)
 
-1. Panel rects, anchors, z-order and the reading order in §3.
+1. Panel rects, anchors, z-order and the reading order in §3. Buttons may sit differently inside a panel only through that skin's button table (§4.2).
 2. Hit-target sizes (24 × 24 units minimum, 32 × 32 in large-targets mode) and focus ring.
 3. Text sizes, numeric formats, tabular figures, and **all text colours** (`--text`, `--text-dim`).
 4. **State tokens** (`--state-*`, `style-guide.md` §4.1) and their shape cues. Accent colours never carry state and never re-tint a state.
 5. Icon meaning and silhouettes for weapons, systems and alerts (only the join treatment may vary).
 6. Tooltip content and placement rules, accessibility mirror and live regions.
 7. Frame art never draws outside its 9-slice insets into content, and never covers a number or bar.
-8. Switching skin causes no layout reflow: a test renders every skin at the same N and compares the hit map (rects and ids), which must be identical.
+8. Switching skin causes no panel reflow. A test (`web/src/skins/hit-map.test.ts`, headless Chromium) renders every skin with `body[data-empire]` set, checks that every panel rect and the panel reading order are identical across skins, and checks each skin's buttons against its own button table: skins that share a table must give identical button rects. Locked text, state, focus and `--panel-edge` tokens must be identical for every skin.
 
 ### 4.4 Resolution order (per slot, per skin)
 
 1. **Player's install bitmaps, at runtime.** Loaded from the player's own files via the importer once a `sprites.q3` reader exists (`asset-pipeline.md` §3a). Kept in browser storage, never uploaded, never committed, never in CI artefacts.
 2. **Original placeholder plates** in `web/art` (proposed path `web/art/skins/<id>/`), drawn by the project.
-3. **Neutral default**: the `style-guide.md` §2 chrome with `--panel-edge` in place of an accent.
+3. **Neutral default**: the `style-guide.md` §2 chrome with `--panel-edge` (`#627488`) in place of an accent.
 
 Fallback is per slot, so a partly read install still shows. The `?hudDebug=1` overlay (`asset-pipeline.md` §2) reports the source of every skin slot. An opt-in HD pack (`asset-pipeline.md` §1) may sit above step 1 only when the user turns it on.
 
@@ -241,13 +248,17 @@ Fallback is per slot, so a partly read install still shows. The `?hudDebug=1` ov
 | `ori` | Mismatched riveted panels, offset seams |
 | `neutral` | Style-guide chrome, no motif |
 
+The 16 × 16 empire marks follow the same motifs as strokes (`web/src/empire-marks.ts`); one set serves the console and the tags.
+
 ### 4.6 Review notes for the skin-layer PR
 
 1. Types and slot ids match §4.2; resolution order matches §4.4, per slot.
-2. Switching skin leaves the hit map identical (§4.3 item 8).
+2. Switching skin leaves panel rects and reading order identical, and each skin's buttons match its own button table (§4.3 item 8).
 3. Frames stay crisp at fractional scales 1.0–4.0× (D3): 9-slice and vector at exact scale, bitmap plates from the nearest larger 2× or 4× plate.
 4. No skin adds a pinned mini map or moves the Tactical Map page out of the officer MFD (D2).
-5. No original art committed; placeholders follow §4.5.
+5. No original art committed; placeholders follow §4.5. Plate shapes may differ by race (§4.2), but they are drawn by us.
+6. Marks come only from `web/src/empire-marks.ts`; no second mark set in the skin or tag code.
+7. Accents and `--panel-edge` meet 3:1 against every skin `panelBg` (§6).
 
 ---
 
@@ -255,29 +266,42 @@ Fallback is per slot, so a partly read install still shows. The `?hudDebug=1` ov
 
 The HUD draws these from the `ViewModel` and sends `Command`s; it does not compute or predict sim movement. Field names are proposals for Engine and Combat.
 
+**`HelmView` contract.** Every field below is filled by the sim; the UI never computes a bearing, a remaining turn or a delay:
+
+| Field | Meaning |
+| --- | --- |
+| helm mode | `none`, `heading` (a persistent heading order is active) or `het` (a High-Energy Turn is pending or running) |
+| remaining turn | signed Q16.16 angle from the current nose to the ordered bearing; sign is the turn direction |
+| HET delay | ticks left before a pending HET executes |
+
+There is **no tracked-target id**: a heading order never follows a ship. The only bearing the UI handles is the one it sends: a click is turned into one uint16 heading with the shared integer `atan2` (`web/src/helm-aim.ts`) and sent as `orderHeading`; from then on the wedge reads the sim's values only.
+
 | Affordance | Where in the preserved layout | Reads | Sends |
 | --- | --- | --- | --- |
-| **Heading cursor** | 3D view. A left-click stores a fixed heading toward the clicked point, including when a ship is under the cursor. Over any HUD panel the click does not steer. | `self` pose, contacts (blended, for the bearing only) | left-click: `setHeading` |
-| **Ordered heading wedge** | 3D view, from the current nose to the ordered bearing, drawn as soon as the click lands and shrinking as the ship turns | `self.heading16` and `HelmView.headingOrdered16` | — |
-| **Turn arc colour** | The same wedge. Orange while the remaining angle is under about 150°, dark red from there up. Neutral colours, not the empire accent. Not remaining time. | the angle between current and ordered heading | — |
+| **Heading cursor** | 3D view and sensor map. A left-click sends a persistent heading order toward the clicked point, including when a hostile is under the cursor. A new click replaces it. Over any HUD panel the click does not steer. | `self` pose (for the clicked bearing only) | left-click: `orderHeading` |
+| **Ordered heading wedge** | 3D view, orange, from the current nose to the ordered bearing, drawn as soon as the click lands and shrinking as the turn closes. Translucent fill plus a **full-opacity edge stroke** (both radii and the outer arc) in the same colour, so the dark-red band holds 3:1 on the black field | `self.heading16` and `HelmView` remaining turn | — |
+| **Turn arc colour** | The same wedge. Orange while the remaining angle is under about 150°, dark red from there up (about 150° as implemented, `LARGE_TURN_16` in `web/src/heading-wedge.ts`). Colour goes by remaining angle, not time, and is the same for every empire (per CE capture, 2026-11-24). | `HelmView` remaining turn | — |
 | **Turn-rate indicator** | Lower display, right of the speed bar: a small horizontal gauge of current turn rate vs the limit at this speed, with the turn mode as text | `HelmView.turnRateLimit16PerTick`, proposed `turnRateNow16PerTick`, turn mode | — |
 | **Speed control** | Lower display speed bar. Click or drag sets the desired-speed marker; wheel over the bar steps it; keys per `keymap.md`. A "max for power" tick shows on the bar. | `HelmView.speed`, `speedOrdered`, `speedMaxForPower` | `setSpeed` |
-| **Helm page** | Officer MFD Helm page: a 3×3 of arrow buttons, plus Orbit and Go. The arrows are disabled in this build. They become high-energy turn buttons in a later sim change. Orbit cycles the camera. Go stays disabled until that helm change. | `HelmView` toggles | `view.camera` now. HET command still **TO VERIFY** with Combat |
+| **Helm page** | Officer MFD Helm page: a 3×3 grid of arrow buttons plus **Camera** and **Go**, with no compass (per CE capture, 2026-11-24). The arrows are High-Energy Turn (HET) buttons and stay disabled until Combat's HET sim PR lands; so does Go. Camera cycles the camera. | `HelmView` helm mode and HET delay | `view.camera` now. HET command shape comes with Combat's HET PR |
+| **Shields** | Ship schematic: in battle a **six-segment ring**, one segment per facing, labelled with Combat's facing names, each showing that facing's own value. No doubled or summed total is shown (per CE capture, 2026-11-24). | `self.shields` | facing click: reinforce |
 
 Pointer rules:
 
 - **Hit testing order:** HUD canvas hit map → HTML tooltips/menus → 3D view. A click on a panel never reaches helm.
-- **Default mouse scheme (D1, Daniel 2026-11-24, CE 2.670 playtest):** the original's. Left-click in the 3D view or on the sensor map sets a persistent fixed heading toward the clicked point. A ship under the cursor is only the bearing. Right-click targets and never steers.
-- **Click vs drag:** a press that moves less than 4 logical px before release is a click. The gate is `4 * hudScale`, and `hudScale` snaps to 1.0–4.0 in 0.25 steps. **Camera orbit must not take right-click.** Middle-drag and Alt+left-drag both orbit and never steer. A plain left-press never starts an orbit. Wheel over the 3D view zooms; over the speed bar it changes speed.
-- **Pending state:** after a click, the wedge shows the ordered bearing immediately and then follows the confirmed `headingOrdered16`. A rejected order clears it and logs the reason (`hud-spec.md` §14).
+- **Default mouse scheme (D1, Daniel 2026-11-24, CE 2.670 playtest; Q9):** the original's. A left-click in the 3D view or on the sensor map, including a click on a hostile, sends `orderHeading` toward the clicked bearing. The order persists until a new click replaces it. There is no target-follow. Right-click targets and never steers.
+- **Click vs drag:** a press that moves less than 4 logical px before release is a click. The gate is `4 * hudScale`, and `hudScale` snaps to 1.0–4.0 in 0.25 steps. **Camera orbit must not take right-click.** Middle-drag and Alt+left-drag are equal orbit options, both remappable (Engine Lead, 2026-11-24). Neither starts on a plain left-press, and neither ever steers. Wheel over the 3D view zooms; over the speed bar it changes speed.
+- **Pending state:** after a click, the wedge shows the ordered bearing immediately and then follows the sim's `HelmView` remaining turn. A rejected order clears it and logs the reason (`hud-spec.md` §14).
 - **Keyboard parity:** every mouse helm action keeps a key path (`keymap.md`), and the HTML mirror announces the ordered heading on request.
 
 ### 5.1 Review notes for the mouse-helm PR
 
-1. Plain left-click steers: one fixed heading toward the clicked point. Alt+left-drag and middle-drag orbit and never steer. Right-click under 4 logical px targets and never steers (D1).
-2. No camera action is bound to the right button, including right-drag. Orbit is middle-drag and Alt+left-drag, both remappable.
-3. Clicks on any HUD panel never reach helm; the helm only sends `Command`s and never predicts turns.
-4. The turn wedge is coloured by remaining angle: orange under about 150°, dark red from there up. It does not use remaining time or the empire accent.
+1. Plain left-click steers: one persistent `orderHeading` toward the clicked point, on a hostile too, replaced by the next click. No target-follow (Q9). Right-click under 4 logical px targets and never steers (D1).
+2. No camera action is bound to the right button, including right-drag. Orbit is middle-drag and Alt+left-drag, equal and both remappable; neither starts on a plain left-press.
+3. Clicks on any HUD panel never reach helm; the helm only sends `Command`s and never predicts turns. The wedge reads `HelmView` (mode, signed Q16.16 remaining turn, HET delay); the UI never computes a bearing beyond the one click it sends.
+4. The turn wedge is orange, dark red from about 150° of remaining angle, with a full-opacity edge stroke. It does not use remaining time or the empire accent.
+5. Helm panel: 3×3 HET arrows plus Camera and Go, no compass. Arrows and Go stay disabled until Combat's HET sim PR.
+6. Shields: six-segment ring labelled by Combat's facings, no doubled total.
 
 ---
 
@@ -285,7 +309,7 @@ Pointer rules:
 
 - **Accents are decoration, never state.** Empires are always told apart by **mark glyph + 3-letter code**, never by colour alone, including on the mini map (where the original colour-codes races, G2) and on unit tags.
 - **Colour-blind check of the current `style-guide.md` §4.2 accents** (our own simulation, Machado-style matrices, CIELAB distance below 15 flagged): deuteranopia confuses `fed`/`ori` (very close) and `gor`/`mir`; protanopia confuses `lyr`/`gor` and `fed`/`ori`; tritanopia confuses `rom`/`hyd`, `fed`/`rom` and `fed`/`hyd`. These pairs need a `cvd` override (§4.2) or a value change; this matters most in mixed-empire skirmish views. Proposed values: in the follow-up style-guide PR.
-- **Contrast minimums:** text 4.5:1 against its plate (7:1 in high-contrast mode); accent strips, bars, frame edges and focus ring 3:1 against the adjacent plate (WCAG 1.4.11). Against `--panel-bg #0B1118`, all nine accents pass 3:1; `kli #B23A3A` is lowest at about 3.2:1, so it may not be lightened by any skin texture and is never used for text. Skin `panelBg` textures must keep text at 4.5:1 at their brightest pixel.
+- **Contrast minimums:** text 4.5:1 against its plate (7:1 in high-contrast mode); accent strips, bars, frame edges and focus ring 3:1 against the adjacent plate (WCAG 1.4.11). Against `--panel-bg #0B1118`, all nine accents pass 3:1; `kli #B23A3A` is lowest at about 3.2:1, so it may not be lightened by any skin texture and is never used for text. The **neutral skin accent** and **`--panel-edge`** were `#3A4A5C` (about 2.1:1 on `#0B1118`) and are now `#627488`: about 3.95:1 on `#0B1118` and at least 3.7:1 against every skin `panelBg`. Skin `panelBg` textures must keep text at 4.5:1 at their brightest pixel.
 - **Klingon red vs damage red:** the `kli` accent is close in hue to `--state-damage` and `--state-hostile`. Because damage always carries cross-hatch and broken outline, this is acceptable, but a `kli` plate must never use hatch patterns.
 - **UI scale range (D3, Daniel 2026-11-24):** HUD scale **1.0–4.0× in 0.25 steps**, fractional allowed. The default is the largest step that fits the 1024 × 768 logical canvas. 9-slice and vector art are rasterised at the exact scale, so they stay crisp. Bitmap plates (placeholders and HD) are sampled down from the **nearest larger plate** (2× up to 2.0, 4× above). The player's install bitmaps scale nearest-neighbour; an optional "pixel-exact" setting snaps the HUD to whole steps for them. HTML text 100–200%. Minimum rendered text stays 11 physical px. The tactical page stores the choice as `sfc2js.uiScale.v1`.
 - **Reduced motion:** no skin animates frames; the turn arc does not pulse under `prefers-reduced-motion`.
@@ -314,9 +338,9 @@ These are the thin, always-visible forms of the upper and lower data displays (�
 ### 7.2 World grid
 
 - **World-fixed** on the movement plane. It does not move with the ship or camera.
-- **Faint blue:** a new neutral token `--field-grid` (proposed `#2A4C7A`), drawn at 20–30% alpha for minor lines and 40% for major lines. Hue and spacing in the original: **TO VERIFY**.
+- **Faint blue:** a neutral token `--field-grid` (`#2A4C7A`). Major lines are drawn at **60% alpha** (about 1.52:1 on black, meeting the §7.6 target of ≥ 1.5:1). Minor lines are texture only, at **40% alpha** (about 1.26:1), and are not held to 1.5:1. Code: `GRID_MAJOR_ALPHA` and `GRID_MINOR_ALPHA` in `web/src/tactical/tokens.ts`. Hue and spacing in the original: **TO VERIFY**.
 - **Spacing in range units**, through the same single range constant as `toDisplayRange()` (`hud-spec.md` §0). Proposed: minor every 1 range unit and major every 5 (**TO VERIFY**).
-- **Zoom fade:** when minor lines would be closer than 16 logical px on screen, they fade out over the next 25% of zoom and majors become the minor set at the next ×5 step. Lines are never closer than 8 px or brighter than 40% alpha. This avoids moiré at overhead zoom-out.
+- **Zoom fade:** when minor lines would be closer than 16 logical px on screen, they fade out over the next 25% of zoom and majors become the minor set at the next ×5 step. Lines are never closer than 8 px; minors never exceed 40% alpha and majors 60%. This avoids moiré at overhead zoom-out.
 - The grid is drawn **under everything except the starfield** (§7.7). It never draws over ships, tags, bars, console or any HUD text, and tag/readout plates mask it.
 
 ### 7.3 Arc wedges
@@ -336,7 +360,7 @@ These are the thin, always-visible forms of the upper and lower data displays (�
 ### 7.5 Off-screen target tags
 
 - One tag per off-screen contact the HUD info level allows (target always; others per level, §2.4), **clamped to the screen edge inside the safe area** and outside the bars and console rects.
-- Each tag has a **shape plus colour** for hostility, shared with the mini map: hostile = hollow chevron in `--state-hostile`, neutral or unknown = hollow diamond in `--state-neutral`, ally = solid chevron in `--state-friendly`. The current target adds a bracket. An arrow points along the bearing.
+- Each tag has a **shape plus colour** for hostility, shared with the mini map: hostile = hollow chevron in `--state-hostile`, neutral or unknown = hollow diamond in `--state-neutral`, ally = solid chevron in `--state-friendly`. The current target adds a bracket. An arrow points along the bearing. The empire mark and 3-letter code come from the shared set in `web/src/empire-marks.ts` (§4.2).
 - A **range readout** via `toDisplayRange()` sits next to the shape, on a small plate that masks the grid.
 - **Click to target:** sends `setTarget`, the same as right-click in the field. Tags have 24 × 24 unit hit targets and tooltips (name or class, range).
 - Tags never overlap: when they collide along an edge they stack with 4-unit spacing in bearing order.
@@ -346,7 +370,7 @@ These are the thin, always-visible forms of the upper and lower data displays (�
 
 The camera and starfield belong to the renderer. The HUD needs only:
 
-- A **near-black field** (no brighter than about `#101418` on average under the console and bar areas) so that overlays hold contrast: grid ≥ 1.5:1, wedge strokes and tags ≥ 3:1, and text ≥ 4.5:1 against its plate. Star brightness is capped where tags and bars sit, or plates mask it.
+- A **near-black field** (no brighter than about `#101418` on average under the console and bar areas) so that overlays hold contrast: major grid lines ≥ 1.5:1 (minor lines are texture, §7.2), wedge strokes and tags ≥ 3:1, and text ≥ 4.5:1 against its plate. Star brightness is capped where tags and bars sit, or plates mask it.
 - No starfield or nebula sprite may draw over HUD layers, and no bloom bleeds onto bars or console.
 - The overhead camera exposes a **world-to-screen transform and current zoom** to the view layer each frame, so wedges, grid fade and tags clamp correctly. Camera angle and default zoom of the original: **TO VERIFY**.
 
@@ -371,7 +395,7 @@ Nothing in layers 1–4 may draw above layer 5 or later. HUD text is never under
 | Arc wedges | — | State tokens and patterns only |
 | Beam lines | — | Family VFX (`style-guide.md` §8.2), not the player's empire |
 | Off-screen and unit tags | — | Hostility tokens and shapes |
-| Heading ghost, turn arc | — | State and band tokens (§5) |
+| Heading wedge, turn arc | — | Orange and dark-red wedge bands by remaining angle (§5), same for every empire |
 
 An empire accent may never appear in the field itself, so a player can't mistake their own accent for a hostility or state colour.
 
@@ -380,16 +404,17 @@ An empire accent may never appear in the field itself, so a player can't mistake
 1. Renderer and view layer only. Nothing in the console column, skin layer or `docs/ui/empire-skins.md`.
 2. Overlays read the `ViewModel` and events only. No arc, range, hit or turn computation in the view layer. Wedge spans come from `WeaponView.arc`, and beams from events.
 3. No wedge for `reloadCounted` racks; `DroI` / `DroVI` keep theirs.
-4. Grid is world-fixed, uses `--field-grid`, fades by zoom as in §7.2, and stays under ships and all HUD text.
+4. Grid is world-fixed, uses `--field-grid`, majors at 60% alpha (≥ 1.5:1) and minors at 40%, fades by zoom as in §7.2, and stays under ships and all HUD text.
 5. Draw order matches §7.7, checked with a frame that puts a tag, a wedge and grid under a bar.
 6. Tags clamp inside the safe area and outside the bar and console rects, use shape plus colour, show range, and click sends `setTarget`.
 7. Bar heights 24 and 32 units, Wide mode splits at the 4:3 box, and the interface-bar toggle doesn't hide them.
 8. No empire accent in the field. Accent appears only on bar edges.
 9. No original art or screenshots committed; starfield and grid are procedural or our own.
 10. Reduced motion and the 3 Hz flash limit hold for beams and tag animations.
-11. Mouse (D1): left-click on the field steers, right-click and tag clicks target, and no camera control uses the right button.
+11. Mouse (D1, Q9): left-click on the field sends a persistent `orderHeading`, on a hostile too, with no target-follow; right-click and tag clicks target; orbit is middle-drag or Alt+left-drag and no camera control uses the right button.
 12. No pinned mini map in any mode, including Wide (D2).
 13. Bars, tags and wedge strokes stay crisp at fractional scales 1.0–4.0× (D3); bitmap plates come from the nearest larger 2× or 4× plate.
+14. Tag marks come from the shared `web/src/empire-marks.ts`, not a second set.
 
 ## 8. Open questions
 
@@ -397,9 +422,9 @@ An empire accent may never appear in the field itself, so a player can't mistake
 
 1. Where does the interface bar sit, and in what left-to-right order are the ship schematic, system MFD and target schematic? Is the officer MFD in the upper left?
 2. Order of items in the upper and lower data displays; position of the alert buttons and fire button.
-3. Per empire: does the frame art, the accent colour or the layout change? Does any empire move or add a panel? (Our assumption: art and colour change, layout does not.)
+3. ~~Per empire: does the frame art, the accent colour or the layout change?~~ **Answered (per CE capture, 2026-11-24):** one layout for all nine races; plate shape and colour change (§4.2). Still open: does any race place buttons differently inside a panel? If so, that race gets its own button table.
 4. Is there a separate Orion or "Interceptor" HUD in CE 2.670?
-5. Does the turn arc still use four time bands, and is there an on-screen message ticker besides the Communication page?
+5. ~~Does the turn arc still use four time bands?~~ **Answered (per CE capture, 2026-11-24):** no. One orange wedge, dark red for big turns, by remaining angle, same for every empire (§5). Still open: is there an on-screen message ticker besides the Communication page?
 6. HUD information levels (three keys in M2): which tag fields show at each level?
 
 **Asset & Formats**
@@ -408,13 +433,13 @@ An empire accent may never appear in the field itself, so a player can't mistake
 
 **Engine / Combat**
 
-8. `turnTicksRemaining`, `turnRateNow16PerTick` and turn-mode text in `HelmView`. The wedge colour is remaining angle, so these time fields are not the colour bands.
-9. ~~A `setCourseTo(ship)` command, or does left-click on a hostile send a plain `setHeading`?~~ **Verified on CE 2.670:** a tracking **target heading**. The click stores a fixed bearing. The ship turns the short way at its table turn rate until it arrives or a later click replaces it. A ship under the cursor is only the bearing. There is no track-a-ship verb.
-10. HET command shape. The helm arrows stay disabled until a later sim change. Do not treat them as ordinary turns.
+8. Land the `HelmView` contract in §5: helm mode (`none`/`heading`/`het`), the signed Q16.16 remaining turn and HET delay ticks, all filled by the sim, with no tracked-target id. Until then the wedge derives the remaining angle from `self.heading16` and the ordered heading in the view. `turnRateNow16PerTick` for the turn-rate gauge stays open.
+9. ~~A `setCourseTo(ship)` command, or does left-click on a hostile send a plain heading order?~~ **Resolved (verified on CE 2.670):** a **persistent heading order, no target-follow**. A left-click on the tactical view or the sensor map, including a click on a hostile, sends `orderHeading` toward the clicked bearing. The ship turns the short way at its table turn rate until it arrives. A new click replaces the order. Right-click never steers. There is no track-a-ship verb.
+10. HET command shape, from Combat's HET sim PR. The 3×3 helm arrows are HET buttons and stay disabled until it lands. Do not treat them as ordinary turns.
 
 **Daniel**
 
-11. ~~Original mouse grammar as the default?~~ **Resolved 2026-11-24 (D1), verified on CE 2.670:** yes. Left-click sets a fixed heading, right-click targets. Orbit is middle-drag and Alt+left-drag, never the right button and never a plain left-press.
+11. ~~Original mouse grammar as the default?~~ **Resolved 2026-11-24 (D1), verified on CE 2.670:** yes. Left-click sets a fixed heading, right-click targets. Orbit is middle-drag and Alt+left-drag (Q16), never the right button and never a plain left-press.
 12. ~~Mini map as a page only or pinnable in Wide?~~ **Resolved 2026-11-24 (D2):** officer page only, never pinned.
 12a. ~~Fractional UI scale (`modern-ux.md` Q1)?~~ **Resolved 2026-11-24 (D3):** allowed, 1.0–4.0× (§6).
 
@@ -424,9 +449,13 @@ An empire accent may never appear in the field itself, so a player can't mistake
 
 **Engine Lead**
 
-16. Pick the camera-orbit binding that replaces right-drag (middle-drag or a modifier plus left-drag).
+16. ~~Pick the camera-orbit binding that replaces right-drag.~~ **Resolved 2026-11-24 (Engine Lead):** middle-drag and Alt+left-drag are equal options, both remappable; neither starts on a plain left-press or steers.
 
 **Play-field PR / Renderer**
 
 14. Grid hue and spacing, wedge look, and overhead camera angle and zoom in the original (§7, TO VERIFY with Wintermute's notes).
 15. Confirm `--field-grid` as a new style-guide token, and that the camera exposes the world-to-screen transform and zoom to the view layer.
+
+**Combat**
+
+17. Facing labels for the six-segment shield ring. The ring follows Combat's six facings (`docs/rules/shiplist-mapping.md`: facing 0 = front, clockwise). Confirm the short label for each facing.
