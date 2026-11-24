@@ -25,8 +25,8 @@ import {
   WebGLRenderer,
   type Material,
 } from 'three';
-import type { ContactView, ViewModel } from '../../engine/view/view-model.ts';
-import { remainingArc16, wedgeColor } from './heading-wedge.ts';
+import type { ContactView, HelmView, ViewModel } from '../../engine/view/view-model.ts';
+import { helmWedge } from './heading-wedge.ts';
 import { sectorOutline, sectorPositions, wedgesFor, type ArcWeapon, type WedgePattern } from './tactical/arcs.ts';
 import { reportedBeams, reportedFlashes } from './tactical/beams.ts';
 import { defaultOverheadDistance, gridLevel, gridSegments, visibleWorldWidth } from './tactical/grid.ts';
@@ -48,15 +48,6 @@ const FULL = 65536;
 const BEAM_MS = 180;
 const FLASH_MS = 180;
 const HEADING_STEPS = 48;
-const HEADING_REFUSED = new Set([
-  'immobile',
-  'turnModeUnverified',
-  'crewDisabled',
-  'noSuchShip',
-  'notAShip',
-  'shipDestroyed',
-]);
-
 interface Ndc {
   readonly x: number;
   readonly y: number;
@@ -97,7 +88,6 @@ export class DuelScene {
   /** Full-opacity outline (nose radius, bearing radius, outer arc) so the dark-red band stays visible on black. */
   private readonly headingEdge: LineSegments;
   private readonly headingEdgePositions = new Float32Array((HEADING_STEPS + 2) * 6);
-  private preview: number | null = null;
 
   constructor(canvas: HTMLCanvasElement, options?: { preserveDrawingBuffer?: boolean }) {
     this.renderer = new WebGLRenderer({
@@ -195,10 +185,6 @@ export class DuelScene {
   }
 
   /** Show this heading at once. The next confirmed order replaces it. */
-  setHeadingPreview(heading: number): void {
-    this.preview = heading & 0xffff;
-  }
-
   /**
    * World point on the tactical plane under the cursor.
    * three.js Y is up. Sim +y is three.js -z.
@@ -301,8 +287,7 @@ export class DuelScene {
       this.stars.position.set(self.x, 0, -self.y);
       this.updateWedges(vm, self, selection);
       this.updateCompass(vm, self);
-      const refused = vm.events.some((event) => event.kind === 'alert' && HEADING_REFUSED.has(event.id));
-      this.drawHeadingWedge(self, vm.self?.orderedHeading16 ?? null, refused);
+      this.drawHeadingWedge(self, vm.self?.helm);
     } else {
       this.headingWedge.visible = false;
       this.headingEdge.visible = false;
@@ -312,21 +297,16 @@ export class DuelScene {
     this.renderer.render(this.scene, this.camera);
   }
 
-  private drawHeadingWedge(self: ContactView, ordered: number | null, refused: boolean): void {
-    const aim = this.aimHeading(ordered, refused);
+  private drawHeadingWedge(self: ContactView, helm: HelmView | null | undefined): void {
+    const drawn = helmWedge(helm);
     const material = this.headingWedge.material;
-    if (aim === null || !(material instanceof MeshBasicMaterial)) {
+    if (!drawn || !(material instanceof MeshBasicMaterial)) {
       this.headingWedge.visible = false;
       this.headingEdge.visible = false;
       return;
     }
-    const arc = remainingArc16(self.heading16, aim);
+    const arc = drawn.arc16;
     const mag = arc < 0 ? -arc : arc;
-    if (mag < 8) {
-      this.headingWedge.visible = false;
-      this.headingEdge.visible = false;
-      return;
-    }
     const steps = Math.max(2, Math.min(HEADING_STEPS, Math.ceil(mag / 1400)));
     const radius = 7;
     const y = 0.08;
@@ -349,7 +329,7 @@ export class DuelScene {
     const attr = this.headingWedge.geometry.getAttribute('position');
     attr.needsUpdate = true;
     this.headingWedge.geometry.setDrawRange(0, steps * 3);
-    const color = wedgeColor(arc);
+    const color = drawn.color;
     material.color.setHex(color);
     this.headingWedge.visible = true;
     this.drawHeadingEdge(self, arc, steps, radius, y, color);
@@ -385,15 +365,6 @@ export class DuelScene {
     const material = this.headingEdge.material;
     if (material instanceof LineBasicMaterial) material.color.setHex(color);
     this.headingEdge.visible = true;
-  }
-
-  private aimHeading(ordered: number | null, refused: boolean): number | null {
-    if (this.preview === null) return ordered;
-    if (refused || ordered === this.preview) {
-      this.preview = null;
-      return ordered;
-    }
-    return this.preview;
   }
 
   private get activeDistance(): number {
