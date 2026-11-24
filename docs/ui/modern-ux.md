@@ -58,7 +58,7 @@ Uses the browser Gamepad API (and the same API inside Tauri's webview). Standard
 ## 4. Rebinding
 
 - Every command in `hud-spec.md` is an **action id** (for example `weapons.fireGroup.1`). Bindings map inputs → action ids; the HUD never hard-codes keys.
-- Profiles: **Modern** (default proposal), **Classic** (SFC2 original defaults, built once those are verified against CE 2.670), user profiles. Export and import as JSON.
+- Profiles: **Modern** (default, decided 2026-11-24), **Classic** (optional "SFC2 classic" remap preset, built once original defaults are verified against CE 2.670; not listed here), user profiles. Export and import as JSON.
 - Conflict detection with a "swap" prompt; chord support (`Ctrl/Shift/Alt`); separate keyboard and gamepad maps.
 - Browser-reserved keys (`Ctrl+W`, `Ctrl+T`, `F5`, `F11` etc.) can't be bound in the web build; the Tauri build may allow more. The UI marks reserved keys.
 - Keys use `KeyboardEvent.code` (physical position) so AZERTY and QWERTZ layouts work, with labels shown via `navigator.keyboard.getLayoutMap()` where available.
