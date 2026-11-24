@@ -1,0 +1,41 @@
+{
+  "id": "shiplist-code-load",
+  "mode": "load",
+  "ships": [
+    {
+      "spawnKey": "test-empire-a:test-ca-01",
+      "className": "test-ca-01",
+      "race": "test-empire-a",
+      "class": "ship",
+      "weapons": [
+        { "slotIndex": 0, "weapon": "DroA", "arc": "2" },
+        { "slotIndex": 1, "weapon": "Phot", "arc": "1" },
+        { "slotIndex": 2, "weapon": "PLAF", "arc": "FA" },
+        { "slotIndex": 3, "weapon": "PlaF", "arc": "FA" },
+        { "slotIndex": 4, "weapon": "PLaF", "arc": "FX" }
+      ]
+    }
+  ],
+  "expect": {
+    "diagnostics": [
+      {
+        "code": "unknownArc",
+        "source": "loader",
+        "severity": "warning",
+        "details": { "arc": "1", "slotIndex": 1, "spawnKey": "test-empire-a:test-ca-01" }
+      },
+      {
+        "code": "unknownWeapon",
+        "source": "loader",
+        "severity": "warning",
+        "details": { "weapon": "PLAF", "slotIndex": 2, "spawnKey": "test-empire-a:test-ca-01" }
+      }
+    ],
+    "mapped": [
+      { "slotIndex": 0, "weapon": "DroA", "internal": "drone", "weaponId": "drone-a", "arc": null, "reloads": 2 },
+      { "slotIndex": 1, "weapon": "Phot", "internal": "photon", "weaponId": "photon", "arc": "1", "reloads": null },
+      { "slotIndex": 3, "weapon": "PlaF", "internal": "plasma", "weaponId": "plasma-f", "arc": "FA", "reloads": null },
+      { "slotIndex": 4, "weapon": "PLaF", "internal": "plasma", "weaponId": "plasma-f", "arc": "FX", "reloads": null }
+    ]
+  }
+}

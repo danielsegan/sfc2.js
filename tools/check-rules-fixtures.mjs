@@ -24,7 +24,8 @@ const TURNS = readJson("docs/rules/data/turn-modes.json");
 const REASONS = readJson("docs/rules/data/reason-codes.json");
 
 const reasonByCode = new Map(REASONS.codes.map((c) => [c.code, c]));
-const FX = CONSTANTS.fxScale;
+const FX_SHIFT = 16;
+const FX = 1 << FX_SHIFT;
 
 const failures = [];
 
@@ -128,7 +129,20 @@ function turnDef(letter) {
 }
 
 function mergeConstants(over) {
-  return { ...CONSTANTS, ...(over || {}) };
+  const merged = { ...CONSTANTS, ...(over || {}) };
+  if (merged.rulesTurnTicks == null) {
+    const ticks = merged.rulesTurnSeconds * merged.tickHz;
+    if (!Number.isInteger(ticks)) {
+      throw new Error("rules turn must convert to a whole number of ticks");
+    }
+    merged.rulesTurnTicks = ticks;
+  }
+  return merged;
+}
+
+function phaserEnergyCost(mount, def) {
+  if (mount.fixtureChargeCost != null) return mount.fixtureChargeCost;
+  return def.chargeCost;
 }
 
 function loadShip(spec) {
@@ -198,6 +212,7 @@ function loadShip(spec) {
       boxes: w.boxes ?? 1,
       boxesMax: w.boxesMax ?? w.boxes ?? 1,
       budget: 0,
+      fixtureChargeCost: w.fixtureChargeCost ?? null,
       internal: def ? def.internal : null,
     });
   }
@@ -251,8 +266,9 @@ function mountReady(mount) {
   const def = weaponDef(mount.weapon);
   if (!def) return false;
   if (def.internal === "phaser") {
-    if (def.chargeCost == null) return false;
-    return mount.charge >= toMilli(def.chargeCost);
+    const cost = phaserEnergyCost(mount, def);
+    if (cost == null) return false;
+    return mount.charge >= toMilli(cost);
   }
   if (def.internal === "photon") {
     const cost = mount.mode === "overload" ? def.overloadArmCost : def.armCost;
@@ -536,18 +552,14 @@ function settleAllocation(ship, allocation, constants) {
 
 function energyStillAccepted(ship, mount, def, mode, constants) {
   if (def.internal === "phaser") {
-    const need = Math.max(0, toMilli(def.chargeCost) - mount.charge);
-    let capRoom = 0;
-    if (
-      constants.phaserCapacitorFromHighSlots &&
-      mount.slotIndex >= constants.capacitorSlotIndexMin &&
-      mount.slotIndex <= constants.capacitorSlotIndexMax
-    ) {
-      capRoom = Math.max(0, capacitorMaxMilli(ship, constants) - ship.capacitor);
-    }
+    const cost = phaserEnergyCost(mount, def);
+    if (cost == null) return 0;
+    const need = Math.max(0, toMilli(cost) - mount.charge);
+    const capRoom = Math.max(0, capacitorMaxMilli(ship, constants) - ship.capacitor);
     return need + capRoom;
   }
   const cost = mode === "overload" ? def.overloadArmCost : def.armCost;
+  if (cost == null) return 0;
   return Math.max(0, toMilli(cost) - mount.charge);
 }
 
@@ -556,13 +568,9 @@ function capacitorMaxMilli(ship, constants) {
   for (const mount of ship.weapons) {
     const def = weaponDef(mount.weapon);
     if (!def || def.internal !== "phaser") continue;
-    if (
-      mount.slotIndex < constants.capacitorSlotIndexMin ||
-      mount.slotIndex > constants.capacitorSlotIndexMax
-    ) {
-      continue;
-    }
-    sum += toMilli(def.chargeCost);
+    const cost = phaserEnergyCost(mount, def);
+    if (cost == null) continue;
+    sum += toMilli(cost);
   }
   return sum;
 }
@@ -586,18 +594,13 @@ function applyReinforcementAndCharge(ship, constants) {
         ? mount.mode === "overload"
           ? def.overloadArmCost
           : def.armCost
-        : def.chargeCost;
+        : phaserEnergyCost(mount, def);
+    if (cost == null) continue;
     const room = Math.max(0, toMilli(cost) - mount.charge);
     const toMount = Math.min(share, room);
     mount.charge += toMount;
     let overflow = share - toMount;
-    if (
-      overflow > 0 &&
-      def.internal === "phaser" &&
-      constants.phaserCapacitorFromHighSlots &&
-      mount.slotIndex >= constants.capacitorSlotIndexMin &&
-      mount.slotIndex <= constants.capacitorSlotIndexMax
-    ) {
+    if (overflow > 0 && def.internal === "phaser") {
       const capRoom = Math.max(0, capacitorMaxMilli(ship, constants) - ship.capacitor);
       const stored = Math.min(overflow, capRoom);
       ship.capacitor += stored;
@@ -857,7 +860,7 @@ function commandFire(world, cmd, constants, rng) {
     const hit = applyHit(target, hitFacing, band.damage, constants, queues);
     return result("applied", "ok", band.damage, { details: { ...hit, range } });
   }
-  if (range > constants.photonMaxRange) return result("rejected", "outOfRange", null);
+  if (def.maxRange != null && range > def.maxRange) return result("rejected", "outOfRange", null);
   const damage =
     mount.mode === "overload" ? def.overloadDamage : mount.mode === "proximity" ? def.proxDamage : def.directDamage;
   mount.charge = 0;
@@ -980,6 +983,19 @@ function applyScale(raw) {
   };
 }
 
+function interpretArc(def, arc) {
+  const text = arc == null || arc === "" ? null : String(arc);
+  const numeric = text != null && /^[0-9]+$/.test(text);
+  if (def && def.reloadCounted === true) {
+    if (numeric) return { arc: null, reloads: Number(text), unknown: false };
+    return { arc: text, reloads: null, unknown: true };
+  }
+  if (text == null) return { arc: null, reloads: null, unknown: false };
+  if (numeric) return { arc: text, reloads: null, unknown: true };
+  if (!arcDef(text)) return { arc: text, reloads: null, unknown: true };
+  return { arc: text, reloads: null, unknown: false };
+}
+
 function loadDiagnostics(shipSpec) {
   const diags = [];
   for (const w of shipSpec.weapons || []) {
@@ -993,13 +1009,13 @@ function loadDiagnostics(shipSpec) {
         details: { weapon: w.weapon, slotIndex: w.slotIndex, spawnKey: shipSpec.spawnKey },
       });
     }
-    if (w.arc == null) continue;
-    if (!arcDef(w.arc)) {
+    const interp = interpretArc(def, w.arc);
+    if (interp.unknown) {
       diags.push({
         code: "unknownArc",
         source: "loader",
         severity: "warning",
-        details: { arc: w.arc, slotIndex: w.slotIndex, spawnKey: shipSpec.spawnKey },
+        details: { arc: interp.arc, slotIndex: w.slotIndex, spawnKey: shipSpec.spawnKey },
       });
     }
   }
@@ -1038,12 +1054,14 @@ function runLoad(test, file) {
     for (const w of spec.weapons || []) {
       const def = weaponDef(w.weapon);
       if (!def) continue;
+      const interp = interpretArc(def, w.arc);
       mapped.push({
         slotIndex: w.slotIndex,
         weapon: w.weapon,
         internal: def.internal,
-        arc: w.arc ?? null,
-        reloads: w.reloads ?? null,
+        weaponId: def.weaponId ?? null,
+        arc: interp.arc,
+        reloads: def.reloadCounted === true ? interp.reloads : (interp.reloads ?? w.reloads ?? null),
       });
     }
   }
@@ -1114,42 +1132,83 @@ function checkReasonDocs() {
 }
 
 function checkMappingShape() {
-  const fighterWeaponCodes = ["DisF", "DroI", "DroVI", "FusF", "HellF", "Ph2", "Ph3", "PhG", "PhoF"];
-  const fighterArcCodes = ["ALL", "FH", "FX", "LS", "RA", "RS", "RX"];
-  const gotW = Object.keys(WEAPONS.fighter.weapons).sort();
-  const gotA = Object.keys(WEAPONS.fighter.arcs).sort();
-  if (gotW.join(",") !== fighterWeaponCodes.join(",")) {
-    fail("docs/rules/data/weapon-arcs.json", `fighter weapon codes changed: ${gotW.join(", ")}`);
+  const shiplistCodes = [
+    "ADD12", "ADD6", "Dis1", "Dis2", "Dis3", "Dis4",
+    "DroA", "DroB", "DroC", "DroF", "DroG",
+    "ESG", "Fus", "HB", "PPD", "Phot",
+    "Ph1", "Ph2", "Ph3", "Ph4", "PhG",
+    "PlaD", "PlaF", "PlaG", "PlaI", "PlaR", "PlaS",
+    "PLaF", "PLaG", "PLaR", "PLaS",
+  ];
+  const fighterOnly = ["DisF", "DroI", "DroVI", "FusF", "HellF", "PhoF"];
+  const letterArcs = [
+    "ALL", "FA", "FAL", "FAR", "FH", "FHL", "FHR", "FLL", "FLLX", "FRR", "FRRX", "FX",
+    "LLR", "LP", "LS", "LW", "RA", "RAL", "RAR", "RH", "RP", "RRR", "RS", "RW", "RX",
+  ];
+  const gotShip = Object.keys(WEAPONS.ship.weapons).filter((code) => !code.startsWith("TEST-")).sort();
+  if (gotShip.join(",") !== [...shiplistCodes].sort().join(",")) {
+    fail("docs/rules/data/weapon-arcs.json", `shiplist weapon codes changed: ${gotShip.join(", ")}`);
   }
-  if (gotA.join(",") !== fighterArcCodes.join(",")) {
-    fail("docs/rules/data/weapon-arcs.json", `fighter arc codes changed: ${gotA.join(", ")}`);
+  const gotFighter = Object.keys(WEAPONS.fighter.weapons).sort();
+  if (gotFighter.join(",") !== fighterOnly.join(",")) {
+    fail("docs/rules/data/weapon-arcs.json", `fighter-only weapon codes changed: ${gotFighter.join(", ")}`);
   }
-  for (const [code, def] of Object.entries(WEAPONS.fighter.weapons)) {
-    if (Object.prototype.hasOwnProperty.call(def, "count")) {
-      fail("docs/rules/data/weapon-arcs.json", `${code} must not carry a count`);
+  const pla = Object.keys(WEAPONS.ship.weapons).filter((code) => /pla/i.test(code)).sort();
+  const plaExpected = ["PLaF", "PLaG", "PLaR", "PLaS", "PlaD", "PlaF", "PlaG", "PlaI", "PlaR", "PlaS"];
+  if (pla.join(",") !== plaExpected.join(",")) {
+    fail("docs/rules/data/weapon-arcs.json", `Pla spellings changed: ${pla.join(", ")}`);
+  }
+  const aliases = [["PlaF", "PLaF"], ["PlaG", "PLaG"], ["PlaR", "PLaR"], ["PlaS", "PLaS"]];
+  for (const [canon, alt] of aliases) {
+    const a = WEAPONS.ship.weapons[canon];
+    const b = WEAPONS.ship.weapons[alt];
+    if (!a || !b || a.weaponId !== b.weaponId || a.internal !== "plasma") {
+      fail("docs/rules/data/weapon-arcs.json", `${alt} must point at the same plasma weapon as ${canon}`);
     }
-    if (!def.internal || def.verification !== "pending") {
-      fail("docs/rules/data/weapon-arcs.json", `${code} needs an internal type and pending verification`);
+  }
+  for (const code of ["DroA", "DroB", "DroC", "DroF", "DroG", "ADD6", "ADD12", "TEST-DRN"]) {
+    const def = weaponDef(code);
+    if (!def || def.reloadCounted !== true) {
+      fail("docs/rules/data/weapon-arcs.json", `${code} must be reloadCounted`);
     }
   }
-  for (const [code, def] of Object.entries(WEAPONS.fighter.arcs)) {
-    if (def.verification !== "pending") {
-      fail("docs/rules/data/weapon-arcs.json", `${code} angular range must stay pending verification`);
+  for (const code of ["DroI", "DroVI"]) {
+    const def = weaponDef(code);
+    if (!def || def.reloadCounted === true) {
+      fail("docs/rules/data/weapon-arcs.json", `${code} is a fighter drone with a letter arc, not reloadCounted`);
+    }
+  }
+  for (const code of letterArcs) {
+    const def = WEAPONS.ship.arcs[code];
+    if (!def || def.verification !== "to-verify") {
+      fail("docs/rules/data/weapon-arcs.json", `${code} facing definition must stay to-verify`);
     }
     if (!def.full && !(def.spans && def.spans.length)) {
-      fail("docs/rules/data/weapon-arcs.json", `${code} needs a uint16 span or full-circle flag`);
+      fail("docs/rules/data/weapon-arcs.json", `${code} needs a uint16 span`);
     }
   }
-  for (const code of Object.keys(WEAPONS.ship.weapons)) {
-    if (!code.startsWith("TEST-")) {
-      fail("docs/rules/data/weapon-arcs.json", `ship weapon ${code} must stay a synthetic TEST-* placeholder`);
+  if (WEAPONS.reloadCountTokens.join(",") !== "1,2,3") {
+    fail("docs/rules/data/weapon-arcs.json", "reload-count tokens must stay 1, 2, 3");
+  }
+  if (CONSTANTS.longestWeaponRange != null || CONSTANTS.photonMaxRange != null) {
+    fail("docs/rules/data/constants.json", "a longest weapon range is a fixture probe, not a constant");
+  }
+}
+
+function runBounds(test, file) {
+  const limit = CONSTANTS.mapBound;
+  if (limit !== 8192) fail(file, "map bound must be 8192 range units");
+  if (test.provisionalLongestWeaponRange !== 75) {
+    fail(file, "the 75-unit probe belongs in the fixture, marked to-verify");
+  }
+  if (test.verification !== "to-verify") fail(file, "the range probe must stay to-verify");
+  for (const pair of test.positions || []) {
+    const [x, y] = pair;
+    if (!Number.isInteger(x) || !Number.isInteger(y) || Math.abs(x) > limit || Math.abs(y) > limit) {
+      fail(file, `position ${x},${y} is outside ±${limit}`);
     }
   }
-  for (const code of Object.keys(WEAPONS.ship.arcs)) {
-    if (!code.startsWith("TEST-")) {
-      fail("docs/rules/data/weapon-arcs.json", `ship arc ${code} must stay a synthetic TEST-* placeholder`);
-    }
-  }
+  subset({ positionMath: "i64", mapBound: limit }, test.expect, "expect", file);
 }
 
 function main() {
@@ -1183,6 +1242,7 @@ function main() {
       else if (test.mode === "load") runLoad(test, rel);
       else if (test.mode === "resolve") runResolve(test, rel);
       else if (test.mode === "ticks") runTicks(test, rel);
+      else if (test.mode === "bounds") runBounds(test, rel);
       else fail(rel, `unknown mode ${test.mode}`);
     } catch (err) {
       fail(rel, err.stack || err.message);

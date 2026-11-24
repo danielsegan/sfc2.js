@@ -10,12 +10,12 @@ The duel slice in [`duel-slice.md`](duel-slice.md) is a mechanism spec with synt
 
 Uncertain, and marked pending playtest in the spec:
 
-- Length of one rules-turn in 30 Hz ticks (`rulesTurnTicks`, placeholder 900). This is also the provisional answer to the mission API's "game turn" question.
+- How many seconds one CE rules-turn lasts. The unit is seconds, and sim-core converts at 30 ticks per second into a whole number of ticks. The placeholder is 30 seconds.
 - Whether shield file values and side-warp ratings are doubled in CE 2.670. The scale table follows the SFC1-lineage note in [`docs/formats/shiplist.md`](../formats/shiplist.md) and is unverified on our baseline.
 - Pay order when the ship asks for more energy than it has, and whether batteries dump freely or on a delay.
 - Whether specific (per-facing) reinforcement exists in CE, or only a general pool. The HUD asks the same question.
 - Shield facing edges. The duel slice bins the uint16 circle into six facings. CE may use model-specific cones.
-- Phaser capacitor fed by slotIndex 10–24 (file slots 11–25). The flag ships **off**.
+- Phaser capacitor amounts. The rule is settled: a phaser feeds the capacitor because of its code, in any slot. The energy each real phaser code stores is still empty.
 - Phaser hold cost, photon arming time, overload risk, proximity distance, and whether phasers are instantaneous.
 - Turn-mode rates for letters `AA` and `A`–`G`. Helm orders on those letters are rejected with `turnModeUnverified`.
 - Damage-chart contents, armor-before-chart, and which hull section a facing feeds.

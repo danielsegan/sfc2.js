@@ -1,0 +1,8 @@
+{
+  "id": "map-bounds",
+  "mode": "bounds",
+  "verification": "to-verify",
+  "provisionalLongestWeaponRange": 75,
+  "positions": [[0, 0], [8192, -8192], [-100, 75]],
+  "expect": { "positionMath": "i64", "mapBound": 8192 }
+}

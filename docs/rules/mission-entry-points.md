@@ -17,7 +17,7 @@ interface RuleResult {
 }
 ```
 
-Logged form: `{ code: reason, source: "rules", severity, details?, location? }`. Severity comes from [`reason-codes.md`](reason-codes.md). The mission event sketch calls the number `applied`, and the HUD reads `value`. Those are the same number as `appliedValue`. Aligning the three names is an open Engine / Missions question; rules fixtures use `appliedValue`.
+Logged form: `{ code: reason, source: "rules", severity, details?, location? }`. Severity comes from [`reason-codes.md`](reason-codes.md). The field name `appliedValue` is the same on the rules object, the mission event ([#52](https://github.com/danielsegan/sfc2.js/pull/52)), and the HUD ([#51](https://github.com/danielsegan/sfc2.js/pull/51)).
 
 `appliedValue` is, by command: shield points now on the facing (`setShields`), points removed (`damageShield`), boxes restored (`repairSystem`), requested internal points actually placed (`damageSystem`, warhead extras excluded), energy committed for the rules-turn (`setEnergy`), yaw actually applied (`orderHelm`), or the weapon's damage rating (`fire`).
 
@@ -79,7 +79,7 @@ Then the plan is settled for one rules-turn:
 6. The pool is paid in order: life support, fire control, movement, shields, weapons. Movement that cannot be paid reduces speed to what was paid, and the leftover milli-units continue to shields and weapons. Any category paid below its (already capped) desire yields `overDraw`. That reason wins over `speedClamped`, `immobile`, `reinforceCapped` and `chargeCapped`.
 7. `appliedValue` is the energy committed, in rule units.
 
-Fire-control permission latches from this settlement until the next `setEnergy`. Weapon and reinforcement budgets drip across `rulesTurnTicks` ticks starting on the applying tick. Changing mode on a mount zeroes its charge.
+Fire-control permission latches from this settlement until the next `setEnergy`. Weapon and reinforcement budgets drip across the tick length sim-core computed from the rules-turn in seconds, starting on the applying tick. Changing mode on a mount zeroes its charge.
 
 Life-support failure (demanded and unpaid) removes `crewLossIfLifeSupportUnpaid` crew at the end of that rules-turn. Crew below `minCrew` sets `disabled`. The tick loop applies that consequence; a resolve-only call reports `overDraw` and waits for the loop.
 

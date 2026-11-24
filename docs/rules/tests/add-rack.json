@@ -1,0 +1,52 @@
+{
+  "id": "add-rack",
+  "mode": "load",
+  "ships": [
+    {
+      "spawnKey": "test-empire-a:test-ca-01",
+      "className": "test-ca-01",
+      "race": "test-empire-a",
+      "class": "ship",
+      "weapons": [
+        { "slotIndex": 0, "weapon": "ADD6", "arc": "1" },
+        { "slotIndex": 1, "weapon": "ADD12", "arc": "1" },
+        { "slotIndex": 2, "weapon": "ADD6", "arc": "FA" },
+        { "slotIndex": 3, "weapon": "ADD12", "arc": null }
+      ]
+    },
+    {
+      "spawnKey": "test-empire-a:test-ftr-01",
+      "className": "test-ftr-01",
+      "race": "test-empire-a",
+      "class": "fighter",
+      "weapons": [
+        { "slotIndex": 0, "weapon": "DroI", "arc": "ALL" },
+        { "slotIndex": 1, "weapon": "DroVI", "arc": "ALL" }
+      ]
+    }
+  ],
+  "expect": {
+    "diagnostics": [
+      {
+        "code": "unknownArc",
+        "source": "loader",
+        "severity": "warning",
+        "details": { "arc": "FA", "slotIndex": 2, "spawnKey": "test-empire-a:test-ca-01" }
+      },
+      {
+        "code": "unknownArc",
+        "source": "loader",
+        "severity": "warning",
+        "details": { "arc": null, "slotIndex": 3, "spawnKey": "test-empire-a:test-ca-01" }
+      }
+    ],
+    "mapped": [
+      { "slotIndex": 0, "weapon": "ADD6", "internal": "add", "weaponId": "add-6", "arc": null, "reloads": 1 },
+      { "slotIndex": 1, "weapon": "ADD12", "internal": "add", "weaponId": "add-12", "arc": null, "reloads": 1 },
+      { "slotIndex": 2, "weapon": "ADD6", "internal": "add", "weaponId": "add-6", "arc": "FA", "reloads": null },
+      { "slotIndex": 3, "weapon": "ADD12", "internal": "add", "weaponId": "add-12", "arc": null, "reloads": null },
+      { "slotIndex": 0, "weapon": "DroI", "internal": "drone", "weaponId": "drone-i", "arc": "ALL", "reloads": null },
+      { "slotIndex": 1, "weapon": "DroVI", "internal": "drone", "weaponId": "drone-vi", "arc": "ALL", "reloads": null }
+    ]
+  }
+}

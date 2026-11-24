@@ -12,7 +12,9 @@ tools/fixtures/formats/shiplist/minimal.txt
 tools/fixtures/formats/ftrlist/minimal.txt
 
 # Synthetic Phase 2 rules cases (docs/rules). Invented test-* ships only.
-docs/rules/tests/capacitor-hypothesis.json
+docs/rules/tests/add-rack.json
+docs/rules/tests/heavy-slot-phaser.json
+docs/rules/tests/map-bounds.json
 docs/rules/tests/clamps.json
 docs/rules/tests/damage-allocation.json
 docs/rules/tests/damage-seeded.json
@@ -30,4 +32,5 @@ docs/rules/tests/photon-proximity.json
 docs/rules/tests/rejections.json
 docs/rules/tests/scale-factors.json
 docs/rules/tests/set-energy.json
+docs/rules/tests/shiplist-code-load.json
 docs/rules/tests/shield-reinforcement.json

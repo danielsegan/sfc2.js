@@ -55,7 +55,7 @@
       "movement": { "moveCost": 1, "turnMode": "TEST-C", "acceleration": 4, "speed": 0, "heading16": 0 },
       "shields": [0, 0, 0, 0, 0, 0],
       "crew": { "crewUnits": 4, "boardingParties": 0, "minCrew": 1 },
-      "weapons": [{ "slotIndex": 0, "weapon": "TEST-PH", "arc": "TEST-FA", "charge": 0, "boxes": 1 }]
+      "weapons": [{ "slotIndex": 0, "weapon": "TEST-PHOT", "arc": "TEST-FA", "charge": 0, "boxes": 1 }]
     },
     {
       "spawnKey": "test-empire-a:test-ca-06",

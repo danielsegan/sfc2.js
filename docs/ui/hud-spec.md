@@ -10,7 +10,7 @@ Scope per plan.md ("Roadmap"): Phase 2 needs components 1–3 and a basic 4, 7 a
 
 ## 0. Contract with the engine (PROVISIONAL)
 
-These are the Engine Lead's working answers. They stay **provisional until `docs/engine/determinism.md` lands**.
+These are the Engine Lead's working answers. They stay **provisional until `docs/engine/sim-core.md` lands**.
 
 | Rule | Consequence for the HUD |
 | --- | --- |
@@ -409,7 +409,7 @@ All keys are **proposals**. SFC2's original defaults are **TO VERIFY** against C
 1. The exact `HudEvent` list and payloads.
 2. Confirm the `Command` envelope. Rejected script and combat changes come back as `ruleResult` (§14e). Do plain player commands use the same path?
 3. Where does the fixed-point → display conversion live: shared `engine/units` or HUD-only?
-4. Will the provisional 30 Hz, uint16 heading and fixed-point rules be final in `docs/engine/determinism.md`?
+4. Will `docs/engine/sim-core.md` confirm the 30 Hz tick, uint16 headings, and 16.16 fixed point (`FX_SHIFT = 16`) the rules spec now cites?
 
 **Combat Systems Designer**
 5. Energy period and starvation order on overdraw.

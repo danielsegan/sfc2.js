@@ -2,7 +2,7 @@
 
 Owner: Combat Systems Designer. Baseline: *Star Trek: Starfleet Command II* Community Edition 2.670 ([#37](https://github.com/danielsegan/sfc2.js/issues/37)). First slice: Phase 2 duel, issue [#24](https://github.com/danielsegan/sfc2.js/issues/24).
 
-Clean-room. These docs describe mechanisms in our own words. Synthetic fixtures use `test-*` ships. Fighter weapon and arc **names** in the mapping table are from the metadata-only CE 2.670 inventory ([#6](https://github.com/danielsegan/sfc2.js/issues/6)); occurrence counts are not included. Shiplist codes stay placeholders.
+Clean-room. These docs describe mechanisms in our own words. Synthetic fixtures use `test-*` ships. Weapon and arc **names** are from the metadata-only CE 2.670 inventory ([#6](https://github.com/danielsegan/sfc2.js/issues/6)). Stat values are not.
 
 | Doc | Contents |
 | --- | --- |
@@ -15,19 +15,25 @@ Clean-room. These docs describe mechanisms in our own words. Synthetic fixtures 
 
 Machine tables live in [`data/`](data/). The checker loads those files, so the JSON is the source the tests execute. The markdown restates them.
 
+## Answered
+
+- `ruleResult.appliedValue` is the applied number for rules, the mission event ([#52](https://github.com/danielsegan/sfc2.js/pull/52)), and the HUD ([#51](https://github.com/danielsegan/sfc2.js/pull/51)).
+- `damageSystem` applies armor, then forced hits on the named system, then the damage chart.
+- Diagnostics stay `{ code, source, severity, details?, location? }`.
+- The lab system key is `lab`.
+- A rules-turn is a number of seconds. [`docs/engine/sim-core.md`](../engine/sim-core.md) converts it at 30 ticks per second and requires a whole number of ticks. That file is not on `main` yet.
+- Fixed point is 16.16, `FX_SHIFT = 16`, one unit = one range unit. The `combat` stream is registered in sim-core.
+- A phaser is a phaser by code. Every phaser feeds the capacitor, including a phaser in a heavy slot.
+- The CE 2.670 shiplist and ftrlist code lists in the mapping are the inventory names. Match is case-sensitive. Any other spelling is `unknownWeapon`.
+
 ## Open questions
 
-1. Is a CE rules-turn 900 ticks, or some other multiple of the 30 Hz clock?
-2. Ship the phaser-capacitor hypothesis (`slotIndex` 10–24) on or off? It is off.
-3. Is the pay order (life support, fire control, movement, shields, weapons) what CE starves first?
-4. Does CE have per-facing reinforcement, or only a general pool?
-5. Do shield edges match these six uint16 bins, or the ship's model?
-6. Production fixed-point scale and `combat` RNG wait on `docs/engine/determinism.md`. Fixtures use milli-units and mulberry32 mixed with the stream name.
-7. One field name for the applied number: rules `appliedValue`, mission event `applied`, HUD `value`.
-8. Engine key `lab` or `labs`?
-9. Shiplist headers and weapon/arc codes are still pending #6. The ship section is `TEST-*` only.
-10. Fighter arc widths, and the F / G / roman suffixes, are pending verification. So is the exact spelling of repeated ftrlist headers (`Num` / `Arc` / `Shots` versus suffixed forms).
-11. Does ftrlist `Shots` mean rounds loaded or reloads? Is fighter `ADD_6` live?
-12. Should `damageSystem`'s named system take forced hits before the chart? This spec says yes, after armor.
-13. Are phaser hits instantaneous in CE, or do they have travel time?
-14. Do plain player commands share `ruleResult` with mission commands? This spec says yes for every command the rules module resolves.
+1. How many seconds long is a CE rules-turn? The unit is settled; the duration is not. The placeholder is 30.
+2. Is the pay order (life support, fire control, movement, shields, weapons) what CE starves first?
+3. Does CE have per-facing reinforcement, or only a general pool?
+4. Do shield edges, and each arc's facing set, match the ship model? Every arc set is TO VERIFY.
+5. Does the numeric Arc on `Dro*` and `ADD6`/`ADD12` mean reloads or rack capacity? The pairing itself is confirmed. ADD only ever shows 1.
+6. Does ftrlist `Shots` mean rounds loaded or reloads? Is fighter `ADD_6` live?
+7. Are phaser hits instantaneous in CE, or do they have travel time?
+8. Do plain player commands share `ruleResult` with mission commands? This spec says yes for every command the rules module resolves.
+9. The production RNG algorithm inside the registered `combat` stream, once sim-core names it. The checker uses mulberry32 until then.

@@ -2,19 +2,19 @@
 
 Status: **spec, synthetic numbers, pending playtest.** One ship against one ship. Baseline: Community Edition 2.670 ([#37](https://github.com/danielsegan/sfc2.js/issues/37)). Issue: [#24](https://github.com/danielsegan/sfc2.js/issues/24).
 
-Clean-room. Mechanics are described in our own words. Numeric tables in [`data/`](data/) are placeholders we invented for tests, except the ftrlist code names, which are inventory names ([mapping](shiplist-mapping.md)). No published chart is copied here.
+Clean-room. Mechanics are described in our own words. Numeric tables in [`data/`](data/) are placeholders we invented for tests, except the CE code names in the [mapping](shiplist-mapping.md). No published chart is copied here.
 
-The sim contract, provisional until [`docs/engine/determinism.md`](../engine/determinism.md) lands (Engine Lead; not on `main`):
+The engine contract is [`docs/engine/sim-core.md`](../engine/sim-core.md) (Engine Lead; the file is not on `main` yet, so this link is pending). Rules follow it:
 
 | Rule | Duel slice |
 | --- | --- |
 | Tick | Fixed 30 Hz. One displayed second is 30 ticks. |
-| Numbers | Integer fixed-point. Provisional scale `fxScale = 1000` (milli-units). A value that is not a whole milli-unit is `precisionExceeded`. |
+| Rules-turn | Written in seconds. Sim-core multiplies by 30. The product must be a whole number of ticks. The seconds value is still TO VERIFY; the default placeholder is 30 seconds. |
+| Numbers | 16.16 fixed point, `FX_SHIFT = 16`. One unit is one range unit. A value that is not on that grid is `precisionExceeded`. |
 | Headings | `uint16`. 0 is the bow. Increasing heading is clockwise from above. 65536 is a full circle. |
-| Randomness | Named seeded streams. Rules read only `combat`. Chart draws and warhead checks use it. Tests may inject `scriptedDraws` / `warheadRolls`; the sim does not. |
-| Distance | One swappable unit. Weapon ranges in the placeholder table are in that unit. |
-
-A **rules-turn** is `rulesTurnTicks` ticks. The placeholder is **900** (30 displayed seconds). That number is unverified. It is also the provisional Combat answer to the mission API's "game turn" length, and it will move when a Wine session times one CE turn.
+| Randomness | Named seeded streams. The `combat` stream is registered in sim-core. Rules read only that stream. Tests may inject `scriptedDraws` / `warheadRolls`; the sim does not. The checker uses mulberry32 as a test double until sim-core names the generator. |
+| Distance | One range unit. Map positions are whole range units, each axis within ±8192. A value outside that is `badMapBounds` from the mission loader ([#52](https://github.com/danielsegan/sfc2.js/pull/52)). Position differences are computed in i64. |
+| Long range | A 75-range-unit figure appears only as a fixture probe (`tests/map-bounds.json`) and is TO VERIFY. It is not a weapon-range rule. |
 
 ## 1. What this slice resolves
 
@@ -30,7 +30,7 @@ Tabletop play writes an energy plan and a move for a whole turn, then steps thro
 
 The duel slice follows the real-time game:
 
-1. The same spend categories exist (movement, life support, fire control, shields, weapons). They are amounts per rules-turn, dripped across ticks. The player may send a new plan on any tick. It applies on the tick the input phase presents it, then covers the next `rulesTurnTicks` ticks.
+1. The same spend categories exist (movement, life support, fire control, shields, weapons). They are amounts per rules-turn, dripped across the ticks sim-core derived from that turn's seconds. The player may send a new plan on any tick. It applies on the tick the input phase presents it, then covers that converted length.
 2. Position is continuous. Heading is a uint16, not a six-step compass. Turn mode caps yaw per tick.
 3. Weapons charge while the ship moves. They do not wait for a written fire phase.
 4. A hit resolves on the tick it lands, including shield bleed and the chart.
@@ -103,13 +103,13 @@ Example, cap not binding: general 8 and specific 3 on facing 0. General becomes 
 
 ## 6. Phasers
 
-A mount whose mapped internal type is `phaser` charges up to `chargeCost`. The placeholder `TEST-PH` costs 4 and has two range bands (3 damage out to 10, 1 damage out to 20). Real ftrlist codes `Ph2`, `Ph3` and `PhG` map to `phaser` with **empty** cost rows until playtest.
+A mount is a phaser because its **code** maps to internal type `phaser`, not because of which slot it sits in. `Ph1`, `Ph2`, `Ph3`, `Ph4`, `PhG` and the synthetic `TEST-PH` are phasers. `Ph3` also occurs on heavy-weapon slots. Real phaser codes have empty cost rows until playtest. `TEST-PH` costs 4 and has two range bands (3 damage out to 10, 1 damage out to 20) so the fixtures can run.
 
-Charging is the dripped weapon budget. There is no minimum tick count beyond receiving the energy. When `charge` reaches `chargeCost` the mount is ready. `holdCost` is 0 in the placeholder, so a ready phaser does not bleed energy while it waits. A non-zero hold cost would come off the weapon budget first. Whether CE charges to hold is unverified.
+Charging is the dripped weapon budget. There is no minimum tick count beyond receiving the energy. When `charge` reaches the cost the mount is ready. `holdCost` is 0 in the placeholder, so a ready phaser does not bleed energy while it waits. A non-zero hold cost would come off the weapon budget first. Whether CE charges to hold is unverified.
 
 Firing is instant in this slice: on the fire tick the damage band is applied to the facing struck. Travel time for phasers is unverified and may be added without changing the charge rule.
 
-**Capacitor hypothesis (unverified, default off).** File slots 11–25 are `slotIndex` 10–24. When `phaserCapacitorFromHighSlots` is true, energy allocated to such a phaser past its own `chargeCost` spills into a ship capacitor, up to the sum of those mounts' charge costs. Slots 0–9 do not feed it. The capacitor can pay a later phaser charge on a high slot. The flag ships **false** so the unverified rule is not on by accident. The on behaviour is fixture `tests/capacitor-hypothesis.json`. The loader does not implement this; the rules module does, keyed on `slotIndex`.
+**Capacitor.** Every phaser feeds the ship capacitor, in a heavy slot or in slots 11–25. Energy allocated past that mount's own cost spills into the capacitor, up to the sum of the phaser costs on the ship. The capacitor can pay a later charge on any phaser. A heavy-slot `Ph3` doing this is `tests/heavy-slot-phaser.json` (the cost 4 on that fixture is synthetic, not a CE stat). The loader does not apply this; the rules module does, from the code's internal type.
 
 ## 7. Photon torpedo
 
@@ -123,7 +123,7 @@ The one heavy weapon. Internal type `photon`. Placeholder `TEST-PHOT`:
 | `overloadDamage` | 12 | Damage in `overload` mode. |
 | `proxRadius` / `proxDamage` | 2 / 4 | Proximity fuse. |
 | `projectileSpeed` | 2 | Range units per tick. |
-| `photonMaxRange` | 30 | Launch past this range is `outOfRange`. |
+| `maxRange` | 30 | Synthetic launch limit for `TEST-PHOT` only. Not the 75-unit probe. |
 
 `PhoF` is the same internal type. Its cost row is empty until playtest.
 
@@ -158,10 +158,10 @@ Crew, boarding parties, and repair priority are state. Repair in combat is `repa
 
 ## 9. Fighters and PFs in this slice
 
-PFs use the ship model with `class: "pf"` and the entry points above. Fighters use the lighter model in the mapping doc (speed, damage points, five weapon groups, ECM / ECCM, bay fields that the header actually contains). `damageShield` and the other entry points return `notAShip` for a fighter. Fighter weapon and arc **names** are mapped so the loader accepts them; their damage numbers are not in this slice.
+The CE 2.670 shiplist has 15 `FTR` hull rows and no PF rows. The `class: "pf"` flag stays on the ship model for a later file or a mod. Stock fighters use the lighter model in the mapping doc. `damageShield` and the other entry points return `notAShip` for a fighter. Fighter weapon and arc names are mapped so the loader accepts them; their damage numbers are not in this slice.
 
 ## 10. Pending playtest (values)
 
-Every number in `data/constants.json`, `data/turn-modes.json`, and the `TEST-*` weapon rows. The ×2 scale factors. `rulesTurnTicks`. Capacitor flag (keep off). Shield bins versus model cones. Pay order. Battery dump and refill. Phaser hold cost and travel time. Photon arming, overload odds, proximity radius. Chart rows and the hull-section map. In-place yaw. Fighter arc spans and suffix readings. ftrlist `Shots` versus reloads. Shiplist codes and headers (#6).
+Every balance number in `data/constants.json`, `data/turn-modes.json`, and the `TEST-*` rows. How many seconds a CE rules-turn lasts. The ×2 scale factors. Shield bins versus model cones, and every arc facing set. Whether the numeric Arc on `Dro*` and ADD means reloads or rack capacity. Pay order. Battery dump and refill. Phaser hold cost and travel time. Photon arming, overload odds, proximity radius. Chart rows and the hull-section map. In-place yaw. ftrlist `Shots` versus reloads. The 75-unit range probe.
 
 Verification method: [`fidelity-risk.md`](fidelity-risk.md).
