@@ -27,8 +27,8 @@ export function fieldChromeBudget(viewportHeight: number, hudScale: number): Chr
   const preferred = Math.max(Math.round(height * 0.42), Math.min(280, available * 0.55));
   const fieldMin = Math.min(Math.max(0, preferred), Math.round(available * 0.7));
   const chrome = Math.max(0, available - fieldMin);
-  const headerMax = Math.round(chrome * 0.22);
-  const skirmishMax = Math.round(chrome * 0.32);
+  const headerMax = Math.round(chrome * 0.18);
+  const skirmishMax = Math.round(chrome * 0.26);
   const consoleMax = Math.max(0, chrome - headerMax - skirmishMax);
   return { headerMax, skirmishMax, consoleMax, topBar, bottomBar, fieldMin };
 }

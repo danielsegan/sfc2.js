@@ -3,6 +3,7 @@ import { createSyntheticDuel } from '../../../engine/duel/match.ts';
 import {
   facingSector,
   sectorOutline,
+  sectorFillVertexColors,
   sectorPositions,
   wedgesFor,
   wedgeStyle,
@@ -81,6 +82,7 @@ describe('tactical field', () => {
       expect(budget.headerMax + budget.skirmishMax + budget.consoleMax + budget.topBar + budget.bottomBar + budget.fieldMin).toBe(height);
       expect(budget.fieldMin).toBeGreaterThanOrEqual(280);
     }
+    expect(fieldChromeBudget(720, 1).consoleMax).toBeGreaterThanOrEqual(190);
     const tight = fieldChromeBudget(720, 4);
     expect(tight.fieldMin + tight.topBar + tight.bottomBar + tight.headerMax + tight.skirmishMax + tight.consoleMax).toBe(720);
     expect(tight.fieldMin).toBeGreaterThanOrEqual(200);
@@ -126,6 +128,10 @@ describe('tactical field', () => {
     const fighter = weapon({ slotIndex: 2, code: 'DroI', arcFull: true, rangeMax: 12, status: 'charging', ready: false });
     const wedges = wedgesFor([phaser, drone, fighter], [0, 1, 2]);
     expect(wedges.map((item) => item.rangeMax)).toEqual([20, 12]);
+    expect(wedges.every((item) => item.style.fill === 0)).toBe(true);
+    const single = wedgesFor([phaser], [0]);
+    expect(single).toHaveLength(1);
+    expect(single[0]?.style.fill).toBeGreaterThan(0);
     expect(wedgeStyle(phaser).pattern).toBe('solid');
     expect(wedgeStyle(fighter).pattern).toBe('dashed');
     expect(wedgeStyle({ ready: false, status: 'overload' }).pattern).toBe('dashdot');
@@ -135,6 +141,15 @@ describe('tactical field', () => {
     expect(positions[2]).toBeCloseTo(0, 5);
     expect(positions[3]).toBeCloseTo(4, 5);
     expect(positions[5]).toBeCloseTo(0, 4);
+    const fade = sectorFillVertexColors(positions, 0, 4);
+    expect(fade[0]).toBeCloseTo(1, 5);
+    expect(fade[3]).toBeCloseTo(0, 5);
+    const mid = new Float32Array([2, 0, 0, 0, 0, 2, -2, 0, 0, 0, 0, -2]);
+    const midFade = sectorFillVertexColors(mid, 0, 4);
+    expect(midFade[0]).toBeCloseTo(0.25, 5);
+    expect(midFade[0]).toBeCloseTo(midFade[3], 8);
+    expect(midFade[0]).toBeCloseTo(midFade[6], 8);
+    expect(midFade[0]).toBeCloseTo(midFade[9], 8);
     const outline = sectorOutline(0, 0, 16384, false, 0, 4, 4, 0);
     expect(outline.length).toBeGreaterThan(12);
     const facing = facingSector(0);

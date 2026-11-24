@@ -228,17 +228,42 @@ dialog h2, dialog h3 { margin: 8px 0 4px; letter-spacing: 0.08em; text-transform
 
 .helm-grid {
   display: grid;
-  grid-template-columns: repeat(3, 32px);
-  gap: 4px;
+  grid-template-columns: repeat(3, 24px);
+  gap: 3px;
   justify-content: center;
-  margin: 0 auto 8px;
+  margin: 0 auto 4px;
 }
 .helm-grid button {
-  width: 32px;
-  height: 32px;
+  width: 24px;
+  height: 24px;
   padding: 0;
 }
 .helm-grid button:disabled { opacity: 0.45; }
+.helm-reads {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 8px;
+  row-gap: 0;
+  min-width: 0;
+}
+section[aria-label="Helm"] {
+  min-width: 0;
+  overflow: auto;
+  min-height: 0;
+}
+section[aria-label="Helm"] .read {
+  margin: 1px 0;
+  font-size: 12px;
+  gap: 4px;
+  min-width: 0;
+}
+section[aria-label="Helm"] .read span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+section[aria-label="Helm"] .step { margin: 2px 0; }
+section[aria-label="Helm"] .presets { margin: 2px 0; }
 
 #shields { display: block; margin: 0 auto; width: 160px; height: 160px; }
 #shield-table { width: 100%; border-collapse: collapse; font-size: 12px; }

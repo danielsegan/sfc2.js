@@ -27,7 +27,7 @@ import {
 } from 'three';
 import type { ContactView, HelmView, ViewModel } from '../../engine/view/view-model.ts';
 import { helmWedge } from './heading-wedge.ts';
-import { sectorOutline, sectorPositions, wedgesFor, type ArcWeapon, type WedgePattern } from './tactical/arcs.ts';
+import { sectorFillVertexColors, sectorOutline, sectorPositions, wedgesFor, type ArcWeapon, type WedgePattern } from './tactical/arcs.ts';
 import { reportedBeams, reportedFlashes } from './tactical/beams.ts';
 import { defaultOverheadDistance, gridLevel, gridSegments, visibleWorldWidth } from './tactical/grid.ts';
 import { markerHeading } from './tactical/tags.ts';
@@ -422,6 +422,14 @@ export class DuelScene {
       const steps = wedge.full ? 48 : 14;
       const positions = sectorPositions(self.heading16, wedge.from16, wedge.to16, wedge.full, 0.2, wedge.rangeMax, steps, 0.03);
       setMeshPositions(slot.fill, positions);
+      const colors = sectorFillVertexColors(positions, 0.2, wedge.rangeMax);
+      const colorAttr = slot.fill.geometry.getAttribute('color');
+      if (colorAttr instanceof BufferAttribute && colorAttr.array.length === colors.length) {
+        (colorAttr.array as Float32Array).set(colors);
+        colorAttr.needsUpdate = true;
+      } else {
+        slot.fill.geometry.setAttribute('color', new BufferAttribute(colors, 3));
+      }
       const chunks = [sectorOutline(self.heading16, wedge.from16, wedge.to16, wedge.full, 0.2, wedge.rangeMax, steps, 0.04)];
       for (const band of wedge.bands) {
         chunks.push(sectorOutline(self.heading16, wedge.from16, wedge.to16, wedge.full, band, band, steps, 0.045));
@@ -571,7 +579,7 @@ export class DuelScene {
 function makeWedgeSlot(): { fill: Mesh; edge: LineSegments; hatch: LineSegments } {
   const fill = new Mesh(
     new BufferGeometry(),
-    new MeshBasicMaterial({ transparent: true, opacity: 0.15, depthWrite: false, side: DoubleSide }),
+    new MeshBasicMaterial({ transparent: true, opacity: 0.15, depthWrite: false, side: DoubleSide, vertexColors: true }),
   );
   const edge = new LineSegments(new BufferGeometry(), new LineBasicMaterial({ color: 0xffffff }));
   const hatch = new LineSegments(new BufferGeometry(), new LineDashedMaterial({ color: 0xffffff, dashSize: 0.35, gapSize: 0.2 }));
