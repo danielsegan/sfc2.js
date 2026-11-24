@@ -5,7 +5,7 @@ import { VERB_ORDER_HELM, helmHandler, helmPayload } from '../duel/helm.ts';
 import { createSim } from './sim.ts';
 import { createCombat, VERB_FIRE, VERB_SET_ENERGY, VERB_SPAWN, firePayload, spawnPayload } from './combat.ts';
 import { CRUISE_TABLE, createCruise } from '../duel/cruise.ts';
-import { CLASS_SHIP, ENERGY_SCALE, MODE_NORMAL, TURN_TEST_A } from './rules-tables.ts';
+import { CLASS_SHIP, ENERGY_SCALE, MODE_NORMAL, MODE_OVERLOAD, TURN_TEST_A } from './rules-tables.ts';
 import type { ShipSetup } from './bind-shiplist.ts';
 import {
   ALLEGIANCE_TABLE,
@@ -16,7 +16,7 @@ import {
   allegiancePayload,
 } from './allegiance.ts';
 import { createCaptain } from './captain.ts';
-import { VERB_SET_CLOAK, VERB_SET_EW } from './phase3.ts';
+import { VERB_SET_CLOAK, VERB_SET_EW, VERB_SET_TRACTOR, VERB_SET_WEAPON_MODE } from './phase3.ts';
 import { shipView } from './hull.ts';
 
 function hull(overrides: Partial<ShipSetup> = {}): ShipSetup {
@@ -237,5 +237,47 @@ describe('ai captains', () => {
     expect(fleeing.snapshot().queued.some((cmd) => cmd.kind === VERB_SET_CLOAK)).toBe(true);
     step(fleeing);
     expect(shipView(fleeing.snapshot().world, 0).cloakState).toBe(1);
+  });
+
+  it('overloads a photon inside the fight band and holds a tractor in beam range', () => {
+    const shooter = hull({
+      tractors: 2,
+      battery: 8,
+      batteryCapacity: 8,
+      systems: { sensors: 4 },
+      mounts: [
+        {
+          slotIndex: 0,
+          weapon: 'TEST-PH',
+          arc: 'TEST-FA',
+          chargePoints: 0,
+          boxes: 1,
+          mode: MODE_NORMAL,
+          ticksCharging: 0,
+        },
+        {
+          slotIndex: 1,
+          weapon: 'TEST-PHOT',
+          arc: 'TEST-FA',
+          chargePoints: 0,
+          boxes: 1,
+          mode: MODE_NORMAL,
+          ticksCharging: 0,
+        },
+      ],
+    });
+    const sim = boot([shooter, hull()]);
+    step(sim, opening([
+      { x: 0, y: 0, heading: 0, side: 0, control: CONTROL_AI },
+      { x: 4, y: 0, heading: 32768, side: 1, control: CONTROL_MANUAL },
+    ]));
+    const mode = sim.snapshot().queued.find((cmd) => cmd.kind === VERB_SET_WEAPON_MODE);
+    const tractor = sim.snapshot().queued.find((cmd) => cmd.kind === VERB_SET_TRACTOR);
+    expect(mode?.slot).toBe(8);
+    expect(i32(mode!.payload, 4)).toBe(1);
+    expect(i32(mode!.payload, 8)).toBe(MODE_OVERLOAD);
+    expect(tractor?.slot).toBe(8);
+    expect(i32(tractor!.payload, 8)).toBe(1);
+    expect(i32(tractor!.payload, 12)).toBe(1);
   });
 });

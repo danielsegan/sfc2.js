@@ -131,6 +131,13 @@ export class World {
     this.writeRow(table, (id as number) & 0xffff, values);
   }
 
+  hasTable(id: string): boolean {
+    for (const table of this.tables) {
+      if (table.id === id) return true;
+    }
+    return false;
+  }
+
   getFields(id: EntityId, tableId: string): number[] {
     this.requireLive(id);
     const table = this.table(tableId);

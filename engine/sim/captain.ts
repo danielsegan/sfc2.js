@@ -2,9 +2,9 @@
  * Deterministic captains for a skirmish of up to six ships.
  *
  * Each captain reads the world in the AI phase and queues the same verbs
- * the player uses: energy, helm yaw, and fire. The session is not involved.
- * Commands apply on the next tick, from slots 8–15, one slot per entity index.
- * They are not written into the player log.
+ * the player uses. The session is not involved. Commands apply on the next
+ * tick, from slots 8–15, one slot per entity index. They are not written
+ * into the player log.
  *
  * Tie-breaks draw from the `ai` stream only. No other stream is touched.
  * The numbers below are placeholders so the fixture can move. They are not
@@ -32,19 +32,52 @@ import {
   INTERNAL_PHOTON,
   MODE_KEEP,
   MODE_NORMAL,
+  MODE_OVERLOAD,
   MODE_PROXIMITY,
+  TRACTOR_RANGE,
   turnYawCap,
   weaponDef,
   type WeaponDef,
 } from './rules-tables.ts';
 import {
   CLOAK_OFF,
+  TRACTOR_HOLD,
   VERB_SET_CLOAK,
   VERB_SET_EW,
+  VERB_SET_TRACTOR,
+  VERB_SET_WEAPON_MODE,
   setCloakPayload,
   setEwPayload,
+  setTractorPayload,
+  setWeaponModePayload,
   targetHidden,
 } from './phase3.ts';
+import {
+  B,
+  BAY,
+  BAY_COUNT,
+  BAY_FIGHTER,
+  BAY_PF,
+  BAY_STRIDE,
+  C,
+  CRAFT,
+  ENDURANCE_TICKS,
+  ROLE_FIGHTER,
+  ROLE_PF,
+  STATE_OUT,
+  STATE_RETURN,
+  TRANSPORTER_RANGE,
+  VERB_LAUNCH_FIGHTER,
+  VERB_LAUNCH_PF,
+  VERB_LAY_MINE,
+  VERB_RAID,
+  VERB_RECALL,
+  launchFighterPayload,
+  launchPfPayload,
+  layMinePayload,
+  raidPayload,
+  recallPayload,
+} from './smallcraft.ts';
 import {
   VERB_FIRE,
   VERB_SET_ENERGY,
@@ -63,6 +96,11 @@ const FLEE_SPEED = 6;
 const CLOSE_SPEED = 4;
 const CREEP_SPEED = 2;
 const SHIELD_POINTS = 4;
+/** A fighter is recalled after this many attack ticks, before endurance runs out. */
+const RECALL_AFTER = 8;
+/** Retreat drops one mine when a hostile is still inside this range. */
+const PURSUE_RANGE = 24;
+const TRACTOR_BID = 1;
 
 export function createCaptain(): SimSystem {
   return {
@@ -118,15 +156,19 @@ function captain(
   const facing = target.id === 0 ? 0 : chooseFacing(hull, mounts, bearing, dx, dy, retreat, tieBreak);
 
   const sendEnergy = hull[H.planTicksLeft] === 0 || mode !== row[A.mode];
+  const overload = !retreat && target.id !== 0 && range > 0 && range <= FIGHT_RANGE;
   if (sendEnergy) {
+    if (overload) queueOverload(ctx, slot, id as number, mounts);
     ctx.queue({
       slot,
       kind: VERB_SET_ENERGY,
-      payload: setEnergyPayload(id as number, energyOrder(hull, mounts, range, facing, retreat)),
+      payload: setEnergyPayload(id as number, energyOrder(hull, mounts, range, facing, retreat, overload)),
     });
     queueEw(ctx, slot, id as number, hull, retreat);
     queueCloak(ctx, slot, id as number, hull, retreat);
   }
+  queueTractor(ctx, slot, id as number, hull, target.id, range, retreat);
+  queueCraft(world, ctx, slot, id, retreat, range, target.id, sendEnergy);
 
   const cap = turnYawCap(hull[H.turnMode]!);
   if (target.id !== 0 && cap > 0) {
@@ -288,16 +330,122 @@ function sensorBoxes(hull: readonly number[]): number {
   return sum > 0 ? sum : 0;
 }
 
-/** One battery point of ECCM while fighting, or ECM while running. Skipped when EW is already paid. */
+/** One battery point of ECCM while fighting, or ECM while running. Retasking the same total is free. */
 function queueEw(ctx: TickContext, slot: number, entity: number, hull: readonly number[], retreat: boolean): void {
   if (sensorBoxes(hull) <= 0) return;
-  if (hull[H.ecmPaid]! + hull[H.eccmPaid]! > 0) return;
-  if (hull[H.battery100]! < ENERGY_SCALE) return;
+  const wantEcm = retreat ? 1 : 0;
+  const wantEccm = retreat ? 0 : 1;
+  if (hull[H.ecmPaid] === wantEcm && hull[H.eccmPaid] === wantEccm) return;
+  const extra = wantEcm + wantEccm - (hull[H.ecmPaid]! + hull[H.eccmPaid]!);
+  if (extra > 0 && hull[H.battery100]! < extra * ENERGY_SCALE) return;
   ctx.queue({
     slot,
     kind: VERB_SET_EW,
-    payload: setEwPayload(entity, retreat ? 1 : 0, retreat ? 0 : 1),
+    payload: setEwPayload(entity, wantEcm, wantEccm),
   });
+}
+
+/** Photons inside the fight band arm as overloads. The energy plan pays that cost. */
+function queueOverload(ctx: TickContext, slot: number, entity: number, mounts: readonly MountMem[]): void {
+  for (let index = 0; index < mounts.length; index++) {
+    const mount = mounts[index]!;
+    const def = weaponDef(mount.weaponId);
+    if (!def || def.internal !== INTERNAL_PHOTON || def.overloadArmCost <= 0) continue;
+    if (mount.mode === MODE_OVERLOAD) continue;
+    ctx.queue({
+      slot,
+      kind: VERB_SET_WEAPON_MODE,
+      payload: setWeaponModePayload(entity, index, MODE_OVERLOAD),
+    });
+  }
+}
+
+/** Hold the target when a tractor is fitted and the range is inside the beam. */
+function queueTractor(
+  ctx: TickContext,
+  slot: number,
+  entity: number,
+  hull: readonly number[],
+  targetId: number,
+  range: number,
+  retreat: boolean,
+): void {
+  if (retreat || targetId === 0 || hull[H.tractors]! <= 0) return;
+  if (range <= 0 || range > TRACTOR_RANGE) return;
+  const bid = TRACTOR_BID < hull[H.tractors]! ? TRACTOR_BID : hull[H.tractors]!;
+  if (hull[H.tractorMode] === TRACTOR_HOLD && hull[H.tractorTarget] === targetId && hull[H.tractorPaid]! >= bid) return;
+  const extra = bid - hull[H.tractorPaid]!;
+  if (extra > 0 && hull[H.battery100]! < extra * ENERGY_SCALE) return;
+  ctx.queue({
+    slot,
+    kind: VERB_SET_TRACTOR,
+    payload: setTractorPayload(entity, targetId, TRACTOR_HOLD, bid),
+  });
+}
+
+function craftTables(world: World): boolean {
+  return world.hasTable(CRAFT) && world.hasTable(BAY);
+}
+
+/** Launch what the bays hold, recall it on a timer or a retreat, mine when pursued, raid in transporter range. */
+function queueCraft(
+  world: World,
+  ctx: TickContext,
+  slot: number,
+  id: EntityId,
+  retreat: boolean,
+  range: number,
+  targetId: number,
+  sendEnergy: boolean,
+): void {
+  if (!craftTables(world)) return;
+  const self = id as number;
+  const craft = world.getFields(id, CRAFT);
+  if (retreat && sendEnergy && targetId !== 0 && range > 0 && range <= PURSUE_RANGE && craft[C.mines]! > 0) {
+    ctx.queue({ slot, kind: VERB_LAY_MINE, payload: layMinePayload(self) });
+  }
+  if (!retreat && sendEnergy && targetId !== 0 && range <= TRANSPORTER_RANGE && craft[C.boarding]! >= 1) {
+    const parties = craft[C.boarding]!;
+    const mode = parties >= 2 ? 1 : 0;
+    const commit = mode === 1 ? 1 : 0;
+    ctx.queue({ slot, kind: VERB_RAID, payload: raidPayload(self, targetId, mode, commit) });
+  }
+  let fighterOut = false;
+  let pfOut = false;
+  for (const other of world.liveIds()) {
+    const row = world.getFields(other, CRAFT);
+    if (row[C.owner] !== self) continue;
+    if (row[C.role] !== ROLE_FIGHTER && row[C.role] !== ROLE_PF) continue;
+    const state = row[C.state]!;
+    if (state !== STATE_OUT && state !== STATE_RETURN) continue;
+    if (row[C.role] === ROLE_FIGHTER) fighterOut = true;
+    if (row[C.role] === ROLE_PF) pfOut = true;
+    if (state === STATE_OUT && recallDue(row, retreat, range, targetId)) {
+      ctx.queue({ slot, kind: VERB_RECALL, payload: recallPayload(other as number) });
+    }
+  }
+  if (retreat) return;
+  const bays = world.getFields(id, BAY);
+  for (let bay = 0; bay < BAY_COUNT; bay++) {
+    const base = bay * BAY_STRIDE;
+    const kind = bays[base + B.kind]!;
+    const ready = bays[base + B.ready]!;
+    if (ready <= 0) continue;
+    if (kind === BAY_FIGHTER && !fighterOut) {
+      ctx.queue({ slot, kind: VERB_LAUNCH_FIGHTER, payload: launchFighterPayload(self, bay) });
+      fighterOut = true;
+    } else if (kind === BAY_PF && !pfOut) {
+      ctx.queue({ slot, kind: VERB_LAUNCH_PF, payload: launchPfPayload(self, bay) });
+      pfOut = true;
+    }
+  }
+}
+
+function recallDue(row: readonly number[], retreat: boolean, range: number, targetId: number): boolean {
+  if (retreat) return true;
+  if (row[C.role] === ROLE_PF && targetId !== 0 && range <= TRANSPORTER_RANGE) return true;
+  if (row[C.role] === ROLE_FIGHTER && row[C.timer]! <= ENDURANCE_TICKS - RECALL_AFTER) return true;
+  return false;
 }
 
 /** A fitted cloak goes up on retreat and down when the ship turns back to fight. */
@@ -321,6 +469,7 @@ function energyOrder(
   range: number,
   facing: number,
   retreat: boolean,
+  overload: boolean,
 ): { lifeSupport: boolean; fireControl: boolean; speed: number; general: number; specific: number[]; weapons: EnergyAsk[] } {
   const gen = hull[H.warp100]! + hull[H.impulse100]! + hull[H.apr100]!;
   let left = gen > 0 ? gen : 0;
@@ -339,7 +488,7 @@ function energyOrder(
   let speed = 0;
   if (retreat) speed = FLEE_SPEED;
   else if (range > CLOSE_RANGE) speed = CLOSE_SPEED;
-  else if (range > FIGHT_RANGE) speed = CREEP_SPEED;
+  else if (range > TRANSPORTER_RANGE) speed = CREEP_SPEED;
   const unit = hull[H.moveCost100]!;
   if (unit > 0) {
     let affordable = 0;
@@ -355,12 +504,14 @@ function energyOrder(
       const mount = mounts[slot]!;
       const def = weaponDef(mount.weaponId);
       if (!def || mount.boxes <= 0) continue;
-      const cost = weaponCost(def);
+      const heavy = overload && def.internal === INTERNAL_PHOTON && def.overloadArmCost > 0;
+      const cost = heavy ? def.overloadArmCost : weaponCost(def);
       if (cost <= 0) continue;
       const need = cost * ENERGY_SCALE;
       if (need > left) continue;
       left -= need;
-      weapons.push({ slot, request: cost, mode: MODE_KEEP });
+      const mode = heavy ? MODE_OVERLOAD : def.internal === INTERNAL_PHOTON ? MODE_NORMAL : MODE_KEEP;
+      weapons.push({ slot, request: cost, mode });
     }
   }
   const specific = [0, 0, 0, 0, 0, 0];
@@ -379,11 +530,20 @@ function readyToFire(mount: MountMem, dx: number, dy: number, heading: number, r
   const def = weaponDef(mount.weaponId);
   if (!def) return false;
   if (def.internal !== INTERNAL_PHASER && def.internal !== INTERNAL_PHOTON) return false;
-  if (retreat && def.internal === INTERNAL_PHOTON && mount.charge100 < weaponCost(def) * ENERGY_SCALE) return false;
+  if (def.internal === INTERNAL_PHOTON && mount.mode !== MODE_NORMAL && mount.mode !== MODE_PROXIMITY && mount.mode !== MODE_OVERLOAD) {
+    return false;
+  }
+  const arm = photonArm(def, mount.mode);
+  if (retreat && def.internal === INTERNAL_PHOTON && mount.charge100 < arm.cost * ENERGY_SCALE) return false;
   if (!charged(mount, def)) return false;
   const reach = outerRange(def);
   if (reach <= 0 || !withinRange(dx, dy, reach)) return false;
   return shotInArc(heading, dx, dy, mount.arcId, def.omni);
+}
+
+function photonArm(def: WeaponDef, mode: number): { cost: number; ticks: number } {
+  if (mode === MODE_OVERLOAD) return { cost: def.overloadArmCost, ticks: def.overloadArmTicks };
+  return { cost: def.armCost, ticks: def.armTicks };
 }
 
 function charged(mount: MountMem, def: WeaponDef): boolean {
@@ -392,10 +552,9 @@ function charged(mount: MountMem, def: WeaponDef): boolean {
     return mount.charge100 >= def.chargeCost * ENERGY_SCALE;
   }
   if (def.internal === INTERNAL_PHOTON) {
-    if (mount.mode !== MODE_NORMAL && mount.mode !== MODE_PROXIMITY) return false;
-    const cost = def.armCost;
-    if (cost <= 0) return false;
-    return mount.charge100 >= cost * ENERGY_SCALE && mount.ticksCharging >= def.armTicks;
+    const arm = photonArm(def, mount.mode);
+    if (arm.cost <= 0) return false;
+    return mount.charge100 >= arm.cost * ENERGY_SCALE && mount.ticksCharging >= arm.ticks;
   }
   return false;
 }

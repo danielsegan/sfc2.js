@@ -1,6 +1,6 @@
 /**
- * Turn a keymap action into a session order or a note. Systems that
- * are not in this duel stay on the console and do not touch the sim.
+ * Turn a keymap action into a session order or a note.
+ * Reverse, erratic maneuvers, and drones stay on the console.
  */
 import type { DuelPlan } from '../../engine/duel/match.ts';
 import type { DuelMatch } from '../../engine/duel/match.ts';

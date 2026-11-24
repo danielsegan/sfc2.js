@@ -104,18 +104,18 @@ export const B = {
 
 export const BAY_FIELDS = BAY_COUNT * BAY_STRIDE;
 
-const ROLE_FIGHTER = 1;
+export const ROLE_FIGHTER = 1;
 export const ROLE_MINE = 2;
-const ROLE_PF = 3;
+export const ROLE_PF = 3;
 
-const STATE_OUT = 1;
-const STATE_RETURN = 2;
+export const STATE_OUT = 1;
+export const STATE_RETURN = 2;
 const STATE_ARMING = 1;
 const STATE_ARMED = 2;
 
 const BAY_NONE = 0;
-const BAY_FIGHTER = 1;
-const BAY_PF = 2;
+export const BAY_FIGHTER = 1;
+export const BAY_PF = 2;
 
 const RAID_HIT_AND_RUN = 0;
 const RAID_BOARDING = 1;

@@ -62,3 +62,4 @@ The browser job loads the same files in Chromium, Firefox, and WebKit and compar
 | `replays/scripted-duel.s2replay` | `scripted-duel` | Two player slots, helm and a synthetic fire verb, Q16.16 movement, an i64 distance in the event hash. |
 | `replays/ai-regen.s2replay` | `ai-regen` | Empty player log. Slot 8 respawns its commands inside the sim. |
 | `replays/skirmish-3v3.s2replay` | `skirmish-3v3` | Empty player log. Six AI ships, three a side, captains on slots 8–13. |
+| `replays/every-empire.s2replay` | `every-empire` | Empty player log. Six AI ships, one per line empire. The run uses EW, overload, boarding, a tractor, a cloak, a mine, a fighter, and a PF. |

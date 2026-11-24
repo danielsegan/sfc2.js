@@ -92,7 +92,7 @@ Durations assume AI-assisted pace like the EaW project, with Daniel reviewing at
 | 0 Setup | Private repo, CI, legal posture, CE 2.670 installed under Wine, asset inventory | Repo live with layout, CI green, asset-blocking check working, `docs/plan.md` committed, inventory of every file type | 1–2 weeks |
 | 1 Asset pipeline | Parsers, importer, ship viewer | Every ship in `shiplist.txt` loads and spins with textures and self-illum | 2–4 weeks |
 | 2 Tactical duel | One ship against one, core SFB rules | Energy, six shields, arcs, phasers and heavy weapons; deterministic replay passes | 4–6 weeks |
-| 3 Full skirmish | All weapons and systems, fleets, AI, HUD, sound | Six-ship skirmish with every empire; EW, overloads, boarding, tractors, cloaks, mines, fighters, PFs | 8–12 weeks |
+| 3 Full skirmish | All weapons and systems, fleets, AI, HUD, sound | Six-ship skirmish with every empire; EW, overloads, boarding, tractors, cloaks, mines, fighters, PFs. Exit scenario: `replays/every-empire.s2replay` | 8–12 weeks |
 | 4 Missions | Mission runtime and the first campaign | One empire's campaign playable start to finish | 6–8 weeks |
 | 5 All campaigns | Port the remaining campaigns | Every empire's campaign complete | 10–16 weeks |
 | 6 Conquest | Dynaverse-style persistent map | Single-player Conquest with territory, economy and promotions | 8–12 weeks |
