@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatHetDelay, hudLogLine, TICKS_PER_SECOND } from './hud.ts';
+import { formatHetDelay, hudLogLine, latestAlert, TICKS_PER_SECOND } from './hud.ts';
 
 describe('HET helm panel', () => {
   it('shows hetDelayTicks as seconds at 30 Hz', () => {
@@ -21,3 +21,12 @@ describe('HET helm panel', () => {
     );
   });
 });
+
+  it('shows the player\'s own yawClamped and hides other ships\' from the log and banner', () => {
+    const own = { kind: 'alert' as const, tick: 8, id: 'yawClamped', severity: 'info' as const, ship: 3, amount: 200 };
+    const other = { kind: 'alert' as const, tick: 9, id: 'yawClamped', severity: 'info' as const, ship: 7, amount: 200 };
+    expect(hudLogLine(8, own, 3)).toBe('t8  Yaw clamped to 200');
+    expect(hudLogLine(9, other, 3)).toBeNull();
+    expect(latestAlert([other, own], 3)).toBe('yawClamped');
+    expect(latestAlert([other], 3)).toBe('');
+  });

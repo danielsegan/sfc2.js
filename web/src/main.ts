@@ -79,6 +79,7 @@ const slotsHost = document.getElementById('skirmish-slots');
 if (slotsHost) {
   mountSkirmish(slotsHost, () => {
     setupCustomized = !isDefaultDuelSetup(skirmishMode(), snapshotSlots());
+    void startSkirmish({ preview: true });
   });
 }
 
@@ -853,29 +854,41 @@ function layoutSynthetic(choices: readonly SlotChoice[]): {
   return { setups, fleet, roster: nextRoster, hulls };
 }
 
-async function startSkirmish(): Promise<void> {
+let previewGen = 0;
+
+async function startSkirmish(opts?: { preview?: boolean }): Promise<void> {
+  const preview = opts?.preview === true;
+  if (preview && matchLive) return;
   const choices = readSkirmish();
   const occupied = choices.filter((choice) => choice.control !== 'empty');
   const alert = document.getElementById('alert');
   if (occupied.length < 1) {
-    if (alert) alert.textContent = 'Pick at least one ship.';
+    if (!preview && alert) alert.textContent = 'Pick at least one ship.';
     return;
   }
   if (!occupied.some((choice) => choice.control === 'you')) {
-    if (alert) alert.textContent = 'Mark one slot as you.';
+    if (!preview && alert) alert.textContent = 'Mark one slot as you.';
     return;
   }
+  const gen = ++previewGen;
   if (occupied.some((choice) => choice.kind === 'shiplist')) {
-    await startShiplist(choices);
+    await startShiplist(choices, { preview, gen });
     return;
   }
   const built = syntheticFleet(choices);
-  matchLive = true;
-  adopt(built.match, await built.groups, built.roster, `Synthetic skirmish · ${String(occupied.length)} ships`);
-  if (alert) alert.textContent = '';
+  const groups = await built.groups;
+  if (preview && (matchLive || gen !== previewGen)) return;
+  if (!preview) matchLive = true;
+  adopt(built.match, groups, built.roster, `Synthetic skirmish · ${String(occupied.length)} ships`);
+  if (alert && !preview) alert.textContent = '';
 }
 
-async function startShiplist(choices: readonly SlotChoice[]): Promise<void> {
+async function startShiplist(
+  choices: readonly SlotChoice[],
+  opts?: { preview?: boolean; gen?: number },
+): Promise<void> {
+  const preview = opts?.preview === true;
+  if (preview && matchLive) return;
   if (!catalog) return;
   const alert = document.getElementById('alert');
   const active = choices.filter((choice): choice is Extract<SlotChoice, { kind: 'shiplist' }> => {
@@ -891,7 +904,7 @@ async function startShiplist(choices: readonly SlotChoice[]): Promise<void> {
   for (const choice of active) {
     const candidate = catalog.candidates[choice.candidateIndex];
     if (!candidate) {
-      if (alert) alert.textContent = 'That ship is not in the list.';
+      if (!preview && alert) alert.textContent = 'That ship is not in the list.';
       return;
     }
     const at = linePosition(seen[choice.side] ?? 0, counts[choice.side] ?? 1, choice.side);
@@ -926,7 +939,8 @@ async function startShiplist(choices: readonly SlotChoice[]): Promise<void> {
     fleet,
     timeScale: scale,
   });
-  matchLive = true;
+  if (preview && (matchLive || (opts?.gen != null && opts.gen !== previewGen))) return;
+  if (!preview) matchLive = true;
   adopt(next, groups, nextRoster, `Skirmish · ${String(active.length)} ships from the install.`);
-  if (alert) alert.textContent = '';
+  if (alert && !preview) alert.textContent = '';
 }

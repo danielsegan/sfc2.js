@@ -85,6 +85,11 @@ export function wedgesFor(weapons: readonly ArcWeapon[], selected: readonly numb
       style,
     });
   }
+  // Overlapping different arcs: stroke only, so a stack of fills cannot
+  // light up half the field (hud-layout.md §7.3).
+  if (wedges.length > 1) {
+    return wedges.map((wedge) => ({ ...wedge, style: { ...wedge.style, fill: 0 } }));
+  }
   return wedges;
 }
 
@@ -164,6 +169,25 @@ export function sectorOutline(
     push(at(count, inner), at(count, outer));
   }
   return new Float32Array(segments);
+}
+
+/**
+ * Radial fade for a sector fill, in the same vertex order as `sectorPositions`.
+ * 1 at the inner radius, 0 at the outer, even at a given range so the
+ * falloff is centred on the ship and not brighter on one side of the field.
+ */
+export function sectorFillVertexColors(positions: Float32Array, inner: number, outer: number): Float32Array {
+  const colors = new Float32Array(positions.length);
+  const span = Math.max(outer - inner, 0.0001);
+  for (let i = 0; i < positions.length; i += 3) {
+    const reach = Math.hypot(positions[i] ?? 0, positions[i + 2] ?? 0);
+    const t = Math.min(1, Math.max(0, (reach - inner) / span));
+    const fade = (1 - t) * (1 - t);
+    colors[i] = fade;
+    colors[i + 1] = fade;
+    colors[i + 2] = fade;
+  }
+  return colors;
 }
 
 export function facingSector(facing: number): { from16: number; to16: number } {

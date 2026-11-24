@@ -91,7 +91,7 @@ export function updateHud(vm: ViewModel, roster: readonly RosterEntry[], hud: Hu
   text('target-bearing', target && self ? formatDeg(bearing(self.heading16, selfContact(vm), target)) : '—');
   text('target-shields', target ? target.shields.map((facing) => String(facing.current)).join(' · ') : '');
   renderTargetList(vm, roster, hud);
-  const alert = latestAlert(vm.events);
+  const alert = latestAlert(vm.events, vm.self?.id);
   text('alert', alert);
   appendLog(vm);
   drawShields(vm, plan, now);
@@ -163,10 +163,15 @@ function formatDeg(bam: number): string {
   return `${Math.round(toDisplayHeading(bam))}°`;
 }
 
-function latestAlert(events: readonly HudEvent[]): string {
+export function isOtherShipYawClamp(event: HudEvent, selfId: number | null | undefined): boolean {
+  return event.kind === 'alert' && event.id === 'yawClamped' && (selfId == null || event.ship !== selfId);
+}
+
+export function latestAlert(events: readonly HudEvent[], selfId?: number | null): string {
   for (let i = events.length - 1; i >= 0; i--) {
     const event = events[i];
     if (!event) continue;
+    if (isOtherShipYawClamp(event, selfId)) continue;
     if (event.kind === 'hit') return `Hit on facing ${String(event.facing)}, ${String(event.amount)} absorbed`;
     if (event.kind === 'alert' && event.id !== 'ok' && event.id !== 'helm') return event.id;
     if (event.kind === 'sim') return `sim ${String(event.code)}`;
@@ -179,8 +184,13 @@ const seen = new Set<string>();
 function appendLog(vm: ViewModel): void {
   const list = document.getElementById('log');
   if (!list) return;
+  const selfId = vm.self?.id;
   for (const event of vm.events) {
-    const line = hudLogLine(vm.tick, event);
+    if (isOtherShipYawClamp(event, selfId)) {
+      console.debug('yawClamped', event);
+      continue;
+    }
+    const line = hudLogLine(vm.tick, event, selfId);
     if (!line) continue;
     const key = `${String(vm.tick)}:${line}`;
     if (seen.has(key)) continue;
@@ -192,7 +202,8 @@ function appendLog(vm: ViewModel): void {
   while (list.childElementCount > 200) list.firstElementChild?.remove();
 }
 
-export function hudLogLine(tick: number, event: HudEvent): string | null {
+export function hudLogLine(tick: number, event: HudEvent, selfId?: number | null): string | null {
+  if (isOtherShipYawClamp(event, selfId)) return null;
   const mark = `t${String(tick)}`;
   if (event.kind === 'hit') return `${mark}  Hit facing ${String(event.facing)}, absorbed ${String(event.amount)}`;
   if (event.kind === 'alert') {
