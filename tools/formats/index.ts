@@ -58,3 +58,26 @@ export {
   type SelfIllumIndex,
   type TexturePairRef,
 } from "./src/self-illum.ts";
+
+export {
+  MOD_MATERIAL_FLAGS,
+  MOD_MAX_CORNERS,
+  MOD_MAX_FACES,
+  MOD_MAX_FILE_BYTES,
+  MOD_MAX_LODS,
+  MOD_MAX_MATERIALS,
+  MOD_MAX_POINTS,
+  MOD_MAX_VERTICES,
+  MOD_PUBLISHED_LOD_MAX,
+  breakupModelPath,
+  parseMod,
+  type ModCorner,
+  type ModFace,
+  type ModLod,
+  type ModMaterial,
+  type ModModel,
+  type ModNamedPoint,
+  type ModTextureRef,
+  type ModUnknownChunk,
+  type ParseModOptions,
+} from "./src/mod.ts";
