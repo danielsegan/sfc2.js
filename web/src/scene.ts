@@ -105,7 +105,7 @@ export class DuelScene {
       }
       const hull = this.hulls[contact.index];
       if (!hull) continue;
-      hull.visible = !contact.destroyed;
+      hull.visible = !contact.destroyed && contact.detected;
       hull.position.set(contact.x, 0, -contact.y);
       hull.rotation.y = (contact.heading16 / FULL) * Math.PI * 2;
     }

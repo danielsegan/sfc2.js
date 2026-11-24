@@ -31,6 +31,18 @@
     { "code": "excessDamage", "status": "clamped", "logSeverity": "warning", "summary": "Some requested internal points could not be placed. The ship is destroyed when the excess pool is also empty." },
     { "code": "chargeCapped", "status": "clamped", "logSeverity": "warning", "summary": "A weapon request was reduced to the energy the mount (and capacitor, when the hypothesis flag is on) can still store." },
     { "code": "reinforceCapped", "status": "clamped", "logSeverity": "warning", "summary": "Shield reinforcement was reduced by the per-turn cap or by remaining shield room." },
-    { "code": "yawClamped", "status": "clamped", "logSeverity": "warning", "summary": "The heading change was reduced to the turn mode's per-tick yaw limit." }
+    { "code": "yawClamped", "status": "clamped", "logSeverity": "warning", "summary": "The heading change was reduced to the turn mode's per-tick yaw limit." },
+    { "code": "ewMiss", "status": "clamped", "logSeverity": "warning", "summary": "The shot was fired and missed because the defender's ECM beat the attacker's ECCM." },
+    { "code": "noEw", "status": "rejected", "logSeverity": "warning", "summary": "The ship has no sensor, scanner, or special-sensor boxes, so it cannot buy ECM or ECCM." },
+    { "code": "ewCapped", "status": "clamped", "logSeverity": "warning", "summary": "The ECM and ECCM request was cut to the sensor boxes still on the ship." },
+    { "code": "noOverload", "status": "rejected", "logSeverity": "warning", "summary": "This mount has no overload arming cost, so it cannot leave normal or proximity arming." },
+    { "code": "noTractor", "status": "rejected", "logSeverity": "warning", "summary": "The hull has no tractor boxes." },
+    { "code": "badTarget", "status": "rejected", "logSeverity": "warning", "summary": "A tractor cannot be locked onto the ship that is projecting it." },
+    { "code": "tractorBroken", "status": "clamped", "logSeverity": "warning", "summary": "The tractor bid did not beat the target, or a live beam lost the contest or the range." },
+    { "code": "noCloak", "status": "rejected", "logSeverity": "warning", "summary": "Cloak cost is empty. This hull has no cloak." },
+    { "code": "cloaked", "status": "rejected", "logSeverity": "warning", "summary": "Weapons are locked while the cloak is engaging, on, or disengaging." },
+    { "code": "notDetected", "status": "rejected", "logSeverity": "warning", "summary": "The target is cloaked and this ship does not currently detect it." },
+    { "code": "cloakCollapsed", "status": "clamped", "logSeverity": "warning", "summary": "The battery could not pay the cloak's rules-turn cost, so the cloak dropped." },
+    { "code": "tractorCapped", "status": "clamped", "logSeverity": "warning", "summary": "The tractor bid was cut to the tractor boxes on the hull." }
   ]
 }

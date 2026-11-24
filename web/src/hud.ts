@@ -34,8 +34,8 @@ export let mapFrame: MapFrame | null = null;
 
 export function updateHud(vm: ViewModel, roster: readonly RosterEntry[], hud: HudHandles, plan: DuelPlan, now: number): void {
   const self = vm.self;
-  const target = vm.contacts.find((contact) => contact.kind === 'ship' && contact.id === hud.targetId)
-    ?? vm.contacts.find((contact) => contact.kind === 'ship' && contact.hostility === 'hostile');
+  const target = vm.contacts.find((contact) => contact.kind === 'ship' && contact.id === hud.targetId && contact.detected)
+    ?? vm.contacts.find((contact) => contact.kind === 'ship' && contact.hostility === 'hostile' && contact.detected);
   text('tick', String(vm.tick));
   text('speed', self ? String(self.speed) : '0');
   text('speed-ordered', String(plan.speed));
@@ -46,6 +46,18 @@ export function updateHud(vm: ViewModel, roster: readonly RosterEntry[], hud: Hu
   text('gen-apr', fmt(self?.energy.apr ?? 0));
   text('gen-battery', `${fmt(self?.energy.battery ?? 0)} / ${fmt(self?.energy.batteryCapacity ?? 0)}`);
   text('energy-reason', self && self.energy.lastReason && self.energy.lastReason !== 'ok' ? self.energy.lastReason : '');
+  const shift = self && self.netShift !== null ? String(self.netShift) : '—';
+  text('ew-status', self ? `ECM ${String(self.ecm)} · ECCM ${String(self.eccm)} · shift ${shift}` : 'No ship');
+  barWidth('ew-ecm-bar', self ? self.ecm : 0);
+  barWidth('ew-eccm-bar', self ? self.eccm : 0);
+  text('tractor-status', self ? `${tractorName(self.tractorMode)} · ${self.tractorLink ? 'holding' : 'idle'} · ${String(self.tractorPaid)}` : 'Idle');
+  const cloakLabel = !self || !self.cloakFitted ? 'Not fitted' : cloakName(self.cloakState, self.cloakTicks);
+  text('cloak-status', cloakLabel);
+  const cloakButton = document.getElementById('cloak');
+  if (cloakButton) {
+    cloakButton.toggleAttribute('disabled', self ? !self.cloakFitted : true);
+    cloakButton.textContent = self && self.cloakState !== 0 ? 'Decloak' : 'Cloak';
+  }
   const energy = document.getElementById('energy');
   energy?.classList.toggle('overdraw', self?.energy.lastReason === 'overDraw');
   syncField('ordered-speed', String(plan.speed));
@@ -53,6 +65,9 @@ export function updateHud(vm: ViewModel, roster: readonly RosterEntry[], hud: Hu
   syncCheck('life', plan.lifeSupport);
   syncCheck('fire-control', plan.fireControl);
   syncField('weapon-energy', plan.weaponRequest === null ? '' : String(plan.weaponRequest));
+  syncField('ew-ecm', String(plan.ecm));
+  syncField('ew-eccm', String(plan.eccm));
+  syncField('tractor-energy', String(plan.tractorEnergy));
   text('target-name', target ? roster[target.index]?.name ?? 'Contact' : 'No contact');
   text('target-class', target ? roster[target.index]?.empire ?? '' : 'Tab to target');
   text('target-range', target ? fmt(target.rangeFromSelf) : '—');
@@ -67,6 +82,27 @@ export function updateHud(vm: ViewModel, roster: readonly RosterEntry[], hud: Hu
   renderWeapons(vm, hud, plan);
   renderContacts(vm, roster);
   renderShieldTable(vm, plan);
+}
+
+function barWidth(id: string, points: number): void {
+  const node = document.getElementById(id);
+  if (!(node instanceof HTMLElement)) return;
+  const pct = Math.max(0, Math.min(100, points * 8));
+  node.style.width = `${String(pct)}%`;
+}
+
+function cloakName(state: number, ticks: number): string {
+  if (state === 1) return `engaging ${String(ticks)}`;
+  if (state === 2) return 'cloaked';
+  if (state === 3) return `decloaking ${String(ticks)}`;
+  return 'off';
+}
+
+function tractorName(mode: number): string {
+  if (mode === 1) return 'hold';
+  if (mode === 2) return 'repel';
+  if (mode === 3) return 'reinforce';
+  return 'off';
 }
 
 function selfContact(vm: ViewModel) {
@@ -233,7 +269,7 @@ function renderContacts(vm: ViewModel, roster: readonly RosterEntry[]): void {
   if (!body) return;
   body.replaceChildren();
   for (const contact of vm.contacts) {
-    if (contact.kind === 'shot') continue;
+    if (contact.kind === 'shot' || !contact.detected) continue;
     const row = document.createElement('tr');
     const name = roster[contact.index]?.name ?? `Ship ${String(contact.index)}`;
     const who = contact.hostility === 'self' ? 'you' : contact.control === 'ai' ? 'AI' : contact.hostility;
@@ -407,6 +443,7 @@ function drawMap(vm: ViewModel, hud: HudHandles): void {
     ctx.stroke();
   }
   for (const contact of vm.contacts) {
+    if (!contact.detected) continue;
     const at = toScreen(contact.x, contact.y);
     const px = at[0];
     const py = at[1];

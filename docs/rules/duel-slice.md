@@ -20,9 +20,9 @@ The engine contract is [`docs/engine/sim-core.md`](../engine/sim-core.md) (Engin
 
 Energy allocation, movement and turn modes, six shield facings with general and specific reinforcement, phasers, one heavy weapon (photon torpedo), and damage allocation.
 
-Electronic warfare, to-hit rolls, drones in flight, cloaks, tractors, boarding, mines, and fighter flights are named where the model has to store them, and they are not resolved. Firing one returns `notInDuelSlice`.
+Drones in flight, boarding, mines, and fighter flights are named where the model has to store them, and they are not resolved. Firing one returns `notInDuelSlice`.
 
-Phase 2 shots **hit** when the mount is ready, fire control is paid, the target is inside the mapped arc, and the range is inside the weapon's band. There is no miss roll. That is a slice limit, not a claim about CE.
+Electronic warfare, heavy-weapon overload, tractors, and cloaks are resolved in [phase3-systems.md](phase3-systems.md). A shot whose ECM shift is zero or better still hits whenever the mount is ready, fire control is paid, the target is inside the mapped arc, and the range is inside the weapon's band. That certain hit does not draw. A defender ECM advantage can miss. That is a placeholder, not a claim about CE.
 
 ## 2. Real-time adaptation
 
@@ -34,7 +34,7 @@ The duel slice follows the real-time game:
 2. Position is continuous. Heading is a uint16, not a six-step compass. Turn mode caps yaw per tick.
 3. Weapons charge while the ship moves. They do not wait for a written fire phase.
 4. A hit resolves on the tick it lands, including shield bleed and the chart.
-5. To-hit and electronic warfare wait for Phase 3.
+5. To-hit and electronic warfare are the Phase 3 rule in [phase3-systems.md](phase3-systems.md). A non-negative shift stays a certain hit.
 6. Which shield is struck is a bearing bin on the uint16 circle (section 4), not a hex side.
 
 Which of these match CE 2.670, and which are our reading of a real-time adaptation, is the fidelity list in [`fidelity-risk.md`](fidelity-risk.md).

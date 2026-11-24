@@ -81,7 +81,7 @@
         <h2>Log</h2>
         <ol id="log"></ol>
       </section>
-      <p id="keys" class="keys">WASD helm · Space fire · 1–6 groups · Tab target · mouse orbit · Keys to rebind</p>
+      <p id="keys" class="keys">WASD helm · Space fire · O overload · G tractor · C cloak · [ ] EW · Tab target · Keys to rebind</p>
       <p id="notice" class="keys" role="status"></p>
     </div>
     <section id="console" aria-label="Helm console">
@@ -125,6 +125,36 @@
         </div>
         <div id="weapons"></div>
       </section>
+      <section class="plate" aria-label="Operations">
+        <h2>Operations</h2>
+        <p class="read"><span>ECM</span> <span id="ops-ecm" class="num">0</span></p>
+        <p class="read"><span>ECCM</span> <span id="ops-eccm" class="num">0</span></p>
+        <p class="read"><span>Net shift</span> <span id="ops-shift" class="num">—</span></p>
+        <label class="step">ECM
+          <input id="ew-ecm" type="number" min="0" max="12" step="1" value="0" />
+        </label>
+        <label class="step">ECCM
+          <input id="ew-eccm" type="number" min="0" max="12" step="1" value="0" />
+        </label>
+        <label class="step">Arming
+          <select id="arm-mode">
+            <option value="0">Normal</option>
+            <option value="1">Overload</option>
+            <option value="2">Proximity</option>
+          </select>
+        </label>
+        <label class="step">Tractor energy
+          <input id="tractor-energy" type="number" min="0" max="12" step="1" value="1" />
+        </label>
+        <p class="ops-buttons">
+          <button type="button" id="tractor-hold">Hold</button>
+          <button type="button" id="tractor-repel">Repel</button>
+          <button type="button" id="tractor-release">Release</button>
+          <button type="button" id="cloak">Cloak</button>
+        </p>
+        <p class="read"><span>Cloak</span> <span id="ops-cloak" class="num">off</span></p>
+        <p class="read"><span>Tractor</span> <span id="ops-tractor" class="num">off</span></p>
+      </section>
       <section class="plate" aria-label="Helm">
         <h2>Helm</h2>
         <p class="read"><span>Speed</span> <span id="speed" class="num">0</span></p>
@@ -144,18 +174,30 @@
       <div class="console-row systems">
         <section class="plate slot" aria-label="Electronic warfare">
           <h2>EW</h2>
-          <p id="ew-status">Not in this duel. ECM and ECCM wait for the EW rules.</p>
-          <div class="bars" aria-hidden="true"><span></span><span></span></div>
+          <p id="ew-status">ECM 0 · ECCM 0</p>
+          <div class="bars" aria-hidden="true"><span id="ew-ecm-bar"></span><span id="ew-eccm-bar"></span></div>
+          <label class="step">ECM
+            <input id="ew-ecm" type="number" min="0" max="12" step="1" value="0" />
+          </label>
+          <label class="step">ECCM
+            <input id="ew-eccm" type="number" min="0" max="12" step="1" value="0" />
+          </label>
         </section>
         <section class="plate slot" aria-label="Tractor">
           <h2>Tractor</h2>
-          <p id="tractor-status">Not in this duel. Tractor, repel, and boarding stay disabled.</p>
-          <button type="button" data-action="ops.tractor" disabled>Tractor</button>
+          <p id="tractor-status">Idle</p>
+          <label class="step">Energy
+            <input id="tractor-energy" type="number" min="0" max="12" step="1" value="1" />
+          </label>
+          <div class="presets">
+            <button type="button" data-action="ops.tractor">Tractor</button>
+            <button type="button" data-action="ops.repel">Repel</button>
+          </div>
         </section>
         <section class="plate slot" aria-label="Cloak">
           <h2>Cloak</h2>
-          <p id="cloak-status">Not fitted in this duel.</p>
-          <button type="button" data-action="ops.cloak" disabled>Cloak</button>
+          <p id="cloak-status">Off</p>
+          <button type="button" id="cloak" data-action="ops.cloak">Cloak</button>
         </section>
         <section class="plate slot" aria-label="Fighters">
           <h2>Fighters</h2>

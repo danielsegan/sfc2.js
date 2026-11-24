@@ -136,8 +136,8 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .presets button { font-size: 12px; }
 .slot p { margin: 0 0 6px; color: var(--text-dim); font-size: 12px; }
 .slot button:disabled { opacity: 0.55; cursor: not-allowed; }
-.bars { display: grid; gap: 4px; }
-.bars span { display: block; height: 6px; background: #1a2633; }
+.bars { display: grid; gap: 4px; margin-bottom: 6px; }
+.bars span { display: block; height: 6px; width: 0; background: var(--state-charging); }
 .overdraw { outline: 1px solid var(--state-warning); }
 .vol { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-dim); }
 .vol input { width: 72px; }
@@ -156,7 +156,8 @@ dialog h2, dialog h3 { margin: 8px 0 4px; letter-spacing: 0.08em; text-transform
 
 .read { display: flex; justify-content: space-between; gap: 8px; margin: 2px 0; }
 .check, .step { display: flex; justify-content: space-between; gap: 8px; margin: 4px 0; font-size: 13px; }
-.step input { width: 72px; }
+.step input, .step select { width: 88px; }
+.ops-buttons { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0; }
 .reason { min-height: 1.2em; color: var(--state-warning); font-size: 12px; }
 .name { margin: 0 0 4px; }
 
