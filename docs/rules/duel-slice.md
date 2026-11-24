@@ -77,7 +77,7 @@ Synthetic rates used by fixtures only ([`data/turn-modes.json`](data/turn-modes.
 
 Yaw is allowed at speed 0 for `TEST-*` modes. Whether CE lets a ship rotate in place is unverified. A requested yaw larger than the cap is `yawClamped` to the cap, sign preserved. Heading wraps mod 65536.
 
-High-energy turns are stored as `hetChance` and `hetBreakdown` and are not resolved in this slice.
+High-energy turns are specified provisionally in [het.md](het.md) (separate sim verb, delay then turn, speed cutoff table field, all numbers **TO VERIFY**). `hetChance` and `hetBreakdown` remain stored without breakdown rolls in this slice.
 
 ## 5. Shields
 
@@ -172,6 +172,6 @@ The CE 2.670 shiplist has 15 `FTR` hull rows and no PF rows. The `class: "pf"` f
 
 ## 10. Pending playtest (values)
 
-Every balance number in `data/constants.json`, `data/turn-modes.json`, `data/smallcraft.json`, the `TEST-*` rows, and `costFallback`. How many seconds a CE rules-turn lasts. The ×2 scale factors. Shield bins versus model cones, and every arc facing set. Whether the numeric Arc on `Dro*` and ADD means reloads or rack capacity. Pay order. Battery dump and refill. Phaser hold cost and travel time. Photon arming, overload odds, proximity radius. Chart rows and the hull-section map. In-place yaw. ftrlist `Shots` versus reloads. The 75-unit range probe.
+Every balance number in `data/constants.json`, `data/turn-modes.json`, `data/smallcraft.json`, the `TEST-*` rows, and `costFallback`. How many seconds a CE rules-turn lasts. The `warpSide` ×2 scale factor (shield 1:1 was confirmed by CE in-battle capture 2026-11-24). Shield bins versus model cones, and every arc facing set. Whether the numeric Arc on `Dro*` and ADD means reloads or rack capacity. Pay order. Battery dump and refill. Phaser hold cost and travel time. Photon arming, overload odds, proximity radius. Chart rows and the hull-section map. In-place yaw. ftrlist `Shots` versus reloads. The 75-unit range probe.
 
 Verification method: [`fidelity-risk.md`](fidelity-risk.md).

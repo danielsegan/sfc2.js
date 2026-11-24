@@ -1,0 +1,98 @@
+{
+  "id": "het",
+  "mode": "ticks",
+  "verification": "to-verify",
+  "note": "Provisional HET spec fixture using placeholder values from data/het.json (delay 162 ticks, delta +/-16384, rate 303 units/tick, maxSpeed 14). All numbers TO VERIFY.",
+  "endTick": 216,
+  "ships": [
+    {
+      "spawnKey": "test-empire-a:test-ca-01",
+      "className": "test-ca-01",
+      "race": "test-empire-a",
+      "class": "ship",
+      "power": { "warp": 10, "impulse": 0, "apr": 0, "battery": 0, "batteryCapacity": 0 },
+      "movement": { "moveCost": 1, "turnMode": "TEST-C", "acceleration": 4, "speed": 10, "heading16": 0 },
+      "shields": [10, 8, 6, 4, 6, 8],
+      "crew": { "crewUnits": 4, "boardingParties": 0, "minCrew": 1 }
+    },
+    {
+      "spawnKey": "test-empire-a:test-ca-02",
+      "className": "test-ca-02",
+      "race": "test-empire-a",
+      "class": "ship",
+      "power": { "warp": 10, "impulse": 0, "apr": 0, "battery": 0, "batteryCapacity": 0 },
+      "movement": { "moveCost": 1, "turnMode": "TEST-C", "acceleration": 4, "speed": 5, "heading16": 0 },
+      "shields": [10, 8, 6, 4, 6, 8],
+      "crew": { "crewUnits": 4, "boardingParties": 0, "minCrew": 1 }
+    },
+    {
+      "spawnKey": "test-empire-b:test-dd-03",
+      "className": "test-dd-03",
+      "race": "test-empire-b",
+      "class": "ship",
+      "power": { "warp": 10, "impulse": 0, "apr": 0, "battery": 0, "batteryCapacity": 0 },
+      "movement": { "moveCost": 1, "turnMode": "TEST-C", "acceleration": 4, "speed": 10, "heading16": 0 },
+      "shields": [8, 6, 4, 4, 4, 6],
+      "crew": { "crewUnits": 4, "boardingParties": 0, "minCrew": 1 }
+    },
+    {
+      "spawnKey": "test-empire-b:test-ff-04",
+      "className": "test-ff-04",
+      "race": "test-empire-b",
+      "class": "ship",
+      "power": { "warp": 15, "impulse": 0, "apr": 0, "battery": 0, "batteryCapacity": 0 },
+      "movement": { "moveCost": 1, "turnMode": "TEST-A", "acceleration": 5, "speed": 15, "heading16": 0 },
+      "shields": [6, 5, 4, 3, 4, 5],
+      "crew": { "crewUnits": 4, "boardingParties": 0, "minCrew": 1 }
+    }
+  ],
+  "timeline": [
+    {
+      "tick": 0,
+      "commands": [
+        { "entry": "orderHet", "ship": "test-empire-a:test-ca-01", "delta16": 16384 },
+        { "entry": "orderHet", "ship": "test-empire-a:test-ca-02", "delta16": -16384 },
+        { "entry": "orderHet", "ship": "test-empire-b:test-ff-04", "delta16": 16384 }
+      ]
+    },
+    {
+      "tick": 10,
+      "commands": [
+        { "entry": "orderHet", "ship": "test-empire-a:test-ca-01", "delta16": -16384 }
+      ]
+    },
+    {
+      "tick": 100,
+      "commands": [
+        { "entry": "orderHet", "ship": "test-empire-b:test-dd-03", "delta16": 16384 }
+      ]
+    }
+  ],
+  "expect": {
+    "results": [
+      { "tick": 0, "token": 1, "status": "applied", "reason": "ok", "appliedValue": 16384 },
+      { "tick": 0, "token": 2, "status": "applied", "reason": "ok", "appliedValue": -16384 },
+      { "tick": 0, "token": 3, "status": "rejected", "reason": "hetTooFast", "appliedValue": null },
+      { "tick": 10, "token": 4, "status": "rejected", "reason": "hetActive", "appliedValue": null },
+      { "tick": 100, "token": 5, "status": "applied", "reason": "ok", "appliedValue": 16384 }
+    ],
+    "state": {
+      "test-empire-a:test-ca-01": {
+        "heading16": 16384,
+        "helm": { "mode": "none", "remainingTurn16": 0, "hetDelayTicksLeft": 0 }
+      },
+      "test-empire-a:test-ca-02": {
+        "heading16": 49152,
+        "helm": { "mode": "none", "remainingTurn16": 0, "hetDelayTicksLeft": 0 }
+      },
+      "test-empire-b:test-dd-03": {
+        "heading16": 0,
+        "helm": { "mode": "het", "remainingTurn16": 16384, "hetDelayTicksLeft": 45 }
+      },
+      "test-empire-b:test-ff-04": {
+        "heading16": 0,
+        "helm": { "mode": "none", "remainingTurn16": 0, "hetDelayTicksLeft": 0 }
+      }
+    }
+  }
+}

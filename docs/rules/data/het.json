@@ -1,0 +1,17 @@
+{
+  "status": "placeholder",
+  "verification": "to-verify",
+  "note": "Provisional High-Energy Turn (HET) parameters for Community Edition 2.670. All values are TO VERIFY against playtest captures. Angles are 16-bit angle units (65536 = full turn) as signed i32, NOT Q16.16. Durations are integer ticks at 30 Hz.",
+  "tickHz": 30,
+  "delayTicks": 162,
+  "delayNote": "Provisional: ~5.4 s at 30 Hz before the HET rotation starts. TO VERIFY.",
+  "defaultTurnAngle16": 16384,
+  "defaultTurnNote": "Provisional: 90 deg (65536 / 4) in 16-bit angle units, within the observed ~80-95 deg band. TO VERIFY.",
+  "turnRate16PerTick": 303,
+  "turnRateRounding": "nearestInteger",
+  "turnRateNote": "Provisional: round(50 * 65536 / (360 * 30)) = 303 integer angle units per tick (~49.93 deg/s at 30 Hz, observed ~50 deg/s). TO VERIFY.",
+  "maxSpeed": 14,
+  "maxSpeedNote": "Provisional inclusive speed cutoff (table field). No HET was observed at speed 15+; exact boundary between 10 and 15 is TO VERIFY.",
+  "energyCost": 0,
+  "energyCostNote": "Placeholder: HET energy cost and breakdown roll are TO VERIFY."
+}

@@ -22,6 +22,7 @@ const SCALE = readJson("docs/rules/data/scale-factors.json");
 const WEAPONS = readJson("docs/rules/data/weapon-arcs.json");
 const TURNS = readJson("docs/rules/data/turn-modes.json");
 const REASONS = readJson("docs/rules/data/reason-codes.json");
+const HET = readJson("docs/rules/data/het.json");
 
 const reasonByCode = new Map(REASONS.codes.map((c) => [c.code, c]));
 const FX_SHIFT = 16;
@@ -191,6 +192,7 @@ function loadShip(spec) {
     ecm: spec.ecm ?? null,
     bay: spec.bay ?? null,
     speedRating: spec.speed ?? null,
+    het: { mode: "none", remainingTurn16: 0, hetDelayTicksLeft: 0 },
   };
   const shields = spec.shields || [0, 0, 0, 0, 0, 0];
   const shieldsMax = spec.shieldsMax || shields;
@@ -230,6 +232,7 @@ function exportShip(ship) {
     disabled: ship.disabled,
     fcPaid: ship.fcPaid,
     heading16: ship.heading16,
+    helm: { ...ship.het },
     speed: ship.speed,
     shields: ship.shields.map(fromMilli),
     capacitor: fromMilli(ship.capacitor),
@@ -819,6 +822,48 @@ function commandHelm(world, cmd) {
   return result("applied", "ok", mag);
 }
 
+
+function commandHet(world, cmd) {
+  const found = identity(world, cmd.ship);
+  if (found.error) return found.error;
+  const ship = found.ship;
+  if (ship.disabled) return result("rejected", "crewDisabled", null);
+  const turn = turnDef(ship.turnMode);
+  const delta = cmd.delta16 ?? HET.defaultTurnAngle16;
+  if (!Number.isInteger(delta)) return result("rejected", "precisionExceeded", null);
+  if (delta === 0) return result("rejected", "negativeValue", null);
+  if (turn.immobile) return result("clamped", "immobile", 0);
+  if (ship.het.mode === "het") return result("rejected", "hetActive", null);
+  if (ship.speed > HET.maxSpeed) return result("rejected", "hetTooFast", null);
+  ship.het = { mode: "het", remainingTurn16: delta, hetDelayTicksLeft: HET.delayTicks };
+  return result("applied", "ok", delta);
+}
+
+function stepHet(world) {
+  for (const ship of Object.values(world.ships)) {
+    if (ship.het.mode !== "het") continue;
+    if (ship.destroyed || ship.disabled) {
+      ship.het = { mode: "none", remainingTurn16: 0, hetDelayTicksLeft: 0 };
+      continue;
+    }
+    if (ship.het.hetDelayTicksLeft > 0) {
+      ship.het.hetDelayTicksLeft -= 1;
+      continue;
+    }
+    const rem = ship.het.remainingTurn16;
+    if (rem === 0) {
+      ship.het.mode = "none";
+      continue;
+    }
+    const mag = Math.abs(rem);
+    const stepMag = Math.min(mag, HET.turnRate16PerTick);
+    const step = rem < 0 ? -stepMag : stepMag;
+    ship.heading16 = mod16(ship.heading16 + step);
+    ship.het.remainingTurn16 -= step;
+    if (ship.het.remainingTurn16 === 0) ship.het.mode = "none";
+  }
+}
+
 function commandFire(world, cmd, constants, rng) {
   const found = identity(world, cmd.ship);
   if (found.error) return found.error;
@@ -911,6 +956,8 @@ function dispatch(world, cmd, constants, rng) {
       return commandSetEnergy(world, cmd, constants);
     case "orderHelm":
       return commandHelm(world, cmd);
+    case "orderHet":
+      return commandHet(world, cmd);
     case "fire":
       return commandFire(world, cmd, constants, rng);
     default:
@@ -1101,6 +1148,7 @@ function runTicks(test, file) {
     }
     for (const ship of Object.values(world.ships)) applyReinforcementAndCharge(ship, constants);
     flyProjectiles(world, constants, rng);
+    stepHet(world);
   }
   subset(results, test.expect.results, "results", file);
   if (test.expect.state) {

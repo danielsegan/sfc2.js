@@ -28,10 +28,10 @@ interface Ann {
 }
 
 const SHIELD_CITE =
-  "Measured on CE 2.670: tools/ce-harness Vessel Library capture (results-*.json stays on sfc2-ci; see tools/ce-harness/README.md).";
+  "Measured on CE 2.670 (CE in-battle capture 2026-11-24; Shield Total = S1 + 2·S2_6 + 2·S3_5 + S4 held on all 1,157 CE rows).";
 
 const ENGINE_SHIELD =
-  "Engine today still multiplies by the fallback in docs/rules/data/measured.json via engine/sim/bind-shiplist.ts shieldMaxFromCells. Combat removes that ×2 in a separate PR. This map does not change the factor.";
+  "Engine loads 1:1 via docs/rules/data/measured.json (sideColumnFactor 1, endFactor 1) in engine/sim/bind-shiplist.ts shieldMaxFromCells.";
 
 const MOUNT =
   "engine/sim/bind-shiplist.ts ShipSetup.mounts → engine/sim/combat.ts placeSetup";
@@ -365,28 +365,28 @@ const STATIC: Record<number, Ann> = {
   20: {
     parser: "shieldFront",
     consumer: "engine/sim/bind-shiplist.ts ShipSetup.shieldsMax[0] → engine/sim/hull.ts H.shieldMax0",
-    transform: `${SHIELD_CITE} Shield 1 is the front facing (index 0), 1:1, no ×2. ${ENGINE_SHIELD} fallbackEndFactor is 2, so the engine facing is twice the file cell.`,
+    transform: `${SHIELD_CITE} Shield 1 is the front facing (index 0), 1:1, no ×2. ${ENGINE_SHIELD}`,
     status: "measured",
     ignored: false,
   },
   21: {
     parser: "shieldForwardSide",
     consumer: "engine/sim/bind-shiplist.ts ShipSetup.shieldsMax[1] and shieldsMax[5] → engine/sim/hull.ts H.shieldMax0+1 and +5",
-    transform: `${SHIELD_CITE} Shield 2 _ 6 is each front-side facing (indexes 1 and 5), 1:1, no ×2. ${ENGINE_SHIELD} fallbackSideColumnFactor is 2, so each engine facing is twice the file cell.`,
+    transform: `${SHIELD_CITE} Shield 2 _ 6 is each front-side facing (indexes 1 and 5), 1:1, no ×2. ${ENGINE_SHIELD}`,
     status: "measured",
     ignored: false,
   },
   22: {
     parser: "shieldAftSide",
     consumer: "engine/sim/bind-shiplist.ts ShipSetup.shieldsMax[2] and shieldsMax[4] → engine/sim/hull.ts H.shieldMax0+2 and +4",
-    transform: `${SHIELD_CITE} Shield 3 _ 5 is each rear-side facing (indexes 2 and 4), 1:1, no ×2. ${ENGINE_SHIELD} fallbackSideColumnFactor is 2, so each engine facing is twice the file cell.`,
+    transform: `${SHIELD_CITE} Shield 3 _ 5 is each rear-side facing (indexes 2 and 4), 1:1, no ×2. ${ENGINE_SHIELD}`,
     status: "measured",
     ignored: false,
   },
   23: {
     parser: "shieldRear",
     consumer: "engine/sim/bind-shiplist.ts ShipSetup.shieldsMax[3] → engine/sim/hull.ts H.shieldMax0+3",
-    transform: `${SHIELD_CITE} Shield 4 is the rear facing (index 3), 1:1, no ×2. ${ENGINE_SHIELD} fallbackEndFactor is 2, so the engine facing is twice the file cell.`,
+    transform: `${SHIELD_CITE} Shield 4 is the rear facing (index 3), 1:1, no ×2. ${ENGINE_SHIELD}`,
     status: "measured",
     ignored: false,
   },
@@ -394,7 +394,7 @@ const STATIC: Record<number, Ann> = {
     parser: "shieldTotal",
     consumer: "tools/formats/shiplist.ts shieldTotalMismatch; tools/ship-audit shield-total check. Not read by engine/sim/bind-shiplist.ts",
     transform:
-      `${SHIELD_CITE} Identity, file units, 1:1 per facing: Total = Shield 1 + 2×Shield 2 _ 6 + 2×Shield 3 _ 5 + Shield 4. The sim ignores the stored total and rebuilds facings with the ×2 factors, so the engine sum is twice this identity.`,
+      `${SHIELD_CITE} Identity, file units, 1:1 per facing: Total = Shield 1 + 2×Shield 2 _ 6 + 2×Shield 3 _ 5 + Shield 4. The sim ignores the stored total and rebuilds the six facings 1:1, matching this sum.`,
     status: "measured",
     ignored: true,
   },
@@ -671,9 +671,9 @@ export function renderFieldMap(): string {
     "",
     "Clean-room. This map does not copy ship rows or install values. Real files are read only at runtime from `SFC2_INSTALL` by `pnpm ship-audit`. Capture files from `tools/ce-harness` stay on `sfc2-ci`.",
     "",
-    "## Shield pairing (measured) and the engine ×2",
+    "## Shield pairing and 1:1 scaling (measured)",
     "",
-    "The shield pairing is measured, not assumed. `tools/ce-harness` reads the game's Vessel Library (see that tool's README, known limits). The capture is `results-*.json` from `tools/ce-harness/summarize.py`, and it stays on the private VM.",
+    "The shield pairing and 1:1 scale factor are measured (CE in-battle capture 2026-11-24; `Shield Total = S1 + 2·S2_6 + 2·S3_5 + S4` held on all 1,157 CE rows). Note: the CE Vessel Library screen is unreliable for shields (some rear values, e.g. on D7/POL/E4 rows, disagree with the table); the in-battle six-segment ring and the table agree.",
     "",
     "Measured rule, 1:1 per facing, no ×2:",
     "",
@@ -686,7 +686,7 @@ export function renderFieldMap(): string {
     "",
     "File identity: `Shield Total = Shield 1 + 2×Shield 2 _ 6 + 2×Shield 3 _ 5 + Shield 4`. The two side columns are counted twice because each one is two facings, not because of a scale factor.",
     "",
-    "The engine does not match that measurement yet. `shieldMaxFromCells` still applies `fallbackEndFactor` 2 and `fallbackSideColumnFactor` 2 from `docs/rules/data/measured.json` (both overrides are null). A file row 10, 8, 6, 4 therefore becomes engine shields `[20, 16, 12, 8, 12, 16]` and a measured row `[10, 8, 6, 4, 6, 8]`. The stored Shield Total is ignored by the loader, which rebuilds the six facings. Combat owns removing the ×2 in a separate PR. This map and `tools/ship-audit` do not change `measured.json`, `scale-factors.json`, or any sim source.",
+    "The engine now matches that measurement: `docs/rules/data/measured.json` sets `sideColumnFactor: 1`, `endFactor: 1`, and the 4-to-6 pairing, so `shieldMaxFromCells` maps a file row 10, 8, 6, 4 to engine shields `[10, 8, 6, 4, 6, 8]`. The stored Shield Total is ignored by the loader, which rebuilds the six facings.",
     "",
     "`pnpm ship-audit` checks the file identity above. It also counts hulls whose engine facings differ from the 1:1 reading (`shieldScale.engineNotOneToOne`). That count is a column stat. It is not a failed identity check, and it does not by itself fail the run.",
     "",
