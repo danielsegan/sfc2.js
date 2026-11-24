@@ -44,14 +44,15 @@ for crop in ("200x28+0+132", "200x24+0+135", "200x20+0+134"):
     for psm in ("6", "7", "11"):
         blobs.append(ocr(strip, crop, psm))
 blob = " | ".join(blobs)
+blob_flat = re.sub(r"\s+", " ", blob)
 
-labeled = bool(re.search(r"CHANCE|HET|FORHET", blob, re.I))
+labeled = bool(re.search(r"CHANCE|HE\s*T|FORHET", blob_flat, re.I))
 chance = None
 confident = False
 vals = []
 # Number must sit immediately after the HET/CHANCE label, not later garbage.
-pat = re.compile(r"(?:CHANCE\s*FOR\s*HET|FOR\s*HET|FORHET|HET)\s*:?\s*([^\s|]{1,16})", re.I)
-for m in pat.finditer(blob):
+pat = re.compile(r"(?:CHANCE\s*FOR\s*HE\s*T|FOR\s*HE\s*T|FORHET|HET)\s*:?\s*([^\s|]{1,16})", re.I)
+for m in pat.finditer(blob_flat):
     tok = normalize_token(m.group(1))
     if not tok:
         continue
