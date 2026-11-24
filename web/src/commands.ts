@@ -30,12 +30,7 @@ export interface CommandHost {
 const LATER: Record<string, string> = {
   'helm.reverse': 'Reverse is not in this duel.',
   'helm.erratic': 'Erratic maneuvers are not in this duel.',
-  'ops.board': 'Boarding is not in this duel.',
-  'ops.hitAndRun': 'Hit and run is not in this duel.',
-  'craft.launch': 'Fighters are not in this duel.',
-  'craft.recall': 'Fighters are not in this duel.',
   'craft.drone': 'Drones are not in this duel.',
-  'craft.mine': 'Mines are not in this duel.',
 };
 
 const PRESETS: Record<string, Partial<DuelPlan>> = {
@@ -84,6 +79,12 @@ export function runAction(host: CommandHost, id: string): void {
   else if (id === 'view.mapOrientation') host.setHeadingUp(!host.headingUp);
   else if (id === 'view.reset') host.scene.resetView();
   else if (id === 'view.pause') host.togglePause();
+  else if (id === 'craft.launch') host.match.launchFighter();
+  else if (id === 'craft.launchPf') host.match.launchPf();
+  else if (id === 'craft.recall') host.match.recallCraft();
+  else if (id === 'craft.mine') host.match.layMine();
+  else if (id === 'ops.board') host.match.orderRaid(1, 1);
+  else if (id === 'ops.hitAndRun') host.match.orderRaid(0);
 }
 
 function fireGroup(host: CommandHost): void {

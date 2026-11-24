@@ -20,7 +20,7 @@ The engine contract is [`docs/engine/sim-core.md`](../engine/sim-core.md) (Engin
 
 Energy allocation, movement and turn modes, six shield facings with general and specific reinforcement, phasers, one heavy weapon (photon torpedo), and damage allocation.
 
-Drones in flight, boarding, mines, and fighter flights are named where the model has to store them, and they are not resolved. Firing one returns `notInDuelSlice`.
+Drones in flight are named where the model has to store them, and they are not resolved. Firing one returns `notInDuelSlice`. Fighters, PFs, mines, and boarding parties are resolved in [smallcraft.md](smallcraft.md).
 
 Electronic warfare, heavy-weapon overload, tractors, and cloaks are resolved in [phase3-systems.md](phase3-systems.md). A shot whose ECM shift is zero or better still hits whenever the mount is ready, fire control is paid, the target is inside the mapped arc, and the range is inside the weapon's band. That certain hit does not draw. A defender ECM advantage can miss. That is a placeholder, not a claim about CE.
 
@@ -168,10 +168,10 @@ Crew, boarding parties, and repair priority are state. Repair in combat is `repa
 
 ## 9. Fighters and PFs in this slice
 
-The CE 2.670 shiplist has 15 `FTR` hull rows and no PF rows. The `class: "pf"` flag stays on the ship model for a later file or a mod. Stock fighters use the lighter model in the mapping doc. `damageShield` and the other entry points return `notAShip` for a fighter. Fighter weapon and arc names are mapped so the loader accepts them; their damage numbers are not in this slice.
+The CE 2.670 shiplist has 15 `FTR` hull rows and no PF rows. The `class: "pf"` flag stays on the ship model for a mod or a later file. Stock fighters use the lighter model. `damageShield` and the other duel entry points return `notAShip` for a fighter. A PF is a ship, so those entry points accept it. Launch, rearm, mines, and raids are specified in [smallcraft.md](smallcraft.md).
 
 ## 10. Pending playtest (values)
 
-Every balance number in `data/constants.json`, `data/turn-modes.json`, the `TEST-*` rows, and `costFallback`. How many seconds a CE rules-turn lasts. The ×2 scale factors. Shield bins versus model cones, and every arc facing set. Whether the numeric Arc on `Dro*` and ADD means reloads or rack capacity. Pay order. Battery dump and refill. Phaser hold cost and travel time. Photon arming, overload odds, proximity radius. Chart rows and the hull-section map. In-place yaw. ftrlist `Shots` versus reloads. The 75-unit range probe.
+Every balance number in `data/constants.json`, `data/turn-modes.json`, `data/smallcraft.json`, the `TEST-*` rows, and `costFallback`. How many seconds a CE rules-turn lasts. The ×2 scale factors. Shield bins versus model cones, and every arc facing set. Whether the numeric Arc on `Dro*` and ADD means reloads or rack capacity. Pay order. Battery dump and refill. Phaser hold cost and travel time. Photon arming, overload odds, proximity radius. Chart rows and the hull-section map. In-place yaw. ftrlist `Shots` versus reloads. The 75-unit range probe.
 
 Verification method: [`fidelity-risk.md`](fidelity-risk.md).

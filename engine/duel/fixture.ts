@@ -6,9 +6,11 @@
  * Documented path: engine/duel/fixture.ts
  */
 import {
+  CLASS_PF,
   CLASS_SHIP,
   ENERGY_SCALE,
   MODE_NORMAL,
+  TURN_TEST_A,
   TURN_TEST_C,
 } from '../sim/rules-tables.ts';
 import type { ShipSetup } from '../sim/bind-shiplist.ts';
@@ -78,12 +80,39 @@ const photon = {
   ticksCharging: 0,
 } as const;
 
+function pf(): ShipSetup {
+  return {
+    classCode: CLASS_PF,
+    warp: 4,
+    impulse: 0,
+    apr: 0,
+    battery: 0,
+    batteryCapacity: 0,
+    moveCost100: ENERGY_SCALE,
+    turnMode: TURN_TEST_A,
+    acceleration: 4,
+    speed: 0,
+    shields: [6, 4, 4, 4, 4, 4],
+    shieldsMax: [6, 4, 4, 4, 4, 4],
+    crew: 1,
+    minCrew: 0,
+    fcPaid: 0,
+    destroyed: 0,
+    disabled: 0,
+    mounts: [phaser],
+  };
+}
+
 export function syntheticSetups(): readonly ShipSetup[] {
   return [
     hull([phaser, photon]),
     hull([phaser]),
+    pf(),
   ];
 }
+
+/** Setup index of the synthetic PF. It is not spawned until a bay launches it. */
+export const SYNTHETIC_PF_SETUP = 2;
 
 /** Bow of the first hull faces +x. The second faces it from +x. */
 export const SYNTHETIC_SPAWNS: readonly SpawnPoint[] = [

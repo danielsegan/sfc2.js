@@ -56,3 +56,12 @@ Canonical machine list: [`data/reason-codes.json`](data/reason-codes.json).
 | `notDetected` | rejected | The target is cloaked and not currently detected. |
 | `cloakCollapsed` | clamped | The battery missed a cloak payment, so the cloak dropped. |
 | `tractorCapped` | clamped | The tractor bid was cut to the tractor boxes. |
+| `bayEmpty` | rejected | Launch found no ready fighter or PF in that bay. |
+| `badBay` | rejected | The bay index is outside 0..3, the bay kind is unknown, or the side is not 0 or 1. |
+| `unknownCraft` | rejected | The fighter type or PF setup is not in the catalog, or the setup is not a PF. |
+| `noMines` | rejected | `layMine` found no mine aboard. |
+| `noParties` | rejected | The raid has no boarding party, or the commit is larger than the parties carried. |
+| `sameSide` | rejected | The two ships share a side, or either side was never set. |
+| `badRaid` | rejected | The raid mode is not hit-and-run or boarding. |
+| `raidRepulsed` | rejected | The hit-and-run dice lost. No party was spent. |
+| `boardingRepulsed` | rejected | The boarding dice lost. The committed parties stay spent. |

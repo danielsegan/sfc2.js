@@ -81,7 +81,7 @@
         <h2>Log</h2>
         <ol id="log"></ol>
       </section>
-      <p id="keys" class="keys">WASD helm · Space fire · O overload · G tractor · C cloak · [ ] EW · Tab target · Keys to rebind</p>
+      <p id="keys" class="keys">WASD helm · Space fire · O overload · G tractor · C cloak · [ ] EW · L launch · K mine · B board · Keys to rebind</p>
       <p id="notice" class="keys" role="status"></p>
     </div>
     <section id="console" aria-label="Helm console">
@@ -162,6 +162,8 @@
           <div class="presets">
             <button type="button" data-action="ops.tractor">Tractor</button>
             <button type="button" data-action="ops.repel">Repel</button>
+            <button type="button" data-action="ops.hitAndRun">Hit and run</button>
+            <button type="button" data-action="ops.board">Board</button>
           </div>
         </section>
         <section class="plate slot" aria-label="Cloak">
@@ -171,13 +173,17 @@
         </section>
         <section class="plate slot" aria-label="Fighters">
           <h2>Fighters</h2>
-          <p id="fighter-status">No bays in this duel. Launch and recall wait for fighter rules.</p>
-          <button type="button" data-action="craft.launch" disabled>Launch</button>
+          <p id="fighter-status">No bays yet.</p>
+          <div class="presets">
+            <button type="button" data-action="craft.launch">Launch</button>
+            <button type="button" data-action="craft.launchPf">PF</button>
+            <button type="button" data-action="craft.recall">Recall</button>
+          </div>
         </section>
         <section class="plate slot" aria-label="Mines">
           <h2>Mines</h2>
-          <p id="mine-status">No mines in this duel.</p>
-          <button type="button" data-action="craft.mine" disabled>Lay mine</button>
+          <p id="mine-status">No mines yet.</p>
+          <button type="button" data-action="craft.mine">Lay mine</button>
         </section>
       </div>
     </section>

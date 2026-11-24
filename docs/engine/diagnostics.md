@@ -143,6 +143,15 @@ interface Diagnostic {
 | rules | `notDetected` | warning | Combat | Cloaked target is not detected |
 | rules | `cloakCollapsed` | warning | Combat | Battery missed a cloak payment |
 | rules | `tractorCapped` | warning | Combat | Tractor bid cut to tractor boxes |
+| rules | `bayEmpty` | warning | Combat | Launch found no ready fighter or PF in that bay |
+| rules | `badBay` | warning | Combat | Bay index, bay kind, or side is outside the small-craft table |
+| rules | `unknownCraft` | warning | Combat | Fighter type or PF setup is missing, or the setup is not a PF |
+| rules | `noMines` | warning | Combat | `layMine` found no mine aboard |
+| rules | `noParties` | warning | Combat | Raid has no boarding party, or the commit exceeds the parties carried |
+| rules | `sameSide` | warning | Combat | Raid ships share a side, or a side was never set |
+| rules | `badRaid` | warning | Combat | Raid mode is not hit-and-run or boarding |
+| rules | `raidRepulsed` | warning | Combat | Hit-and-run dice lost. No party was spent |
+| rules | `boardingRepulsed` | warning | Combat | Boarding dice lost. The committed parties stay spent |
 
 The loader emits `unknownWeapon` and `unknownArc` with `source: "loader"` (not the format parser). One problem has one code; there are no separate `...Code` variants.
 

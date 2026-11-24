@@ -532,11 +532,8 @@ interface PaidAsk {
   paid: number;
 }
 
-function applySpawn(world: World, cmd: Command, ctx: TickContext, setups: readonly ShipSetup[]): void {
-  if (!need(cmd.payload, 4)) throw new Error('spawn payload');
-  const index = readI32(cmd.payload, 0);
-  const setup = setups[index];
-  if (!setup) throw new Error('setup index');
+/** Place a ship or PF. Callers copy a carrier position afterwards when launching. */
+export function placeSetup(world: World, setup: ShipSetup, x: number, y: number, heading: number): EntityId {
   if (setup.shields.length !== 6 || setup.shieldsMax.length !== 6) throw new Error('shields');
   const kind = setup.classCode === CLASS_FIGHTER ? 'fighter' : 'ship';
   const id = world.alloc(kind);
@@ -583,10 +580,19 @@ function applySpawn(world: World, cmd: Command, ctx: TickContext, setups: readon
     row.mode = mount.mode;
     row.ticksCharging = mount.ticksCharging;
   }
-  world.setPosition(id, fx(readI32(cmd.payload, 4)), fx(readI32(cmd.payload, 8)));
-  world.setHeading(id, angle16(readI32(cmd.payload, 12)));
+  world.setPosition(id, fx(x), fx(y));
+  world.setHeading(id, angle16(heading));
   writeHull(world, id, fields);
   writeMounts(world, id, mounts);
+  return id;
+}
+
+function applySpawn(world: World, cmd: Command, ctx: TickContext, setups: readonly ShipSetup[]): void {
+  if (!need(cmd.payload, 4)) throw new Error('spawn payload');
+  const index = readI32(cmd.payload, 0);
+  const setup = setups[index];
+  if (!setup) throw new Error('setup index');
+  const id = placeSetup(world, setup, readI32(cmd.payload, 4), readI32(cmd.payload, 8), readI32(cmd.payload, 12));
   ctx.emit({ kind: EVENT_SPAWN, entity: id as number, a: index, b: 0 });
   // Once per hull. Later speed and yaw orders keep moving on the fallback cap.
   if (setup.classCode !== CLASS_FIGHTER && setup.turnMode === TURN_UNVERIFIED) {

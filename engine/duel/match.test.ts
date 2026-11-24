@@ -103,6 +103,17 @@ describe('duel match', () => {
     expect(vm.events.some((event) => event.kind === 'alert' && event.id === 'yawClamped' && event.amount === 2000)).toBe(true);
   });
 
+  it('launches a fighter from the synthetic bay', () => {
+    const match = boot({ plan: { speed: 0, lifeSupport: false, fireControl: false, general: 0, weaponRequest: 0 } });
+    match.frame(TICK);
+    expect(match.view().self?.craft.fighterReady).toBe(4);
+    match.launchFighter();
+    match.frame(TICK);
+    const vm = match.view();
+    expect(vm.self?.craft.fighterReady).toBe(3);
+    expect(vm.contacts.some((contact) => contact.kind === 'fighter' && contact.hostility === 'friendly')).toBe(true);
+  });
+
   it('fires through the combat verb once the mount is charged', () => {
     const match = boot({ plan: { speed: 0, lifeSupport: true, fireControl: true, general: 0, weaponRequest: 4 } });
     match.frame(TICK);
