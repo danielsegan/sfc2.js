@@ -55,50 +55,51 @@ def energy(path):
 HET_BUTTONS = {"port", "stbd", "hard_port", "hard_stbd", "u_turn"}
 def turn_kind(button):
     return "het" if button in HET_BUTTONS else "normal"
-os.makedirs("/out/runs", exist_ok=True)
-for label in sys.argv[1:]:
-    cap = json.load(open(f"/out/frames/{label}/capture.json")); a0 = cap["action_wall"]
-    rows = []
-    for k, (t, p) in enumerate(cap["frames"]):
-        a = axis(p)
-        rows.append({"t": round(t - a0, 3), "axis": None if a is None else a[0],
-                     "clock": clock(p) if k % 4 == 0 else None, "speed": speed(p) if k % 8 == 0 else None})
-    # unwrap mod-180 axis, then 5-sample median filter
-    prev = None; acc = 0.0; raw = []
-    for r in rows:
-        if r["axis"] is None: continue
-        if prev is not None: acc += (r["axis"] - prev + 90) % 180 - 90
-        prev = r["axis"]; raw.append((r["t"], acc))
-    sm = [(raw[i][0], statistics.median(v for _, v in raw[max(0, i - 2):i + 3])) for i in range(len(raw))]
-    pre = [v for t, v in sm if t < 0]; base = statistics.median(pre) if pre else 0.0
-    sm = [(t, v - base) for t, v in sm]
-    tail = [v for t, v in sm[-10:]]; total = statistics.median(tail)
-    def first(frac): return next((t for t, v in sm if t > 0 and abs(v) >= frac * abs(total)), None)
-    t10, t50, t90 = first(0.1), first(0.5), first(0.9)
-    mean_rate = (0.8 * abs(total)) / (t90 - t10) if t10 is not None and t90 and t90 > t10 else None
-    # least-squares turn rate over the whole post-action window (for slow normal turns that do not finish)
-    post = [(t, v) for t, v in sm if t > 0.5]
-    fit = None
-    if len(post) > 5:
-        mt = sum(t for t, _ in post) / len(post); mv = sum(v for _, v in post) / len(post)
-        den = sum((t - mt) ** 2 for t, _ in post)
-        fit = sum((t - mt) * (v - mv) for t, v in post) / den if den else None
-    cl = [(r["t"], r["clock"]) for r in rows if r["clock"] is not None]
-    gr = (cl[-1][1] - cl[0][1]) / (cl[-1][0] - cl[0][0]) if len(cl) > 3 and cl[-1][0] > cl[0][0] else None
-    spd = [r["speed"] for r in rows if r["speed"] is not None]
-    res = {"label": label, "energy_panel": energy(f"/out/frames/{label}/energy.png"), "button": cap["button"], "kind": turn_kind(cap["button"]), "target_speed": cap["target_speed"],
-           "settled_speed": cap["speed_history"][-1] if cap["speed_history"] else None,
-           "speed_during_run": [min(spd), max(spd)] if spd else None,
-           "fps": round(len(rows) / (rows[-1]["t"] - rows[0]["t"]), 2),
-           "game_s_per_wall_s": round(gr, 3) if gr else None,
-           "total_turn_deg": round(total, 1), "order_delay_s": round(t10, 2) if t10 is not None else None,
-           "t10_s": t10, "t50_s": t50, "t90_s": t90,
-           "mean_rate_deg_per_wall_s_10_90": round(mean_rate, 2) if mean_rate else None,
-           "mean_rate_deg_per_game_s_10_90": round(mean_rate / gr, 2) if mean_rate and gr else None,
-           "fit_rate_deg_per_wall_s": round(fit, 3) if fit is not None else None,
-           "series": [[round(t, 3), round(v, 2)] for t, v in sm]}
-    if os.environ.get("SPAWN_KEY"):
-        res["spawnKey"] = os.environ["SPAWN_KEY"]
-    apply_noop(res)
-    json.dump(res, open(f"/out/runs/{label}.json", "w"), indent=1)
-    print(json.dumps({k: v for k, v in res.items() if k != "series"}))
+if __name__ == "__main__":
+    os.makedirs("/out/runs", exist_ok=True)
+    for label in sys.argv[1:]:
+        cap = json.load(open(f"/out/frames/{label}/capture.json")); a0 = cap["action_wall"]
+        rows = []
+        for k, (t, p) in enumerate(cap["frames"]):
+            a = axis(p)
+            rows.append({"t": round(t - a0, 3), "axis": None if a is None else a[0],
+                         "clock": clock(p) if k % 4 == 0 else None, "speed": speed(p) if k % 8 == 0 else None})
+        # unwrap mod-180 axis, then 5-sample median filter
+        prev = None; acc = 0.0; raw = []
+        for r in rows:
+            if r["axis"] is None: continue
+            if prev is not None: acc += (r["axis"] - prev + 90) % 180 - 90
+            prev = r["axis"]; raw.append((r["t"], acc))
+        sm = [(raw[i][0], statistics.median(v for _, v in raw[max(0, i - 2):i + 3])) for i in range(len(raw))]
+        pre = [v for t, v in sm if t < 0]; base = statistics.median(pre) if pre else 0.0
+        sm = [(t, v - base) for t, v in sm]
+        tail = [v for t, v in sm[-10:]]; total = statistics.median(tail)
+        def first(frac): return next((t for t, v in sm if t > 0 and abs(v) >= frac * abs(total)), None)
+        t10, t50, t90 = first(0.1), first(0.5), first(0.9)
+        mean_rate = (0.8 * abs(total)) / (t90 - t10) if t10 is not None and t90 and t90 > t10 else None
+        # least-squares turn rate over the whole post-action window (for slow normal turns that do not finish)
+        post = [(t, v) for t, v in sm if t > 0.5]
+        fit = None
+        if len(post) > 5:
+            mt = sum(t for t, _ in post) / len(post); mv = sum(v for _, v in post) / len(post)
+            den = sum((t - mt) ** 2 for t, _ in post)
+            fit = sum((t - mt) * (v - mv) for t, v in post) / den if den else None
+        cl = [(r["t"], r["clock"]) for r in rows if r["clock"] is not None]
+        gr = (cl[-1][1] - cl[0][1]) / (cl[-1][0] - cl[0][0]) if len(cl) > 3 and cl[-1][0] > cl[0][0] else None
+        spd = [r["speed"] for r in rows if r["speed"] is not None]
+        res = {"label": label, "energy_panel": energy(f"/out/frames/{label}/energy.png"), "button": cap["button"], "kind": turn_kind(cap["button"]), "target_speed": cap["target_speed"],
+               "settled_speed": cap["speed_history"][-1] if cap["speed_history"] else None,
+               "speed_during_run": [min(spd), max(spd)] if spd else None,
+               "fps": round(len(rows) / (rows[-1]["t"] - rows[0]["t"]), 2),
+               "game_s_per_wall_s": round(gr, 3) if gr else None,
+               "total_turn_deg": round(total, 1), "order_delay_s": round(t10, 2) if t10 is not None else None,
+               "t10_s": t10, "t50_s": t50, "t90_s": t90,
+               "mean_rate_deg_per_wall_s_10_90": round(mean_rate, 2) if mean_rate else None,
+               "mean_rate_deg_per_game_s_10_90": round(mean_rate / gr, 2) if mean_rate and gr else None,
+               "fit_rate_deg_per_wall_s": round(fit, 3) if fit is not None else None,
+               "series": [[round(t, 3), round(v, 2)] for t, v in sm]}
+        if os.environ.get("SPAWN_KEY"):
+            res["spawnKey"] = os.environ["SPAWN_KEY"]
+        apply_noop(res)
+        json.dump(res, open(f"/out/runs/{label}.json", "w"), indent=1)
+        print(json.dumps({k: v for k, v in res.items() if k != "series"}))
