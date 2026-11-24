@@ -8,7 +8,13 @@ Related files:
 
 - `hud-spec.md`: what each component reads from the `ViewModel` and which `Command`s it sends. Unchanged by this file.
 - `style-guide.md`: tokens, fonts, chrome and icons. §4.2 accent values are reused here.
-- `modern-ux.md`: integer HUD scale, safe area, ultrawide, accessibility settings.
+- `modern-ux.md`: HUD scale, safe area, ultrawide, accessibility settings.
+
+**Decisions (Daniel, 2026-11-24):**
+
+- **D1 Mouse:** the original scheme is the default. Left-click in the 3D view steers, left-click on a hostile sets course at it, and right-click targets. Camera orbit must not use right-click (§5).
+- **D2 Mini map:** an officer page only. It can't be pinned, in any mode including Wide (§3.2).
+- **D3 Scaling:** fractional UI scaling is allowed, 1.0–4.0× (§6).
 - `asset-pipeline.md`: sprite slots and the per-slot source fallback.
 - `keymap.md`: the modern default bindings.
 - `empire-skins.md` (being written in a separate PR alongside the mouse-helm and skin-layer code): how the skin layer is built. This file is the **spec** that the skin layer implements. Where the two disagree, raise it in review rather than silently diverging.
@@ -132,14 +138,14 @@ Our drawing, not a trace. Every position above is the working assumption from §
 
 | Area | Original problem (in general terms) | Clean-up |
 | --- | --- | --- |
-| Frames | Fixed-size bitmaps that blur or band when scaled | Fallback and placeholder frames are **vector or 9-slice** (`SpriteSlot.nineSlice`, `asset-pipeline.md` §2). Corners and trim stay crisp at every N; only the 9-slice centre and edges stretch. Install bitmaps keep the integer-scale rule. |
+| Frames | Fixed-size bitmaps that blur or band when scaled | Fallback and placeholder frames are **vector or 9-slice** (`SpriteSlot.nineSlice`, `asset-pipeline.md` §2). Corners and trim stay crisp at every scale, including fractional (D3); only the 9-slice centre and edges stretch. Bitmap plates are sampled from the nearest larger 2× or 4× plate (§6). |
 | Scaling grid | Authored for one low resolution | Layout on the existing **1024 × 768 logical canvas, 8-unit base grid** (`style-guide.md` §1). Every panel rect, gutter and hit target is a multiple of 8. Placeholder plates are authored at **2× and 4×** (16 and 32 px per unit) so HD screens never upscale them. |
 | Spacing | Uneven gaps between panels | 8-unit gutters, 8-unit padding, panel headers 16 units, aligned baselines across the bottom row. |
 | Type | Small bitmap text | Style-guide fonts and sizes; minimum 11 physical px; tabular figures for every number; numbers always beside bars. |
 | Ultrawide / safe area | 4:3 only | Use `modern-ux.md` §2 modes. **Safe-area centred** keeps the whole arrangement inside a 4:3 box. **Wide** moves the officer MFD block to the left edge and the target schematic to the right edge, keeping the rows and order; the centre 3D view stays clear. All interactive HUD stays inside the platform safe area (CSS `env(safe-area-inset-*)` in the HTML layer; a 2% inset on the canvas in Tauri fullscreen on TVs/projectors, opt-in). |
 | Discoverability | Icon-only buttons | **Hover tooltips** on every button, strip icon, hardpoint and bar: name, current value, bound key. 400 ms delay, instant once one is open, never over the 3D view's cursor point, dismissed on click. Tooltips are HTML (screen-reader readable) positioned from the canvas hit map. |
 | States | Colour-only cues | State shape/pattern cues per `style-guide.md` §4.1. |
-| Mini map | Only visible as one page | Stays a page by default (preserved). Optional **pinned mini map** in Wide mode only, off by default, in the right-hand margin outside the 4:3 box. |
+| Mini map | Only visible as one page | Stays an officer page only (preserved; decision D2, Daniel 2026-11-24). ~~Optional pinned mini map in Wide mode~~: removed; it can't be pinned in any mode, including Wide. |
 
 ---
 
@@ -235,6 +241,14 @@ Fallback is per slot, so a partly read install still shows. The `?hudDebug=1` ov
 | `ori` | Mismatched riveted panels, offset seams |
 | `neutral` | Style-guide chrome, no motif |
 
+### 4.6 Review notes for the skin-layer PR
+
+1. Types and slot ids match §4.2; resolution order matches §4.4, per slot.
+2. Switching skin leaves the hit map identical (§4.3 item 8).
+3. Frames stay crisp at fractional scales 1.0–4.0× (D3): 9-slice and vector at exact scale, bitmap plates from the nearest larger 2× or 4× plate.
+4. No skin adds a pinned mini map or moves the Tactical Map page out of the officer MFD (D2).
+5. No original art committed; placeholders follow §4.5.
+
 ---
 
 ## 5. Mouse helm: HUD affordances
@@ -253,9 +267,17 @@ The HUD draws these from the `ViewModel` and sends `Command`s; it does not compu
 Pointer rules:
 
 - **Hit testing order:** HUD canvas hit map → HTML tooltips/menus → 3D view. A click on a panel never reaches helm.
-- **Click vs drag:** a press that moves less than 4 logical px before release is a click. Right **click** targets (original); right **drag** orbits the camera (`keymap.md`). Wheel over the 3D view zooms; over the speed bar it changes speed.
+- **Default mouse scheme (D1, Daniel 2026-11-24):** the original's. Left-click in the 3D view steers; left-click on a hostile sets course at it; right-click targets.
+- **Click vs drag:** a press that moves less than 4 logical px before release is a click. **Camera orbit must not take right-click.** ~~Right-drag orbits the camera~~: suggested replacements are middle-drag, or a modifier plus left-drag (for example Alt+left-drag). The final pick is the Engine Lead's. Wheel over the 3D view zooms; over the speed bar it changes speed.
 - **Pending state:** after a click, the ghost shows "ordered" style immediately (optimistic) and settles when the next snapshot confirms `headingOrdered16`; a rejected order clears it and logs the reason (`hud-spec.md` §14).
 - **Keyboard parity:** every mouse helm action keeps a key path (`keymap.md`), and the HTML mirror announces the ordered heading on request.
+
+### 5.1 Review notes for the mouse-helm PR
+
+1. Left-click in the 3D view steers; left-click on a hostile sets course at it; right-click (press without drag) targets (D1).
+2. No camera action is bound to the right button, including right-drag. Orbit uses whatever the Engine Lead picks (middle-drag or a modifier).
+3. Clicks on any HUD panel never reach helm; the helm only sends `Command`s and never predicts turns.
+4. Turn arc bands use colour plus dash pattern, from sim-provided values.
 
 ---
 
@@ -265,7 +287,7 @@ Pointer rules:
 - **Colour-blind check of the current `style-guide.md` §4.2 accents** (our own simulation, Machado-style matrices, CIELAB distance below 15 flagged): deuteranopia confuses `fed`/`ori` (very close) and `gor`/`mir`; protanopia confuses `lyr`/`gor` and `fed`/`ori`; tritanopia confuses `rom`/`hyd`, `fed`/`rom` and `fed`/`hyd`. These pairs need a `cvd` override (§4.2) or a value change; this matters most in mixed-empire skirmish views. Proposed values: in the follow-up style-guide PR.
 - **Contrast minimums:** text 4.5:1 against its plate (7:1 in high-contrast mode); accent strips, bars, frame edges and focus ring 3:1 against the adjacent plate (WCAG 1.4.11). Against `--panel-bg #0B1118`, all nine accents pass 3:1; `kli #B23A3A` is lowest at about 3.2:1, so it may not be lightened by any skin texture and is never used for text. Skin `panelBg` textures must keep text at 4.5:1 at their brightest pixel.
 - **Klingon red vs damage red:** the `kli` accent is close in hue to `--state-damage` and `--state-hostile`. Because damage always carries cross-hatch and broken outline, this is acceptable, but a `kli` plate must never use hatch patterns.
-- **UI scale range:** HUD canvas `N = 1 … Nmax` (whole steps, `modern-ux.md` §1), capped at 4. HTML text 100–200%. If Daniel approves the opt-in fractional scale (`modern-ux.md` Q1), vector and placeholder skins may scale 1.0–2.0 in 0.25 steps; install bitmaps stay integer.
+- **UI scale range (D3, Daniel 2026-11-24):** HUD scale **1.0–4.0× in 0.25 steps**, fractional allowed. The default is the largest step that fits the 1024 × 768 logical canvas. 9-slice and vector art are rasterised at the exact scale, so they stay crisp. Bitmap plates (placeholders and HD) are sampled down from the **nearest larger plate** (2× up to 2.0, 4× above). The player's install bitmaps scale nearest-neighbour; an optional "pixel-exact" setting snaps the HUD to whole steps for them. HTML text 100–200%. Minimum rendered text stays 11 physical px.
 - **Reduced motion:** no skin animates frames; the turn arc does not pulse under `prefers-reduced-motion`.
 
 ---
@@ -365,6 +387,9 @@ An empire accent may never appear in the field itself, so a player can't mistake
 8. No empire accent in the field. Accent appears only on bar edges.
 9. No original art or screenshots committed; starfield and grid are procedural or our own.
 10. Reduced motion and the 3 Hz flash limit hold for beams and tag animations.
+11. Mouse (D1): left-click on the field steers, right-click and tag clicks target, and no camera control uses the right button.
+12. No pinned mini map in any mode, including Wide (D2).
+13. Bars, tags and wedge strokes stay crisp at fractional scales 1.0–4.0× (D3); bitmap plates come from the nearest larger 2× or 4× plate.
 
 ## 8. Open questions
 
@@ -389,12 +414,17 @@ An empire accent may never appear in the field itself, so a player can't mistake
 
 **Daniel**
 
-11. Original mouse grammar (left-click helm, right-click target) as the default, with right-drag for camera orbit? This changes `keymap.md`'s left-click-on-map rule only for the 3D view.
-12. Mini map as a page only (original) or the optional pinned map in Wide mode?
+11. ~~Original mouse grammar as the default?~~ **Resolved 2026-11-24 (D1):** yes. Left-click steers, left-click on a hostile sets course at it, right-click targets. Orbit must not use right-click; Engine Lead picks middle-drag or a modifier.
+12. ~~Mini map as a page only or pinnable in Wide?~~ **Resolved 2026-11-24 (D2):** officer page only, never pinned.
+12a. ~~Fractional UI scale (`modern-ux.md` Q1)?~~ **Resolved 2026-11-24 (D3):** allowed, 1.0–4.0× (§6).
 
 **Cloud agent / empire-skins PR**
 
 13. Align `empire-skins.md` types and slot ids with §4.2 and the resolution order in §4.4 during review.
+
+**Engine Lead**
+
+16. Pick the camera-orbit binding that replaces right-drag (middle-drag or a modifier plus left-drag).
 
 **Play-field PR / Renderer**
 

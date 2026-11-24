@@ -40,7 +40,7 @@ Mouse actions are presentation or targeting. They do not write the sim except **
 | Toggle north-up / heading-up | `H` |
 | Reset the camera | `Home` |
 | Pause (single player) | `Esc` |
-| Orbit the camera | Right-drag the view |
+| Orbit the camera | Not right-drag: right-click targets (Daniel, 2026-11-24, `hud-layout.md` D1); middle-drag or a modifier, final pick by the Engine Lead |
 | Zoom the camera | Wheel on the view |
 | Zoom the sensor map | Wheel on the map |
 | Target a contact | Left-click the contact on the map |
