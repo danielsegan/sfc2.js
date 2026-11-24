@@ -318,6 +318,31 @@ describe('shiplist binding', () => {
     expect(ship.warp).toBe(13);
     expect(ship.crew).toBe(12);
     expect(ship.turnMode).toBe(TURN_UNVERIFIED);
+    expect(ship.turnHull).toBe('TEST-CE-CA');
+  });
+
+  it('keeps every shield cell on its own facing with four distinct values in any column order', () => {
+    // Distinct synthetic cells so a front/rear or side swap cannot hide (F-CA's real aft side equals its rear).
+    const want = [31, 23, 17, 11, 17, 23];
+    const orders = [
+      ['Shield 1', 'Shield 2 _ 6', 'Shield 3 _ 5', 'Shield 4'],
+      ['Shield 4', 'Shield 3 _ 5', 'Shield 2 _ 6', 'Shield 1'],
+      ['Shield 3 _ 5', 'Shield 1', 'Shield 4', 'Shield 2 _ 6'],
+    ];
+    const cellOf: Record<string, number> = { 'Shield 1': 31, 'Shield 2 _ 6': 23, 'Shield 3 _ 5': 17, 'Shield 4': 11 };
+    for (const order of orders) {
+      const text = [
+        ['Race', 'Hull Type', 'Class', 'Turn Mode', 'Move Cost', ...order, 'Regular Crew', 'Acceleration'].join('\t'),
+        ['Federation', 'CA', 'TEST-CE-CA', 'C', '1', ...order.map((name) => String(cellOf[name])), '12', '4'].join('\t'),
+      ].join('\n');
+      const parsed = parseShiplist(text, { file: 'Assets/Specs/shiplist.txt' });
+      const ship = bindShiplistRow(parsed.data.rows[0]!, parsed.data.columns);
+      expect(ship.shieldsMax).toEqual(want);
+      const sim = boot([ship], { rulesTurnTicks: 1 });
+      play(sim, [{ kind: VERB_SPAWN, payload: spawnPayload(0, 0, 0, 0) }]);
+      expect(viewAt(sim, 0).shieldsMax).toEqual(want);
+      expect(viewAt(sim, 0).shields).toEqual(want);
+    }
   });
 });
 

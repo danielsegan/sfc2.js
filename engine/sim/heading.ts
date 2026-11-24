@@ -6,6 +6,11 @@
  *
  * A manual yaw replaces the order with a hold on the heading just reached.
  * Sims that do not register the table keep yaw-only helm.
+ *
+ * With the turnCurve table (turn-curve.ts) a hull that names a turn hull
+ * steers at its measured normal-turn rate, bounded by the letter cap, and a
+ * fresh order waits out the curve's start delay before the first step.
+ * Without that table the letter cap is used unchanged.
  */
 import { angle16, shortestArc } from '../core/angle.ts';
 import { asEntityId, type EntityId } from '../core/brands.ts';
@@ -15,12 +20,13 @@ import type { CommandHandler, SimSystem, TickContext } from './sim.ts';
 import type { TableSpec, World } from './world.ts';
 import { H, readHull } from './hull.ts';
 import { rulesDiv } from './rules-div.ts';
-import { CLASS_FIGHTER, turnHasRate, turnImmobile, turnYawCap } from './rules-tables.ts';
+import { CLASS_FIGHTER, turnHasRate, turnImmobile } from './rules-tables.ts';
+import { TC, curveRow, hetActive, normalDelayFor, setCurveDelay, turnRateFor, usesCurve } from './turn-curve.ts';
 
 /** Free verbs. 1–11 and 20–27 are combat, allegiance, phase-3, and small craft. */
 export const VERB_ORDER_HEADING = 12;
 
-/** High-Energy Turn. The handler is not registered in this change; the id is reserved here. */
+/** High-Energy Turn. The handler is engine/sim/het.ts. */
 export const VERB_ORDER_HET = 13;
 
 export const EVENT_HEADING = 19;
@@ -49,6 +55,8 @@ export const HEADING_DISABLED = 4;
 export const HEADING_NO_SHIP = 5;
 export const HEADING_NOT_SHIP = 6;
 export const HEADING_DESTROYED = 7;
+/** A High-Energy Turn is pending or running (hetActive). */
+export const HEADING_HET_ACTIVE = 8;
 
 export function headingPayload(entity: number, heading16: number): Uint8Array {
   const out = new Uint8Array(8);
@@ -95,11 +103,20 @@ function applyHeading(world: World, cmd: Command, ctx: TickContext): void {
     reject(ctx, id as number, problem);
     return;
   }
+  if (hetActive(world, id) === 1) {
+    reject(ctx, id as number, HEADING_HET_ACTIVE);
+    return;
+  }
   const fields = readHull(world, id);
   const current = world.heading(id) as number;
-  if (shortestArc(angle16(current), angle16(heading)) !== 0 && turnImmobile(fields[H.turnMode]!) === 1) {
+  const arc = shortestArc(angle16(current), angle16(heading));
+  if (arc !== 0 && turnImmobile(fields[H.turnMode]!) === 1) {
     ctx.emit({ kind: EVENT_HEADING, entity: id as number, a: HEADING_IMMOBILE, b: 0 });
     return;
+  }
+  // A curve hull that is not already turning waits out the start delay. One that is keeps its count.
+  if (usesCurve(world, id) === 1 && world.getFields(id, HEADING_ORDER)[HORD.mode] !== HEADING_STEER) {
+    setCurveDelay(world, id, arc !== 0 ? normalDelayFor(world, id, fields) : 0);
   }
   world.setFields(id, HEADING_ORDER, orderRow(HEADING_STEER, heading, 0, 0));
   ctx.emit({ kind: EVENT_HEADING, entity: id as number, a: HEADING_ORDERED, b: heading });
@@ -142,9 +159,18 @@ function steerOne(world: World, id: EntityId): void {
     return;
   }
   if (turnHasRate(fields[H.turnMode]!) === 0) return;
-  const cap = turnYawCap(fields[H.turnMode]!);
+  if (hetActive(world, id) === 1) return;
+  const cap = turnRateFor(world, id, fields);
   if (cap < 0) return;
   const aim = (order[HORD.heading] ?? 0) & 0xffff;
+  const curve = curveRow(world, id);
+  const wait = curve ? (curve[TC.delayLeft] ?? 0) : 0;
+  if (wait > 0) {
+    setCurveDelay(world, id, wait - 1);
+    const pending = remain(world.heading(id) as number, aim, cap);
+    world.setFields(id, HEADING_ORDER, orderRow(mode, aim, pending.ticks + wait - 1, pending.band));
+    return;
+  }
   if (turnImmobile(fields[H.turnMode]!) === 1) {
     const stuck = remain(world.heading(id) as number, aim, cap);
     world.setFields(id, HEADING_ORDER, orderRow(mode, aim, stuck.ticks, stuck.band));

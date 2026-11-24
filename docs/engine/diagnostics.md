@@ -123,7 +123,7 @@ interface Diagnostic {
 | rules | `outOfArc` | warning | Combat | Target bearing is outside the mount arc |
 | rules | `outOfRange` | warning | Combat | Target is beyond the weapon's last range |
 | rules | `weaponDestroyed` | warning | Combat | Mount has no boxes left |
-| rules | `turnModeUnverified` | warning | Combat | Turn letter has no playtest rate. Once at spawn; movement uses the fallback yaw |
+| rules | `turnModeUnverified` | warning | Combat | Turn letter has no playtest rate and the hull is not on the turn curve. Once at spawn; movement uses the fallback yaw |
 | rules | `crewDisabled` | warning | Combat | Crew is below the minimum |
 | rules | `overDraw` | warning | Combat | Generation plus battery could not pay the plan |
 | rules | `speedClamped` | warning | Combat | Speed was reduced to the acceleration limit |

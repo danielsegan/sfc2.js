@@ -142,3 +142,24 @@ describe('heading order', () => {
     expect(match.view().self?.heading16).toBe(CAP * 2);
   });
 });
+
+describe('orderHet from the match', () => {
+  it('queues verb 13 and shows the HET in the helm view', () => {
+    const match = boot();
+    step(match);
+    match.orderHet(1);
+    const queued = match.session.commandsFor(match.tick + 1);
+    const order = queued.find((cmd) => cmd.kind === 13);
+    if (!order) throw new Error('het was not queued');
+    expect(readU32(order.payload, 0)).toBe(match.selfId);
+    expect(readU32(order.payload, 4) | 0).toBe(1);
+    step(match);
+    const helm = match.view().self?.helm;
+    expect(helm?.mode).toBe('het');
+    expect(helm?.remainingTurn16).toBe(16384);
+    expect(helm?.hetDelayTicks).toBe(170);
+    step(match, 170 + 58);
+    expect(match.view().self?.heading16).toBe(16384);
+    expect(match.view().self?.helm.mode).not.toBe('het');
+  });
+});

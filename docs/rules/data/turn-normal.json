@@ -12,6 +12,8 @@
     "delays": "nearestInteger: round(seconds * 30)",
     "workedExample": "8 deg/s = 48.545... -> 49 integer angle units per tick at 30 Hz; 1.45 s -> 44 ticks"
   },
+  "hullOrder": ["F-CA", "K-D7", "default"],
+  "hullOrderNote": "Stable sim ids: engine/sim numbers hull rows by their position in this list, so append new hull keys at the end. Every key under hulls must be listed. default is the row for hulls with no entry of their own. Editing a row's speedPoints needs no code change.",
   "hulls": {
     "F-CA": {
       "status": "measured",

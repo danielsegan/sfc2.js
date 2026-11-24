@@ -65,7 +65,7 @@ A worked balance, all integers, generation 10: speed 4 at `moveCost` 1, life sup
 
 ## 4. Movement and turn modes
 
-`speed` is rule-units per rules-turn of travel. Acceleration limits how far ordered speed may move in one `setEnergy`. Turn letters `AA` and `A`–`G`, and any other token that is not `H` or a `TEST-*` row, have no per-letter rate until playtest. They use `fallbackMaxYawPerTick` from [`data/turn-modes.json`](data/turn-modes.json) (placeholder 2000, the same integer as `TEST-C`, not a measured CE rate). The sim emits `turnModeUnverified` once, when that hull is spawned, and then keeps speed and yaw orders. `H` is immobile: speed and yaw become 0, reason `immobile`.
+`speed` is rule-units per rules-turn of travel. Acceleration limits how far ordered speed may move in one `setEnergy`. Turn letters `AA` and `A`–`G`, and any other token that is not `H` or a `TEST-*` row, have no per-letter rate until playtest. They use `fallbackMaxYawPerTick` from [`data/turn-modes.json`](data/turn-modes.json) (placeholder 2000, the same integer as `TEST-C`, not a measured CE rate). The sim emits `turnModeUnverified` once, when that hull is spawned, and then keeps speed and yaw orders. A hull on the measured normal-turn curve ([turning.md](turning.md) §5) is not on the fallback and is not warned. `H` is immobile: speed and yaw become 0, reason `immobile`.
 
 Synthetic rates used by fixtures only ([`data/turn-modes.json`](data/turn-modes.json)):
 
@@ -77,9 +77,9 @@ Synthetic rates used by fixtures only ([`data/turn-modes.json`](data/turn-modes.
 
 Yaw is allowed at speed 0 for `TEST-*` modes. Whether CE lets a ship rotate in place is unverified. A requested yaw larger than the cap is `yawClamped` to the cap, sign preserved. Heading wraps mod 65536.
 
-The measured per-hull, speed-keyed **normal** turn curve is specified in [turning.md](turning.md) ([`data/turn-normal.json`](data/turn-normal.json): integer rates in 16-bit angle units per tick at 30 Hz, delay in ticks, fixed-point linear interpolation, clamp outside the table). The engine still uses the letter fallback above until a later change consumes that table.
+The measured per-hull, speed-keyed **normal** turn curve is specified in [turning.md](turning.md) ([`data/turn-normal.json`](data/turn-normal.json): integer rates in 16-bit angle units per tick at 30 Hz, delay in ticks, fixed-point linear interpolation, clamp outside the table). The engine uses it for every ship bound from a shiplist (`min(curve rate, letter cap)`, with the start delay on a fresh heading order). Synthetic `TEST-*` setups keep the letter caps above.
 
-High-energy turns are specified in [het.md](het.md) (separate sim verb, per-hull speed-keyed integer table with fixed-point linear interpolation, delay then turn, no speed cutoff; CE 2.670 measurements for delay, F-CA sweep/rate band, and K-D7 sweep are recorded, remaining hulls/curves **TO VERIFY**). `hetChance` and `hetBreakdown` remain stored without breakdown rolls in this slice.
+High-energy turns are specified in [het.md](het.md) and live in the engine as verb `13` (separate sim verb, per-hull speed-keyed integer table with fixed-point linear interpolation, delay then turn, no speed cutoff; CE 2.670 measurements for delay, F-CA sweep/rate band, and K-D7 sweep are recorded, remaining hulls/curves **TO VERIFY**). `hetChance` and `hetBreakdown` remain stored without breakdown rolls in this slice.
 
 ## 5. Shields
 
