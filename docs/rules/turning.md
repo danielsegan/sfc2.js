@@ -20,7 +20,7 @@ Normal-turn rates, delays, and interpolations use the same units as [`docs/engin
 
 [`data/turn-normal.json`](data/turn-normal.json) uses the same shape as [`data/het.json`](data/het.json): top-level `interpolation` and `rounding`, then `hulls.<key>.speedPoints` and optional `hulls.<key>.audit`. Each speed point has integer `delayTicks`, `turnRate16PerTick`, `speedHundredths`, and `speed` when the speed is a whole number. There is no `turnAngle16` column: a normal turn does not use a fixed HET sweep; the ordered yaw comes from helm or `orderHeading`.
 
-Hull keys are the CE skirmish identifiers already used by the in-battle harness: `F-CA`, `K-D7`, and `default` for unmeasured hulls.
+Hull keys are the CE skirmish class keys (`classNameOf(spawnKey)`, the part after the last colon): `F-CA`, `F-FF`, `F-DD`, `F-CL`, `F-CC`, `F-DN`, `K-D7`, and `default` for unmeasured hulls.
 
 At lookup time for speed `s`, let `q = round(s × 100)` (or an already-integer `speedHundredths`):
 
@@ -41,15 +41,21 @@ A start-of-turn delay of `delayTicks` applies before the ship begins rotating on
 
 | Hull key | Speed points | `turnRate16PerTick` (from measured °/s) | `delayTicks` | Status |
 | --- | --- | --- | --- | --- |
-| `F-CA` | `4, 7, 8, 10, 13, 14, 20, 25`, and `29.5` (`speedHundredths` `2950`) | `24, 39, 42, 47, 46, 46, 46, 48, 49` | `44` (range `39–48`) | **Measured**. The `13–14` band is a midpoint. The dip around `13–20` is real data and is kept. |
+| `F-CA` | `4, 5, 7, 8, 10, 13, 14, 20, 25`, and `29.5` (`speedHundredths` `2950`) | `24, 29, 39, 42, 47, 46, 46, 46, 48, 49` | `44` (range `39–48`) | **Measured**. Tier-1 game-clock curve reconciled with Tier-2 speed `5` (`4.70°/s → 29`). The `13–14` band is a midpoint; the `13–20` dip is real data and is kept. |
+| `F-FF` | `5, 10, 20` | `31, 57, 60` (`5.13, 9.45, 9.96°/s`) | `44` (**TO VERIFY**) | Tier-2 rates **measured** at `5, 10, 20`; speeds `<5` / `>20` clamp to endpoints (**TO VERIFY**); delay reuses `F-CA` (**TO VERIFY**). |
+| `F-DD` | `5, 10, 20` | `33, 50, 52` (`5.44, 8.16, 8.51°/s`) | `44` (**TO VERIFY**) | Tier-2 rates **measured** at `5, 10, 20`; speeds `<5` / `>20` clamp to endpoints (**TO VERIFY**); delay reuses `F-CA` (**TO VERIFY**). |
+| `F-CL` | `5, 10, 20` | `32, 51, 58` (`5.35, 8.36, 9.51°/s`) | `44` (**TO VERIFY**) | Tier-2 rates **measured** at `5, 10, 20`; speeds `<5` / `>20` clamp to endpoints (**TO VERIFY**); delay reuses `F-CA` (**TO VERIFY**). |
+| `F-CC` | `5, 10, 20` | `28, 44, 48` (`4.65, 7.24, 7.92°/s`) | `44` (**TO VERIFY**) | Tier-2 rates **measured** at `5, 10, 20`; speeds `<5` / `>20` clamp to endpoints (**TO VERIFY**); delay reuses `F-CA` (**TO VERIFY**). |
+| `F-DN` | `5, 10, 20` | `26, 38, 45` (`4.26, 6.19, 7.42°/s`) | `44` (**TO VERIFY**) | Tier-2 rates **measured** at `5, 10, 20`; speeds `<5` / `>20` clamp to endpoints (**TO VERIFY**); delay reuses `F-CA` (**TO VERIFY**). |
 | `K-D7` | `7, 31` | `52` at both ends (flat midpoint of `7.5–9.7°/s`) | `44` placeholder | Rate band **measured** (medium confidence); **per-speed points and delay TO VERIFY**. |
-| `default` | Same points as `F-CA` | Same rates as `F-CA` | `44` | Fallback **TO VERIFY**. The audit does not auto-score this hull. |
+| `default` | Same points as Tier-1 `F-CA` | Same rates as Tier-1 `F-CA` | `44` | Fallback **TO VERIFY**. The audit does not auto-score this hull. |
 
 `F-CA` measured °/s, marked **measured**:
 
 | Speed | °/s | `turnRate16PerTick` | Notes |
 | --- | --- | --- | --- |
-| `4` | `3.9` | `24` | measured |
+| `4` | `3.9` | `24` | measured (Tier 1) |
+| `5` | `4.7` | `29` | measured (Tier 2 `4.70°/s`; matches Tier-1 interpolation `4.73°/s`) |
 | `7` | `6.4` | `39` | measured |
 | `8` | `6.9` | `42` | measured |
 | `10` | `7.8` | `47` | measured |
@@ -59,7 +65,7 @@ A start-of-turn delay of `delayTicks` applies before the ship begins rotating on
 | `25` | `7.9` | `48` | measured |
 | `29.5` | `8.0` | `49` | measured; stored as `speedHundredths` `2950` |
 
-The integer rates for `13`, `14`, and `20` all become `46` after nearest-integer conversion (`7.5` and `7.6` both round to `46`). Audit expect keeps the measured °/s values, so the dip remains visible to the scorer.
+The integer rates for `13`, `14`, and `20` all become `46` after nearest-integer conversion (`7.5` and `7.6` both round to `46`). Audit expect keeps the measured °/s values, so the dip remains visible to the scorer. On `F-CA`, Tier-2 single-run 10–90% captures gave `4.70` @ `5`, `7.41` @ `10`, and `8.20` @ `20`: speed `5` agrees within `0.03°/s`, while `10` (`-0.39°/s`) and `20` (`+0.60°/s`) sit outside the `±0.3°/s` Tier-1 tolerance and are kept **TO VERIFY** rather than overwriting the denser multi-run, game-clock-normalized Tier-1 points.
 
 Worked interpolation (`F-CA`, integer rates): speed `9` sits between `8` (`42`) and `10` (`47`) and yields `45` units/tick; speed `6` between `4` and `7` yields `34`; speed `0` clamps to `24`; speed `40` clamps to `49`. Fixture: [`tests/turning.json`](tests/turning.json).
 
@@ -72,7 +78,7 @@ Worked interpolation (`F-CA`, integer rates): speed `9` sits between `8` (`42`) 
 
 [`data/turn-normal.json`](data/turn-normal.json) stores per-hull `audit.expect` and `audit.tolerances` maps with those exact field names. A run may still override with its own `expect` / `tolerances`. When the run omits them, the audit looks up the table by hull key (`F-CA` or `K-D7`, resolved from `run.hull`, `spawnKey`, or the class name after the last `:`). Intermediate speeds interpolate the expect °/s values with the same `interpInt` rule. The `default` fallback is not auto-scored.
 
-`F-CA` expect uses the measured °/s figures, delay `1.45 s`, and tolerance `0.3` °/s / `0.15 s` (the delay window covers `1.3–1.6 s`; the `13–14` rate window covers `7.2–7.8`). `K-D7` expect is `8.6 ± 1.2` °/s at speeds `7` and `31` (the observed band), with no delay expect until that hull is measured.
+`F-CA` expect uses the measured °/s figures, delay `1.45 s`, and tolerance `0.3` °/s / `0.15 s` (the delay window covers `1.3–1.6 s`; the `13–14` rate window covers `7.2–7.8`). `F-FF`, `F-DD`, `F-CL`, `F-CC`, and `F-DN` expect the Tier-2 10–90% °/s values at speeds `5, 10, 20` with tolerance `0.5` °/s and no `delayS` expect until per-hull delays are measured. `K-D7` expect is `8.6 ± 1.2` °/s at speeds `7` and `31` (the observed band), with no delay expect until that hull is measured.
 
 ## 5. How the sim uses the curve
 
@@ -90,7 +96,9 @@ Tests: `engine/sim/turn-curve.test.ts` (table checks, interpolation, clamping, d
 ## 6. Pending playtest (TO VERIFY)
 
 - `K-D7` per-speed points (only a `7.5–9.7°/s` band across speeds `7–31` is recorded) and `K-D7` delay.
-- Normal-turn curves for every other hull; they currently use the `default` fallback.
+- Normal-turn curves below speed `5` and above speed `20` for `F-FF`, `F-DD`, `F-CL`, `F-CC`, and `F-DN` (currently clamped to the `5` and `20` endpoints), plus per-hull `delayTicks` for those five hulls (currently reusing `F-CA`'s `44` ticks).
+- `F-CA` Tier-2 single-run vs Tier-1 game-clock spread at speeds `10` (`7.41` vs `7.8°/s`) and `20` (`8.20` vs `7.6°/s`).
+- Normal-turn curves for all non-Federation hulls (other than `K-D7`); they currently use the `default` fallback.
 - The exact delay in the `39–48` tick window (the table uses midpoint `44`).
 - Whether the `13–14` band should be two distinct rates rather than a shared midpoint, and whether delay varies with speed.
 - How a new heading or helm order interacts with an in-progress normal turn and with its start delay. The sim's choice (§5: no restart while turning, manual yaw skips the delay) is provisional.

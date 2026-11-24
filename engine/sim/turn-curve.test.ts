@@ -89,9 +89,29 @@ describe('turn curve tables', () => {
     }
   });
 
+  it('compiles every hull in hullOrder for both turn-normal and het tables', () => {
+    for (const key of normalJson.hullOrder) {
+      const id = curveId(NORMAL_CURVE, key);
+      if (key !== 'default') expect(id).not.toBe(NORMAL_CURVE.defaultId);
+      expect(NORMAL_CURVE.rows[id]?.key).toBe(key);
+      const pt = curvePoint(NORMAL_CURVE, id, 1000);
+      expect(pt.rate).toBeGreaterThan(0);
+      expect(pt.delay).toBeGreaterThanOrEqual(0);
+    }
+    for (const key of hetJson.hullOrder) {
+      const id = curveId(HET_CURVE, key);
+      if (key !== 'default') expect(id).not.toBe(HET_CURVE.defaultId);
+      expect(HET_CURVE.rows[id]?.key).toBe(key);
+      const pt = curvePoint(HET_CURVE, id, 1000);
+      expect(pt.rate).toBeGreaterThan(0);
+      expect(pt.angle).toBeGreaterThan(0);
+      expect(pt.delay).toBeGreaterThanOrEqual(0);
+    }
+  });
+
   it('gives F-CA its measured rates and delay at the table speeds', () => {
     const fca = curveId(NORMAL_CURVE, 'F-CA');
-    const want: [number, number][] = [[400, 24], [700, 39], [800, 42], [1000, 47], [1300, 46], [1400, 46], [2000, 46], [2500, 48], [2950, 49]];
+    const want: [number, number][] = [[400, 24], [500, 29], [700, 39], [800, 42], [1000, 47], [1300, 46], [1400, 46], [2000, 46], [2500, 48], [2950, 49]];
     for (const [speed, rate] of want) {
       expect(curvePoint(NORMAL_CURVE, fca, speed)).toMatchObject({ rate, delay: 44 });
     }
@@ -115,6 +135,21 @@ describe('turn curve tables', () => {
     expect(curvePoint(NORMAL_CURVE, fca, q(40)).rate).toBe(49);
     const d7 = curveId(NORMAL_CURVE, 'K-D7');
     for (const speed of [0, 7, 15, 31, 40]) expect(curvePoint(NORMAL_CURVE, d7, q(speed)).rate).toBe(52);
+    const fedWant: [string, number, number, number][] = [
+      ['F-FF', 31, 57, 60],
+      ['F-DD', 33, 50, 52],
+      ['F-CL', 32, 51, 58],
+      ['F-CC', 28, 44, 48],
+      ['F-DN', 26, 38, 45],
+    ];
+    for (const [hull, r5, r10, r20] of fedWant) {
+      const id = curveId(NORMAL_CURVE, hull);
+      expect(curvePoint(NORMAL_CURVE, id, q(0)).rate).toBe(r5);
+      expect(curvePoint(NORMAL_CURVE, id, q(5)).rate).toBe(r5);
+      expect(curvePoint(NORMAL_CURVE, id, q(10)).rate).toBe(r10);
+      expect(curvePoint(NORMAL_CURVE, id, q(20)).rate).toBe(r20);
+      expect(curvePoint(NORMAL_CURVE, id, q(31)).rate).toBe(r20);
+    }
   });
 
   it('keys a shiplist row by the class name after the last colon', () => {

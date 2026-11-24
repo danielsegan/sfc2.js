@@ -19,6 +19,8 @@ export interface HarnessDiff {
   turnUntagged: number;
   /** Tagged turn samples with no target or settled speed. Skipped, not failed. */
   turnNoSpeed: number;
+  /** Runs tagged as harness no-ops (e.g. failed HET roll or already facing). Skipped, not failed. */
+  turnNoop: number;
   fields: Record<string, FieldTally>;
 }
 
@@ -32,8 +34,10 @@ interface RunRecord {
   order_delay_s?: unknown;
   target_speed?: unknown;
   settled_speed?: unknown;
-  /** `normal` or `het`. A string. Legacy captures omit it. */
+  /** `normal`, `het`, or `noop`. A string. Legacy captures omit it. */
   turn?: unknown;
+  noop?: unknown;
+  status?: unknown;
   turnKind?: unknown;
   kind?: unknown;
   fields?: unknown;
@@ -95,6 +99,14 @@ function measuredOf(run: RunRecord): Record<string, number> {
     for (const [key, value] of Object.entries(extra)) out[key] = value;
   }
   return out;
+}
+
+function isNoopRun(run: RunRecord): boolean {
+  if (run.noop === true) return true;
+  for (const candidate of [run.status, run.turnKind, run.kind, run.turn]) {
+    if (typeof candidate === "string" && candidate.trim().toLowerCase() === "noop") return true;
+  }
+  return false;
 }
 
 function turnKind(run: RunRecord): "normal" | "het" | null {
@@ -168,8 +180,11 @@ export function diffHarness(
   let unmatched = 0;
   let turnUntagged = 0;
   let turnNoSpeed = 0;
+  let turnNoop = 0;
   for (const run of parsed.runs) {
-    const turns = turnFields(run);
+    const noop = isNoopRun(run);
+    const turns = noop ? { untagged: false, noSpeed: false, fields: {} } : turnFields(run);
+    if (noop) turnNoop += 1;
     if (turns.untagged) turnUntagged += 1;
     if (turns.noSpeed) turnNoSpeed += 1;
     const key = resolveKey(run, hulls, hullMap);
@@ -190,7 +205,8 @@ export function diffHarness(
     ];
     for (const [field, value] of Object.entries(measured)) {
       const fromTable = field.startsWith("turn.") ? tableExpectForTurnField(hullKeys, field) : undefined;
-      const expected = Object.prototype.hasOwnProperty.call(expect, field)
+      const hasExplicitExpect = Object.prototype.hasOwnProperty.call(expect, field);
+      const expected = hasExplicitExpect
         ? expect[field]
         : derived[field] ?? fromTable?.value;
       if (expected === undefined) {
@@ -202,9 +218,14 @@ export function diffHarness(
         parsed.tolerances[field] ??
         fromTable?.tolerance ??
         (field.startsWith("turn.") ? turnTolerance : tolerance);
-      const delta = value > expected ? value - expected : expected - value;
+      // Rules tables store unsigned sweep magnitudes; captures use signed headings (negative = port).
+      const scoredValue =
+        !hasExplicitExpect && fromTable !== undefined && field.endsWith(".deg")
+          ? Math.abs(value)
+          : value;
+      const delta = scoredValue > expected ? scoredValue - expected : expected - scoredValue;
       bump(fields, field, delta <= limit + 1e-9 ? "pass" : "fail");
     }
   }
-  return { runs: parsed.runs.length, unmatched, turnUntagged, turnNoSpeed, fields };
+  return { runs: parsed.runs.length, unmatched, turnUntagged, turnNoSpeed, turnNoop, fields };
 }

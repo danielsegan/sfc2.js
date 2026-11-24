@@ -3,38 +3,492 @@
   "mode": "turning",
   "note": "Synthetic cases for unit conversion, interpolation, and clamping of the normal-turn table. No CE rows.",
   "cases": [
-    { "op": "rateFromDegHundredths", "degHundredths": 800, "expect": 49 },
-    { "op": "rateFromDegHundredths", "degHundredths": 390, "expect": 24 },
-    { "op": "rateFromDegHundredths", "degHundredths": 640, "expect": 39 },
-    { "op": "rateFromDegHundredths", "degHundredths": 690, "expect": 42 },
-    { "op": "rateFromDegHundredths", "degHundredths": 780, "expect": 47 },
-    { "op": "rateFromDegHundredths", "degHundredths": 750, "expect": 46 },
-    { "op": "rateFromDegHundredths", "degHundredths": 760, "expect": 46 },
-    { "op": "rateFromDegHundredths", "degHundredths": 790, "expect": 48 },
-    { "op": "rateFromDegHundredths", "degHundredths": 860, "expect": 52 },
-    { "op": "delayFromSecondsHundredths", "secondsHundredths": 130, "expect": 39 },
-    { "op": "delayFromSecondsHundredths", "secondsHundredths": 160, "expect": 48 },
-    { "op": "delayFromSecondsHundredths", "secondsHundredths": 145, "expect": 44 },
-    { "op": "lookup", "hull": "F-CA", "speedHundredths": 400, "expect": { "turnRate16PerTick": 24, "delayTicks": 44 } },
-    { "op": "lookup", "hull": "F-CA", "speedHundredths": 700, "expect": { "turnRate16PerTick": 39, "delayTicks": 44 } },
-    { "op": "lookup", "hull": "F-CA", "speedHundredths": 800, "expect": { "turnRate16PerTick": 42, "delayTicks": 44 } },
-    { "op": "lookup", "hull": "F-CA", "speedHundredths": 1000, "expect": { "turnRate16PerTick": 47, "delayTicks": 44 } },
-    { "op": "lookup", "hull": "F-CA", "speedHundredths": 1300, "expect": { "turnRate16PerTick": 46, "delayTicks": 44 } },
-    { "op": "lookup", "hull": "F-CA", "speedHundredths": 1400, "expect": { "turnRate16PerTick": 46, "delayTicks": 44 } },
-    { "op": "lookup", "hull": "F-CA", "speedHundredths": 2000, "expect": { "turnRate16PerTick": 46, "delayTicks": 44 } },
-    { "op": "lookup", "hull": "F-CA", "speedHundredths": 2500, "expect": { "turnRate16PerTick": 48, "delayTicks": 44 } },
-    { "op": "lookup", "hull": "F-CA", "speedHundredths": 2950, "expect": { "turnRate16PerTick": 49, "delayTicks": 44 } },
-    { "op": "lookup", "hull": "F-CA", "speedHundredths": 900, "expect": { "turnRate16PerTick": 45, "delayTicks": 44 } },
-    { "op": "lookup", "hull": "F-CA", "speedHundredths": 600, "expect": { "turnRate16PerTick": 34, "delayTicks": 44 } },
-    { "op": "lookup", "hull": "F-CA", "speedHundredths": 2200, "expect": { "turnRate16PerTick": 47, "delayTicks": 44 } },
-    { "op": "lookup", "hull": "F-CA", "speedHundredths": 0, "expect": { "turnRate16PerTick": 24, "delayTicks": 44 } },
-    { "op": "lookup", "hull": "F-CA", "speedHundredths": 300, "expect": { "turnRate16PerTick": 24, "delayTicks": 44 } },
-    { "op": "lookup", "hull": "F-CA", "speedHundredths": 4000, "expect": { "turnRate16PerTick": 49, "delayTicks": 44 } },
-    { "op": "lookup", "hull": "F-CA", "speedHundredths": 2900, "expect": { "turnRate16PerTick": 49, "delayTicks": 44 } },
-    { "op": "lookup", "hull": "K-D7", "speedHundredths": 700, "expect": { "turnRate16PerTick": 52 } },
-    { "op": "lookup", "hull": "K-D7", "speedHundredths": 3100, "expect": { "turnRate16PerTick": 52 } },
-    { "op": "lookup", "hull": "K-D7", "speedHundredths": 1500, "expect": { "turnRate16PerTick": 52 } },
-    { "op": "lookup", "hull": "K-D7", "speedHundredths": 0, "expect": { "turnRate16PerTick": 52 } },
-    { "op": "lookup", "hull": "unknown-hull", "speedHundredths": 800, "expect": { "turnRate16PerTick": 42, "delayTicks": 44 } }
+    {
+      "op": "rateFromDegHundredths",
+      "degHundredths": 800,
+      "expect": 49
+    },
+    {
+      "op": "rateFromDegHundredths",
+      "degHundredths": 390,
+      "expect": 24
+    },
+    {
+      "op": "rateFromDegHundredths",
+      "degHundredths": 640,
+      "expect": 39
+    },
+    {
+      "op": "rateFromDegHundredths",
+      "degHundredths": 690,
+      "expect": 42
+    },
+    {
+      "op": "rateFromDegHundredths",
+      "degHundredths": 780,
+      "expect": 47
+    },
+    {
+      "op": "rateFromDegHundredths",
+      "degHundredths": 750,
+      "expect": 46
+    },
+    {
+      "op": "rateFromDegHundredths",
+      "degHundredths": 760,
+      "expect": 46
+    },
+    {
+      "op": "rateFromDegHundredths",
+      "degHundredths": 790,
+      "expect": 48
+    },
+    {
+      "op": "rateFromDegHundredths",
+      "degHundredths": 860,
+      "expect": 52
+    },
+    {
+      "op": "delayFromSecondsHundredths",
+      "secondsHundredths": 130,
+      "expect": 39
+    },
+    {
+      "op": "delayFromSecondsHundredths",
+      "secondsHundredths": 160,
+      "expect": 48
+    },
+    {
+      "op": "delayFromSecondsHundredths",
+      "secondsHundredths": 145,
+      "expect": 44
+    },
+    {
+      "op": "lookup",
+      "hull": "F-CA",
+      "speedHundredths": 400,
+      "expect": {
+        "turnRate16PerTick": 24,
+        "delayTicks": 44
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "F-CA",
+      "speedHundredths": 700,
+      "expect": {
+        "turnRate16PerTick": 39,
+        "delayTicks": 44
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "F-CA",
+      "speedHundredths": 800,
+      "expect": {
+        "turnRate16PerTick": 42,
+        "delayTicks": 44
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "F-CA",
+      "speedHundredths": 1000,
+      "expect": {
+        "turnRate16PerTick": 47,
+        "delayTicks": 44
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "F-CA",
+      "speedHundredths": 1300,
+      "expect": {
+        "turnRate16PerTick": 46,
+        "delayTicks": 44
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "F-CA",
+      "speedHundredths": 1400,
+      "expect": {
+        "turnRate16PerTick": 46,
+        "delayTicks": 44
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "F-CA",
+      "speedHundredths": 2000,
+      "expect": {
+        "turnRate16PerTick": 46,
+        "delayTicks": 44
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "F-CA",
+      "speedHundredths": 2500,
+      "expect": {
+        "turnRate16PerTick": 48,
+        "delayTicks": 44
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "F-CA",
+      "speedHundredths": 2950,
+      "expect": {
+        "turnRate16PerTick": 49,
+        "delayTicks": 44
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "F-CA",
+      "speedHundredths": 900,
+      "expect": {
+        "turnRate16PerTick": 45,
+        "delayTicks": 44
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "F-CA",
+      "speedHundredths": 600,
+      "expect": {
+        "turnRate16PerTick": 34,
+        "delayTicks": 44
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "F-CA",
+      "speedHundredths": 2200,
+      "expect": {
+        "turnRate16PerTick": 47,
+        "delayTicks": 44
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "F-CA",
+      "speedHundredths": 0,
+      "expect": {
+        "turnRate16PerTick": 24,
+        "delayTicks": 44
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "F-CA",
+      "speedHundredths": 300,
+      "expect": {
+        "turnRate16PerTick": 24,
+        "delayTicks": 44
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "F-CA",
+      "speedHundredths": 4000,
+      "expect": {
+        "turnRate16PerTick": 49,
+        "delayTicks": 44
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "F-CA",
+      "speedHundredths": 2900,
+      "expect": {
+        "turnRate16PerTick": 49,
+        "delayTicks": 44
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "K-D7",
+      "speedHundredths": 700,
+      "expect": {
+        "turnRate16PerTick": 52
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "K-D7",
+      "speedHundredths": 3100,
+      "expect": {
+        "turnRate16PerTick": 52
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "K-D7",
+      "speedHundredths": 1500,
+      "expect": {
+        "turnRate16PerTick": 52
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "K-D7",
+      "speedHundredths": 0,
+      "expect": {
+        "turnRate16PerTick": 52
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "unknown-hull",
+      "speedHundredths": 800,
+      "expect": {
+        "turnRate16PerTick": 42,
+        "delayTicks": 44
+      }
+    },
+    {
+      "op": "rateFromDegHundredths",
+      "degHundredths": 513,
+      "expect": 31
+    },
+    {
+      "op": "rateFromDegHundredths",
+      "degHundredths": 945,
+      "expect": 57
+    },
+    {
+      "op": "rateFromDegHundredths",
+      "degHundredths": 996,
+      "expect": 60
+    },
+    {
+      "op": "rateFromDegHundredths",
+      "degHundredths": 544,
+      "expect": 33
+    },
+    {
+      "op": "rateFromDegHundredths",
+      "degHundredths": 816,
+      "expect": 50
+    },
+    {
+      "op": "rateFromDegHundredths",
+      "degHundredths": 851,
+      "expect": 52
+    },
+    {
+      "op": "rateFromDegHundredths",
+      "degHundredths": 535,
+      "expect": 32
+    },
+    {
+      "op": "rateFromDegHundredths",
+      "degHundredths": 836,
+      "expect": 51
+    },
+    {
+      "op": "rateFromDegHundredths",
+      "degHundredths": 951,
+      "expect": 58
+    },
+    {
+      "op": "rateFromDegHundredths",
+      "degHundredths": 470,
+      "expect": 29
+    },
+    {
+      "op": "rateFromDegHundredths",
+      "degHundredths": 465,
+      "expect": 28
+    },
+    {
+      "op": "rateFromDegHundredths",
+      "degHundredths": 724,
+      "expect": 44
+    },
+    {
+      "op": "rateFromDegHundredths",
+      "degHundredths": 792,
+      "expect": 48
+    },
+    {
+      "op": "rateFromDegHundredths",
+      "degHundredths": 426,
+      "expect": 26
+    },
+    {
+      "op": "rateFromDegHundredths",
+      "degHundredths": 619,
+      "expect": 38
+    },
+    {
+      "op": "rateFromDegHundredths",
+      "degHundredths": 742,
+      "expect": 45
+    },
+    {
+      "op": "lookup",
+      "hull": "F-CA",
+      "speedHundredths": 500,
+      "expect": {
+        "turnRate16PerTick": 29,
+        "delayTicks": 44
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "F-FF",
+      "speedHundredths": 0,
+      "expect": {
+        "turnRate16PerTick": 31,
+        "delayTicks": 44
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "F-FF",
+      "speedHundredths": 500,
+      "expect": {
+        "turnRate16PerTick": 31,
+        "delayTicks": 44
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "F-FF",
+      "speedHundredths": 1000,
+      "expect": {
+        "turnRate16PerTick": 57,
+        "delayTicks": 44
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "F-FF",
+      "speedHundredths": 2000,
+      "expect": {
+        "turnRate16PerTick": 60,
+        "delayTicks": 44
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "F-FF",
+      "speedHundredths": 3100,
+      "expect": {
+        "turnRate16PerTick": 60,
+        "delayTicks": 44
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "F-DD",
+      "speedHundredths": 500,
+      "expect": {
+        "turnRate16PerTick": 33,
+        "delayTicks": 44
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "F-DD",
+      "speedHundredths": 1000,
+      "expect": {
+        "turnRate16PerTick": 50,
+        "delayTicks": 44
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "F-DD",
+      "speedHundredths": 2000,
+      "expect": {
+        "turnRate16PerTick": 52,
+        "delayTicks": 44
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "F-CL",
+      "speedHundredths": 500,
+      "expect": {
+        "turnRate16PerTick": 32,
+        "delayTicks": 44
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "F-CL",
+      "speedHundredths": 1000,
+      "expect": {
+        "turnRate16PerTick": 51,
+        "delayTicks": 44
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "F-CL",
+      "speedHundredths": 2000,
+      "expect": {
+        "turnRate16PerTick": 58,
+        "delayTicks": 44
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "F-CC",
+      "speedHundredths": 500,
+      "expect": {
+        "turnRate16PerTick": 28,
+        "delayTicks": 44
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "F-CC",
+      "speedHundredths": 1000,
+      "expect": {
+        "turnRate16PerTick": 44,
+        "delayTicks": 44
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "F-CC",
+      "speedHundredths": 2000,
+      "expect": {
+        "turnRate16PerTick": 48,
+        "delayTicks": 44
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "F-DN",
+      "speedHundredths": 500,
+      "expect": {
+        "turnRate16PerTick": 26,
+        "delayTicks": 44
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "F-DN",
+      "speedHundredths": 1000,
+      "expect": {
+        "turnRate16PerTick": 38,
+        "delayTicks": 44
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "F-DN",
+      "speedHundredths": 2000,
+      "expect": {
+        "turnRate16PerTick": 45,
+        "delayTicks": 44
+      }
+    }
   ]
 }

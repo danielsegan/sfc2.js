@@ -111,7 +111,7 @@ describe('orderHet (verb 13)', () => {
   });
 
   it('turns an F-CA 90° to starboard after the 171-tick delay at 285 units/tick', () => {
-    const { sim, events } = run([setup('F-CA', 15)], 2, { 2: [[VERB_ORDER_HET, hetPayload(SHIP, 1)]] });
+    const { sim, events } = run([setup('F-CA', 20)], 2, { 2: [[VERB_ORDER_HET, hetPayload(SHIP, 1)]] });
     expect(hetEvents(events)).toEqual([{ tick: 2, kind: EVENT_HET, entity: SHIP, a: HET_ORDERED, b: 16384 }].map((e) => expect.objectContaining(e)));
     // Order tick: one delay tick already spent.
     expect(helm(sim, 0)).toEqual({ mode: 'het', remainingTurn16: 16384, hetDelayTicks: 170 });
@@ -143,6 +143,32 @@ describe('orderHet (verb 13)', () => {
     const order = sim.snapshot().world.tables.find((t) => t.id === HEADING_ORDER)!;
     expect(order.data[0]).toBe(HEADING_HOLD);
     expect(order.data[1]).toBe(49152);
+  });
+
+  it('uses Tier-2 HET rates for F-CA (5/15/31) and F-CL/F-CC/F-DN/F-DD, leaving F-FF on default', () => {
+    const { sim } = run([
+      setup('F-CA', 15),
+      setup('F-CL', 5),
+      setup('F-CC', 5),
+      setup('F-DN', 5),
+      setup('F-DD', 31),
+      setup('F-FF', 10),
+    ], 2 + 171, {
+      2: [
+        [VERB_ORDER_HET, hetPayload(SHIP, 1)],
+        [VERB_ORDER_HET, hetPayload(SHIP + 1, 1)],
+        [VERB_ORDER_HET, hetPayload(SHIP + 2, 1)],
+        [VERB_ORDER_HET, hetPayload(SHIP + 3, 1)],
+        [VERB_ORDER_HET, hetPayload(SHIP + 4, 1)],
+        [VERB_ORDER_HET, hetPayload(SHIP + 5, 1)],
+      ],
+    });
+    expect(heading(sim, 0)).toBe(251);
+    expect(heading(sim, 1)).toBe(313);
+    expect(heading(sim, 2)).toBe(283);
+    expect(heading(sim, 3)).toBe(253);
+    expect(heading(sim, 4)).toBe(335);
+    expect(heading(sim, 5)).toBe(285);
   });
 
   it('takes the K-D7 sweep and gives unknown hulls the default row', () => {
