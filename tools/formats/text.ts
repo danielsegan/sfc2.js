@@ -92,9 +92,28 @@ function mostlyNonNumeric(cells: string[]): boolean {
   return non * 2 > cells.length;
 }
 
-/** A leading comment is one non-numeric cell and no tabs (ftrlist line 1). */
+/** A leading comment is one non-numeric cell and no tabs (ftrlist line 1, or a `<0` marker). */
 function isCommentLine(cells: string[]): boolean {
   return cells.length === 1 && cells[0].trim() !== "" && !isCompleteNumber(cells[0].trim());
+}
+
+/**
+ * CE 2.670 puts an instruction row on line 1: the first cell is blank, a
+ * sentence sits in the second cell, and every later cell is empty.
+ * That row is not the column header. Observed on sfc2-ci; the sentence is not stored here.
+ */
+function isInstructionLine(cells: string[]): boolean {
+  if (cells.length < 2 || cells[0].trim() !== "") return false;
+  const text = cells[1].trim();
+  if (text === "") return false;
+  if (!cells.slice(2).every((cell) => cell.trim() === "")) return false;
+  return (
+    text.includes(" ") ||
+    text.length > 24 ||
+    /do not edit|back-?up|this file contains|keep the first column blank|write a comment|instruction|synthetic fixture/i.test(
+      text,
+    )
+  );
 }
 
 function isColumnHeader(cells: string[]): boolean {
@@ -121,15 +140,19 @@ export interface HeaderSplit {
 
 /**
  * Header rule from docs/formats/shiplist.md §3.
- * A line whose first cell is `Race` is the column header. A leading single-cell
- * non-numeric line is a comment header row (ftrlist). Any other mostly
- * non-numeric multi-cell line is the column header. Lines after that header
- * are data, even when they are mostly text.
+ * A line whose first cell is `Race` is the column header. Leading single-cell
+ * comments and the CE instruction row (blank first cell, sentence in the
+ * second, rest empty) are kept in `headerRows` and are not column names.
+ * Any other mostly non-numeric multi-cell line is the column header.
+ * Lines after that header are data, even when they are mostly text.
  */
 export function splitHeader(lines: TextLine[]): HeaderSplit {
   let index = 0;
   const comments: TextLine[] = [];
-  while (index < lines.length && isCommentLine(lines[index].cells)) {
+  while (
+    index < lines.length &&
+    (isCommentLine(lines[index].cells) || isInstructionLine(lines[index].cells))
+  ) {
     comments.push(lines[index]);
     index += 1;
   }

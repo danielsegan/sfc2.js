@@ -25,7 +25,7 @@ Public documentation of this file is thin, and much thinner than for `shiplist.t
 - Path (unverified for CE 2.670): `<install>/Assets/Specs/ftrlist.txt`, plus a `MetaAssets` copy that campaign play reads (F1, F2, F7). Resolve case-insensitively.
 - Role (unverified): per-type fighter definitions that carriers in `shiplist.txt` load into their fighter bays.
 - **PFs (decided with Combat, provisional):** PFs use the full ship model with entity class `'pf'`, so they are expected as rows in `shiplist.txt` (F5 points the same way). If CE 2.670 also lists PFs here, the parser still reads them and the loader decides. Fighters are a lighter entity built from this file.
-- Relation to `shiplist.txt` (unknown): a fighter type may need a matching `FTR` row in `shiplist.txt` (for model, hull boxes, size class), with `ftrlist.txt` adding fighter-only data, or `ftrlist.txt` may be self-contained. This is the most important thing to settle on `sfc2-ci`.
+- Relation to `shiplist.txt`: CE 2.670 shiplist has 15 `FTR` rows and no PF rows (inventory metadata, `sfc2-ci`, 2026-11-23). This file has 81 data rows, the 36-column header in the rules mapping, and identical `Assets/specs` and `MetaAssets` copies. `DroI` and `DroVI` use the letter arc `ALL`; numeric arcs `1`/`2`/`3` were not observed here. Whether each fighter type also needs its `FTR` shiplist row for the model is still open. Shiplist `Fighter Type 1`–`4` are the observed per-bay type strings.
 
 ## 3. Encoding and layout
 

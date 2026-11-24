@@ -365,6 +365,97 @@ test("bad text does not throw and a wrong argument type does", () => {
   assert.throws(() => parseShiplist(1 as unknown as string), TypeError);
 });
 
+test("CE header spellings and the line-1 instruction row bind without becoming columns", () => {
+  const table = [
+    "\tSynthetic instruction. Keep the first column blank.\t",
+    [
+      "Race",
+      "Hull Type",
+      "Class",
+      "Class Type",
+      "Regular Crew",
+      "Boarding Parties Base",
+      "Deck Crews",
+      "Total Crew",
+      "Shield 1",
+      "Shield 2 _ 6",
+      "Shield 3 _ 5",
+      "Shield 4",
+      "Shield Total",
+      "Stealth (+ECM)",
+      "HET +2 Turns & Nimble",
+      "T Bombs Base",
+      "Nuclear Mine Base",
+      "Forward Hull",
+      "R_L_Warp",
+      "C_Warp",
+      "Ship Cost",
+      "Full Name",
+      "Fighter Type 1",
+    ].join("\t"),
+    [
+      "Federation",
+      "CA",
+      "TEST-CE-01",
+      "LEAD",
+      "10",
+      "4",
+      "6",
+      "99",
+      "10",
+      "8",
+      "6",
+      "4",
+      "1",
+      "-3",
+      "0.25",
+      "2",
+      "1",
+      "9",
+      "5",
+      "3",
+      "40",
+      "Test Header One",
+      "TEST-FTR-01",
+    ].join("\t"),
+    ["Neutral", "BOX", "TEST-BOX-01", "0", ...Array<string>(17).fill("0"), "Box Label", ""].join("\t"),
+  ].join("\r\n");
+  const parsed = parseShiplist(table, { file: "Assets\\Specs\\shiplist.txt" });
+  assert.equal(parsed.data.columns[0], "Race");
+  assert.equal(parsed.data.headerRows.length, 2);
+  assert.equal(parsed.data.headerRows[0][0], "");
+  assert.equal(parsed.data.rows[0].spawnKey, "Federation:TEST-CE-01");
+  const fields = parsed.data.rows[0].fields;
+  assert.equal(fields["Class Type"], "LEAD");
+  assert.equal(fields["Regular Crew"], 10);
+  assert.equal(fields["Shield 2 _ 6"], 8);
+  assert.equal(fields["Shield 3 _ 5"], 6);
+  assert.equal(fields["Stealth (+ECM)"], -3);
+  assert.equal(fields["HET +2 Turns & Nimble"], 0.25);
+  assert.equal(fields["T Bombs Base"], 2);
+  assert.equal(fields["Nuclear Mine Base"], 1);
+  assert.equal(fields["Forward Hull"], 9);
+  assert.equal(fields["R_L_Warp"], 5);
+  assert.equal(fields["C_Warp"], 3);
+  assert.equal(fields["Ship Cost"], 40);
+  assert.equal(fields["Full Name"], "Test Header One");
+  assert.equal(fields["Fighter Type 1"], "TEST-FTR-01");
+  assert.equal(parsed.data.rows[1].fields["Hull Type"], "BOX");
+  assert.equal(parsed.diagnostics.some((diagnostic) => diagnostic.code === "unknownHullType"), false);
+  assert.equal(parsed.diagnostics.some((diagnostic) => diagnostic.code === "unknownRace"), false);
+  const crew = parsed.diagnostics.find((diagnostic) => diagnostic.code === "crewTotalMismatch");
+  const shield = parsed.diagnostics.find((diagnostic) => diagnostic.code === "shieldTotalMismatch");
+  assert.deepEqual(crew?.details, { expected: 15, actual: 99 });
+  assert.deepEqual(shield?.details, { expected: 42, actual: 1 });
+  assert.equal(crew?.location?.file, "Assets/Specs/shiplist.txt");
+
+  const marked = parseShiplist("<0\r\nRace\tClass\r\nFederation\tTEST-PRE-01\r\n");
+  assert.equal(marked.data.columns[0], "Race");
+  assert.equal(marked.data.headerRows[0][0], "<0");
+  assert.equal(marked.data.rows[0].spawnKey, "Federation:TEST-PRE-01");
+  assert.ok(codes(marked.diagnostics).includes("multipleHeaderRows"));
+});
+
 test("spec copy comparison ignores line endings and a BOM", () => {
   assert.equal(compareSpecCopies("shiplist", "A\tB\r\n", "A\tB\n"), null);
   assert.equal(compareSpecCopies("shiplist", "\uFEFFA\n", "A\n"), null);
