@@ -17,6 +17,7 @@ __pycache__/
 verify-output/
 dist/
 build/
+# pnpm ship-audit writes per-hull JSON and CSV here. Never commit that output.
 out/
 coverage/
 test-results/

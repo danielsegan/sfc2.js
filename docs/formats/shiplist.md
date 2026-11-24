@@ -52,6 +52,8 @@ Status: **spec draft, nothing verified.** Reference build is **SFC2 Community Ed
 
 ## 4. Field table
 
+The observed CE 2.670 header (190 columns, names only) is mapped to parser fields, sim consumers, transforms, and measured / assumed / unused status in [shiplist-field-map.md](shiplist-field-map.md). That map records the measured shield pairing (1:1 per facing, no ×2) and the loader's current ×2 mismatch. Combat removes the ×2 separately. The map does not change rules values.
+
 **Parser output vs engine model (agreed with Combat, provisional until CE 2.670 headers are seen).** The parser's output keys are the **raw file header names** exactly as written (e.g. `Move Cost`), so a row round-trips without a rename table. The camelCase names in the "Proposed field" column below are the **proposed engine-model mapping**, owned by the Engine Lead and Combat Systems Designer, and are grouped as in section 5.2. They are documented here so the loader has one place to read them from.
 
 Column indices are **proposed only**. They follow the left-to-right order of the SFC1 file as S1 walks through it. CE 2.670 almost certainly adds, renames or reorders columns, which is why the parser maps by header label. Field names are our own camelCase proposals, and the Combat Systems Designer should confirm the rules-facing ones (see section 8).

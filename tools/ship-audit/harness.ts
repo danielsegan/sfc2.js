@@ -1,0 +1,128 @@
+/**
+ * Diff a tools/ce-harness results-*.json file against derived hull fields.
+ * The summarize.py envelope is { source, method, heading_convention, runs[] }.
+ * A run may add spawnKey and fields. Numbers in the file are not printed.
+ */
+import { derivedFields, type HullAudit } from "./derive.ts";
+
+export interface FieldTally {
+  pass: number;
+  fail: number;
+  skip: number;
+}
+
+export interface HarnessDiff {
+  runs: number;
+  unmatched: number;
+  fields: Record<string, FieldTally>;
+}
+
+interface RunRecord {
+  label?: unknown;
+  spawnKey?: unknown;
+  hull?: unknown;
+  energy_panel?: unknown;
+  mean_rate_deg_per_game_s_10_90?: unknown;
+  fields?: unknown;
+  tolerances?: unknown;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function tally(): FieldTally {
+  return { pass: 0, fail: 0, skip: 0 };
+}
+
+function bump(map: Record<string, FieldTally>, field: string, kind: keyof FieldTally): void {
+  const row = map[field] ?? tally();
+  row[kind] += 1;
+  map[field] = row;
+}
+
+function asNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  return null;
+}
+
+function asMap(value: unknown): Record<string, number> | null {
+  if (!isRecord(value)) return null;
+  const out: Record<string, number> = {};
+  for (const [key, item] of Object.entries(value)) {
+    const n = asNumber(item);
+    if (n !== null) out[key] = n;
+  }
+  return out;
+}
+
+function labelPrefix(label: string): string {
+  const match = /^(.*)-\d+(?:\.\d+)?$/.exec(label);
+  return match?.[1] && match[1] !== "" ? match[1] : label;
+}
+
+function resolveKey(run: RunRecord, hulls: readonly HullAudit[], hullMap: Readonly<Record<string, string>>): string | null {
+  if (typeof run.spawnKey === "string" && run.spawnKey !== "") return run.spawnKey;
+  if (typeof run.hull === "string" && run.hull !== "") return run.hull;
+  const label = typeof run.label === "string" ? run.label : "";
+  if (label !== "" && hulls.some((hull) => hull.spawnKey === label)) return label;
+  if (label !== "" && Object.prototype.hasOwnProperty.call(hullMap, label)) return hullMap[label] ?? null;
+  const prefix = label === "" ? "" : labelPrefix(label);
+  if (prefix !== "" && Object.prototype.hasOwnProperty.call(hullMap, prefix)) return hullMap[prefix] ?? null;
+  return null;
+}
+
+function measuredOf(run: RunRecord): Record<string, number> {
+  const out: Record<string, number> = {};
+  const energy = isRecord(run.energy_panel) ? asNumber(run.energy_panel.power) : null;
+  if (energy !== null) out["power.generation"] = energy;
+  const rate = asNumber(run.mean_rate_deg_per_game_s_10_90);
+  if (rate !== null) out["turn.degPerGameSecond"] = rate;
+  const extra = asMap(run.fields);
+  if (extra) {
+    for (const [key, value] of Object.entries(extra)) out[key] = value;
+  }
+  return out;
+}
+
+/**
+ * Accept the summarize.py object. Throws a short error that does not quote the file.
+ */
+export function parseHarness(value: unknown): { runs: RunRecord[]; tolerances: Record<string, number> } {
+  if (!isRecord(value) || !Array.isArray(value.runs)) throw new Error("harness JSON must contain a runs array");
+  const tolerances = asMap(value.tolerances) ?? {};
+  return { runs: value.runs as RunRecord[], tolerances };
+}
+
+export function diffHarness(
+  hulls: readonly HullAudit[],
+  document: unknown,
+  hullMap: Readonly<Record<string, string>>,
+  tolerance: number,
+  turnTolerance: number,
+): HarnessDiff {
+  const parsed = parseHarness(document);
+  const fields: Record<string, FieldTally> = {};
+  let unmatched = 0;
+  for (const run of parsed.runs) {
+    const key = resolveKey(run, hulls, hullMap);
+    const hull = key === null ? undefined : hulls.find((item) => item.spawnKey === key);
+    if (!hull) {
+      unmatched += 1;
+      continue;
+    }
+    const derived = derivedFields(hull);
+    const runTol = asMap(run.tolerances) ?? {};
+    for (const [field, measured] of Object.entries(measuredOf(run))) {
+      const expected = derived[field];
+      if (expected === undefined) {
+        bump(fields, field, "skip");
+        continue;
+      }
+      const limit = runTol[field] ?? parsed.tolerances[field] ?? (field === "turn.degPerGameSecond" ? turnTolerance : tolerance);
+      const delta = measured > expected ? measured - expected : expected - measured;
+      bump(fields, field, delta <= limit ? "pass" : "fail");
+    }
+  }
+  return { runs: parsed.runs.length, unmatched, fields };
+}
