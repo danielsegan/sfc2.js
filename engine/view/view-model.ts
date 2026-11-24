@@ -66,6 +66,9 @@ export interface WeaponReadout {
   readonly arcFrom16: number;
   readonly arcTo16: number;
   readonly arcFull: boolean;
+  /** Display range units copied from the weapon table. 0 when the table has none. */
+  readonly rangeMax: number;
+  readonly rangeBands: readonly number[];
   readonly charge: number;
   readonly cost: number;
   readonly ready: boolean;
@@ -79,6 +82,23 @@ export interface ShieldReadout {
   readonly current: number;
   readonly max: number;
   readonly reinforced: number;
+}
+
+/** Remaining hull boxes. The sim does not store a separate maximum. */
+export interface HullReadout {
+  readonly forward: number;
+  readonly center: number;
+  readonly aft: number;
+}
+
+export const EMPTY_HULL: HullReadout = { forward: 0, center: 0, aft: 0 };
+
+export function hullOf(ship: { systems: { hullForward: number; hullCenter: number; hullAft: number } }): HullReadout {
+  return {
+    forward: ship.systems.hullForward,
+    center: ship.systems.hullCenter,
+    aft: ship.systems.hullAft,
+  };
 }
 
 export interface EnergyReadout {
@@ -99,6 +119,7 @@ export interface SelfView {
   readonly index: number;
   readonly energy: EnergyReadout;
   readonly shields: readonly ShieldReadout[];
+  readonly hull: HullReadout;
   readonly weapons: readonly WeaponReadout[];
   readonly speed: number;
   readonly heading16: number;
@@ -132,6 +153,7 @@ export interface ContactView {
   readonly targeted: boolean;
   readonly kind: 'ship' | 'shot' | 'fighter' | 'mine';
   readonly shields: readonly ShieldReadout[];
+  readonly hull: HullReadout;
   readonly rangeFromSelf: number;
   readonly cloaked: boolean;
   readonly detected: boolean;
@@ -196,6 +218,23 @@ function armCost(def: WeaponDef, mode: number): number {
   return 0;
 }
 
+function rangeBandsOf(def: WeaponDef | undefined): number[] {
+  if (!def) return [];
+  const bands: number[] = [];
+  for (const band of def.bands) {
+    const reach = band[0] ?? 0;
+    if (reach > 0) bands.push(reach);
+  }
+  return bands;
+}
+
+function rangeMaxOf(def: WeaponDef | undefined): number {
+  if (!def) return 0;
+  if (def.maxRange > 0) return def.maxRange;
+  const bands = rangeBandsOf(def);
+  return bands.length > 0 ? bands[bands.length - 1]! : 0;
+}
+
 function familyOf(def: WeaponDef | undefined): string {
   if (!def) return 'unknown';
   if (def.internal === INTERNAL_PHASER) return 'phaser';
@@ -228,6 +267,8 @@ function weaponReadout(slot: number, mount: { weaponId: number; arcId: number; c
     arcFrom16: arc?.from16 ?? 0,
     arcTo16: arc?.to16 ?? 0,
     arcFull: arc?.full === 1,
+    rangeMax: rangeMaxOf(def),
+    rangeBands: rangeBandsOf(def),
     charge: toDisplayEnergy(mount.charge100),
     cost,
     ready,
@@ -332,6 +373,7 @@ function shotContacts(
       targeted: false,
       kind: 'shot',
       shields: [],
+      hull: EMPTY_HULL,
       rangeFromSelf: selfPose ? hypot(dx, dy) : 0,
       cloaked: false,
       detected: true,
@@ -419,6 +461,7 @@ export function buildViewModel(input: ViewBuildInput): ViewModel {
       targeted: targetId !== null && id === targetId,
       kind: ship.classCode === CLASS_FIGHTER ? 'fighter' : 'ship',
       shields: shieldsOf(ship),
+      hull: hullOf(ship),
       rangeFromSelf: 0,
       cloaked: ship.cloakState !== CLOAK_OFF,
       detected: seen,
@@ -451,6 +494,7 @@ export function buildViewModel(input: ViewBuildInput): ViewModel {
         targeted: false,
         kind: 'mine',
         shields: [],
+        hull: EMPTY_HULL,
         rangeFromSelf: 0,
         cloaked: false,
         detected: true,
@@ -493,6 +537,7 @@ export function buildViewModel(input: ViewBuildInput): ViewModel {
           lastVerb: ship.lastVerb,
         },
         shields: shieldsOf(ship),
+        hull: hullOf(ship),
         weapons,
         speed: ship.speed,
         heading16: ship.heading,

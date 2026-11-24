@@ -1,55 +1,135 @@
 import {
   AdditiveBlending,
   AmbientLight,
+  BufferAttribute,
   BufferGeometry,
   CanvasTexture,
   DirectionalLight,
   DoubleSide,
-  Float32BufferAttribute,
   Group,
-  Line,
   LineBasicMaterial,
+  LineDashedMaterial,
+  LineLoop,
+  LineSegments,
+  Mesh,
+  MeshBasicMaterial,
   PerspectiveCamera,
   Points,
   PointsMaterial,
   Scene,
   Sprite,
   SpriteMaterial,
+  Vector3,
   WebGLRenderer,
   type Material,
-  type Mesh,
 } from 'three';
 import type { ContactView, ViewModel } from '../../engine/view/view-model.ts';
+import { sectorOutline, sectorPositions, wedgesFor, type ArcWeapon, type WedgePattern } from './tactical/arcs.ts';
+import { reportedBeams, reportedFlashes } from './tactical/beams.ts';
+import { defaultOverheadDistance, gridLevel, gridSegments, visibleWorldWidth } from './tactical/grid.ts';
+import { markerHeading } from './tactical/tags.ts';
+import {
+  FIELD_FOV,
+  FIELD_GRID,
+  GRID_MAJOR_FACTOR,
+  GRID_MINOR_UNIT,
+  MAJOR_CELLS_ACROSS,
+  OVERHEAD_PITCH,
+  shieldFlashColor,
+} from './tactical/tokens.ts';
 import { photonMarks, rememberPhotonSample, type PhotonSample } from './photon-visual.ts';
 
 const FULL = 65536;
+const BEAM_MS = 180;
+const FLASH_MS = 180;
+
+interface Ndc {
+  readonly x: number;
+  readonly y: number;
+  readonly inFront: boolean;
+}
 
 export class DuelScene {
   readonly camera: PerspectiveCamera;
   private readonly renderer: WebGLRenderer;
   private readonly scene = new Scene();
   private readonly hulls: Group[] = [];
-  private mode: 'chase' | 'overhead' = 'chase';
+  private mode: 'chase' | 'overhead' = 'overhead';
   private orbitYaw = 0;
   private orbitPitch = 0.42;
-  private distance = 9;
-  private readonly beams: { line: Line; until: number }[] = [];
+  private overheadDistance: number;
+  private chaseDistance = 16;
+  private fitted = true;
+  private readonly beams: { line: LineSegments; until: number }[] = [];
+  private readonly flashes: { mesh: Mesh; until: number }[] = [];
+  private readonly wedgePool: { fill: Mesh; edge: LineSegments; hatch: LineSegments }[] = [];
+  private readonly gridMinor: LineSegments;
+  private readonly gridMajor: LineSegments;
+  private readonly minorMaterial: LineBasicMaterial;
+  private readonly majorMaterial: LineBasicMaterial;
+  private readonly stars: Points;
+  private readonly compass: Group;
+  private readonly compassTick: LineSegments;
   private readonly photonGlow: CanvasTexture;
   private readonly photonSlots: { sprite: Sprite; material: SpriteMaterial }[] = [];
   private readonly photonHistory = new Map<number, PhotonSample[]>();
   private readonly reduced: boolean;
+  private readonly ndc = new Vector3();
+  private readonly camSpace = new Vector3();
 
-  constructor(canvas: HTMLCanvasElement) {
-    this.renderer = new WebGLRenderer({ canvas, antialias: true });
-    this.renderer.setClearColor(0x070b10, 1);
-    this.camera = new PerspectiveCamera(48, 1, 0.05, 500);
-    this.scene.add(new AmbientLight(0xb7c6d6, 0.7));
-    const sun = new DirectionalLight(0xf4f7fb, 1.25);
+  constructor(canvas: HTMLCanvasElement, options?: { preserveDrawingBuffer?: boolean }) {
+    this.renderer = new WebGLRenderer({
+      canvas,
+      antialias: true,
+      preserveDrawingBuffer: options?.preserveDrawingBuffer === true,
+    });
+    this.renderer.setClearColor(0x000000, 1);
+    this.camera = new PerspectiveCamera(FIELD_FOV, 1, 0.05, 800);
+    this.overheadDistance = defaultOverheadDistance(16 / 9, FIELD_FOV, GRID_MINOR_UNIT * GRID_MAJOR_FACTOR, MAJOR_CELLS_ACROSS);
+    this.scene.add(new AmbientLight(0xc5d0dc, 0.55));
+    const sun = new DirectionalLight(0xf4f7fb, 1.05);
     sun.position.set(12, 18, 8);
     this.scene.add(sun);
-    this.scene.add(starfield(900));
+    this.stars = starDisk(220);
+    this.scene.add(this.stars);
+    this.minorMaterial = new LineBasicMaterial({ color: FIELD_GRID, transparent: true, opacity: 0.25 });
+    this.majorMaterial = new LineBasicMaterial({ color: FIELD_GRID, transparent: true, opacity: 0.4 });
+    this.gridMinor = new LineSegments(new BufferGeometry(), this.minorMaterial);
+    this.gridMajor = new LineSegments(new BufferGeometry(), this.majorMaterial);
+    this.gridMinor.frustumCulled = false;
+    this.gridMajor.frustumCulled = false;
+    this.gridMinor.renderOrder = 1;
+    this.gridMajor.renderOrder = 1;
+    this.scene.add(this.gridMinor, this.gridMajor);
+    this.compass = new Group();
+    this.compass.add(circleLine(2.15, 40));
+    this.compassTick = new LineSegments(
+      new BufferGeometry().setAttribute('position', new BufferAttribute(new Float32Array(6), 3)),
+      new LineBasicMaterial({ color: 0xffffff }),
+    );
+    this.compass.add(this.compassTick);
+    this.compass.renderOrder = 4;
+    this.scene.add(this.compass);
     this.photonGlow = photonGlowTexture();
     this.reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  get cameraMode(): 'chase' | 'overhead' {
+    return this.mode;
+  }
+
+  /** CSS pixels across one display range unit at the current zoom. */
+  pixelsPerRange(viewportWidth: number): number {
+    const world = visibleWorldWidth(this.activeDistance, this.camera.fov, this.camera.aspect);
+    return viewportWidth / Math.max(world, 0.001);
+  }
+
+  projectNdc(x: number, y: number): Ndc {
+    this.ndc.set(x, 0, -y);
+    this.camSpace.copy(this.ndc).applyMatrix4(this.camera.matrixWorldInverse);
+    const inFront = this.camSpace.z < 0;
+    this.ndc.project(this.camera);
+    return { x: this.ndc.x, y: this.ndc.y, inFront };
   }
 
   setHulls(groups: readonly Group[]): void {
@@ -57,6 +137,7 @@ export class DuelScene {
     this.hulls.length = 0;
     for (const group of groups) {
       forceDoubleSide(group);
+      group.renderOrder = 3;
       this.scene.add(group);
       this.hulls.push(group);
     }
@@ -66,22 +147,32 @@ export class DuelScene {
     this.mode = this.mode === 'chase' ? 'overhead' : 'chase';
   }
 
+  /** Orbit uses a modifier or keys. It never binds the steer or target button by itself. */
   orbitBy(dx: number, dy: number): void {
+    if (this.mode === 'overhead') this.mode = 'chase';
     this.orbitYaw += dx * 0.005;
     const next = this.orbitPitch + dy * 0.005;
     this.orbitPitch = next < 0.12 ? 0.12 : next > 1.2 ? 1.2 : next;
   }
 
   dolly(delta: number): void {
-    const next = this.distance + delta;
-    this.distance = next < 4 ? 4 : next > 40 ? 40 : next;
+    this.fitted = false;
+    const step = Math.max(0.6, this.activeDistance * 0.08) * Math.sign(delta);
+    this.setActiveDistance(this.activeDistance + (step === 0 ? delta : step));
   }
 
   resetView(): void {
-    this.mode = 'chase';
+    this.mode = 'overhead';
     this.orbitYaw = 0;
     this.orbitPitch = 0.42;
-    this.distance = 9;
+    this.chaseDistance = 16;
+    this.fitted = true;
+    this.overheadDistance = defaultOverheadDistance(
+      this.camera.aspect || 16 / 9,
+      FIELD_FOV,
+      GRID_MINOR_UNIT * GRID_MAJOR_FACTOR,
+      MAJOR_CELLS_ACROSS,
+    );
   }
 
   resize(width: number, height: number, ratio: number): void {
@@ -89,9 +180,17 @@ export class DuelScene {
     this.camera.updateProjectionMatrix();
     this.renderer.setPixelRatio(ratio);
     this.renderer.setSize(width, height, false);
+    if (this.fitted && this.mode === 'overhead') {
+      this.overheadDistance = defaultOverheadDistance(
+        this.camera.aspect,
+        FIELD_FOV,
+        GRID_MINOR_UNIT * GRID_MAJOR_FACTOR,
+        MAJOR_CELLS_ACROSS,
+      );
+    }
   }
 
-  render(vm: ViewModel, now: number): void {
+  render(vm: ViewModel, now: number, selection: readonly number[] = []): void {
     const seen = new Set<number>();
     const marks: { x: number; y: number; z: number; size: number; opacity: number }[] = [];
     for (const contact of vm.contacts) {
@@ -120,11 +219,158 @@ export class DuelScene {
       if (!seen.has(id)) this.photonHistory.delete(id);
     }
     this.placePhotons(marks);
-    if (!this.reduced) this.noteHits(vm, now);
-    this.expire(now);
     const self = vm.contacts.find((contact) => contact.kind === 'ship' && contact.hostility === 'self');
-    if (self) this.place(self);
+    if (self) {
+      this.place(self);
+      this.updateGrid(self);
+      this.stars.position.set(self.x, 0, -self.y);
+      this.updateWedges(vm, self, selection);
+      this.updateCompass(vm, self);
+    }
+    this.noteReported(vm, now);
+    this.expire(now);
     this.renderer.render(this.scene, this.camera);
+  }
+
+  private get activeDistance(): number {
+    return this.mode === 'overhead' ? this.overheadDistance : this.chaseDistance;
+  }
+
+  private setActiveDistance(next: number): void {
+    const clamped = next < 8 ? 8 : next > 220 ? 220 : next;
+    if (this.mode === 'overhead') this.overheadDistance = clamped;
+    else this.chaseDistance = clamped;
+  }
+
+  private updateGrid(self: ContactView): void {
+    const world = visibleWorldWidth(this.activeDistance, this.camera.fov, this.camera.aspect);
+    const px = this.pixelsPerRange(Math.max(this.renderer.domElement.clientWidth, 1));
+    const level = gridLevel(px);
+    const halfW = world * 0.72;
+    const halfD = (world / Math.max(this.camera.aspect, 0.3)) * 0.72;
+    const minor = level.minorAlpha > 0.001
+      ? gridSegments(self.x, -self.y, halfW, halfD, level.minorStep, -0.02)
+      : new Float32Array();
+    const major = gridSegments(self.x, -self.y, halfW, halfD, level.majorStep, -0.02);
+    setSegments(this.gridMinor, minor);
+    setSegments(this.gridMajor, major);
+    this.minorMaterial.opacity = level.minorAlpha;
+    this.majorMaterial.opacity = level.majorAlpha;
+  }
+
+  private updateWedges(vm: ViewModel, self: ContactView, selection: readonly number[]): void {
+    const weapons = (vm.self?.weapons ?? []) as readonly ArcWeapon[];
+    const wedges = wedgesFor(weapons, selection);
+    while (this.wedgePool.length < wedges.length) {
+      const slot = makeWedgeSlot();
+      this.scene.add(slot.fill, slot.edge, slot.hatch);
+      this.wedgePool.push(slot);
+    }
+    for (let i = 0; i < this.wedgePool.length; i++) {
+      const slot = this.wedgePool[i]!;
+      const wedge = wedges[i];
+      if (!wedge) {
+        slot.fill.visible = false;
+        slot.edge.visible = false;
+        slot.hatch.visible = false;
+        continue;
+      }
+      const steps = wedge.full ? 48 : 14;
+      const positions = sectorPositions(self.heading16, wedge.from16, wedge.to16, wedge.full, 0.2, wedge.rangeMax, steps, 0.03);
+      setMeshPositions(slot.fill, positions);
+      const chunks = [sectorOutline(self.heading16, wedge.from16, wedge.to16, wedge.full, 0.2, wedge.rangeMax, steps, 0.04)];
+      for (const band of wedge.bands) {
+        chunks.push(sectorOutline(self.heading16, wedge.from16, wedge.to16, wedge.full, band, band, steps, 0.045));
+      }
+      setSegments(slot.edge, concatFloats(chunks));
+      slot.fill.visible = wedge.style.fill > 0;
+      slot.edge.visible = true;
+      slot.fill.position.set(self.x, 0, -self.y);
+      slot.edge.position.set(self.x, 0, -self.y);
+      const fillMat = slot.fill.material as MeshBasicMaterial;
+      fillMat.color.setHex(wedge.style.color);
+      fillMat.opacity = wedge.style.fill;
+      paintEdge(slot.edge, wedge.style.color, wedge.style.pattern);
+      const hatch = wedge.style.pattern === 'dashdot'
+        ? sectorOutline(self.heading16, wedge.from16, wedge.to16, wedge.full, wedge.rangeMax * 0.45, wedge.rangeMax * 0.55, steps, 0.05)
+        : new Float32Array();
+      setSegments(slot.hatch, hatch);
+      slot.hatch.position.set(self.x, 0, -self.y);
+      if (hatch.length >= 6) paintEdge(slot.hatch, wedge.style.color, 'dashed');
+    }
+  }
+
+  private updateCompass(vm: ViewModel, self: ContactView): void {
+    const heading = vm.self ? markerHeading(vm.self) : self.heading16;
+    const angle = (heading / FULL) * Math.PI * 2;
+    const inner = 1.35;
+    const outer = 2.55;
+    const data = new Float32Array([
+      Math.cos(angle) * inner, 0.12, -Math.sin(angle) * inner,
+      Math.cos(angle) * outer, 0.12, -Math.sin(angle) * outer,
+    ]);
+    setSegments(this.compassTick, data);
+    this.compass.position.set(self.x, 0, -self.y);
+    this.compass.visible = !self.destroyed;
+  }
+
+  private noteReported(vm: ViewModel, now: number): void {
+    for (const beam of reportedBeams(vm.events)) {
+      const from = vm.contacts.find((contact) => contact.id === beam.shooter);
+      const to = vm.contacts.find((contact) => contact.id === beam.target);
+      if (!from || !to) continue;
+      const geometry = new BufferGeometry();
+      geometry.setAttribute(
+        'position',
+        new BufferAttribute(new Float32Array([from.x, 0.28, -from.y, to.x, 0.28, -to.y]), 3),
+      );
+      const line = new LineSegments(geometry, new LineBasicMaterial({ color: beam.color, transparent: true, opacity: 0.95 }));
+      line.renderOrder = 2;
+      this.scene.add(line);
+      this.beams.push({ line, until: now + BEAM_MS });
+    }
+    for (const flash of reportedFlashes(vm.events)) {
+      const ship = vm.contacts.find((contact) => contact.id === flash.ship && contact.kind !== 'shot');
+      if (!ship) continue;
+      const facing = ship.shields[flash.facing];
+      const ratio = facing && facing.max > 0 ? facing.current / facing.max : 0;
+      const span = sectorPositions(ship.heading16, flash.facing * (FULL / 6) - FULL / 12, flash.facing * (FULL / 6) + FULL / 12, false, 1.05, 2.5, 6, 0.16);
+      const geometry = new BufferGeometry();
+      geometry.setAttribute('position', new BufferAttribute(span, 3));
+      const mesh = new Mesh(
+        geometry,
+        new MeshBasicMaterial({
+          color: shieldFlashColor(ratio),
+          transparent: true,
+          opacity: this.reduced ? 0.85 : 0.55,
+          depthWrite: false,
+          side: DoubleSide,
+        }),
+      );
+      mesh.position.set(ship.x, 0, -ship.y);
+      mesh.renderOrder = 4;
+      this.scene.add(mesh);
+      this.flashes.push({ mesh, until: now + FLASH_MS });
+    }
+  }
+
+  private expire(now: number): void {
+    for (let i = this.beams.length - 1; i >= 0; i--) {
+      const beam = this.beams[i];
+      if (!beam || beam.until > now) continue;
+      this.scene.remove(beam.line);
+      beam.line.geometry.dispose();
+      (beam.line.material as Material).dispose();
+      this.beams.splice(i, 1);
+    }
+    for (let i = this.flashes.length - 1; i >= 0; i--) {
+      const flash = this.flashes[i];
+      if (!flash || flash.until > now) continue;
+      this.scene.remove(flash.mesh);
+      flash.mesh.geometry.dispose();
+      (flash.mesh.material as Material).dispose();
+      this.flashes.splice(i, 1);
+    }
   }
 
   private placePhotons(marks: readonly { x: number; y: number; z: number; size: number; opacity: number }[]): void {
@@ -138,6 +384,7 @@ export class DuelScene {
       });
       const sprite = new Sprite(material);
       sprite.frustumCulled = false;
+      sprite.renderOrder = 3;
       this.scene.add(sprite);
       this.photonSlots.push({ sprite, material });
     }
@@ -157,12 +404,15 @@ export class DuelScene {
 
   private place(self: ContactView): void {
     if (this.mode === 'overhead') {
-      this.camera.position.set(self.x, 26, -self.y + 0.01);
+      const dist = this.overheadDistance;
+      const height = Math.sin(OVERHEAD_PITCH) * dist;
+      const back = Math.cos(OVERHEAD_PITCH) * dist;
       this.camera.up.set(0, 0, -1);
+      this.camera.position.set(self.x, height, -self.y + back);
     } else {
       const heading = (self.heading16 / FULL) * Math.PI * 2 + this.orbitYaw;
       const pitch = this.orbitPitch;
-      const dist = this.distance;
+      const dist = this.chaseDistance;
       this.camera.up.set(0, 1, 0);
       this.camera.position.set(
         self.x - Math.cos(heading) * Math.cos(pitch) * dist,
@@ -172,37 +422,98 @@ export class DuelScene {
     }
     this.camera.lookAt(self.x, 0, -self.y);
   }
+}
 
-  private noteHits(vm: ViewModel, now: number): void {
-    const self = vm.contacts.find((contact) => contact.kind === 'ship' && contact.hostility === 'self');
-    if (!self) return;
-    for (const event of vm.events) {
-      if (event.kind !== 'hit') continue;
-      const other = vm.contacts.find((contact) => contact.id === event.ship) ?? vm.contacts.find((contact) => contact.hostility === 'hostile');
-      if (!other) continue;
-      const from = event.ship === self.id ? other : self;
-      const to = event.ship === self.id ? self : other;
-      const geometry = new BufferGeometry();
-      geometry.setAttribute(
-        'position',
-        new Float32BufferAttribute([from.x, 0.2, -from.y, to.x, 0.2, -to.y], 3),
-      );
-      const line = new Line(geometry, new LineBasicMaterial({ color: 0x9fd6ff }));
-      this.scene.add(line);
-      this.beams.push({ line, until: now + 140 });
-    }
-  }
+function makeWedgeSlot(): { fill: Mesh; edge: LineSegments; hatch: LineSegments } {
+  const fill = new Mesh(
+    new BufferGeometry(),
+    new MeshBasicMaterial({ transparent: true, opacity: 0.15, depthWrite: false, side: DoubleSide }),
+  );
+  const edge = new LineSegments(new BufferGeometry(), new LineBasicMaterial({ color: 0xffffff }));
+  const hatch = new LineSegments(new BufferGeometry(), new LineDashedMaterial({ color: 0xffffff, dashSize: 0.35, gapSize: 0.2 }));
+  fill.frustumCulled = false;
+  edge.frustumCulled = false;
+  hatch.frustumCulled = false;
+  fill.renderOrder = 2;
+  edge.renderOrder = 2;
+  hatch.renderOrder = 2;
+  fill.visible = false;
+  edge.visible = false;
+  hatch.visible = false;
+  return { fill, edge, hatch };
+}
 
-  private expire(now: number): void {
-    for (let i = this.beams.length - 1; i >= 0; i--) {
-      const beam = this.beams[i];
-      if (!beam || beam.until > now) continue;
-      this.scene.remove(beam.line);
-      beam.line.geometry.dispose();
-      (beam.line.material as Material).dispose();
-      this.beams.splice(i, 1);
+function paintEdge(line: LineSegments, color: number, pattern: WedgePattern): void {
+  const previous = line.material as Material;
+  if (pattern === 'solid') {
+    if (!(previous instanceof LineBasicMaterial)) {
+      previous.dispose();
+      line.material = new LineBasicMaterial({ color });
+    } else {
+      previous.color.setHex(color);
     }
+    return;
   }
+  const dash = pattern === 'dotted' ? 0.12 : pattern === 'dashdot' ? 0.45 : 0.55;
+  const gap = pattern === 'dotted' ? 0.22 : pattern === 'dashdot' ? 0.18 : 0.32;
+  if (!(previous instanceof LineDashedMaterial)) {
+    previous.dispose();
+    line.material = new LineDashedMaterial({ color, dashSize: dash, gapSize: gap });
+  } else {
+    previous.color.setHex(color);
+    previous.dashSize = dash;
+    previous.gapSize = gap;
+  }
+  line.computeLineDistances();
+}
+
+function concatFloats(parts: readonly Float32Array[]): Float32Array {
+  let length = 0;
+  for (const part of parts) length += part.length;
+  const out = new Float32Array(length);
+  let offset = 0;
+  for (const part of parts) {
+    out.set(part, offset);
+    offset += part.length;
+  }
+  return out;
+}
+
+function writePositions(geometry: BufferGeometry, data: Float32Array): void {
+  const current = geometry.getAttribute('position');
+  if (current instanceof BufferAttribute && current.array.length === data.length) {
+    (current.array as Float32Array).set(data);
+    current.needsUpdate = true;
+  } else {
+    geometry.setAttribute('position', new BufferAttribute(data, 3));
+  }
+  geometry.computeBoundingSphere();
+}
+
+function setMeshPositions(mesh: Mesh, data: Float32Array): void {
+  writePositions(mesh.geometry, data);
+}
+
+function setSegments(line: LineSegments, data: Float32Array): void {
+  writePositions(line.geometry, data);
+  line.visible = data.length >= 6;
+  const material = line.material;
+  if (material instanceof LineDashedMaterial) line.computeLineDistances();
+}
+
+function circleLine(radius: number, segments: number): LineLoop {
+  const data = new Float32Array(segments * 3);
+  for (let i = 0; i < segments; i++) {
+    const angle = (i / segments) * Math.PI * 2;
+    data[i * 3] = Math.cos(angle) * radius;
+    data[i * 3 + 1] = 0.12;
+    data[i * 3 + 2] = -Math.sin(angle) * radius;
+  }
+  const geometry = new BufferGeometry();
+  geometry.setAttribute('position', new BufferAttribute(data, 3));
+  const line = new LineLoop(geometry, new LineBasicMaterial({ color: 0xffffff }));
+  line.frustumCulled = false;
+  return line;
 }
 
 function forceDoubleSide(group: Group): void {
@@ -212,6 +523,32 @@ function forceDoubleSide(group: Group): void {
     const list = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
     for (const material of list) (material as Material & { side: number }).side = DoubleSide;
   });
+}
+
+function starDisk(count: number): Points {
+  const positions = new Float32Array(count * 3);
+  let seed = 0x5fc2;
+  const next = () => {
+    seed = (Math.imul(seed, 1664525) + 1013904223) | 0;
+    return (seed >>> 0) / 4294967296;
+  };
+  const radius = 130;
+  for (let i = 0; i < count; i++) {
+    const theta = next() * Math.PI * 2;
+    const reach = Math.sqrt(next()) * radius;
+    positions[i * 3] = Math.cos(theta) * reach;
+    positions[i * 3 + 1] = -28;
+    positions[i * 3 + 2] = Math.sin(theta) * reach;
+  }
+  const geometry = new BufferGeometry();
+  geometry.setAttribute('position', new BufferAttribute(positions, 3));
+  const points = new Points(
+    geometry,
+    new PointsMaterial({ color: 0xffffff, size: 1.5, sizeAttenuation: false, transparent: true, opacity: 0.42, depthWrite: false }),
+  );
+  points.frustumCulled = false;
+  points.renderOrder = 0;
+  return points;
 }
 
 /** Original glow. A white core, gold body, and a soft orange falloff. Not a game texture. */
@@ -232,24 +569,4 @@ function photonGlowTexture(): CanvasTexture {
   const texture = new CanvasTexture(canvas);
   texture.needsUpdate = true;
   return texture;
-}
-
-function starfield(count: number): Points {
-  const positions = new Float32Array(count * 3);
-  let seed = 0x5fc2;
-  const next = () => {
-    seed = (Math.imul(seed, 1664525) + 1013904223) | 0;
-    return (seed >>> 0) / 4294967296;
-  };
-  for (let i = 0; i < count; i++) {
-    const theta = next() * Math.PI * 2;
-    const phi = Math.acos(next() * 2 - 1);
-    const radius = 80 + next() * 40;
-    positions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
-    positions[i * 3 + 1] = radius * Math.cos(phi);
-    positions[i * 3 + 2] = radius * Math.sin(phi) * Math.sin(theta);
-  }
-  const geometry = new BufferGeometry();
-  geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
-  return new Points(geometry, new PointsMaterial({ color: 0xd5dee8, size: 0.18 }));
 }

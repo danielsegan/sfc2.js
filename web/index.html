@@ -61,9 +61,33 @@
       </div>
       <div id="skirmish-slots" class="slot-grid"></div>
     </section>
+    <div id="top-bar" class="hud-bar hud-bar-top" role="region" aria-label="Upper display">
+      <div class="bar-cluster">
+        <div class="integrity" aria-label="Hull integrity">
+          <span class="micro">Hull</span>
+          <span class="meter"><span id="field-hull-fill"></span></span>
+        </div>
+        <div id="field-cap" class="integrity" role="slider" aria-valuemin="0" aria-valuemax="20" aria-valuenow="0" aria-label="Phaser capacitor" tabindex="0">
+          <span class="micro">Phaser</span>
+          <span class="meter"><span id="field-cap-fill"></span></span>
+        </div>
+      </div>
+      <div class="bar-cluster timers">
+        <span id="field-clock" class="num">00:00</span>
+        <span id="field-countdown" class="num"></span>
+      </div>
+      <div class="bar-cluster">
+        <div class="integrity" aria-label="Target hull integrity">
+          <span id="field-target-name" class="micro">No target</span>
+          <span class="meter"><span id="field-target-fill"></span></span>
+        </div>
+      </div>
+    </div>
     <div id="stage">
       <canvas id="space"></canvas>
       <canvas id="overlay" aria-hidden="true"></canvas>
+      <div id="field-events" class="field-events" aria-live="polite"></div>
+      <div id="offscreen-tags"></div>
       <section class="float target plate" aria-label="Target">
         <h2>Target</h2>
         <p id="target-name" class="name">No contact</p>
@@ -81,7 +105,7 @@
         <h2>Log</h2>
         <ol id="log"></ol>
       </section>
-      <p id="keys" class="keys">WASD helm · Space fire · O overload · G tractor · C cloak · [ ] EW · L launch · K mine · B board · Keys to rebind</p>
+      <p id="keys" class="keys">WASD helm · wheel zoom · middle-drag or Alt-drag orbit · right-click target · V camera · Keys to rebind</p>
       <p id="notice" class="keys" role="status"></p>
     </div>
     <section id="console" aria-label="Helm console">
@@ -187,6 +211,30 @@
         </section>
       </div>
     </section>
+    <div id="bottom-bar" class="hud-bar hud-bar-bottom" role="region" aria-label="Lower display">
+      <div class="bar-cluster speed-block">
+        <span id="field-speed" class="num">0</span>
+        <div id="field-speed-bar" class="speed-bar" role="slider" aria-valuemin="0" aria-valuemax="32" aria-valuenow="0" aria-label="Desired speed" tabindex="0">
+          <span id="field-speed-fill"></span>
+          <span id="field-speed-marker"></span>
+          <span id="field-speed-power" hidden></span>
+        </div>
+        <div class="turn-gauge" aria-label="Turn rate">
+          <span id="field-turn-fill"></span>
+        </div>
+      </div>
+      <div id="field-power" class="power-stack" aria-label="Power and systems">
+        <span class="meter"><span id="field-power-fill"></span></span>
+        <span class="meter"><span id="field-systems-fill"></span></span>
+      </div>
+      <button type="button" id="field-fire" data-action="weapons.fire">Fire</button>
+      <div class="alert-lamps" aria-label="Alert status">
+        <span id="field-alert-state" class="micro">Green</span>
+        <button type="button" id="lamp-green" class="lamp" aria-pressed="true">G</button>
+        <button type="button" id="lamp-yellow" class="lamp" aria-pressed="false">Y</button>
+        <button type="button" id="lamp-red" class="lamp" aria-pressed="false">R</button>
+      </div>
+    </div>
     <dialog id="keymap" aria-label="Key bindings">
       <form method="dialog">
         <h2>Keys</h2>
