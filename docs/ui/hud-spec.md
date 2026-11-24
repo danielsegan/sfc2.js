@@ -90,6 +90,8 @@ interface Command { kind: string; ship: ShipId; issuedAtTick: Tick; payload: unk
 
 How the original arranges its console and which panels are tabs versus always visible: **TO VERIFY**. This layout is a starting point and we expect it to move once checked.
 
+The preserved original arrangement, the cleaned-up layout, empire skins and mouse-helm affordances are specified in [`hud-layout.md`](hud-layout.md), which supersedes this sketch's panel placement.
+
 ---
 
 ## 1. Energy allocation panel
