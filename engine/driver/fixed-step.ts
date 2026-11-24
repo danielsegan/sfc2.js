@@ -47,15 +47,22 @@ export class SnapshotRing {
 export interface FixedStepDriver {
   readonly ring: SnapshotRing;
   frame(frameDtMs: number): FrameResult;
+  /** More ticks per second. Zero pauses. This does not write sim state. */
+  setSpeed(speed: number): void;
 }
 
 export function createDriver(options: { sim: Sim; session: Session; speed: number }): FixedStepDriver {
   if (!Number.isFinite(options.speed) || options.speed < 0) throw new Error('speed');
-  const { sim, session, speed } = options;
+  const { sim, session } = options;
+  let speed = options.speed;
   const ring = new SnapshotRing();
   let acc = 0;
   return {
     ring,
+    setSpeed(next: number): void {
+      if (!Number.isFinite(next) || next < 0) throw new Error('speed');
+      speed = next;
+    },
     frame(frameDtMs: number): FrameResult {
       const ms = frameDtMs < 0 ? 0 : frameDtMs > MAX_FRAME_MS ? MAX_FRAME_MS : frameDtMs;
       const units = Math.round(ms * UNITS_PER_MS);

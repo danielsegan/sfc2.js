@@ -20,12 +20,21 @@
     "replay:record": "node --experimental-strip-types engine/replay/cli.ts record replays",
     "replay:browsers": "playwright test",
     "dev:viewer": "vite --config web/ship-viewer/vite.config.ts",
+    "dev:web": "vite --config web/vite.config.ts --host 127.0.0.1 --port 5174 --strictPort",
+    "build:web": "vite build --config web/vite.config.ts",
     "check": "pnpm typecheck && pnpm lint:sim && pnpm lut:check && pnpm test && pnpm replay:check && node tools/check-rules-fixtures.mjs && bash tools/check-no-game-files.sh"
+  },
+  "dependencies": {
+    "@sfc2js/formats": "workspace:*",
+    "@sfc2js/platform": "workspace:*",
+    "@sfc2js/render": "workspace:*",
+    "three": "^0.181.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.16.0",
     "@playwright/test": "^1.65.1",
     "@types/node": "^22.19.1",
+    "@types/three": "^0.181.0",
     "eslint": "^9.16.0",
     "fast-check": "^3.23.2",
     "typescript": "^5.9.3",

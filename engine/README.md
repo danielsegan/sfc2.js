@@ -5,3 +5,5 @@ Deterministic game engine: simulation core, renderer, mission runtime, AI, audio
 The sim core should be independent of the wall clock and of unsourced random numbers (seeded RNG, fixed timestep) so it stays replayable and lockstep-ready. Rendering, UI, and audio read sim state; they do not drive it.
 
 `platform/` is the user-install virtual file system (`@sfc2js/platform`). `render/` uploads BMP textures, including self-illumination, to three.js (`@sfc2js/render`). The byte decoder is `tools/formats` (`@sfc2js/formats`). See [docs/formats/bmp.md](../docs/formats/bmp.md).
+
+`view/` builds the read-only HUD picture from snapshots. `duel/` runs one ship against one: session orders, the fixed-step driver, and the synthetic fixture in `duel/fixture.ts`. The web app is `web/`. Neither package writes sim state except by issuing commands.

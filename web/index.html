@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SFC2.js — tactical duel</title>
+    <link rel="stylesheet" href="./src/style.css" />
+  </head>
+  <body>
+    <header class="top">
+      <div class="brand">
+        <img src="./art/hull-glyph.svg" width="28" height="28" alt="" />
+        <div>
+          <p class="wordmark">SFC2.js</p>
+          <p class="sub">Tactical duel</p>
+        </div>
+      </div>
+      <p id="source" class="source">Synthetic fixture</p>
+      <div class="top-actions">
+        <label>Time scale
+          <select id="scale">
+            <option value="1">1×</option>
+            <option value="2">2×</option>
+            <option value="4" selected>4×</option>
+            <option value="8">8×</option>
+          </select>
+        </label>
+        <button type="button" id="pause">Pause</button>
+        <button type="button" id="load">Load install folder</button>
+        <label class="file">Zip
+          <input id="zip" type="file" accept=".zip,application/zip" />
+        </label>
+      </div>
+    </header>
+    <div id="stage">
+      <canvas id="space"></canvas>
+      <canvas id="overlay" aria-hidden="true"></canvas>
+      <section class="float target plate" aria-label="Target">
+        <h2>Target</h2>
+        <p id="target-name" class="name">No contact</p>
+        <p class="read"><span>Range</span> <span id="target-range" class="num">—</span></p>
+        <p class="read"><span>Bearing</span> <span id="target-bearing" class="num">—</span></p>
+        <p id="target-shields" class="read"></p>
+      </section>
+      <section class="float alerts plate" aria-label="Alerts">
+        <h2>Alerts</h2>
+        <p id="alert" role="status"></p>
+      </section>
+      <section class="float log-wrap plate" aria-label="Message log">
+        <h2>Log</h2>
+        <ol id="log"></ol>
+      </section>
+      <p id="keys" class="keys">W/S speed · A/D turn · X stop · Space fire · 1–6 weapon · V camera · Tab target</p>
+    </div>
+    <section id="console" aria-label="Helm console">
+      <section class="plate" aria-label="Energy">
+        <h2>Energy</h2>
+        <p class="read"><span>Warp</span> <span id="gen-warp" class="num">0</span></p>
+        <p class="read"><span>Impulse</span> <span id="gen-impulse" class="num">0</span></p>
+        <p class="read"><span>Battery</span> <span id="gen-battery" class="num">0</span></p>
+        <label class="check"><input id="life" type="checkbox" checked /> Life support</label>
+        <label class="check"><input id="fire-control" type="checkbox" checked /> Fire control</label>
+        <label class="step">General reinforce
+          <input id="general" type="number" min="0" max="100" step="1" value="0" />
+        </label>
+        <label class="step">Weapon energy
+          <input id="weapon-energy" type="number" min="0" max="100" step="1" placeholder="auto" />
+        </label>
+        <p id="energy-reason" class="reason"></p>
+      </section>
+      <section class="plate" aria-label="Shields">
+        <h2>Shields</h2>
+        <canvas id="shields" width="180" height="180" aria-hidden="true"></canvas>
+        <table id="shield-table">
+          <caption class="sr">Six shield facings, bow first, clockwise</caption>
+          <tbody></tbody>
+        </table>
+      </section>
+      <section class="plate" aria-label="Weapons">
+        <h2>Weapons</h2>
+        <div id="weapons"></div>
+      </section>
+      <section class="plate" aria-label="Helm">
+        <h2>Helm</h2>
+        <p class="read"><span>Speed</span> <span id="speed" class="num">0</span></p>
+        <p class="read"><span>Heading</span> <span id="heading" class="num">0</span></p>
+        <p class="read"><span>Tick</span> <span id="tick" class="num">0</span></p>
+        <p class="read"><span>Plan</span> <span id="plan" class="num">0</span> t</p>
+        <label class="step">Ordered speed
+          <input id="ordered-speed" type="number" min="0" max="32" step="1" value="4" />
+        </label>
+      </section>
+    </section>
+    <table id="contacts" class="sr-table">
+      <caption>Contacts</caption>
+      <thead><tr><th>Ship</th><th>Range</th><th>Speed</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>
