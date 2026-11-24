@@ -36,6 +36,16 @@
             <option value="">Synthetic fixture</option>
           </select>
         </label>
+        <label class="vol">Master
+          <input id="vol-master" type="range" min="0" max="100" value="80" />
+        </label>
+        <label class="vol">Effects
+          <input id="vol-effects" type="range" min="0" max="100" value="90" />
+        </label>
+        <label class="vol">Alerts
+          <input id="vol-alerts" type="range" min="0" max="100" value="90" />
+        </label>
+        <button type="button" id="keys-open">Keys</button>
         <button type="button" id="load">Load install folder</button>
         <label class="file">Zip
           <input id="zip" type="file" accept=".zip,application/zip" />
@@ -48,6 +58,7 @@
       <section class="float target plate" aria-label="Target">
         <h2>Target</h2>
         <p id="target-name" class="name">No contact</p>
+        <p id="target-class" class="read"></p>
         <p class="read"><span>Range</span> <span id="target-range" class="num">—</span></p>
         <p class="read"><span>Bearing</span> <span id="target-bearing" class="num">—</span></p>
         <p id="target-shields" class="read"></p>
@@ -60,14 +71,23 @@
         <h2>Log</h2>
         <ol id="log"></ol>
       </section>
-      <p id="keys" class="keys">W/S speed · A/D turn · X stop · Space fire · 1–6 weapon · V camera · Tab target</p>
+      <p id="keys" class="keys">WASD helm · Space fire · 1–6 groups · mouse orbit and target · Keys to rebind</p>
+      <p id="notice" class="keys" role="status"></p>
     </div>
     <section id="console" aria-label="Helm console">
-      <section class="plate" aria-label="Energy">
+      <div class="console-row primary">
+      <section class="plate" id="energy" aria-label="Energy allocation">
         <h2>Energy</h2>
         <p class="read"><span>Warp</span> <span id="gen-warp" class="num">0</span></p>
         <p class="read"><span>Impulse</span> <span id="gen-impulse" class="num">0</span></p>
+        <p class="read"><span>APR</span> <span id="gen-apr" class="num">0</span></p>
         <p class="read"><span>Battery</span> <span id="gen-battery" class="num">0</span></p>
+        <div class="presets">
+          <button type="button" data-action="power.attack">Attack</button>
+          <button type="button" data-action="power.balanced">Balanced</button>
+          <button type="button" data-action="power.run">Run</button>
+          <button type="button" data-action="power.defense">Defense</button>
+        </div>
         <label class="check"><input id="life" type="checkbox" checked /> Life support</label>
         <label class="check"><input id="fire-control" type="checkbox" checked /> Fire control</label>
         <label class="step">General reinforce
@@ -82,25 +102,74 @@
         <h2>Shields</h2>
         <canvas id="shields" width="180" height="180" aria-hidden="true"></canvas>
         <table id="shield-table">
-          <caption class="sr">Six shield facings, bow first, clockwise</caption>
+          <caption class="sr">Six shield facings, bow first, clockwise, with ordered reinforcement</caption>
+          <thead><tr><th>Facing</th><th>Strength</th><th>Order</th></tr></thead>
           <tbody></tbody>
         </table>
       </section>
       <section class="plate" aria-label="Weapons">
         <h2>Weapons</h2>
+        <div class="presets">
+          <button type="button" data-action="weapons.fire">Fire</button>
+          <button type="button" data-action="weapons.overload">Overload</button>
+        </div>
         <div id="weapons"></div>
       </section>
       <section class="plate" aria-label="Helm">
         <h2>Helm</h2>
         <p class="read"><span>Speed</span> <span id="speed" class="num">0</span></p>
+        <p class="read"><span>Ordered</span> <span id="speed-ordered" class="num">0</span></p>
         <p class="read"><span>Heading</span> <span id="heading" class="num">0</span></p>
         <p class="read"><span>Tick</span> <span id="tick" class="num">0</span></p>
         <p class="read"><span>Plan</span> <span id="plan" class="num">0</span> t</p>
         <label class="step">Ordered speed
           <input id="ordered-speed" type="number" min="0" max="32" step="1" value="4" />
         </label>
+        <div class="presets">
+          <button type="button" data-action="helm.stop">Stop</button>
+          <button type="button" data-action="view.camera">Camera</button>
+        </div>
       </section>
+      </div>
+      <div class="console-row systems">
+        <section class="plate slot" aria-label="Electronic warfare">
+          <h2>EW</h2>
+          <p id="ew-status">Not in this duel. ECM and ECCM wait for the EW rules.</p>
+          <div class="bars" aria-hidden="true"><span></span><span></span></div>
+        </section>
+        <section class="plate slot" aria-label="Tractor">
+          <h2>Tractor</h2>
+          <p id="tractor-status">Not in this duel. Tractor, repel, and boarding stay disabled.</p>
+          <button type="button" data-action="ops.tractor" disabled>Tractor</button>
+        </section>
+        <section class="plate slot" aria-label="Cloak">
+          <h2>Cloak</h2>
+          <p id="cloak-status">Not fitted in this duel.</p>
+          <button type="button" data-action="ops.cloak" disabled>Cloak</button>
+        </section>
+        <section class="plate slot" aria-label="Fighters">
+          <h2>Fighters</h2>
+          <p id="fighter-status">No bays in this duel. Launch and recall wait for fighter rules.</p>
+          <button type="button" data-action="craft.launch" disabled>Launch</button>
+        </section>
+        <section class="plate slot" aria-label="Mines">
+          <h2>Mines</h2>
+          <p id="mine-status">No mines in this duel.</p>
+          <button type="button" data-action="craft.mine" disabled>Lay mine</button>
+        </section>
+      </div>
     </section>
+    <dialog id="keymap" aria-label="Key bindings">
+      <form method="dialog">
+        <h2>Keys</h2>
+        <p class="read">Modern profile. Bindings use the physical key, so they survive a different keyboard layout.</p>
+        <div id="keymap-list"></div>
+        <div class="presets">
+          <button type="button" id="keys-reset">Reset modern</button>
+          <button type="button" id="keys-close">Close</button>
+        </div>
+      </form>
+    </dialog>
     <table id="contacts" class="sr-table">
       <caption>Contacts</caption>
       <thead><tr><th>Ship</th><th>Range</th><th>Speed</th></tr></thead>

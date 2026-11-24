@@ -27,6 +27,15 @@ export {
 export { parseShiplist, type HardpointSlot, type Shiplist, type ShiplistRow } from "./shiplist.ts";
 
 export {
+  parseSounds,
+  SOUND_FILE_TYPES,
+  type SoundClass,
+  type SoundEntry,
+  type SoundIndex,
+  type SoundParseOptions,
+} from "./sounds.ts";
+
+export {
   parseFtrlist,
   type FighterWeapon,
   type Ftrlist,

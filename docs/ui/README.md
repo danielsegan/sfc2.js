@@ -10,6 +10,7 @@ This folder holds the visual and interaction design for the tactical HUD, the me
 | --- | --- |
 | [style-guide.md](style-guide.md) | Visual language: layout grid, panel chrome, type, color tokens per empire and state, icons, motion, sound-cue hooks, and the 3D space look (materials, self-illum, weapon VFX, explosions, shields, nebulae, planets, starfield, lighting), with period-accurate and HD tiers. |
 | [hud-spec.md](hud-spec.md) | Component-by-component tactical HUD spec: purpose, proposed sim read fields, states, interactions and keys, accessibility, and TO VERIFY items. |
+| [keymap.md](keymap.md) | Modern default keymap: physical keys, rebinding, and the mouse actions. |
 | [modern-ux.md](modern-ux.md) | Resolution and UI scale, 4:3 safe area vs 16:9 and ultrawide, gamepad mapping, rebinding, accessibility, Tauri window behavior. |
 | [asset-pipeline.md](asset-pipeline.md) | How the HUD loads GUI sprites from the player's own install, the vector fallback, opt-in HD packs, and texture and self-illum conventions for the renderer. |
 

@@ -1,0 +1,12 @@
+class	Bad Class	3	nope
+class	Odd Class	4	1	sideways
+class	Copied Id	3	2
+wave	testMissing		invented missing name
+wave	testAbs	C:/outside.wav	invented absolute
+wave	testDup	sounds/test-dup.wav	invented										9			10	Test Effects
+wave	testDupAgain	sounds/test-dup-b.wav	invented										9			10	Test Effects
+wave	testThreshold	sounds/test-threshold.wav	invented										8	1		10	Test Effects
+wave	testThresholdB	sounds/test-threshold-b.wav	invented										8	2		10	Test Effects
+	a leading empty column is a comment
+pcm22k16m	testPcm	sounds/test-tone.pcm	invented tone										50			10	Test Effects			80	80
+

@@ -99,6 +99,13 @@ interface Diagnostic {
 | mod | `modelPathRejected` | warning | Formats | The `.mod` path is not install-relative. The path is omitted |
 | mod | `textureNameRejected` | warning | Formats | `{ reason: 'texture-name' }`. The pool string is not a single basename. The name is omitted |
 | mod | `lodOutOfRange` | warning | Formats | `{ requested, lods }` |
+| sounds | `emptyFile` | error | Formats | Zero-byte or whitespace-only index. No `location` |
+| sounds | `badNumber` | warning | Formats | `{ value? }`. A numeric column is not a plain decimal. `location.field` names the column |
+| sounds | `missingFilename` | warning | Formats | `{ identifier? }`. A sound row has an empty filename |
+| sounds | `pathRejected` | warning | Formats | `{ reason: 'filename' }`. The filename is not install-relative. The path is omitted |
+| sounds | `unknownPreempt` | warning | Formats | `{ value? }`. The preempt word is not Never, Higher Only, or Lower Only. The class is kept as `any` |
+| sounds | `duplicateClassId` | warning | Formats | `{ id }` |
+| sounds | `duplicateIndex` | warning | Formats | `{ index }`. Same index and the same load threshold. A different threshold is allowed |
 | mission | `badMapBounds` | error | Engine | axis not a whole number, or outside ±8,192 range units; `location.field` names the offending value (sim-core.md §2; merged PR #52) |
 | rules | `ok` | info | Combat | `ruleResult` applied. Not logged as a warning |
 | rules | `noSuchShip` | warning | Combat | Spawn id is not a live ship |
@@ -135,6 +142,8 @@ Codes shared by shiplist and ftrlist: `emptyFile`, `raggedRow`, `noHeader`, `mul
 Shiplist-specific: `duplicateClassKey`, `duplicateClassName`, `crewTotalMismatch`, `shieldTotalMismatch`, `hardpointCountRange`, `missingGeometry`, `missingRefitBase`, `unknownHullType`, `unknownTurnMode`.
 
 Ftrlist-specific: `duplicateFighterType`, `missingShipRef`.
+
+Sounds-specific (spec in `docs/formats/sounds.md`): `emptyFile`, `badNumber`, `missingFilename`, `pathRejected`, `unknownPreempt`, `duplicateClassId`, `duplicateIndex`.
 
 Mod-specific (spec in `docs/formats/mod.md`): `emptyFile`, `fileTooLarge`, `badSignature`, `truncated`, `missingHeader`, `badCount`, `unknownChunk`, `duplicateChunk`, `raggedChunk`, `lodCountRange`, `lodCountMismatch`, `faceCountMismatch`, `faceVertexCount`, `vertexIndexOutOfRange`, `materialIndexOutOfRange`, `badStringOffset`, `missingTextureName`, `badNumber`, `orphanChunk`, `modelPathRejected`, `textureNameRejected`, `lodOutOfRange`. Layout fields the public reader stores but does not interpret stay in the data and are not given a code.
 

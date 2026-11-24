@@ -15,7 +15,7 @@ Status values: **spec draft** (written from public sources, unverified), **plann
 | Models | `Assets/MODELS/<folder>/*.mod`, `*_brk.mod` (inventory spelling; case-insensitive) | Renderer, ship viewer | [#19](https://github.com/danielsegan/sfc2.js/issues/19) | [spec draft](mod.md) | [synthetic tests](../../tools/formats/src/mod.ts) | no |
 | Textures + self-illumination | BMP files next to each model (`_<n>i` glow maps) | Renderer, UI & Art | [#15](https://github.com/danielsegan/sfc2.js/issues/15) | [spec draft](bmp.md) | synthetic tests | no |
 | UI sprites | `assets/sprites/sprites.q3` | HUD, menus | — | planned | not started | no |
-| Sounds | `sounds.txt` index + WAV files | Audio | [#35](https://github.com/danielsegan/sfc2-browser-edition/issues/35) | planned | not started | no |
+| Sounds | `assets/sounds/sounds.txt` index + WAV files | Audio | [#35](https://github.com/danielsegan/sfc2-browser-edition/issues/35) | [spec draft](sounds.md) | [parser](../../tools/formats/sounds.ts) | no |
 | Strings | `assets/strings/strings.txt`, `aaStrings.txt`, `quicktips.txt`, `shipnames.txt` | UI, Missions (string keys) | — | planned | not started | no |
 | Custom missions | FMSE `.fms` files (community-authored) | Missions (converter to our JSON schema) | — | planned (after Phase 1 formats) | not started | no |
 | Our own mission files | JSON, schema owned by Mission & Campaign Designer | Missions | PR #1 | validated against Missions' schema | — | n/a (our format) |

@@ -8,6 +8,7 @@ export default defineConfig({
       'engine/platform/src/**/*.test.ts',
       'engine/render/src/**/*.test.ts',
       'engine/**/*.test.ts',
+      'web/**/*.test.ts',
       'tests/**/*.test.ts',
     ],
   },

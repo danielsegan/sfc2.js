@@ -23,6 +23,9 @@ import {
   INTERNAL_PHASER,
   INTERNAL_PHOTON,
   MODE_KEEP,
+  MODE_NORMAL,
+  MODE_OVERLOAD,
+  MODE_PROXIMITY,
   weaponDef,
 } from '../sim/rules-tables.ts';
 import type { ShipSetup } from '../sim/bind-shiplist.ts';
@@ -46,6 +49,10 @@ export interface DuelPlan {
   general: number;
   /** Null asks each phaser or photon for its own cost. */
   weaponRequest: number | null;
+  /** Per-facing reinforcement, bow first. Length 6. */
+  specific: number[];
+  /** Per-slot weapon mode. Missing slots stay on MODE_KEEP. */
+  modes: number[];
 }
 
 export interface DuelMatchOptions {
@@ -79,6 +86,9 @@ export interface DuelMatch {
   setFireControl(on: boolean): void;
   setGeneral(points: number): void;
   setWeaponRequest(points: number | null): void;
+  setFacing(facing: number, points: number): void;
+  setWeaponMode(slot: number, mode: number): void;
+  setAllocation(next: Partial<DuelPlan>): void;
   orderYaw(yaw16: number): void;
   orderFire(slotIndex: number): void;
   setTarget(id: number): void;
@@ -112,6 +122,18 @@ function clampSpeed(speed: number): number {
 function clampPoints(points: number): number {
   if (!Number.isInteger(points) || points < 0) return 0;
   return points > 100 ? 100 : points;
+}
+
+function clampMode(mode: number): number {
+  if (mode === MODE_KEEP || mode === MODE_NORMAL || mode === MODE_OVERLOAD || mode === MODE_PROXIMITY) return mode;
+  return MODE_KEEP;
+}
+
+function normalizeSpecific(values: readonly number[] | undefined): number[] {
+  const out = [0, 0, 0, 0, 0, 0];
+  if (!values) return out;
+  for (let i = 0; i < 6; i++) out[i] = clampPoints(values[i] ?? 0);
+  return out;
 }
 
 class Match implements DuelMatch {
@@ -159,6 +181,8 @@ class Match implements DuelMatch {
       speed: clampSpeed(options.plan?.speed ?? base.speed),
       general: clampPoints(options.plan?.general ?? base.general),
       weaponRequest: options.plan?.weaponRequest === undefined ? base.weaponRequest : options.plan.weaponRequest,
+      specific: normalizeSpecific(options.plan?.specific),
+      modes: (options.plan?.modes ?? []).map((mode) => clampMode(mode)),
     };
     for (const spawn of options.spawns ?? []) {
       this.session.issue(VERB_SPAWN, spawnPayload(spawn.setupIndex, spawn.x, spawn.y, spawn.heading));
@@ -212,8 +236,7 @@ class Match implements DuelMatch {
   }
 
   setSpeed(speed: number): void {
-    this.plan.speed = clampSpeed(speed);
-    this.userCommit();
+    this.setAllocation({ speed });
   }
 
   bumpSpeed(delta: number): void {
@@ -221,22 +244,46 @@ class Match implements DuelMatch {
   }
 
   setLifeSupport(on: boolean): void {
-    this.plan.lifeSupport = on;
-    this.userCommit();
+    this.setAllocation({ lifeSupport: on });
   }
 
   setFireControl(on: boolean): void {
-    this.plan.fireControl = on;
-    this.userCommit();
+    this.setAllocation({ fireControl: on });
   }
 
   setGeneral(points: number): void {
-    this.plan.general = clampPoints(points);
-    this.userCommit();
+    this.setAllocation({ general: points });
   }
 
   setWeaponRequest(points: number | null): void {
-    this.plan.weaponRequest = points === null ? null : clampPoints(points);
+    this.setAllocation({ weaponRequest: points });
+  }
+
+  setFacing(facing: number, points: number): void {
+    if (!Number.isInteger(facing) || facing < 0 || facing > 5) return;
+    const specific = this.plan.specific.slice();
+    specific[facing] = clampPoints(points);
+    this.setAllocation({ specific });
+  }
+
+  setWeaponMode(slot: number, mode: number): void {
+    if (!Number.isInteger(slot) || slot < 0) return;
+    const modes = this.plan.modes.slice();
+    while (modes.length <= slot) modes.push(MODE_KEEP);
+    modes[slot] = clampMode(mode);
+    this.setAllocation({ modes });
+  }
+
+  setAllocation(next: Partial<DuelPlan>): void {
+    if (next.lifeSupport !== undefined) this.plan.lifeSupport = next.lifeSupport;
+    if (next.fireControl !== undefined) this.plan.fireControl = next.fireControl;
+    if (next.speed !== undefined) this.plan.speed = clampSpeed(next.speed);
+    if (next.general !== undefined) this.plan.general = clampPoints(next.general);
+    if (next.weaponRequest !== undefined) {
+      this.plan.weaponRequest = next.weaponRequest === null ? null : clampPoints(next.weaponRequest);
+    }
+    if (next.specific !== undefined) this.plan.specific = normalizeSpecific(next.specific);
+    if (next.modes !== undefined) this.plan.modes = next.modes.map((mode) => clampMode(mode));
     this.userCommit();
   }
 
@@ -301,15 +348,19 @@ class Match implements DuelMatch {
       const def = weaponDef(mount.weaponId);
       if (!def || (def.internal !== INTERNAL_PHASER && def.internal !== INTERNAL_PHOTON)) continue;
       const cost = def.internal === INTERNAL_PHASER ? def.chargeCost : def.armCost;
+      const stored = clampMode(this.plan.modes[slot] ?? MODE_KEEP);
+      let mode = stored;
+      if (def.internal === INTERNAL_PHASER && mode !== MODE_KEEP && mode !== MODE_NORMAL) mode = MODE_NORMAL;
       const request = this.plan.weaponRequest === null ? cost : this.plan.weaponRequest;
-      if (request <= 0) continue;
-      weapons.push({ slot, request, mode: MODE_KEEP });
+      if (request <= 0 && mode === MODE_KEEP) continue;
+      weapons.push({ slot, request: request > 0 ? request : 0, mode });
     }
     return setEnergyPayload(this.selfEntity ?? 0, {
       lifeSupport: this.plan.lifeSupport,
       fireControl: this.plan.fireControl,
       speed: this.plan.speed,
       general: this.plan.general,
+      specific: this.plan.specific,
       weapons,
     });
   }
