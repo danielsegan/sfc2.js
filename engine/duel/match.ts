@@ -59,6 +59,28 @@ import {
   syntheticSetups,
   type SpawnPoint,
 } from './fixture.ts';
+import { SYNTHETIC_LOADOUT, syntheticFighters, type CraftLoadout } from './craft-catalog.ts';
+import {
+  VERB_LAUNCH_FIGHTER,
+  VERB_LAUNCH_PF,
+  VERB_LAY_MINE,
+  VERB_RAID,
+  VERB_RECALL,
+  VERB_SET_BAY,
+  VERB_SET_SIDE,
+  VERB_SET_STORES,
+  createSmallcraft,
+  launchFighterPayload,
+  launchPfPayload,
+  layMinePayload,
+  ownedCraft,
+  raidPayload,
+  recallPayload,
+  setBayPayload,
+  setSidePayload,
+  setStoresPayload,
+  type FighterType,
+} from '../sim/smallcraft.ts';
 
 const SPEED_CAP = 32;
 const EVENT_CAP = 256;
@@ -105,6 +127,8 @@ export interface DuelMatchOptions {
   readonly renew?: boolean;
   /** Send the plan on the tick after the player hull exists. */
   readonly opening?: boolean;
+  readonly fighters?: readonly FighterType[];
+  readonly loadout?: CraftLoadout;
 }
 
 export interface DuelMatch {
@@ -136,6 +160,11 @@ export interface DuelMatch {
   setTarget(id: number): void;
   /** Step through hostile contacts. Negative steps go backwards. */
   cycleTarget(step: number): void;
+  launchFighter(bay?: number): void;
+  launchPf(bay?: number): void;
+  recallCraft(): void;
+  layMine(): void;
+  orderRaid(mode: number, commit?: number): void;
   /** Raw verb. The payload must not carry a tick. */
   issue(kind: number, payload: Uint8Array): void;
 }
@@ -202,9 +231,13 @@ class Match implements DuelMatch {
     const fleet = options.fleet;
     if (fleet && (fleet.length < 1 || fleet.length > FLEET_MAX)) throw new Error('fleet size');
     const combat = createCombat(options.setups, { rulesTurnTicks: period });
-    const tables = [...combat.tables, CRUISE_TABLE];
-    const systems = [...combat.systems, createCruise(period)];
-    const handlers = withHelm(combat.handlers);
+    const craft = createSmallcraft({
+      fighters: options.fighters ?? [],
+      setups: options.setups,
+    });
+    const tables = [...combat.tables, CRUISE_TABLE, ...craft.tables];
+    const systems = [...combat.systems, createCruise(period), ...craft.systems];
+    const handlers = [...withHelm(combat.handlers), ...craft.handlers];
     if (fleet) {
       tables.push(ALLEGIANCE_TABLE);
       systems.push(createCaptain());
@@ -261,6 +294,35 @@ class Match implements DuelMatch {
         const control = slot.control === 'ai' ? CONTROL_AI : 0;
         this.session.issue(VERB_SET_ALLEGIANCE, allegiancePayload(id, slot.side, control));
       }
+    }
+    this.issueLoadout(options.loadout, spawns.length);
+  }
+
+  /**
+   * Spawn order is the allocator order, and the first generation is 1,
+   * so spawn i is entity 65536 + i. Loadout commands share that tick and
+   * sort after the spawns.
+   */
+  private issueLoadout(loadout: CraftLoadout | undefined, spawned: number): void {
+    if (!loadout) return;
+    for (let i = 0; i < spawned; i++) {
+      const side = loadout.sides[i];
+      if (side === undefined) continue;
+      this.session.issue(VERB_SET_SIDE, setSidePayload(65536 + i, side));
+    }
+    for (const bay of loadout.bays) {
+      if (bay.spawn < 0 || bay.spawn >= spawned) continue;
+      this.session.issue(
+        VERB_SET_BAY,
+        setBayPayload(65536 + bay.spawn, bay.bay, bay.kind, bay.type, bay.count),
+      );
+    }
+    for (const store of loadout.stores) {
+      if (store.spawn < 0 || store.spawn >= spawned) continue;
+      this.session.issue(
+        VERB_SET_STORES,
+        setStoresPayload(65536 + store.spawn, store.mines, store.boarding, store.security),
+      );
     }
   }
 
@@ -433,6 +495,33 @@ class Match implements DuelMatch {
     this.targetEntity = ids[next] ?? null;
   }
 
+  launchFighter(bay = 0): void {
+    if (this.selfEntity === null || !Number.isInteger(bay)) return;
+    this.session.issue(VERB_LAUNCH_FIGHTER, launchFighterPayload(this.selfEntity, bay));
+  }
+
+  launchPf(bay = 1): void {
+    if (this.selfEntity === null || !Number.isInteger(bay)) return;
+    this.session.issue(VERB_LAUNCH_PF, launchPfPayload(this.selfEntity, bay));
+  }
+
+  recallCraft(): void {
+    if (this.selfEntity === null) return;
+    const ids = ownedCraft(this.sim.snapshot().world, this.selfEntity);
+    for (const id of ids) this.session.issue(VERB_RECALL, recallPayload(id));
+  }
+
+  layMine(): void {
+    if (this.selfEntity === null) return;
+    this.session.issue(VERB_LAY_MINE, layMinePayload(this.selfEntity));
+  }
+
+  orderRaid(mode: number, commit = 1): void {
+    if (this.selfEntity === null || this.targetEntity === null) return;
+    if (!Number.isInteger(mode) || !Number.isInteger(commit)) return;
+    this.session.issue(VERB_RAID, raidPayload(this.selfEntity, this.targetEntity, mode, commit));
+  }
+
   issue(kind: number, payload: Uint8Array): void {
     this.session.issue(kind, payload);
   }
@@ -570,6 +659,8 @@ export function createSyntheticDuel(options?: Omit<DuelMatchOptions, 'setups' | 
     setups: syntheticSetups(),
     spawns: SYNTHETIC_SPAWNS,
     plan: { ...SYNTHETIC_PLAN },
+    fighters: syntheticFighters(),
+    loadout: SYNTHETIC_LOADOUT,
     ...options,
   });
 }

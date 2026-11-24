@@ -1,0 +1,18 @@
+{
+  "description": "Placeholder Phase 3 numbers for fighters, PFs, mines, and raids. Every value is synthetic. None of them is a measured Community Edition stat.",
+  "verification": "unverified",
+  "bayCount": 4,
+  "rearmTicks": 8,
+  "enduranceTicks": 45,
+  "fighterYawPerTick": 8000,
+  "strikeRange": 2,
+  "strikeDamage": 1,
+  "strikePeriod": 2,
+  "dockRange": 1,
+  "pfRecoverSpeed": 4,
+  "mineArmTicks": 4,
+  "mineDetectRange": 4,
+  "mineBlastRange": 1,
+  "mineDamage": 6,
+  "transporterRange": 2
+}

@@ -14,6 +14,20 @@ import {
   REASON_NAME,
 } from '../sim/combat.ts';
 import {
+  C,
+  CRAFT,
+  CRAFT_FIELDS,
+  CRAFT_REASON,
+  EVENT_CRAFT,
+  EVENT_CRAFT_NOTE,
+  NOTE_NAME,
+  ROLE_MINE,
+  craftReadout,
+  entitySide,
+  type CraftReadout,
+} from '../sim/smallcraft.ts';
+import { CLASS_FIGHTER } from '../sim/rules-tables.ts';
+import {
   EVENT_HELM,
   HELM_DESTROYED,
   HELM_DISABLED,
@@ -100,6 +114,7 @@ export interface SelfView {
   readonly tractorPaid: number;
   readonly tractorLink: boolean;
   readonly netShift: number | null;
+  readonly craft: CraftReadout;
 }
 
 export interface ContactView {
@@ -115,7 +130,7 @@ export interface ContactView {
   readonly side: number;
   readonly control: 'manual' | 'ai' | 'none';
   readonly targeted: boolean;
-  readonly kind: 'ship' | 'shot';
+  readonly kind: 'ship' | 'shot' | 'fighter' | 'mine';
   readonly shields: readonly ShieldReadout[];
   readonly rangeFromSelf: number;
   readonly cloaked: boolean;
@@ -266,6 +281,15 @@ function toHud(event: SimEvent): HudEvent | null {
     const severity = event.a === HELM_OK || event.a === HELM_YAW_CLAMPED ? 'info' : 'warn';
     return { kind: 'alert', tick: event.tick as number, id, severity, ship: event.entity, amount: event.b };
   }
+  if (event.kind === EVENT_CRAFT) {
+    const id = CRAFT_REASON[event.a] ?? 'craft';
+    const severity = event.a === 0 ? 'info' : 'warn';
+    return { kind: 'alert', tick: event.tick as number, id, severity, ship: event.entity, amount: event.b };
+  }
+  if (event.kind === EVENT_CRAFT_NOTE) {
+    const id = NOTE_NAME[event.a] ?? 'craft';
+    return { kind: 'alert', tick: event.tick as number, id, severity: 'info', ship: event.entity, amount: event.b };
+  }
   return { kind: 'sim', tick: event.tick as number, code: event.kind, ship: event.entity, a: event.a, b: event.b };
 }
 
@@ -342,7 +366,8 @@ export function buildViewModel(input: ViewBuildInput): ViewModel {
   const contacts: ContactView[] = [];
   const count = curr.live.length;
   const targetId = input.targetId ?? null;
-  const selfSide = input.selfIndex >= 0 ? readAllegiance(curr, input.selfIndex).side : -1;
+  const allegianceSelf = input.selfIndex >= 0 ? readAllegiance(curr, input.selfIndex).side : -1;
+  const selfSide = allegianceSelf >= 0 ? allegianceSelf : entitySide(curr, input.selfIndex);
   let selfPose: { x: number; y: number } | null = null;
   for (let index = 0; index < count; index++) {
     if (curr.live[index] !== 1) continue;
@@ -362,7 +387,9 @@ export function buildViewModel(input: ViewBuildInput): ViewModel {
     if (index === input.selfIndex) selfPose = { x, y };
     const allegiance = readAllegiance(curr, index);
     const id = entityId(curr, index);
-    const allied = index === input.selfIndex || (selfSide >= 0 && allegiance.side >= 0 && allegiance.side === selfSide);
+    const craftSide = entitySide(curr, index);
+    const side = allegiance.side >= 0 ? allegiance.side : craftSide;
+    const allied = index === input.selfIndex || (selfSide >= 0 && side >= 0 && side === selfSide);
     const selfShip = input.selfIndex >= 0 && input.selfIndex < count && curr.live[input.selfIndex] === 1
       ? shipView(curr, input.selfIndex)
       : null;
@@ -386,16 +413,49 @@ export function buildViewModel(input: ViewBuildInput): ViewModel {
       heading16,
       speed: ship.speed,
       destroyed: ship.destroyed === 1,
-      hostility: hostilityOf(index, input.selfIndex, selfSide, allegiance.side),
-      side: allegiance.side,
-      control: allegiance.control === 1 ? 'ai' : allegiance.side >= 0 ? 'manual' : 'none',
+      hostility: hostilityOf(index, input.selfIndex, selfSide, side),
+      side,
+      control: allegiance.control === 1 ? 'ai' : side >= 0 ? 'manual' : 'none',
       targeted: targetId !== null && id === targetId,
-      kind: 'ship',
+      kind: ship.classCode === CLASS_FIGHTER ? 'fighter' : 'ship',
       shields: shieldsOf(ship),
       rangeFromSelf: 0,
       cloaked: ship.cloakState !== CLOAK_OFF,
       detected: seen,
     });
+  }
+  const craftTable = table(curr, CRAFT);
+  const kindTable = table(curr, 'kind');
+  if (craftTable && kindTable) {
+    for (let index = 0; index < count; index++) {
+      if (curr.live[index] !== 1 || kindTable[index] !== ENTITY_KIND.mapObject) continue;
+      const role = craftTable[index * CRAFT_FIELDS + C.role] ?? 0;
+      if (role !== ROLE_MINE) continue;
+      const currPos = rawPos(curr, index);
+      const prevPos = prev.live[index] === 1 ? rawPos(prev, index) : null;
+      const x = toDisplayRange(prevPos ? blendScalar(prevPos.x, currPos?.x ?? prevPos.x, alpha) : (currPos?.x ?? 0));
+      const y = toDisplayRange(prevPos ? blendScalar(prevPos.y, currPos?.y ?? prevPos.y, alpha) : (currPos?.y ?? 0));
+      const selfSide = entitySide(curr, input.selfIndex);
+      const theirSide = entitySide(curr, index);
+      contacts.push({
+        id: entityId(curr, index),
+        index,
+        x,
+        y,
+        heading16: 0,
+        speed: 0,
+        destroyed: false,
+        hostility: selfSide >= 0 && theirSide >= 0 && theirSide === selfSide ? 'friendly' : 'hostile',
+        side: theirSide,
+        control: 'none',
+        targeted: false,
+        kind: 'mine',
+        shields: [],
+        rangeFromSelf: 0,
+        cloaked: false,
+        detected: true,
+      });
+    }
   }
   contacts.sort((a, b) => a.id - b.id);
   const posed: ContactView[] = [];
@@ -448,6 +508,7 @@ export function buildViewModel(input: ViewBuildInput): ViewModel {
         tractorPaid: ship.tractorPaid,
         tractorLink: ship.tractorLink === 1,
         netShift: shiftAgainst(curr, ship, contacts),
+        craft: craftReadout(curr, input.selfIndex),
       };
     }
   }

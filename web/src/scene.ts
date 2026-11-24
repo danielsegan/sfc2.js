@@ -104,7 +104,14 @@ export class DuelScene {
         continue;
       }
       const hull = this.hulls[contact.index];
-      if (!hull) continue;
+      if (!hull) {
+        if (contact.detected) {
+          const lift = contact.kind === 'mine' ? 0.15 : 0.55;
+          const size = contact.kind === 'mine' ? 0.28 : 0.42;
+          marks.push({ x: contact.x, y: lift, z: -contact.y, size, opacity: 0.85 });
+        }
+        continue;
+      }
       hull.visible = !contact.destroyed && contact.detected;
       hull.position.set(contact.x, 0, -contact.y);
       hull.rotation.y = (contact.heading16 / FULL) * Math.PI * 2;

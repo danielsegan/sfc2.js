@@ -68,6 +68,12 @@ export function updateHud(vm: ViewModel, roster: readonly RosterEntry[], hud: Hu
   syncField('ew-ecm', String(plan.ecm));
   syncField('ew-eccm', String(plan.eccm));
   syncField('tractor-energy', String(plan.tractorEnergy));
+  const ready = self?.craft.fighterReady ?? 0;
+  const pfs = self?.craft.pfReady ?? 0;
+  const rearming = self?.craft.rearming ?? 0;
+  const rearm = rearming > 0 ? ` · ${String(rearming)} rearming` : '';
+  text('fighter-status', `${countWord(ready, 'fighter', 'fighters')} · ${countWord(pfs, 'PF', 'PFs')}${rearm}`);
+  text('mine-status', `${countWord(self?.craft.mines ?? 0, 'mine', 'mines')} · ${countWord(self?.craft.boarding ?? 0, 'party', 'parties')}`);
   text('target-name', target ? roster[target.index]?.name ?? 'Contact' : 'No contact');
   text('target-class', target ? roster[target.index]?.empire ?? '' : 'Tab to target');
   text('target-range', target ? fmt(target.rangeFromSelf) : '—');
@@ -103,6 +109,10 @@ function tractorName(mode: number): string {
   if (mode === 2) return 'repel';
   if (mode === 3) return 'reinforce';
   return 'off';
+}
+
+function countWord(count: number, one: string, many: string): string {
+  return `${String(count)} ${count === 1 ? one : many}`;
 }
 
 function selfContact(vm: ViewModel) {
@@ -271,7 +281,8 @@ function renderContacts(vm: ViewModel, roster: readonly RosterEntry[]): void {
   for (const contact of vm.contacts) {
     if (contact.kind === 'shot' || !contact.detected) continue;
     const row = document.createElement('tr');
-    const name = roster[contact.index]?.name ?? `Ship ${String(contact.index)}`;
+    const named = roster[contact.index]?.name ?? `Ship ${String(contact.index)}`;
+    const name = contact.kind === 'fighter' ? 'Fighter' : contact.kind === 'mine' ? 'Mine' : named;
     const who = contact.hostility === 'self' ? 'you' : contact.control === 'ai' ? 'AI' : contact.hostility;
     const side = contact.side < 0 ? '' : contact.side === 0 ? 'A ' : 'B ';
     row.append(cell(`${side}${name} (${who})`));

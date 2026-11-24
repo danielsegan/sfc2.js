@@ -43,6 +43,15 @@
     { "code": "cloaked", "status": "rejected", "logSeverity": "warning", "summary": "Weapons are locked while the cloak is engaging, on, or disengaging." },
     { "code": "notDetected", "status": "rejected", "logSeverity": "warning", "summary": "The target is cloaked and this ship does not currently detect it." },
     { "code": "cloakCollapsed", "status": "clamped", "logSeverity": "warning", "summary": "The battery could not pay the cloak's rules-turn cost, so the cloak dropped." },
-    { "code": "tractorCapped", "status": "clamped", "logSeverity": "warning", "summary": "The tractor bid was cut to the tractor boxes on the hull." }
+    { "code": "tractorCapped", "status": "clamped", "logSeverity": "warning", "summary": "The tractor bid was cut to the tractor boxes on the hull." },
+    { "code": "bayEmpty", "status": "rejected", "logSeverity": "warning", "summary": "Launch found no ready fighter or PF in that bay." },
+    { "code": "badBay", "status": "rejected", "logSeverity": "warning", "summary": "The bay index is outside 0..3, the bay kind is unknown, or the side is not 0 or 1." },
+    { "code": "unknownCraft", "status": "rejected", "logSeverity": "warning", "summary": "The fighter type or PF setup is not in the catalog, or the setup is not a PF." },
+    { "code": "noMines", "status": "rejected", "logSeverity": "warning", "summary": "layMine found no mine aboard." },
+    { "code": "noParties", "status": "rejected", "logSeverity": "warning", "summary": "The raid has no boarding party, or the commit is larger than the parties carried." },
+    { "code": "sameSide", "status": "rejected", "logSeverity": "warning", "summary": "The two ships share a side, or either side was never set." },
+    { "code": "badRaid", "status": "rejected", "logSeverity": "warning", "summary": "The raid mode is not hit-and-run or boarding." },
+    { "code": "raidRepulsed", "status": "rejected", "logSeverity": "warning", "summary": "The hit-and-run dice lost. No party was spent." },
+    { "code": "boardingRepulsed", "status": "rejected", "logSeverity": "warning", "summary": "The boarding dice lost. The committed parties stay spent." }
   ]
 }
