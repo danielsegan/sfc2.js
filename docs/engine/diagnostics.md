@@ -71,6 +71,18 @@ interface Diagnostic {
 | bmp | `orphanSelfIllum` | warning | Formats | `{ illumPath }`. A `_<token>i` file with no base in the same directory |
 | bmp | `missingTexture` | error | Formats | `{ path }`. Requested install-relative path is not in the VFS |
 | bmp | `selfIllumSizeMismatch` | info | Formats | `{ baseWidth, baseHeight, illumWidth, illumHeight }`. Both maps are kept and sampled by UV |
+| mod | `emptyFile` | error | Formats | Zero-byte model |
+| mod | `missingHeader` | error | Formats | No `MDLS` chunk |
+| mod | `truncated` | error | Formats | A chunk or record runs past the buffer |
+| mod | `unknownChunk` | warning | Formats | `{ type }`. The chunk is skipped |
+| mod | `duplicateChunk` | warning | Formats | `{ type }`. A second `MDLS` or `STRS` |
+| mod | `badStringOffset` | warning | Formats | `{ offset }` outside the string pool |
+| mod | `badMeshSize` | error | Formats | LOD, vertex or face count is negative or above the safety cap |
+| mod | `badVertexIndex` | warning | Formats | `{ index, vertexCount }` |
+| mod | `badMaterialIndex` | warning | Formats | `{ materialIndex }` |
+| mod | `faceVertexCount` | warning | Formats | `{ vtxCount }`. Not a triangle. Counts from 1 to 8 are still read |
+| mod | `lodCountMismatch` | warning | Formats | `{ declared, found }` |
+| mod | `faceCountMismatch` | warning | Formats | `{ declaredFaces, foundFaces }` |
 | mission | `badMapBounds` | error | Engine | axis not a whole number, or outside ±8,192 range units; `location.field` names the offending value (sim-core.md §2; merged PR #52) |
 | rules | `noSuchSystem` | (ruleResult reason) | Combat | example from Combat; full list to be added by Combat |
 

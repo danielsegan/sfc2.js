@@ -58,3 +58,18 @@ export {
   type SelfIllumIndex,
   type TexturePairRef,
 } from "./src/self-illum.ts";
+
+export {
+  MOD_MATERIAL_FLAGS,
+  breakupModelPath,
+  parseMod,
+  type ModFace,
+  type ModFaceVertex,
+  type ModMaterial,
+  type ModMesh,
+  type ModModel,
+  type ModNamedPoint,
+  type ModTextureRef,
+  type ModVec3,
+  type ParseModOptions,
+} from "./mod.ts";
