@@ -1,6 +1,6 @@
 # Tactical HUD layout: preserved arrangement, clean-up and empire skins
 
-Status: draft v0.2 (2026-11-24, CE 2.670 capture findings recorded). Owner: UI & Art Director. Baseline: Community Edition (CE) 2.670.
+Status: draft v0.3 (2026-11-24, HelmView remaining-turn units and Combat Q17 recorded). Owner: UI & Art Director. Baseline: Community Edition (CE) 2.670.
 
 Why this exists: Daniel's playtest feedback was that the ship should be moved and turned with the mouse as in the original, that the original UI should be **cleaned up and preserved**, and that the main UI should **change with the selected empire**. This file sets the panel arrangement, the clean-up rules, the per-empire skin contract, the HUD side of mouse helm and the play-field overlays. It refines the "Layout overview" sketch in `hud-spec.md` and the regions in `style-guide.md` §1, which were drawn before this research.
 
@@ -271,8 +271,10 @@ The HUD draws these from the `ViewModel` and sends `Command`s; it does not compu
 | Field | Meaning |
 | --- | --- |
 | helm mode | `none`, `heading` (a persistent heading order is active) or `het` (a High-Energy Turn is pending or running) |
-| remaining turn | signed Q16.16 angle from the current nose to the ordered bearing; sign is the turn direction |
+| remaining turn | signed i32 in **16-bit angle units** (65536 = one full turn), the same units as `engine/sim/heading.ts`. Sign is the turn direction. This is **not** Q16.16 (the position and velocity fixed-point scale). The UI stopgap `remainingArc16` in `web/src/heading-wedge.ts` already returns this unit, so when the sim fills the field the wedge can use it as a direct replacement. |
 | HET delay | ticks left before a pending HET executes |
+
+A HET turn angle, when Combat publishes it, is also a signed i32 in 16-bit angle units, not Q16.16.
 
 There is **no tracked-target id**: a heading order never follows a ship. The only bearing the UI handles is the one it sends: a click is turned into one uint16 heading with the shared integer `atan2` (`web/src/helm-aim.ts`) and sent as `orderHeading`; from then on the wedge reads the sim's values only.
 
@@ -284,7 +286,20 @@ There is **no tracked-target id**: a heading order never follows a ship. The onl
 | **Turn-rate indicator** | Lower display, right of the speed bar: a small horizontal gauge of current turn rate vs the limit at this speed, with the turn mode as text | `HelmView.turnRateLimit16PerTick`, proposed `turnRateNow16PerTick`, turn mode | — |
 | **Speed control** | Lower display speed bar. Click or drag sets the desired-speed marker; wheel over the bar steps it; keys per `keymap.md`. A "max for power" tick shows on the bar. | `HelmView.speed`, `speedOrdered`, `speedMaxForPower` | `setSpeed` |
 | **Helm page** | Officer MFD Helm page: a 3×3 grid of arrow buttons plus **Camera** and **Go**, with no compass (per CE capture, 2026-11-24). The arrows are High-Energy Turn (HET) buttons and stay disabled until Combat's HET sim PR lands; so does Go. Camera cycles the camera. | `HelmView` helm mode and HET delay | `view.camera` now. HET command shape comes with Combat's HET PR |
-| **Shields** | Ship schematic: in battle a **six-segment ring**, one segment per facing, labelled with Combat's facing names, each showing that facing's own value. No doubled or summed total is shown (per CE capture, 2026-11-24). | `self.shields` | facing click: reinforce |
+| **Shields** | Ship schematic: in battle a **six-segment ring**, one segment per facing. Facings start at the bow and go clockwise as seen from above; each keeps its original shield number (Combat, Q17, 2026-11-24). The ring is labelled 1–6; tooltips use the short names in the table below. Each segment shows that facing's own value. No doubled or summed total is shown (per CE capture, 2026-11-24). | `self.shields` | facing click: reinforce |
+
+**Shield facings (Combat, Q17, 2026-11-24).** Index 0 is the bow. Clockwise from above. Column names are the exact CE headers, with spaces around the underscore. `shieldForwardSide` and `shieldAftSide` are alternative lookup keys for the two side columns.
+
+| Index | Ring label | Tooltip | CE column | Parser role |
+| --- | --- | --- | --- | --- |
+| 0 | 1 | Front (F) | `Shield 1` | — |
+| 1 | 2 | Front right (FR) | `Shield 2 _ 6` | `shieldForwardSide` |
+| 2 | 3 | Rear right (RR) | `Shield 3 _ 5` | `shieldAftSide` |
+| 3 | 4 | Rear (R) | `Shield 4` | — |
+| 4 | 5 | Rear left (RL) | `Shield 3 _ 5` | `shieldAftSide` |
+| 5 | 6 | Front left (FL) | `Shield 2 _ 6` | `shieldForwardSide` |
+
+The shiplist identity formula uses those same names: `Shield Total = Shield 1 + 2×Shield 2 _ 6 + 2×Shield 3 _ 5 + Shield 4`. The 2× is because each side column is two facings, not a scale factor on a single facing. The HUD ring must not show that doubled sum; each segment shows its own facing.
 
 Pointer rules:
 
@@ -298,10 +313,10 @@ Pointer rules:
 
 1. Plain left-click steers: one persistent `orderHeading` toward the clicked point, on a hostile too, replaced by the next click. No target-follow (Q9). Right-click under 4 logical px targets and never steers (D1).
 2. No camera action is bound to the right button, including right-drag. Orbit is middle-drag and Alt+left-drag, equal and both remappable; neither starts on a plain left-press.
-3. Clicks on any HUD panel never reach helm; the helm only sends `Command`s and never predicts turns. The wedge reads `HelmView` (mode, signed Q16.16 remaining turn, HET delay); the UI never computes a bearing beyond the one click it sends.
+3. Clicks on any HUD panel never reach helm; the helm only sends `Command`s and never predicts turns. The wedge reads `HelmView` (mode, remaining turn as a signed i32 in 16-bit angle units, HET delay); the UI never computes a bearing beyond the one click it sends.
 4. The turn wedge is orange, dark red from about 150° of remaining angle, with a full-opacity edge stroke. It does not use remaining time or the empire accent.
 5. Helm panel: 3×3 HET arrows plus Camera and Go, no compass. Arrows and Go stay disabled until Combat's HET sim PR.
-6. Shields: six-segment ring labelled by Combat's facings, no doubled total.
+6. Shields: six-segment ring labelled 1–6 per Combat Q17 (Front through Front left, clockwise from the bow), no doubled total.
 
 ---
 
@@ -433,7 +448,7 @@ An empire accent may never appear in the field itself, so a player can't mistake
 
 **Engine / Combat**
 
-8. Land the `HelmView` contract in §5: helm mode (`none`/`heading`/`het`), the signed Q16.16 remaining turn and HET delay ticks, all filled by the sim, with no tracked-target id. Until then the wedge derives the remaining angle from `self.heading16` and the ordered heading in the view. `turnRateNow16PerTick` for the turn-rate gauge stays open.
+8. Land the `HelmView` contract in §5: helm mode (`none`/`heading`/`het`), the remaining turn as a signed i32 in 16-bit angle units (65536 = full turn, same as `engine/sim/heading.ts`, **not** Q16.16) and HET delay ticks, all filled by the sim, with no tracked-target id. A HET turn angle, when Combat publishes it, uses the same 16-bit units. Until then the wedge derives the remaining angle from `self.heading16` and the ordered heading in the view via `remainingArc16`, which already returns those units, so the swap is a direct replacement. `turnRateNow16PerTick` for the turn-rate gauge stays open.
 9. ~~A `setCourseTo(ship)` command, or does left-click on a hostile send a plain heading order?~~ **Resolved (verified on CE 2.670):** a **persistent heading order, no target-follow**. A left-click on the tactical view or the sensor map, including a click on a hostile, sends `orderHeading` toward the clicked bearing. The ship turns the short way at its table turn rate until it arrives. A new click replaces the order. Right-click never steers. There is no track-a-ship verb.
 10. HET command shape, from Combat's HET sim PR. The 3×3 helm arrows are HET buttons and stay disabled until it lands. Do not treat them as ordinary turns.
 
@@ -458,4 +473,4 @@ An empire accent may never appear in the field itself, so a player can't mistake
 
 **Combat**
 
-17. Facing labels for the six-segment shield ring. The ring follows Combat's six facings (`docs/rules/shiplist-mapping.md`: facing 0 = front, clockwise). Confirm the short label for each facing.
+17. ~~Facing labels for the six-segment shield ring.~~ **Resolved 2026-11-24 (Combat, Q17):** six facings start at the bow and go clockwise as seen from above; each keeps its original shield number. Ring labels 1–6, tooltips Front (F) through Front left (FL), exact CE column names (`Shield 2 _ 6`, `Shield 3 _ 5`, spaces around the underscore) and parser roles (`shieldForwardSide`, `shieldAftSide`) are in the §5 table.
