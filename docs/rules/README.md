@@ -11,6 +11,7 @@ Clean-room. These docs describe mechanisms in our own words. Synthetic fixtures 
 | [reason-codes.md](reason-codes.md) | `source: "rules"` reason codes. Copied later into `docs/engine/diagnostics.md`. |
 | [mission-entry-points.md](mission-entry-points.md) | `damageSystem`, `damageShield`, `repairSystem`, `setShields`, `setEnergy`, and `ruleResult`. |
 | [fidelity-risk.md](fidelity-risk.md) | What #34 still has to verify, and how. |
+| [review-75-76.md](review-75-76.md) | Rule calls from #75 and #76 for Combat Designer review. Photons fly; #75 hit them on the fire tick. |
 | [tests/](tests/README.md) | Executable JSON cases. `node tools/check-rules-fixtures.mjs`. |
 
 Machine tables live in [`data/`](data/). The checker loads those files, so the JSON is the source the tests execute. The markdown restates them.
