@@ -5,6 +5,8 @@
  * cost of its own takes costFallback. Every other empty cost row stays 0.
  */
 import constants from '../../docs/rules/data/constants.json' with { type: 'json' };
+import measured from '../../docs/rules/data/measured.json' with { type: 'json' };
+import turns from '../../docs/rules/data/turn-modes.json' with { type: 'json' };
 import table from '../../docs/rules/data/weapon-arcs.json' with { type: 'json' };
 
 /** One rule point, stored as hundredths so a two-decimal move cost stays exact. */
@@ -20,11 +22,44 @@ export const TURN_H = 3;
 export const TURN_UNVERIFIED = 4;
 
 /**
- * Yaw cap for a letter that has no playtest rate.
- * Same integer as TEST-C. Documented in docs/rules/data/turn-modes.json.
- * It is not a measured Community Edition rate.
+ * Yaw cap for a letter that has no measured rate.
+ * Read from turn-modes.json. It is not a measured Community Edition rate.
  */
-export const FALLBACK_YAW_PER_TICK = 2000;
+export const FALLBACK_YAW_PER_TICK = requireYaw(turns.fallbackMaxYawPerTick, 'fallback yaw');
+
+/** Stable ids for AA and A–G so a measured value does not renumber the others. */
+const MEASURED_TURN_ID: Readonly<Record<string, number>> = {
+  AA: 5,
+  A: 6,
+  B: 7,
+  C: 8,
+  D: 9,
+  E: 10,
+  F: 11,
+  G: 12,
+};
+
+function requireYaw(value: number, name: string): number {
+  if (!Number.isInteger(value) || value < 0) throw new Error(name);
+  return value;
+}
+
+const MEASURED_LETTERS = ['AA', 'A', 'B', 'C', 'D', 'E', 'F', 'G'] as const;
+
+function measuredYawTable(raw: Readonly<Record<string, number>>): Map<number, number> {
+  const out = new Map<number, number>();
+  for (const letter of MEASURED_LETTERS) {
+    if (!Object.prototype.hasOwnProperty.call(raw, letter)) continue;
+    out.set(MEASURED_TURN_ID[letter], requireYaw(raw[letter] ?? -1, `measured turn ${letter}`));
+  }
+  return out;
+}
+
+const FILE_MEASURED_YAW = measuredYawTable(measured.turnYaw.measuredMaxYawPerTick);
+
+function syntheticYaw(letter: 'TEST-A' | 'TEST-C' | 'H'): number {
+  return requireYaw(turns.modes[letter].maxYawPerTick, letter);
+}
 
 export const INTERNAL_PHASER = 1;
 export const INTERNAL_PHOTON = 2;
@@ -292,17 +327,40 @@ export function arcDef(id: number): ArcDef | undefined {
   return ARCS[id - 1];
 }
 
-export function turnModeId(letter: string): number {
-  if (letter === 'TEST-A') return TURN_TEST_A;
-  if (letter === 'TEST-C') return TURN_TEST_C;
-  if (letter === 'H') return TURN_H;
-  if (
-    letter === 'AA' || letter === 'A' || letter === 'B' || letter === 'C' ||
-    letter === 'D' || letter === 'E' || letter === 'F' || letter === 'G'
-  ) {
-    return TURN_UNVERIFIED;
+export interface TurnLetter {
+  readonly id: number;
+  readonly yaw: number;
+  /** 1 when the letter still uses the shared fallback and spawn emits turnModeUnverified. */
+  readonly unverified: number;
+}
+
+/**
+ * Resolve a turn letter. `measured` is the override table. An empty table
+ * keeps every CE letter on the shared fallback.
+ */
+export function classifyTurnLetter(letter: string, measuredYaw: Readonly<Record<string, number>>): TurnLetter {
+  if (letter === 'TEST-A') return { id: TURN_TEST_A, yaw: syntheticYaw('TEST-A'), unverified: 0 };
+  if (letter === 'TEST-C') return { id: TURN_TEST_C, yaw: syntheticYaw('TEST-C'), unverified: 0 };
+  if (letter === 'H') return { id: TURN_H, yaw: syntheticYaw('H'), unverified: 0 };
+  const id = MEASURED_TURN_ID[letter];
+  if (id !== undefined && Object.prototype.hasOwnProperty.call(measuredYaw, letter)) {
+    return { id, yaw: requireYaw(measuredYaw[letter] ?? -1, letter), unverified: 0 };
   }
-  return TURN_UNVERIFIED;
+  return { id: TURN_UNVERIFIED, yaw: FALLBACK_YAW_PER_TICK, unverified: 1 };
+}
+
+export function turnModeId(letter: string): number {
+  return classifyTurnLetter(letter, measured.turnYaw.measuredMaxYawPerTick).id;
+}
+
+/** Per-tick yaw cap. Unmeasured letters, and any other mode id, use the fallback. */
+export function turnYawCap(mode: number): number {
+  if (mode === TURN_TEST_A) return syntheticYaw('TEST-A');
+  if (mode === TURN_TEST_C) return syntheticYaw('TEST-C');
+  if (mode === TURN_H) return syntheticYaw('H');
+  const measuredCap = FILE_MEASURED_YAW.get(mode);
+  if (measuredCap !== undefined) return measuredCap;
+  return FALLBACK_YAW_PER_TICK;
 }
 
 export function turnImmobile(mode: number): number {
@@ -312,9 +370,9 @@ export function turnImmobile(mode: number): number {
 /**
  * 1 when speed and yaw may proceed.
  * Unverified letters use FALLBACK_YAW_PER_TICK rather than refusing the order.
+ * A letter with a measured cap uses that cap.
  */
 export function turnHasRate(mode: number): number {
-  return mode === TURN_TEST_A || mode === TURN_TEST_C || mode === TURN_H || mode === TURN_UNVERIFIED
-    ? 1
-    : 0;
+  if (mode === TURN_TEST_A || mode === TURN_TEST_C || mode === TURN_H || mode === TURN_UNVERIFIED) return 1;
+  return FILE_MEASURED_YAW.has(mode) ? 1 : 0;
 }

@@ -1,9 +1,11 @@
 /**
  * Bind a parsed shiplist row into duel-slice ship state.
- * The parser keeps file units. Scale factors from docs/rules are applied here:
- * each shield cell ×2 after the six-facing fan-out, warp side ×2, warp centre ×1.
+ * The parser keeps file units. Shield side-column factor, end factor, and
+ * facing pairing come from docs/rules/data/measured.json. A null override
+ * keeps today's fallback. Warp side ×2 and warp centre ×1 stay here.
  * Move cost is parsed from the raw cell into hundredths. No float conversion.
  */
+import measured from '../../docs/rules/data/measured.json' with { type: 'json' };
 import type { Diagnostic } from '../../tools/formats/diagnostics.ts';
 import type { ShiplistRow } from '../../tools/formats/shiplist.ts';
 import {
@@ -162,6 +164,58 @@ export function parseHundredths(text: string): number | null {
   return sign < 0 ? -hundredths : hundredths;
 }
 
+export interface ShieldPairing {
+  readonly front: readonly number[];
+  readonly forwardSide: readonly number[];
+  readonly aftSide: readonly number[];
+  readonly rear: readonly number[];
+}
+
+export interface ShieldMeasure {
+  readonly sideColumnFactor: number | null;
+  readonly endFactor: number | null;
+  readonly pairing: ShieldPairing | null;
+}
+
+function wholeFactor(value: number | null, fallback: number, name: string): number {
+  const chosen = value == null ? fallback : value;
+  if (!Number.isInteger(chosen) || chosen < 0) throw new Error(name);
+  return chosen;
+}
+
+function placeFacing(out: number[], index: number, points: number): void {
+  if (!Number.isInteger(index) || index < 0 || index > 5 || out[index] !== -1) throw new Error('shield pairing');
+  out[index] = points;
+}
+
+/**
+ * Fan four file cells onto six facings, then apply the factors.
+ * `measure` null fields use the fallbacks in measured.json.
+ */
+export function shieldMaxFromCells(
+  front: number,
+  forward: number,
+  aft: number,
+  rear: number,
+  measure?: ShieldMeasure,
+): number[] {
+  const source = measure ?? {
+    sideColumnFactor: measured.shields.sideColumnFactor,
+    endFactor: measured.shields.endFactor,
+    pairing: measured.shields.pairing,
+  };
+  const side = wholeFactor(source.sideColumnFactor, measured.shields.fallbackSideColumnFactor, 'side column factor');
+  const end = wholeFactor(source.endFactor, measured.shields.fallbackEndFactor, 'end factor');
+  const pairing = source.pairing ?? measured.shields.fallbackPairing;
+  const out = [-1, -1, -1, -1, -1, -1];
+  for (const index of pairing.front) placeFacing(out, index, front * end);
+  for (const index of pairing.forwardSide) placeFacing(out, index, forward * side);
+  for (const index of pairing.aftSide) placeFacing(out, index, aft * side);
+  for (const index of pairing.rear) placeFacing(out, index, rear * end);
+  if (out.some((value) => value < 0)) throw new Error('shield pairing');
+  return out;
+}
+
 function wholeCell(columns: readonly string[], raw: readonly string[], aliases: readonly string[], fallback: number): number {
   const text = cell(columns, raw, aliases);
   if (text === undefined) return fallback;
@@ -186,7 +240,7 @@ export function bindShiplistRow(
   const forward = wholeCell(columns, raw, ['shield 2', 'shield 2 _ 6', 'shield forward side', 'forward side'], 0);
   const aft = wholeCell(columns, raw, ['shield 3', 'shield 3 _ 5', 'shield aft side', 'aft side'], 0);
   const rear = wholeCell(columns, raw, ['shield 4', 'shield rear', 'rear shield'], 0);
-  const shieldsMax = [front * 2, forward * 2, aft * 2, rear * 2, aft * 2, forward * 2];
+  const shieldsMax = shieldMaxFromCells(front, forward, aft, rear);
   const warpSide = wholeCell(columns, raw, ['warp side', 'side warp', 'r_l_warp'], 0);
   const warpCenter = wholeCell(columns, raw, ['warp center', 'warp centre', 'c_warp'], 0);
   const moveText = cell(columns, raw, ['move cost']);

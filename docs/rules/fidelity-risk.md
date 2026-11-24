@@ -11,7 +11,7 @@ The duel slice in [`duel-slice.md`](duel-slice.md) is a mechanism spec with synt
 Uncertain, and marked pending playtest in the spec:
 
 - How many seconds one CE rules-turn lasts. The unit is seconds, and sim-core converts at 30 ticks per second into a whole number of ticks. The placeholder is 30 seconds.
-- Whether shield file values and side-warp ratings are doubled in CE 2.670. The scale table follows the SFC1-lineage note in [`docs/formats/shiplist.md`](../formats/shiplist.md) and is unverified on our baseline.
+- Whether shield file values and side-warp ratings are doubled in CE 2.670. The scale table follows the SFC1-lineage note in [`docs/formats/shiplist.md`](../formats/shiplist.md) and is unverified on our baseline. The side-column factor, the front/rear factor, and the side-column pairing are the null overrides in [`data/measured.json`](data/measured.json); today's fallbacks stay in force, and `turnModeUnverified` still fires for a letter with no measured yaw.
 - Pay order when the ship asks for more energy than it has, and whether batteries dump freely or on a delay.
 - Whether specific (per-facing) reinforcement exists in CE, or only a general pool. The HUD asks the same question.
 - Shield facing edges. The duel slice bins the uint16 circle into six facings. CE may use model-specific cones.

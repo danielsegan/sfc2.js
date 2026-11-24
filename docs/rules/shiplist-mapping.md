@@ -95,7 +95,7 @@ Canonical copy: [`data/scale-factors.json`](data/scale-factors.json). The loader
 
 | Source | Factor | Engine result | Verification |
 | --- | --- | --- | --- |
-| Each shield file cell, after fan-out | ×2 | `shieldsMax[i]` | Unverified on CE 2.670. Recorded from the SFC1-lineage note in the shiplist spec. |
+| Each shield file cell, after fan-out | ×2 | `shieldsMax[i]` | Unverified on CE 2.670. The live side-column factor, end factor, and pairing are [`data/measured.json`](data/measured.json). Null overrides keep this ×2 and the pairing below. |
 | `warpSide` | ×2 | Side-engine term of `power.warp` | Unverified on CE 2.670. The file stores one side rating; the model treats two engines. |
 | `warpCenter` | ×1 | Centre-engine term, added to the side term | |
 | `impulse`, `apr`, `battery` | ×1 | `power` fields | |

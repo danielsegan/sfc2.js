@@ -9,7 +9,7 @@
       "source": "shieldFileValue",
       "factor": 2,
       "engine": "shields[0..5] maximum, after fan-out",
-      "note": "Each of the four file cells is multiplied by 2. The two side cells are written to two indices each."
+      "note": "Each of the four file cells is multiplied by 2. The two side cells are written to two indices each. The live side-column factor, end factor, and pairing are the fallbacks in measured.json until an override is set."
     },
     {
       "source": "warpSide",
