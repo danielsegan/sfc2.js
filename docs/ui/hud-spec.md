@@ -273,9 +273,9 @@ interface HelmView {
 }
 ```
 
-**Drawing.** Vertical speed tape with the ordered speed caret and a "max for current power" marker; compass rose with current and ordered heading, with an arc showing what can be reached within the turn limit.
+**Drawing.** Vertical speed tape with the ordered speed caret and a "max for current power" marker. The console helm panel is a 3×3 of arrow buttons plus Orbit and Go. The turn itself is a wedge in the 3D view from the current nose to the ordered heading, coloured by the angle still left.
 
-**Interactions.** `W/S` or `+/-` raises or lowers ordered speed; `A/D` turn left or right; `X` all stop; `R` reverse; click the compass to set ordered heading; `E` erratic maneuvers if supported. All of these send `setSpeed` / `setHeading` / `helmToggle`.
+**Interactions.** `W/S` or `+/-` raises or lowers ordered speed; `A/D` turn left or right; `X` all stop; `R` reverse; left-click in the 3D view sets a fixed ordered heading; `E` erratic maneuvers if supported. All of these send `setSpeed` / `setHeading` / `helmToggle`. The arrow buttons stay disabled until the high-energy turn exists.
 
 **Accessibility.** Numbers are always visible; announced on change only when the player requests it (no spam).
 

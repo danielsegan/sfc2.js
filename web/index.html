@@ -6,10 +6,11 @@
     <title>SFC2.js — tactical duel</title>
     <link rel="stylesheet" href="./src/style.css" />
   </head>
-  <body>
+  <body data-empire="fed">
     <header class="top">
       <div class="brand">
-        <img src="./art/hull-glyph.svg" width="28" height="28" alt="" />
+        <img id="empire-mark" src="./art/skins/fed/mark.svg" width="16" height="16" alt="" />
+        <span id="empire-code" class="empire-code">FED</span>
         <div>
           <p class="wordmark">SFC2.js</p>
           <p class="sub">Skirmish</p>
@@ -17,6 +18,23 @@
       </div>
       <p id="source" class="source">Synthetic fixture</p>
       <div class="top-actions">
+        <label>UI scale
+          <select id="ui-scale">
+            <option value="1" selected>1×</option>
+            <option value="1.25">1.25×</option>
+            <option value="1.5">1.5×</option>
+            <option value="1.75">1.75×</option>
+            <option value="2">2×</option>
+            <option value="2.25">2.25×</option>
+            <option value="2.5">2.5×</option>
+            <option value="2.75">2.75×</option>
+            <option value="3">3×</option>
+            <option value="3.25">3.25×</option>
+            <option value="3.5">3.5×</option>
+            <option value="3.75">3.75×</option>
+            <option value="4">4×</option>
+          </select>
+        </label>
         <label>Time scale
           <select id="scale">
             <option value="1">1×</option>
@@ -105,7 +123,7 @@
         <h2>Log</h2>
         <ol id="log"></ol>
       </section>
-      <p id="keys" class="keys">WASD helm · wheel zoom · middle-drag or Alt-drag orbit · right-click target · V camera · Keys to rebind</p>
+      <p id="keys" class="keys">Left-click sets a heading · right-click targets · middle-drag or Alt-drag orbits · Keys to rebind</p>
       <p id="notice" class="keys" role="status"></p>
     </div>
     <section id="console" aria-label="Helm console">
@@ -151,17 +169,31 @@
       </section>
       <section class="plate" aria-label="Helm">
         <h2>Helm</h2>
+        <div class="helm-grid" role="group" aria-label="High-energy turn buttons, disabled until a later sim change">
+          <button type="button" id="helm-nw" disabled title="High-energy turn is a later sim change.">↖</button>
+          <button type="button" id="helm-n" disabled title="High-energy turn is a later sim change.">↑</button>
+          <button type="button" id="helm-ne" disabled title="High-energy turn is a later sim change.">↗</button>
+          <button type="button" id="helm-w" disabled title="High-energy turn is a later sim change.">←</button>
+          <button type="button" id="helm-hold" disabled title="High-energy turn is a later sim change.">·</button>
+          <button type="button" id="helm-e" disabled title="High-energy turn is a later sim change.">→</button>
+          <button type="button" id="helm-sw" disabled title="High-energy turn is a later sim change.">↙</button>
+          <button type="button" id="helm-s" disabled title="High-energy turn is a later sim change.">↓</button>
+          <button type="button" id="helm-se" disabled title="High-energy turn is a later sim change.">↘</button>
+        </div>
         <p class="read"><span>Speed</span> <span id="speed" class="num">0</span></p>
         <p class="read"><span>Ordered</span> <span id="speed-ordered" class="num">0</span></p>
         <p class="read"><span>Heading</span> <span id="heading" class="num">0</span></p>
+        <p class="read"><span>Ordered heading</span> <span id="heading-ordered" class="num">—</span></p>
+        <p class="read"><span>Turn ticks</span> <span id="turn-ticks" class="num">—</span></p>
         <p class="read"><span>Tick</span> <span id="tick" class="num">0</span></p>
         <p class="read"><span>Plan</span> <span id="plan" class="num">0</span> t</p>
         <label class="step">Ordered speed
           <input id="ordered-speed" type="number" min="0" max="32" step="1" value="4" />
         </label>
         <div class="presets">
+          <button type="button" id="helm-orbit" data-action="view.camera">Orbit</button>
+          <button type="button" id="helm-go" disabled title="Go waits for a later helm change. Speed stays on the ordered-speed control.">Go</button>
           <button type="button" data-action="helm.stop">Stop</button>
-          <button type="button" data-action="view.camera">Camera</button>
         </div>
       </section>
       </div>

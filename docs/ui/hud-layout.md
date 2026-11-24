@@ -12,7 +12,7 @@ Related files:
 
 **Decisions (Daniel, 2026-11-24):**
 
-- **D1 Mouse:** the original scheme is the default. Left-click in the 3D view steers, left-click on a hostile sets course at it, and right-click targets. Camera orbit must not use right-click (§5).
+- **D1 Mouse:** the original scheme is the default. Left-click in the 3D view or on the sensor map sets a persistent fixed heading toward the clicked point. A ship under the cursor is only that bearing. Right-click targets. Camera orbit must not use right-click (§5).
 - **D2 Mini map:** an officer page only. It can't be pinned, in any mode including Wide (§3.2).
 - **D3 Scaling:** fractional UI scaling is allowed, 1.0–4.0× (§6).
 - `asset-pipeline.md`: sprite slots and the per-slot source fallback.
@@ -74,8 +74,8 @@ Four sections (M2 p. 108):
 
 ### 2.4 3D space view
 
-- **Turn by left-clicking** where you want to head. Left-clicking an enemy ship sets a course straight at it (M2 pp. 109–110).
-- While turning, an **arc is drawn between the current and the desired heading**, colour-coded in four bands by how long the turn will take, from a quick correction to a turn of more than 90° (M2 p. 110).
+- **Turn by left-clicking** where you want to head (M2 pp. 109–110). CE 2.670 playtest: the click stores a fixed heading toward that point. A ship under the cursor supplies the bearing only. The ship keeps turning the short way at its table turn rate until it arrives or a later click replaces the heading.
+- While turning, an **arc is drawn between the current and the desired heading** (M2 p. 110). CE 2.670 playtest: the colour bands follow the angle still left, orange for a smaller turn and dark red from about 150°. They are not remaining-time bands.
 - **Right-click** a unit or its tag to target it. A reticle appears on the target and the target schematic updates (M2 p. 111).
 - Floating **unit tags** show class or name, range, speed and damage per volley, depending on the HUD information level set by three keys (M2 pp. 111–112).
 - Off-screen targets get an edge icon (Q1, SFC1; **TO VERIFY** in SFC2).
@@ -130,7 +130,7 @@ Our drawing, not a trace. Every position above is the working assumption from §
 2. **Officer MFD is paged.** One page at a time, chosen from the strip, in the original page order. The tactical map and message log are pages, as in the original.
 3. **The interface bar can be hidden** with one action (`hud.toggleInterfaceBar`, binding to be added to `keymap.md`). The upper and lower displays stay.
 4. **Shield arcs sit around the ship schematic** and hardpoint icons sit on it, with the facing-the-target highlight.
-5. **Mouse grammar in the 3D view:** left-click sets heading, left-click on a hostile sets course at it, right-click targets (§5).
+5. **Mouse grammar in the 3D view:** left-click sets a fixed heading toward the clicked point, right-click targets (§5). A ship under the cursor is a bearing, not a tracked target.
 6. **The speed bar with a desired-speed marker**, and **power vs systems bars on one scale**.
 7. **Panel names and icons stay recognisable.** Labels use the original wording paraphrased only where needed (strings come from the player's install where available, `hud-spec.md` §12a).
 
@@ -257,27 +257,27 @@ The HUD draws these from the `ViewModel` and sends `Command`s; it does not compu
 
 | Affordance | Where in the preserved layout | Reads | Sends |
 | --- | --- | --- | --- |
-| **Heading cursor** | 3D view. When the pointer is over open space, the cursor becomes a helm reticle and a faint **target-heading ghost** (a line from own ship to the point, projected on the movement plane) previews the order. Over a hostile, the ghost snaps to it and the cursor shows "course to". Over any HUD panel the helm cursor is off. | `self` pose, contacts (blended) | left-click: `setHeading` (or `setCourseTo` a ship, **TO VERIFY** naming with Engine) |
-| **Ordered heading ghost** | 3D view, anchored to own ship, until the heading is reached | `HelmView.headingOrdered16` | — |
-| **Turn arc** | 3D view, between current and ordered heading, as the original does. Four bands by remaining turn time, each with **colour + dash pattern**, plus an optional numeric "s to heading" label | proposed `HelmView.turnTicksRemaining` (supplied by the sim, not derived by the HUD) and band thresholds from Combat | — |
+| **Heading cursor** | 3D view. A left-click stores a fixed heading toward the clicked point, including when a ship is under the cursor. Over any HUD panel the click does not steer. | `self` pose, contacts (blended, for the bearing only) | left-click: `setHeading` |
+| **Ordered heading wedge** | 3D view, from the current nose to the ordered bearing, drawn as soon as the click lands and shrinking as the ship turns | `self.heading16` and `HelmView.headingOrdered16` | — |
+| **Turn arc colour** | The same wedge. Orange while the remaining angle is under about 150°, dark red from there up. Neutral colours, not the empire accent. Not remaining time. | the angle between current and ordered heading | — |
 | **Turn-rate indicator** | Lower display, right of the speed bar: a small horizontal gauge of current turn rate vs the limit at this speed, with the turn mode as text | `HelmView.turnRateLimit16PerTick`, proposed `turnRateNow16PerTick`, turn mode | — |
 | **Speed control** | Lower display speed bar. Click or drag sets the desired-speed marker; wheel over the bar steps it; keys per `keymap.md`. A "max for power" tick shows on the bar. | `HelmView.speed`, `speedOrdered`, `speedMaxForPower` | `setSpeed` |
-| **Helm page** | Officer MFD Helm page: emergency deceleration, erratic, HET buttons; HET free angle switches the 3D cursor to an "HET angle" mode until click or Esc | `HelmView` toggles | `helmToggle`, HET command (**TO VERIFY** with Combat) |
+| **Helm page** | Officer MFD Helm page: a 3×3 of arrow buttons, plus Orbit and Go. The arrows are disabled in this build. They become high-energy turn buttons in a later sim change. Orbit cycles the camera. Go stays disabled until that helm change. | `HelmView` toggles | `view.camera` now. HET command still **TO VERIFY** with Combat |
 
 Pointer rules:
 
 - **Hit testing order:** HUD canvas hit map → HTML tooltips/menus → 3D view. A click on a panel never reaches helm.
-- **Default mouse scheme (D1, Daniel 2026-11-24):** the original's. Left-click in the 3D view steers; left-click on a hostile sets course at it; right-click targets.
-- **Click vs drag:** a press that moves less than 4 logical px before release is a click. **Camera orbit must not take right-click.** ~~Right-drag orbits the camera~~: suggested replacements are middle-drag, or a modifier plus left-drag (for example Alt+left-drag). The final pick is the Engine Lead's. Wheel over the 3D view zooms; over the speed bar it changes speed.
-- **Pending state:** after a click, the ghost shows "ordered" style immediately (optimistic) and settles when the next snapshot confirms `headingOrdered16`; a rejected order clears it and logs the reason (`hud-spec.md` §14).
+- **Default mouse scheme (D1, Daniel 2026-11-24, CE 2.670 playtest):** the original's. Left-click in the 3D view or on the sensor map sets a persistent fixed heading toward the clicked point. A ship under the cursor is only the bearing. Right-click targets and never steers.
+- **Click vs drag:** a press that moves less than 4 logical px before release is a click. The gate is `4 * hudScale`, and `hudScale` snaps to 1.0–4.0 in 0.25 steps. **Camera orbit must not take right-click.** Middle-drag and Alt+left-drag both orbit and never steer. A plain left-press never starts an orbit. Wheel over the 3D view zooms; over the speed bar it changes speed.
+- **Pending state:** after a click, the wedge shows the ordered bearing immediately and then follows the confirmed `headingOrdered16`. A rejected order clears it and logs the reason (`hud-spec.md` §14).
 - **Keyboard parity:** every mouse helm action keeps a key path (`keymap.md`), and the HTML mirror announces the ordered heading on request.
 
 ### 5.1 Review notes for the mouse-helm PR
 
-1. Left-click in the 3D view steers; left-click on a hostile sets course at it; right-click (press without drag) targets (D1).
-2. No camera action is bound to the right button, including right-drag. Orbit uses whatever the Engine Lead picks (middle-drag or a modifier).
+1. Plain left-click steers: one fixed heading toward the clicked point. Alt+left-drag and middle-drag orbit and never steer. Right-click under 4 logical px targets and never steers (D1).
+2. No camera action is bound to the right button, including right-drag. Orbit is middle-drag and Alt+left-drag, both remappable.
 3. Clicks on any HUD panel never reach helm; the helm only sends `Command`s and never predicts turns.
-4. Turn arc bands use colour plus dash pattern, from sim-provided values.
+4. The turn wedge is coloured by remaining angle: orange under about 150°, dark red from there up. It does not use remaining time or the empire accent.
 
 ---
 
@@ -287,7 +287,7 @@ Pointer rules:
 - **Colour-blind check of the current `style-guide.md` §4.2 accents** (our own simulation, Machado-style matrices, CIELAB distance below 15 flagged): deuteranopia confuses `fed`/`ori` (very close) and `gor`/`mir`; protanopia confuses `lyr`/`gor` and `fed`/`ori`; tritanopia confuses `rom`/`hyd`, `fed`/`rom` and `fed`/`hyd`. These pairs need a `cvd` override (§4.2) or a value change; this matters most in mixed-empire skirmish views. Proposed values: in the follow-up style-guide PR.
 - **Contrast minimums:** text 4.5:1 against its plate (7:1 in high-contrast mode); accent strips, bars, frame edges and focus ring 3:1 against the adjacent plate (WCAG 1.4.11). Against `--panel-bg #0B1118`, all nine accents pass 3:1; `kli #B23A3A` is lowest at about 3.2:1, so it may not be lightened by any skin texture and is never used for text. Skin `panelBg` textures must keep text at 4.5:1 at their brightest pixel.
 - **Klingon red vs damage red:** the `kli` accent is close in hue to `--state-damage` and `--state-hostile`. Because damage always carries cross-hatch and broken outline, this is acceptable, but a `kli` plate must never use hatch patterns.
-- **UI scale range (D3, Daniel 2026-11-24):** HUD scale **1.0–4.0× in 0.25 steps**, fractional allowed. The default is the largest step that fits the 1024 × 768 logical canvas. 9-slice and vector art are rasterised at the exact scale, so they stay crisp. Bitmap plates (placeholders and HD) are sampled down from the **nearest larger plate** (2× up to 2.0, 4× above). The player's install bitmaps scale nearest-neighbour; an optional "pixel-exact" setting snaps the HUD to whole steps for them. HTML text 100–200%. Minimum rendered text stays 11 physical px.
+- **UI scale range (D3, Daniel 2026-11-24):** HUD scale **1.0–4.0× in 0.25 steps**, fractional allowed. The default is the largest step that fits the 1024 × 768 logical canvas. 9-slice and vector art are rasterised at the exact scale, so they stay crisp. Bitmap plates (placeholders and HD) are sampled down from the **nearest larger plate** (2× up to 2.0, 4× above). The player's install bitmaps scale nearest-neighbour; an optional "pixel-exact" setting snaps the HUD to whole steps for them. HTML text 100–200%. Minimum rendered text stays 11 physical px. The tactical page stores the choice as `sfc2js.uiScale.v1`.
 - **Reduced motion:** no skin animates frames; the turn arc does not pulse under `prefers-reduced-motion`.
 
 ---
@@ -408,13 +408,13 @@ An empire accent may never appear in the field itself, so a player can't mistake
 
 **Engine / Combat**
 
-8. `turnTicksRemaining`, `turnRateNow16PerTick` and turn-mode text in `HelmView`; band thresholds for the turn arc.
-9. A `setCourseTo(ship)` command, or does left-click on a hostile send a plain `setHeading`?
-10. HET command shape.
+8. `turnTicksRemaining`, `turnRateNow16PerTick` and turn-mode text in `HelmView`. The wedge colour is remaining angle, so these time fields are not the colour bands.
+9. ~~A `setCourseTo(ship)` command, or does left-click on a hostile send a plain `setHeading`?~~ **Verified on CE 2.670:** a tracking **target heading**. The click stores a fixed bearing. The ship turns the short way at its table turn rate until it arrives or a later click replaces it. A ship under the cursor is only the bearing. There is no track-a-ship verb.
+10. HET command shape. The helm arrows stay disabled until a later sim change. Do not treat them as ordinary turns.
 
 **Daniel**
 
-11. ~~Original mouse grammar as the default?~~ **Resolved 2026-11-24 (D1):** yes. Left-click steers, left-click on a hostile sets course at it, right-click targets. Orbit must not use right-click; Engine Lead picks middle-drag or a modifier.
+11. ~~Original mouse grammar as the default?~~ **Resolved 2026-11-24 (D1), verified on CE 2.670:** yes. Left-click sets a fixed heading, right-click targets. Orbit is middle-drag and Alt+left-drag, never the right button and never a plain left-press.
 12. ~~Mini map as a page only or pinnable in Wide?~~ **Resolved 2026-11-24 (D2):** officer page only, never pinned.
 12a. ~~Fractional UI scale (`modern-ux.md` Q1)?~~ **Resolved 2026-11-24 (D3):** allowed, 1.0–4.0× (§6).
 

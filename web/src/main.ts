@@ -25,7 +25,10 @@ import { createKeyTracker } from './input/keymap.ts';
 import { runAction, type CommandHost } from './commands.ts';
 import { mountKeymapDialog } from './keymap-dialog.ts';
 import { createGameAudio } from './audio-out.ts';
-import { nearestContact } from './map-geom.ts';
+import { nearestContact, mapWorldAt } from './map-geom.ts';
+import { headingToward } from './helm-aim.ts';
+import { applyEmpireSkin } from './skins/apply.ts';
+import { fitUiScale, formatUiScale } from './skins/scale.ts';
 import { shieldFacingAt } from './shield-hit.ts';
 import { fillShiplist, fillSynthetic, mountSkirmish, readSkirmish, type SlotChoice } from './skirmish-ui.ts';
 
@@ -47,6 +50,8 @@ let headingUp = false;
 let mapFull = false;
 let paused = false;
 let latest: ViewModel | null = null;
+let installVfs: Vfs | null = null;
+let pendingHeading: number | null = null;
 let audioMemory: AudioMemory = emptyAudioMemory();
 const groups: number[][] = [[0], [1], [2], [3], [4], [5]];
 const keys = createKeyTracker();
@@ -294,7 +299,9 @@ stage?.addEventListener('pointerup', (event) => {
   const gesture = fieldRelease(event.button, event.altKey, moved, hudScale);
   if (event.button === 0 || event.button === 1) orbiting = false;
   // Alt+left and middle-drag never steer, even when the press moved under 4 px.
+  if (chromePointer(event.target)) return;
   if (gesture === 'target') targetAt(event.clientX, event.clientY);
+  else if (gesture === 'steer') steerAt(event.clientX, event.clientY);
 });
 stage?.addEventListener('pointerleave', () => {
   orbiting = false;
@@ -342,18 +349,10 @@ stage?.addEventListener('wheel', (event) => {
   scene.dolly(event.deltaY > 0 ? 1.2 : -1.2);
   event.preventDefault();
 }, { passive: false });
-stage?.addEventListener('click', (event) => {
-  if (event.altKey) return;
-  const frame = mapFrame;
-  const overlay = document.getElementById('overlay');
-  if (!frame || !overlay || !latest || !frame.self) return;
-  const rect = overlay.getBoundingClientRect();
-  const x = event.clientX - rect.left;
-  const y = event.clientY - rect.top;
-  if (x < frame.left || y < frame.top || x > frame.left + frame.size || y > frame.top + frame.size) return;
-  const id = nearestContact(latest.contacts, frame.self, frame.headingUp, frame.scale, x - frame.cx, y - frame.cy);
-  if (id !== null) match.setTarget(id);
-});
+
+function chromePointer(target: EventTarget | null): boolean {
+  return target instanceof Element && target.closest('.plate, button, a, input, select, label') !== null;
+}
 
 function setSpeedFromBar(clientX: number): void {
   const bar = document.getElementById('field-speed-bar');
@@ -366,6 +365,12 @@ function setSpeedFromBar(clientX: number): void {
 }
 
 function targetAt(clientX: number, clientY: number): void {
+  const local = mapLocal(clientX, clientY);
+  if (local && mapFrame?.self && latest) {
+    const id = nearestContact(latest.contacts, mapFrame.self, mapFrame.headingUp, mapFrame.scale, local.x, local.y);
+    if (id !== null) match.setTarget(id);
+    return;
+  }
   if (!latest || !stage) return;
   const rect = stage.getBoundingClientRect();
   const points = [];
@@ -382,6 +387,61 @@ function targetAt(clientX: number, clientY: number): void {
   }
   const id = pickContact(points, clientX - rect.left, clientY - rect.top, 28);
   if (id !== null) match.setTarget(id);
+}
+
+function mapLocal(clientX: number, clientY: number): { x: number; y: number } | null {
+  const frame = mapFrame;
+  const overlay = document.getElementById('overlay');
+  if (!frame || !overlay) return null;
+  const rect = overlay.getBoundingClientRect();
+  const x = clientX - rect.left;
+  const y = clientY - rect.top;
+  if (x < frame.left || y < frame.top || x > frame.left + frame.size || y > frame.top + frame.size) return null;
+  return { x: x - frame.cx, y: y - frame.cy };
+}
+
+function ownShip(): { x: number; y: number } | null {
+  return latest?.contacts.find((contact) => contact.kind === 'ship' && contact.hostility === 'self') ?? null;
+}
+
+function bearingPoint(clientX: number, clientY: number): { x: number; y: number } | null {
+  const local = mapLocal(clientX, clientY);
+  if (local && mapFrame?.self && latest) {
+    const id = nearestContact(latest.contacts, mapFrame.self, mapFrame.headingUp, mapFrame.scale, local.x, local.y);
+    const contact = id === null ? null : latest.contacts.find((item) => item.id === id && item.kind !== 'shot');
+    if (contact) return { x: contact.x, y: contact.y };
+    return mapWorldAt(mapFrame.self, mapFrame.headingUp, mapFrame.scale, local.x, local.y);
+  }
+  if (latest && stage) {
+    const rect = stage.getBoundingClientRect();
+    const points = [];
+    for (const contact of latest.contacts) {
+      if (contact.kind === 'shot' || contact.hostility === 'self' || !contact.detected) continue;
+      const ndc = scene.projectNdc(contact.x, contact.y);
+      if (!ndc.inFront || ndc.x < -1 || ndc.x > 1 || ndc.y < -1 || ndc.y > 1) continue;
+      points.push({
+        id: contact.id,
+        x: (ndc.x * 0.5 + 0.5) * rect.width,
+        y: (1 - (ndc.y * 0.5 + 0.5)) * rect.height,
+        kind: contact.kind,
+      });
+    }
+    const id = pickContact(points, clientX - rect.left, clientY - rect.top, 28);
+    const contact = id === null ? null : latest.contacts.find((item) => item.id === id);
+    if (contact) return { x: contact.x, y: contact.y };
+  }
+  return scene.groundPoint(clientX, clientY);
+}
+
+function steerAt(clientX: number, clientY: number): void {
+  const self = ownShip();
+  if (!self) return;
+  const point = bearingPoint(clientX, clientY);
+  if (!point) return;
+  const heading = headingToward(self.x, self.y, point.x, point.y);
+  if (heading === null) return;
+  pendingHeading = heading;
+  scene.setHeadingPreview(heading);
 }
 
 function clampZoom(value: number): number {
@@ -436,6 +496,7 @@ function appendNote(note: string): void {
 
 function adoptLoaded(loaded: LoadedDuel): void {
   catalog = loaded;
+  installVfs = loaded.vfs;
   fillShipPicker(loaded);
   fillShiplist(
     loaded.candidates.map((candidate, index) => ({
@@ -487,14 +548,20 @@ function adopt(next: DuelMatch, groups: readonly Group[], nextRoster: readonly R
   match.setTimeScale(paused ? 0 : scale);
   if (source) source.textContent = note;
   document.body.dataset.ready = '0';
+  void paintSkin();
 }
 
 let last = performance.now();
 function frame(now: number): void {
   const dt = Math.min(100, now - last);
   last = now;
-  if (keys.held('helm.turnLeft')) match.orderYaw(-8000);
-  if (keys.held('helm.turnRight')) match.orderYaw(8000);
+  if (pendingHeading !== null) {
+    match.orderHeading(pendingHeading);
+    pendingHeading = null;
+  } else {
+    if (keys.held('helm.turnLeft')) match.orderYaw(-8000);
+    if (keys.held('helm.turnRight')) match.orderYaw(8000);
+  }
   if (keys.held('view.orbitLeft')) scene.orbitBy(-16, 0);
   if (keys.held('view.orbitRight')) scene.orbitBy(16, 0);
   match.frame(dt);
@@ -544,6 +611,8 @@ window.addEventListener('resize', () => {
 const pageInstall = new URLSearchParams(location.search).get('install');
 mountKeymapDialog(keys, (text) => host.note(text));
 bindVolume();
+bindUiScale();
+void paintSkin();
 void attachSounds((path) => readDevFile(pageInstall, path));
 void filesFromDevInstall(pageInstall).then(async (files) => {
   if (!files) return;
@@ -555,6 +624,29 @@ void filesFromDevInstall(pageInstall).then(async (files) => {
   }
   adoptLoaded(loaded);
 });
+
+function paintSkin(): Promise<string> {
+  const empire = roster[match.selfIndex]?.empire ?? 'Federation';
+  return applyEmpireSkin(empire, installVfs).then((text) => {
+    host.note(text);
+    return text;
+  });
+}
+
+function bindUiScale(): void {
+  const select = document.getElementById('ui-scale');
+  if (!(select instanceof HTMLSelectElement)) return;
+  const stored = localStorage.getItem('sfc2js.uiScale.v1');
+  const fitted = formatUiScale(fitUiScale(window.innerWidth, window.innerHeight));
+  const known = [...select.options].some((option) => option.value === stored);
+  select.value = stored && known ? stored : fitted;
+  const apply = () => {
+    document.documentElement.style.setProperty('--ui-scale', select.value);
+    localStorage.setItem('sfc2js.uiScale.v1', select.value);
+  };
+  select.addEventListener('change', apply);
+  apply();
+}
 
 function bindVolume(): void {
   const levels = audio.levels();

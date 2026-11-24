@@ -197,6 +197,7 @@ function paintTags(input: FieldHudInput): void {
   }
 }
 
+/** Off-screen tag mark. Follow-up: reuse the empire skin marks instead of this path. */
 function empireMark(path: string): SVGSVGElement {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('viewBox', '0 0 16 16');

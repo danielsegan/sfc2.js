@@ -90,6 +90,8 @@ export const ACTIONS: readonly ActionDef[] = [
   { id: 'view.camera', label: 'Cycle camera', group: 'View', binding: chord('KeyV') },
   { id: 'view.orbitLeft', label: 'Orbit camera left', group: 'View', hold: true, binding: chord('ArrowLeft', { alt: true }) },
   { id: 'view.orbitRight', label: 'Orbit camera right', group: 'View', hold: true, binding: chord('ArrowRight', { alt: true }) },
+  { id: 'view.orbitMiddle', label: 'Orbit camera (middle-drag)', group: 'View', binding: chord('MouseMiddle') },
+  { id: 'view.orbitAlt', label: 'Orbit camera (Alt+left-drag)', group: 'View', binding: chord('MouseLeft', { alt: true }) },
   { id: 'view.map', label: 'Toggle sensor map', group: 'View', binding: chord('KeyM') },
   { id: 'view.mapOrientation', label: 'Toggle map orientation', group: 'View', binding: chord('KeyH') },
   { id: 'view.reset', label: 'Reset camera', group: 'View', binding: chord('Home') },
@@ -103,6 +105,8 @@ const RESERVED: readonly Chord[] = [
   chord('KeyT', { ctrl: true }),
   chord('KeyN', { ctrl: true }),
   chord('KeyR', { ctrl: true }),
+  chord('MouseLeft'),
+  chord('MouseRight'),
 ];
 
 export function defaultProfile(): Profile {
@@ -135,8 +139,15 @@ export function formatChord(value: Chord | null): string {
   if (value.alt) parts.push('Alt');
   if (value.shift) parts.push('Shift');
   if (value.meta) parts.push('Meta');
-  parts.push(value.code.replace(/^Key/, '').replace(/^Digit/, ''));
+  parts.push(mouseLabel(value.code));
   return parts.join('+');
+}
+
+function mouseLabel(code: string): string {
+  if (code === 'MouseLeft') return 'Left drag';
+  if (code === 'MouseMiddle') return 'Middle drag';
+  if (code === 'MouseRight') return 'Right drag';
+  return code.replace(/^Key/, '').replace(/^Digit/, '');
 }
 
 export interface BindResult {

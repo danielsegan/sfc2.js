@@ -19,6 +19,10 @@ describe('modern keymap', () => {
     expect(actionFor(profile, chordFromEvent({ code: 'Digit1', ctrlKey: true, shiftKey: false, altKey: false, metaKey: false }))).toBe('weapons.assign1');
     expect(actionFor(profile, chordFromEvent({ code: 'KeyG', ctrlKey: false, shiftKey: true, altKey: false, metaKey: false }))).toBe('ops.repel');
     expect(formatChord(profile['helm.stop'] ?? null)).toBe('X');
+    expect(actionFor(profile, { code: 'MouseMiddle', ctrl: false, shift: false, alt: false, meta: false })).toBe('view.orbitMiddle');
+    expect(actionFor(profile, { code: 'MouseLeft', ctrl: false, shift: false, alt: true, meta: false })).toBe('view.orbitAlt');
+    expect(actionFor(profile, { code: 'MouseLeft', ctrl: false, shift: false, alt: false, meta: false })).toBeNull();
+    expect(actionFor(profile, { code: 'MouseRight', ctrl: false, shift: false, alt: false, meta: false })).toBeNull();
   });
 
   it('swaps a conflict and refuses a browser-reserved chord', () => {

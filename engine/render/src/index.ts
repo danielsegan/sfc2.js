@@ -31,4 +31,6 @@ export {
 
 export { applyShipPose, createShipStage, frameDistance, type ShipStage } from './ship-stage.ts';
 
+export { loadInterfaceBitmap, type InterfaceBitmap } from './interface-bitmap.ts';
+
 export { syntheticViewerFiles } from './synthetic-viewer-install.ts';

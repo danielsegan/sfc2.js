@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 48" fill="none">
+  <!-- Original placeholder plate. Not taken from the game. -->
+  <path d="M8 0H96V40L88 48H0V8Z" stroke="#9B6BD1" stroke-width="1.4"/>
+  <rect x="10" y="8" width="28" height="14" stroke="#9B6BD1"/><rect x="46" y="26" width="22" height="12" stroke="#9B6BD1"/><circle cx="78" cy="14" r="1.2" fill="#9B6BD1"/><circle cx="84" cy="18" r="1.2" fill="#9B6BD1"/>
+</svg>
