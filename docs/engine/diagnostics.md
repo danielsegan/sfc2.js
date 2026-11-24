@@ -71,6 +71,28 @@ interface Diagnostic {
 | bmp | `orphanSelfIllum` | warning | Formats | `{ illumPath }`. A `_<token>i` file with no base in the same directory |
 | bmp | `missingTexture` | error | Formats | `{ path }`. Requested install-relative path is not in the VFS |
 | bmp | `selfIllumSizeMismatch` | info | Formats | `{ baseWidth, baseHeight, illumWidth, illumHeight }`. Both maps are kept and sampled by UV |
+| mod | `emptyFile` | error | Formats | Zero-byte `.mod`. No `location` |
+| mod | `fileTooLarge` | error | Formats | `{ size, limit }`. Over 8 MiB; nothing is parsed |
+| mod | `badSignature` | error | Formats | The first four bytes are not a printable chunk id |
+| mod | `truncated` | error | Formats | `{ size?, expected? }`. Header, payload, or vertex block is short; bytes already read are kept |
+| mod | `missingHeader` | error | Formats | No `MDLS` chunk |
+| mod | `badCount` | error | Formats | `{ field, value }`. Negative, or over the ceiling (65,536 vertices or faces, 8 LODs, 256 materials, 4,096 points) |
+| mod | `unknownChunk` | warning | Formats | `{ type, size }`. Skipped. Also listed on `unknownChunks` |
+| mod | `duplicateChunk` | warning | Formats | `{ type }`. The first `STRS`, `MATS`, `PNTS`, `MDLS`, or `VTXS` wins |
+| mod | `raggedChunk` | warning | Formats | `{ type }`. `PNTS` or `MATS` did not end on a record boundary |
+| mod | `lodCountRange` | warning | Formats | `{ declared }`. `totalLODs` outside 1..5 |
+| mod | `lodCountMismatch` | warning | Formats | `{ declared, meshes }`. `MOD0` count differs from `totalLODs` |
+| mod | `faceCountMismatch` | warning | Formats | `{ declared, read, lod }` |
+| mod | `faceVertexCount` | warning | Formats | `{ count, min, max }`. A face whose corner count is not 3. Stored, not drawn |
+| mod | `vertexIndexOutOfRange` | warning | Formats | `{ count }` |
+| mod | `materialIndexOutOfRange` | warning | Formats | `{ count }` |
+| mod | `badStringOffset` | warning | Formats | `{ count }`. Name offset outside the string pool, or no NUL |
+| mod | `missingTextureName` | warning | Formats | `{ which }`. `diffuse` or `luminance` flag set and the resolved name is empty |
+| mod | `badNumber` | warning | Formats | `{ count }`. Non-finite floats are kept; the mesh builder writes 0 |
+| mod | `orphanChunk` | warning | Formats | `{ type }`. `VTXS` or `POLY` outside a `MOD0` |
+| mod | `modelPathRejected` | warning | Formats | The `.mod` path is not install-relative. The path is omitted |
+| mod | `textureNameRejected` | warning | Formats | `{ reason: 'texture-name' }`. The pool string is not a single basename. The name is omitted |
+| mod | `lodOutOfRange` | warning | Formats | `{ requested, lods }` |
 | mission | `badMapBounds` | error | Engine | axis not a whole number, or outside ±8,192 range units; `location.field` names the offending value (sim-core.md §2; merged PR #52) |
 | rules | `noSuchSystem` | (ruleResult reason) | Combat | example from Combat; full list to be added by Combat |
 
@@ -85,5 +107,7 @@ Codes shared by shiplist and ftrlist: `emptyFile`, `raggedRow`, `noHeader`, `mul
 Shiplist-specific: `duplicateClassKey`, `duplicateClassName`, `crewTotalMismatch`, `shieldTotalMismatch`, `hardpointCountRange`, `missingGeometry`, `missingRefitBase`, `unknownHullType`, `unknownTurnMode`.
 
 Ftrlist-specific: `duplicateFighterType`, `missingShipRef`.
+
+Mod-specific (spec in `docs/formats/mod.md`): `emptyFile`, `fileTooLarge`, `badSignature`, `truncated`, `missingHeader`, `badCount`, `unknownChunk`, `duplicateChunk`, `raggedChunk`, `lodCountRange`, `lodCountMismatch`, `faceCountMismatch`, `faceVertexCount`, `vertexIndexOutOfRange`, `materialIndexOutOfRange`, `badStringOffset`, `missingTextureName`, `badNumber`, `orphanChunk`, `modelPathRejected`, `textureNameRejected`, `lodOutOfRange`. Layout fields the public reader stores but does not interpret stay in the data and are not given a code.
 
 `unknownWeapon` and `unknownArc` are **not** parser codes. Format parsers keep the exact file strings. They currently append the vocabulary check onto the same result, still with `source: "loader"`, because `engine/data` is not in the repo yet. The loader remains the owner of those codes.

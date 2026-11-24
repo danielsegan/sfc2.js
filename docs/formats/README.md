@@ -12,7 +12,7 @@ Status values: **spec draft** (written from public sources, unverified), **plann
 | --- | --- | --- | --- | --- | --- | --- |
 | Ship list | `assets/specs/shiplist.txt` (copy in `metaassets/`) | Engine, Combat, Missions, UI, ship viewer | [#13](https://github.com/danielsegan/sfc2-browser-edition/issues/13) | [spec draft](shiplist.md) | [parser](../../tools/formats/shiplist.ts) | no |
 | Fighter list | `assets/specs/ftrlist.txt` (copy in `metaassets/`) | Combat (fighters, PFs), UI | [#14](https://github.com/danielsegan/sfc2-browser-edition/issues/14) | [spec draft](ftrlist.md) | [parser](../../tools/formats/ftrlist.ts) | no |
-| Models | `assets/models/<folder>/*.mod`, `*_brk.mod` (break-up / damaged mesh) | Renderer, ship viewer | [#19](https://github.com/danielsegan/sfc2-browser-edition/issues/19) | planned | not started | no |
+| Models | `Assets/MODELS/<folder>/*.mod`, `*_brk.mod` (inventory spelling; case-insensitive) | Renderer, ship viewer | [#19](https://github.com/danielsegan/sfc2.js/issues/19) | [spec draft](mod.md) | [synthetic tests](../../tools/formats/src/mod.ts) | no |
 | Textures + self-illumination | BMP files next to each model (`_<n>i` glow maps) | Renderer, UI & Art | [#15](https://github.com/danielsegan/sfc2.js/issues/15) | [spec draft](bmp.md) | synthetic tests | no |
 | UI sprites | `assets/sprites/sprites.q3` | HUD, menus | — | planned | not started | no |
 | Sounds | `sounds.txt` index + WAV files | Audio | [#35](https://github.com/danielsegan/sfc2-browser-edition/issues/35) | planned | not started | no |

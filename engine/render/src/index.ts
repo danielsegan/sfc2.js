@@ -7,3 +7,5 @@ export {
   type LoadShipTextureOptions,
   type RenderTier,
 } from './ship-texture.ts';
+
+export { buildShipMesh, showShipLod, type BuildShipMeshOptions, type BuiltShipMesh } from './ship-mesh.ts';
