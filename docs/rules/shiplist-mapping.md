@@ -135,7 +135,7 @@ File slots are 1–25. The engine `slotIndex` is the file slot minus 1.
 
 ### 4.2 Shiplist weapon codes
 
-Thirty-one codes. Cost and damage rows are empty until playtest. `PLaF` is the same weapon as `PlaF`, and the same pairing holds for G, R and S. `PlaD` and `PlaI` have no `PLa` twin.
+Thirty-one codes. Cost rows in this file stay empty until playtest. The sim applies `costFallback` to a phaser or photon that has no cost of its own, so a CE hull can arm; other codes stay at cost 0 and are outside the duel. A code that is not in this table is `unknownWeapon` and is not mounted. `PLaF` is the same weapon as `PlaF`, and the same pairing holds for G, R and S. `PlaD` and `PlaI` have no `PLa` twin.
 
 | Code | Internal | Notes |
 | --- | --- | --- |

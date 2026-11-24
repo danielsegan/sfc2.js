@@ -4,6 +4,7 @@
  * each shield cell ×2 after the six-facing fan-out, warp side ×2, warp centre ×1.
  * Move cost is parsed from the raw cell into hundredths. No float conversion.
  */
+import type { Diagnostic } from '../../tools/formats/diagnostics.ts';
 import type { ShiplistRow } from '../../tools/formats/shiplist.ts';
 import {
   CLASS_FIGHTER,
@@ -169,7 +170,15 @@ function wholeCell(columns: readonly string[], raw: readonly string[], aliases: 
   return parsed;
 }
 
-export function bindShiplistRow(row: ShiplistRow, columns: readonly string[]): ShipSetup {
+/**
+ * Bind one row. A non-empty weapon code that is not in the catalog is
+ * `unknownWeapon` and is not mounted. It is not given a zero cost.
+ */
+export function bindShiplistRow(
+  row: ShiplistRow,
+  columns: readonly string[],
+  diagnostics?: Diagnostic[],
+): ShipSetup {
   const raw = row.raw;
   const front = wholeCell(columns, raw, ['shield 1', 'shield front', 'front shield'], 0);
   // CE 2.670 names the shared side cells with the paired SFB shield numbers.
@@ -198,7 +207,16 @@ export function bindShiplistRow(row: ShiplistRow, columns: readonly string[]): S
   const mounts: MountSetup[] = [];
   for (const hardpoint of row.hardpoints) {
     if (hardpoint.weapon == null || hardpoint.weapon === '') continue;
-    if (weaponId(hardpoint.weapon) === 0) continue;
+    if (weaponId(hardpoint.weapon) === 0) {
+      diagnostics?.push({
+        code: 'unknownWeapon',
+        source: 'loader',
+        severity: 'warning',
+        details: { spawnKey: row.spawnKey, slotIndex: hardpoint.slotIndex, code: hardpoint.weapon },
+        location: { line: row.line },
+      });
+      continue;
+    }
     const count = hardpoint.count != null && hardpoint.count > 0 ? hardpoint.count : 1;
     mounts.push({
       slotIndex: hardpoint.slotIndex,

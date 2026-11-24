@@ -244,6 +244,30 @@
     },
     "arcs": {}
   },
+  "costFallback": {
+    "status": "placeholder",
+    "note": "Same integers as TEST-PH and TEST-PHOT. Not measured Community Edition costs. The sim applies phaser when a phaser row omits chargeCost, and photon when a photon row omits armCost. A row that names its own cost keeps that row. Writing the measured number on the code replaces the fallback without a code change.",
+    "phaser": {
+      "chargeCost": 4,
+      "holdCost": 0,
+      "rangeBands": [
+        { "maxRange": 10, "damage": 3 },
+        { "maxRange": 20, "damage": 1 }
+      ]
+    },
+    "photon": {
+      "armCost": 4,
+      "armTicks": 4,
+      "directDamage": 8,
+      "overloadArmCost": 8,
+      "overloadArmTicks": 4,
+      "overloadDamage": 12,
+      "proxRadius": 2,
+      "proxDamage": 4,
+      "projectileSpeed": 2,
+      "maxRange": 30
+    }
+  },
   "reloadCountTokens": ["1", "2", "3"],
   "reloadCountNote": "Confirmed pairing: numeric Arc values 1, 2 and 3 occur only on DroA, DroB, DroC, DroF, DroG, ADD6 and ADD12, and every shiplist row of those codes has a numeric Arc. The cell is a whole-number count. Those racks have no firing arc and launch or fire in any direction; drones are seeking weapons. ADD racks only ever show 1. Whether the number means reloads or rack capacity is TO VERIFY by playtest. A numeric Arc on any other weapon is unknownArc. A letter arc or an empty Arc cell on a reloadCounted weapon is unknownArc. ftrlist DroI and DroVI use the letter arc ALL and are not reloadCounted."
 }

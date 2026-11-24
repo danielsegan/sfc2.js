@@ -16,7 +16,7 @@ Uncertain, and marked pending playtest in the spec:
 - Whether specific (per-facing) reinforcement exists in CE, or only a general pool. The HUD asks the same question.
 - Shield facing edges. The duel slice bins the uint16 circle into six facings. CE may use model-specific cones.
 - Phaser capacitor amounts. The rule is settled: a phaser feeds the capacitor because of its code, in any slot. The energy each real phaser code stores is still empty.
-- Phaser hold cost, photon arming time, overload risk, proximity distance, and whether phasers are instantaneous.
+- Phaser hold cost, photon arming time, overload risk, proximity distance, and whether phasers are instantaneous. Until those are measured, `Ph1`–`Ph4`, `PhG`, `Phot` and `PhoF` arm on `costFallback` (the same integers as `TEST-PH` and `TEST-PHOT`).
 - Turn-mode rates for letters `AA` and `A`–`G`. Movement uses one documented fallback yaw and warns once with `turnModeUnverified`. The per-letter rates are still unverified.
 - Damage-chart contents, armor-before-chart, and which hull section a facing feeds.
 - Fighter arc widths and the F / G / roman suffixes on the ftrlist weapon codes. The code strings themselves are from the metadata inventory ([#6](https://github.com/danielsegan/sfc2.js/issues/6)); the angles are a working geometry.

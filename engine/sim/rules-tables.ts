@@ -1,7 +1,8 @@
 /**
  * Duel-slice tables. Weapon and arc rows are the JSON key order of
  * docs/rules/data/weapon-arcs.json, which this module reads directly.
- * Numeric costs stay integer rule-points. Empty cost rows stay 0.
+ * Numeric costs stay integer rule-points. A phaser or photon row with no
+ * cost of its own takes costFallback. Every other empty cost row stays 0.
  */
 import constants from '../../docs/rules/data/constants.json' with { type: 'json' };
 import table from '../../docs/rules/data/weapon-arcs.json' with { type: 'json' };
@@ -177,24 +178,51 @@ function num(value: number | undefined): number {
   return value ?? 0;
 }
 
+interface CostFallback {
+  phaser?: WeaponJson;
+  photon?: WeaponJson;
+}
+
+/**
+ * A phaser or photon with no cost of its own uses the placeholder block.
+ * The row's own fields win, including an explicit zero. Other families
+ * are left at 0 so they stay outside this duel.
+ */
+function withCostFallback(row: WeaponJson, fallback: CostFallback | undefined): WeaponJson {
+  if (row.internal === 'phaser' && row.chargeCost == null && fallback?.phaser) {
+    return { ...fallback.phaser, ...row };
+  }
+  if (row.internal === 'photon' && row.armCost == null && fallback?.photon) {
+    return { ...fallback.photon, ...row };
+  }
+  return row;
+}
+
 function buildWeapons(): readonly WeaponDef[] {
   const ship = table.ship.weapons as Record<string, WeaponJson>;
   const fighter = table.fighter.weapons as Record<string, WeaponJson>;
+  const fallback = (table as { costFallback?: CostFallback }).costFallback;
   const out: WeaponDef[] = [];
   for (const code of WEAPON_CODES) {
-    const row = ship[code] ?? fighter[code];
-    if (!row) throw new Error(`missing weapon ${code}`);
+    const source = ship[code] ?? fighter[code];
+    if (!source) throw new Error(`missing weapon ${code}`);
+    const row = withCostFallback(source, fallback);
     const bands: (readonly [number, number])[] = [];
     for (const band of row.rangeBands ?? []) {
       bands.push([num(band.maxRange), num(band.damage)]);
     }
     const reload = row.reloadCounted === true || row.omnidirectional === true;
+    const internal = internalId(row.internal);
+    const chargeCost = num(row.chargeCost);
+    const armCost = num(row.armCost);
+    if (internal === INTERNAL_PHASER && chargeCost <= 0) throw new Error(`phaser ${code} has no cost`);
+    if (internal === INTERNAL_PHOTON && armCost <= 0) throw new Error(`photon ${code} has no cost`);
     out.push({
       code,
-      internal: internalId(row.internal),
-      chargeCost: num(row.chargeCost),
+      internal,
+      chargeCost,
       holdCost: num(row.holdCost),
-      armCost: num(row.armCost),
+      armCost,
       armTicks: num(row.armTicks),
       overloadArmCost: num(row.overloadArmCost),
       overloadArmTicks: num(row.overloadArmTicks),
