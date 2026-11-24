@@ -87,16 +87,16 @@ export const SYNTHETIC_SPAWNS: readonly SpawnPoint[] = [
 
 export const SYNTHETIC_ROSTER: readonly RosterEntry[] = [
   {
-    name: 'Fixture Alpha',
+    name: 'Test CA',
     empire: 'Federation',
     accent: '#4F8FD6',
-    modelFile: 'wedge-a.mod',
+    modelFile: 'test-ca.mod',
   },
   {
-    name: 'Fixture Beta',
+    name: 'Test D7',
     empire: 'Klingon',
     accent: '#B23A3A',
-    modelFile: 'wedge-b.mod',
+    modelFile: 'test-d7.mod',
   },
 ];
 

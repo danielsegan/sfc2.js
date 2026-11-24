@@ -3,16 +3,19 @@
  * Original files stay in the browser. Missing models use the placeholder hull.
  */
 import { parseShiplist } from '@sfc2js/formats';
-import { importInstall, importZipArchive, type PickedFile } from '@sfc2js/platform';
+import { importInstall, importZipArchive, type PickedFile, type Vfs } from '@sfc2js/platform';
 import { Group } from 'three';
-import { bindShiplistRow, type ShipSetup } from '../../engine/sim/bind-shiplist.ts';
-import { CLASS_SHIP } from '../../engine/sim/rules-tables.ts';
 import type { RosterEntry } from '../../engine/duel/fixture.ts';
 import { createDuelMatch, type DuelMatch } from '../../engine/duel/match.ts';
 import { SYNTHETIC_SPAWNS } from '../../engine/duel/fixture.ts';
 import { groupFromMod } from '../../engine/duel/meshes.ts';
-import { placeholderHullMod } from '../../engine/duel/placeholder-mod.ts';
+import { placeholderHullMod, type PlaceholderShape } from '../../engine/duel/placeholder-mod.ts';
 import { FIXTURE_MODEL_DIR } from '../../engine/duel/placeholder-mod.ts';
+import {
+  candidatesFromShiplist,
+  chooseDefaultPair,
+  type DuelCandidate,
+} from '../../engine/duel/roster.ts';
 
 const ACCENTS: readonly { test: string; accent: string }[] = [
   { test: 'fed', accent: '#4F8FD6' },
@@ -36,6 +39,10 @@ export interface LoadedDuel {
   groups: Group[];
   roster: RosterEntry[];
   note: string;
+  vfs: Vfs;
+  candidates: readonly DuelCandidate[];
+  player: number;
+  opponent: number;
 }
 
 export async function duelFromFiles(files: readonly PickedFile[]): Promise<LoadedDuel | { error: string }> {
@@ -59,70 +66,66 @@ async function finish(
   const bytes = await vfs.read(shiplistPath);
   if (!bytes) return { error: 'The shiplist could not be read.' };
   const parsed = parseShiplist(bytes, { file: shiplistPath });
-  const chosen: { setup: ShipSetup; roster: RosterEntry; geometry: string }[] = [];
-  for (const row of parsed.data.rows) {
-    if (chosen.length >= 2) break;
-    let setup: ShipSetup;
-    try {
-      setup = bindShiplistRow(row, parsed.data.columns);
-    } catch {
-      continue;
-    }
-    if (setup.classCode !== CLASS_SHIP) continue;
-    const parts = row.spawnKey.split(':');
-    const empire = parts[0] ?? 'Empire';
-    const name = parts[1] ?? row.spawnKey;
-    chosen.push({
-      setup,
-      geometry: geometryCell(parsed.data.columns, row.raw),
-      roster: {
-        name,
-        empire,
-        accent: accentFor(empire),
-        modelFile: geometryCell(parsed.data.columns, row.raw),
-      },
-    });
-  }
-  if (chosen.length < 2) return { error: 'Need two ship rows in the shiplist.' };
+  const candidates = candidatesFromShiplist(parsed.data.rows, parsed.data.columns);
+  const choice = chooseDefaultPair(candidates);
+  if (!choice) return { error: 'Need two ships from different empires with a phaser or photon.' };
+  const player = candidates.indexOf(choice.player);
+  const opponent = candidates.indexOf(choice.opponent);
+  return assembleDuel(vfs, candidates, player, opponent, choice.note);
+}
+
+export async function assembleDuel(
+  vfs: Vfs,
+  candidates: readonly DuelCandidate[],
+  player: number,
+  opponent: number,
+  note: string,
+): Promise<LoadedDuel | { error: string }> {
+  const left = candidates[player];
+  const right = candidates[opponent];
+  if (!left || !right || player === opponent) return { error: 'Choose two different ships.' };
+  const pair = [left, right];
   const groups: Group[] = [];
-  for (let i = 0; i < chosen.length; i++) {
-    const item = chosen[i];
+  let missingModel = false;
+  for (let i = 0; i < pair.length; i++) {
+    const item = pair[i];
     if (!item) continue;
     const path = item.geometry.replaceAll('\\', '/');
     const resolved = path.length > 0 ? vfs.resolve(path) : null;
     const modelBytes = resolved ? await vfs.read(resolved) : null;
+    if (!modelBytes) missingModel = true;
     const tint = TINTS[i] ?? TINTS[0]!;
-    const modelPath = resolved ?? `${FIXTURE_MODEL_DIR}/wedge-player.mod`;
-    const group = await groupFromMod(modelBytes ?? placeholderHullMod(tint), modelPath, vfs);
+    const shape: PlaceholderShape = i === 0 ? 'ca' : 'd7';
+    const modelPath = resolved ?? `${FIXTURE_MODEL_DIR}/test-${shape}.mod`;
+    const group = await groupFromMod(modelBytes ?? placeholderHullMod(tint, shape), modelPath, vfs);
     groups.push(group ?? new Group());
   }
   const match = createDuelMatch({
     seed: 0x0d0e1,
-    setups: chosen.map((item) => item.setup),
+    setups: pair.map((item) => item.setup),
     spawns: SYNTHETIC_SPAWNS,
     timeScale: 4,
   });
-  const placeholder = groups.some((_, index) => {
-    const item = chosen[index];
-    return !item || item.geometry.length === 0;
-  });
+  const hullNote = missingModel ? ' Placeholder hulls stand in where a model was missing.' : '';
   return {
     match,
     groups,
-    roster: chosen.map((item) => item.roster),
-    note: placeholder ? 'Player shiplist, placeholder hulls where a model was missing.' : 'Player install.',
+    roster: pair.map((item) => rosterOf(item)),
+    note: `${note}${hullNote}`,
+    vfs,
+    candidates,
+    player,
+    opponent,
   };
 }
 
-function geometryCell(columns: readonly string[], raw: readonly string[]): string {
-  for (let i = 0; i < columns.length; i++) {
-    if (norm(columns[i] ?? '') === 'geometry') return (raw[i] ?? '').trim();
-  }
-  return '';
-}
-
-function norm(value: string): string {
-  return value.trim().toLowerCase().replaceAll('_', ' ');
+function rosterOf(candidate: DuelCandidate): RosterEntry {
+  return {
+    name: candidate.className.length > 0 ? candidate.className : candidate.spawnKey,
+    empire: candidate.race.length > 0 ? candidate.race : 'Empire',
+    accent: accentFor(candidate.race),
+    modelFile: candidate.geometry,
+  };
 }
 
 function accentFor(empire: string): string {

@@ -1,8 +1,9 @@
 /**
- * Original placeholder hull. The bytes follow the public .mod chunk
+ * Original placeholder hulls. The bytes follow the public .mod chunk
  * layout so parseMod and buildShipMesh can load them. Nothing here is
- * copied from a game file. The extension is not used on disk: CI blocks
- * .mod, and this builder runs in memory.
+ * copied from a game file. Coordinates are invented silhouettes: a
+ * saucer cruiser and a long-boom cruiser. The extension is not used on
+ * disk: CI blocks .mod, and this builder runs in memory.
  */
 import { encodeBmp } from '@sfc2js/formats';
 
@@ -45,11 +46,82 @@ export function placeholderGlow(): Uint8Array {
   return encodeBmp({ width, height, bitCount: 24, pixels });
 }
 
-export function placeholderHullMod(tint: HullTint): Uint8Array {
-  const names = concat([cString('Wedge1'), cString('Wedge1i'), cString('NOSE')]);
+export type PlaceholderShape = 'ca' | 'd7';
+
+interface HullMesh {
+  readonly vertices: readonly number[];
+  readonly faces: readonly (readonly number[])[];
+  readonly radius: number;
+}
+
+/** Saucer, secondary hull, two nacelles. Bow is +x. Invented, not measured. */
+const CA_HULL: HullMesh = {
+  radius: 1.4,
+  vertices: [
+    1.0, 0.12, 0,
+    0.35, 0.12, 0.5,
+    -0.15, 0.12, 0,
+    0.35, 0.12, -0.5,
+    0.35, 0.26, 0,
+    0.35, 0.0, 0,
+    0.1, -0.02, 0,
+    -0.8, -0.05, 0.16,
+    -0.8, -0.05, -0.16,
+    -0.35, -0.2, 0,
+    0.4, 0.18, 0.72,
+    -0.55, 0.18, 0.62,
+    -0.05, 0.3, 0.72,
+    -0.05, 0.08, 0.78,
+    0.4, 0.18, -0.72,
+    -0.55, 0.18, -0.62,
+    -0.05, 0.3, -0.72,
+    -0.05, 0.08, -0.78,
+  ],
+  faces: [
+    [4, 0, 1], [4, 1, 2], [4, 2, 3], [4, 3, 0],
+    [5, 1, 0], [5, 2, 1], [5, 3, 2], [5, 0, 3],
+    [6, 7, 8], [6, 9, 7], [6, 8, 9], [7, 9, 8],
+    [2, 6, 1], [2, 3, 6], [1, 6, 7], [3, 8, 6],
+    [12, 10, 11], [13, 11, 10], [13, 10, 12], [13, 12, 11],
+    [16, 14, 15], [17, 15, 14], [17, 14, 16], [17, 16, 15],
+  ],
+};
+
+/** Narrow bow, wide wing, two nacelles. Bow is +x. Invented, not measured. */
+const D7_HULL: HullMesh = {
+  radius: 1.6,
+  vertices: [
+    1.3, 0.06, 0,
+    0.15, 0.1, 0.14,
+    0.15, 0.1, -0.14,
+    0.4, 0.22, 0,
+    0.25, -0.06, 0,
+    -0.2, 0.0, 0.75,
+    -0.2, 0.0, -0.75,
+    -0.9, 0.02, 0,
+    -0.15, 0.18, 0,
+    0.2, 0.24, 0.48,
+    -0.7, 0.22, 0.42,
+    -0.2, 0.34, 0.5,
+    0.2, 0.24, -0.48,
+    -0.7, 0.22, -0.42,
+    -0.2, 0.34, -0.5,
+  ],
+  faces: [
+    [3, 0, 1], [3, 2, 0], [3, 1, 2],
+    [4, 1, 0], [4, 0, 2], [4, 2, 1],
+    [8, 1, 5], [8, 5, 7], [8, 7, 6], [8, 6, 2],
+    [5, 1, 7], [7, 2, 6], [1, 2, 7],
+    [11, 9, 10], [14, 12, 13],
+  ],
+};
+
+export function placeholderHullMod(tint: HullTint, shape: PlaceholderShape = 'ca'): Uint8Array {
+  const hull = shape === 'd7' ? D7_HULL : CA_HULL;
+  const names = concat([cString('Hull'), cString('HullGlow'), cString('NOSE')]);
   const diffuseAt = 0;
-  const glowAt = 'Wedge1'.length + 1;
-  const noseAt = glowAt + 'Wedge1i'.length + 1;
+  const glowAt = 'Hull'.length + 1;
+  const noseAt = glowAt + 'HullGlow'.length + 1;
   const material = new Uint8Array(36);
   const view = new DataView(material.buffer);
   view.setUint32(0, 0x0001 | 0x0002 | 0x0020, true);
@@ -65,31 +137,20 @@ export function placeholderHullMod(tint: HullTint): Uint8Array {
   view.setInt32(28, 2, true);
   view.setInt32(32, glowAt, true);
 
-  const vertices = [
-    1.15, 0, 0,
-    -0.7, 0.22, 0.38,
-    -0.7, 0.22, -0.38,
-    -0.45, -0.24, 0,
-  ];
-  const faces = [
-    [0, 1, 2],
-    [0, 3, 1],
-    [0, 2, 3],
-    [1, 3, 2],
-  ];
+  const vertices = hull.vertices;
   const polys: Uint8Array[] = [];
-  for (const face of faces) polys.push(chunk('POLY', poly(face)));
+  for (const face of hull.faces) polys.push(chunk('POLY', poly(face)));
   const mesh = chunk(
     'MOD0',
-    concat([i32([vertices.length / 3, faces.length]), chunk('VTXS', f32s(vertices)), ...polys]),
+    concat([i32([vertices.length / 3, hull.faces.length]), chunk('VTXS', f32s(vertices)), ...polys]),
   );
   return chunk(
     'MDLS',
     concat([
-      header(1.2),
+      header(hull.radius),
       chunk('STRS', names),
       chunk('MATS', material),
-      chunk('PNTS', concat([f32s([1.15, 0, 0]), u32([noseAt])])),
+      chunk('PNTS', concat([f32s([vertices[0] ?? 0, vertices[1] ?? 0, vertices[2] ?? 0]), u32([noseAt])])),
       mesh,
     ]),
   );

@@ -55,6 +55,7 @@ import {
   DEFAULT_REINFORCE_PER_ENERGY,
   DEFAULT_RULES_TURN_TICKS,
   ENERGY_SCALE,
+  FALLBACK_YAW_PER_TICK,
   INTERNAL_PHASER,
   INTERNAL_PHOTON,
   ROW_BRIDGE,
@@ -65,6 +66,7 @@ import {
   MODE_NORMAL,
   MODE_OVERLOAD,
   MODE_PROXIMITY,
+  TURN_UNVERIFIED,
   arcId,
   turnHasRate,
   turnImmobile,
@@ -540,6 +542,10 @@ function applySpawn(world: World, cmd: Command, ctx: TickContext, setups: readon
   writeHull(world, id, fields);
   writeMounts(world, id, mounts);
   ctx.emit({ kind: EVENT_SPAWN, entity: id as number, a: index, b: 0 });
+  // Once per hull. Later speed and yaw orders keep moving on the fallback cap.
+  if (setup.classCode !== CLASS_FIGHTER && setup.turnMode === TURN_UNVERIFIED) {
+    emitRule(ctx, id as number, R.turnModeUnverified, FALLBACK_YAW_PER_TICK);
+  }
 }
 
 function applySetShields(world: World, cmd: Command, ctx: TickContext): void {
@@ -687,6 +693,8 @@ function applySetEnergy(world: World, cmd: Command, ctx: TickContext, options: R
       return;
     }
   }
+  // Letters and other known unverified tokens have a fallback rate.
+  // This refusal is only a mode id outside that table.
   if (speedReq > 0 && turnHasRate(fields[H.turnMode]!) === 0) {
     emitRule(ctx, id as number, R.turnModeUnverified, -1);
     return;

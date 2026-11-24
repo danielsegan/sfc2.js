@@ -3,8 +3,9 @@
  * This handler is registered beside them. The payload is entity and yaw
  * only. The session stamps tick, slot, and seq.
  *
- * Caps come from the synthetic turn-mode table. Letters without a rate
- * are refused. The hull's last-verb fields are left to the combat verbs.
+ * Caps come from the synthetic turn-mode table. An unverified letter
+ * uses the documented fallback cap and still turns. The hull's last-verb
+ * fields are left to the combat verbs.
  */
 import { angle16 } from '../core/angle.ts';
 import { asEntityId } from '../core/brands.ts';
@@ -13,14 +14,25 @@ import type { Command } from '../core/codec.ts';
 import type { CommandHandler, TickContext } from '../sim/sim.ts';
 import type { World } from '../sim/world.ts';
 import { H, readHull } from '../sim/hull.ts';
-import { CLASS_FIGHTER, TURN_H, TURN_TEST_A, TURN_TEST_C, turnHasRate, turnImmobile } from '../sim/rules-tables.ts';
+import {
+  CLASS_FIGHTER,
+  FALLBACK_YAW_PER_TICK,
+  TURN_H,
+  TURN_TEST_A,
+  TURN_TEST_C,
+  turnHasRate,
+  turnImmobile,
+} from '../sim/rules-tables.ts';
 
-/** Per-tick yaw cap from the synthetic turn-mode table. -1 means no rate. */
+/**
+ * Per-tick yaw cap. TEST-* and H come from the synthetic table.
+ * Any other mode, including an unverified letter, uses the documented fallback.
+ */
 export function turnYawCap(mode: number): number {
   if (mode === TURN_TEST_A) return 8000;
   if (mode === TURN_TEST_C) return 2000;
   if (mode === TURN_H) return 0;
-  return -1;
+  return FALLBACK_YAW_PER_TICK;
 }
 
 /** Duel yaw order. Combat's verbs stay 1–5; this match registers 6 beside them. */

@@ -97,6 +97,9 @@ function logLine(tick: number, event: HudEvent): string | null {
     if (event.id === 'ok') return `${mark}  Order applied (${String(event.amount)})`;
     if (event.id === 'helm') return null;
     if (event.id === 'yawClamped') return `${mark}  Yaw clamped to ${String(event.amount)}`;
+    if (event.id === 'turnModeUnverified') {
+      return `${mark}  Turn mode unverified; using fallback yaw ${String(event.amount)}`;
+    }
     return `${mark}  ${event.id}`;
   }
   if (event.kind === 'sim') return `${mark}  Event ${String(event.code)}`;

@@ -10,6 +10,7 @@ import {
   preferredDirectoryPicker,
   type ImportResult,
 } from '../../engine/platform/src/index.ts';
+import { filesFromDevInstall } from '../src/dev-install-client.ts';
 import {
   SHIP_VIEWER_KEYS,
   advanceSpin,
@@ -138,13 +139,20 @@ function frame(now: number): void {
 }
 requestAnimationFrame(frame);
 
-if (new URLSearchParams(location.search).get('demo') === '1') {
-  banner.hidden = false;
-  void (async () => {
-    imported = await importInstall(syntheticViewerFiles());
+const pageInstall = new URLSearchParams(location.search).get('install');
+const demo = new URLSearchParams(location.search).get('demo') === '1';
+void (async () => {
+  const files = await filesFromDevInstall(pageInstall);
+  if (files) {
+    imported = await importInstall(files);
     await showImport(imported, true);
-  })();
-}
+    return;
+  }
+  if (!demo) return;
+  banner.hidden = false;
+  imported = await importInstall(syntheticViewerFiles());
+  await showImport(imported, true);
+})();
 
 async function openFolder(): Promise<void> {
   const picked = await pickAndImport(preferredDirectoryPicker());

@@ -12,6 +12,7 @@ import {
   placeholderHullMod,
   placeholderTexture,
   type HullTint,
+  type PlaceholderShape,
 } from './placeholder-mod.ts';
 import { SYNTHETIC_ROSTER } from './fixture.ts';
 
@@ -24,15 +25,16 @@ export async function loadSyntheticHulls(): Promise<Group[]> {
   const base = placeholderTexture();
   const glow = placeholderGlow();
   const vfs = createVfs([
-    { path: `${FIXTURE_MODEL_DIR}/Wedge1.bmp`, size: base.length, read: async () => base },
-    { path: `${FIXTURE_MODEL_DIR}/Wedge1i.bmp`, size: glow.length, read: async () => glow },
+    { path: `${FIXTURE_MODEL_DIR}/Hull.bmp`, size: base.length, read: async () => base },
+    { path: `${FIXTURE_MODEL_DIR}/HullGlow.bmp`, size: glow.length, read: async () => glow },
   ]);
+  const shapes: readonly PlaceholderShape[] = ['ca', 'd7'];
   const groups: Group[] = [];
   for (let i = 0; i < SYNTHETIC_ROSTER.length; i++) {
-    const file = SYNTHETIC_ROSTER[i]?.modelFile ?? 'wedge.mod';
+    const file = SYNTHETIC_ROSTER[i]?.modelFile ?? 'test-ca.mod';
     const modelPath = `${FIXTURE_MODEL_DIR}/${file}`;
     const tint = TINTS[i] ?? TINTS[0]!;
-    const group = await groupFromMod(placeholderHullMod(tint), modelPath, vfs);
+    const group = await groupFromMod(placeholderHullMod(tint, shapes[i] ?? 'ca'), modelPath, vfs);
     groups.push(group ?? new Group());
   }
   return groups;

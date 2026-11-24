@@ -85,6 +85,10 @@ function upperAscii(text: string): string {
   return out;
 }
 
+export function shiplistText(columns: readonly string[], raw: readonly string[], aliases: readonly string[]): string {
+  return (cell(columns, raw, aliases) ?? '').trim();
+}
+
 function cell(columns: readonly string[], raw: readonly string[], aliases: readonly string[]): string | undefined {
   for (let i = 0; i < columns.length; i++) {
     const name = normHeader(columns[i] ?? '');
@@ -168,12 +172,14 @@ function wholeCell(columns: readonly string[], raw: readonly string[], aliases: 
 export function bindShiplistRow(row: ShiplistRow, columns: readonly string[]): ShipSetup {
   const raw = row.raw;
   const front = wholeCell(columns, raw, ['shield 1', 'shield front', 'front shield'], 0);
-  const forward = wholeCell(columns, raw, ['shield 2', 'shield forward side', 'forward side'], 0);
-  const aft = wholeCell(columns, raw, ['shield 3', 'shield aft side', 'aft side'], 0);
+  // CE 2.670 names the shared side cells with the paired SFB shield numbers.
+  // `Shield 2 _ 6` is forward-side (facings 1 and 5). `Shield 3 _ 5` is aft-side (facings 2 and 4).
+  const forward = wholeCell(columns, raw, ['shield 2', 'shield 2 _ 6', 'shield forward side', 'forward side'], 0);
+  const aft = wholeCell(columns, raw, ['shield 3', 'shield 3 _ 5', 'shield aft side', 'aft side'], 0);
   const rear = wholeCell(columns, raw, ['shield 4', 'shield rear', 'rear shield'], 0);
   const shieldsMax = [front * 2, forward * 2, aft * 2, rear * 2, aft * 2, forward * 2];
-  const warpSide = wholeCell(columns, raw, ['warp side', 'side warp'], 0);
-  const warpCenter = wholeCell(columns, raw, ['warp center', 'warp centre'], 0);
+  const warpSide = wholeCell(columns, raw, ['warp side', 'side warp', 'r_l_warp'], 0);
+  const warpCenter = wholeCell(columns, raw, ['warp center', 'warp centre', 'c_warp'], 0);
   const moveText = cell(columns, raw, ['move cost']);
   const moveCost100 = parseHundredths(moveText ?? '');
   if (moveCost100 === null) throw new Error('bad move cost');
@@ -218,7 +224,7 @@ export function bindShiplistRow(row: ShiplistRow, columns: readonly string[]): S
     speed: 0,
     shields: shieldsMax.slice(),
     shieldsMax,
-    crew: wholeCell(columns, raw, ['crew'], 0),
+    crew: wholeCell(columns, raw, ['crew', 'regular crew'], 0),
     minCrew: wholeCell(columns, raw, ['min crew'], 0),
     fcPaid: 0,
     destroyed: 0,

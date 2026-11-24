@@ -18,6 +18,13 @@ export const TURN_TEST_C = 2;
 export const TURN_H = 3;
 export const TURN_UNVERIFIED = 4;
 
+/**
+ * Yaw cap for a letter that has no playtest rate.
+ * Same integer as TEST-C. Documented in docs/rules/data/turn-modes.json.
+ * It is not a measured Community Edition rate.
+ */
+export const FALLBACK_YAW_PER_TICK = 2000;
+
 export const INTERNAL_PHASER = 1;
 export const INTERNAL_PHOTON = 2;
 export const INTERNAL_DRONE = 3;
@@ -274,7 +281,12 @@ export function turnImmobile(mode: number): number {
   return mode === TURN_H ? 1 : 0;
 }
 
-/** -1 when the letter has no playtest rate. */
+/**
+ * 1 when speed and yaw may proceed.
+ * Unverified letters use FALLBACK_YAW_PER_TICK rather than refusing the order.
+ */
 export function turnHasRate(mode: number): number {
-  return mode === TURN_TEST_A || mode === TURN_TEST_C || mode === TURN_H ? 1 : 0;
+  return mode === TURN_TEST_A || mode === TURN_TEST_C || mode === TURN_H || mode === TURN_UNVERIFIED
+    ? 1
+    : 0;
 }
