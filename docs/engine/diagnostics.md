@@ -65,6 +65,7 @@ interface Diagnostic {
 | importer | `archiveUnsupported` | error | Formats | `{ reason, method? }`. Zip is missing, ZIP64, encrypted, compressed with an unknown method, corrupt, or over the size cap |
 | importer | `permissionDenied` | error | Formats | A listed file could not be read. The underlying message is not copied |
 | shiplist | `specsMetaassetsDiffer` | warning | Formats | `{ assets, metaassets }`. The importer emits this when the two shiplist copies differ |
+| shiplist | `shieldTotalMismatch` | warning | Formats | `{ expected, actual }`. File Shield Total is not Shield 1 + 2×Shield 2 _ 6 + 2×Shield 3 _ 5 + Shield 4 |
 | bmp | `emptyFile` | error | Formats | Zero-byte BMP |
 | bmp | `badSignature` | error | Formats | First bytes are not `BM` |
 | bmp | `truncated` | error | Formats | `{ width?, height?, expectedBytes? }`. Header or pixels are short; no partial texture is allocated |

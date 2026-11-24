@@ -324,7 +324,7 @@ Errors keep the row but mark it unusable for spawning. Warnings keep it usable.
 | V5 | `badNumber` | warning | A numeric field does not parse; default 0 and keep the raw cell. |
 | V6 | `unknownRace`, `unknownHullType`, `unknownTurnMode` | warning | Value outside the known token list. The lists start from S1 and grow from CE 2.670 observation. Weapon and arc tokens are not checked here; see loader diagnostics below. |
 | V7 | `hardpointCountRange` | warning | Hardpoint count outside 0–4, or a count with an empty weapon code (or the reverse). |
-| V8 | `shieldTotalMismatch` | info | `shieldTotal` ≠ the sum of `shields[0..5]` (the four file values, with the two shared ones counted twice). |
+| V8 | `shieldTotalMismatch` | warning | `shieldTotal` ≠ the sum of `shields[0..5]` (the four file values, with the two shared ones counted twice). |
 | V9 | `crewTotalMismatch` | info | `totalCrew` disagrees with the S1 formula. |
 | V10 | `yearOrder` | warning | `yearFirstAvailable` > `yearLastAvailable`. |
 | V11 | `missingRefitBase` | warning | `refitBaseClass` names no row. |

@@ -139,8 +139,10 @@ test("edges fixture reports structural diagnostics and keeps the row", () => {
 
   assert.equal(byCode(parsed.diagnostics, "unknownTurnMode")[0].details?.value, "Z");
   assert.deepEqual(byCode(parsed.diagnostics, "yearOrder")[0].details, { first: 9, last: 1 });
-  assert.deepEqual(byCode(parsed.diagnostics, "shieldTotalMismatch")[0].details, { expected: 42, actual: 1 });
-  assert.equal(byCode(parsed.diagnostics, "shieldTotalMismatch")[0].severity, "info");
+  const shieldMismatch = byCode(parsed.diagnostics, "shieldTotalMismatch")[0];
+  assert.equal(shieldMismatch.source, "shiplist");
+  assert.equal(shieldMismatch.severity, "warning");
+  assert.deepEqual(shieldMismatch.details, { expected: 42, actual: 1 });
   assert.deepEqual(byCode(parsed.diagnostics, "crewTotalMismatch")[0].details, { expected: 15, actual: 99 });
   assert.equal(byCode(parsed.diagnostics, "missingGeometry")[0].details?.className, "TEST-EDGE-02");
   assert.equal(byCode(parsed.diagnostics, "unknownRace")[0].details?.value, "Andorian");
