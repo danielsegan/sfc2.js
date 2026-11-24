@@ -23,9 +23,11 @@ interface Diagnostic {
   source: DiagnosticSource;       // plain string
   severity: Severity;
   details?: Record<string, unknown>;
-  location?: { file?: string; line?: number; column?: number; field?: string; offset?: number }; // line/column 1-based; field = raw header name; offset = byte offset
+  location?: { file?: string; line?: number; column?: number; field?: string; offset?: number }; // file is install-root-relative with forward slashes, never a machine-local path; line/column 1-based; field = raw header name; offset = byte offset
 }
 ```
+
+`location.file`, when set, is a path relative to the player's install root, using forward slashes (for example `Specs/shiplist.txt`). It is never an absolute or machine-local path, so diagnostics never expose the player's machine. This matches [`docs/formats/README.md`](../formats/README.md) (#65).
 
 ## Rules
 
@@ -34,7 +36,7 @@ interface Diagnostic {
 - Locale key is `source.code` (e.g. `rules.noSuchSystem`, `shiplist.duplicateClassKey`), per the HUD spec.
 - No message text: display text comes from the locale key `source.code` (matches PR #45). Tests assert `source` + `code`.
 - Each owning role adds its codes here in the same PR that first emits them: Asset & Formats (parser sources), Engine Lead (`loader`, `mission` host), Combat (`rules`).
-- `location.file`, when set, is a path relative to the player's install root using forward slashes (for example `Assets/Specs/shiplist.txt` or `Specs/shiplist.txt`). It is never an absolute path, a drive letter, a UNC path, or any other machine-local path.
+- `location.file`, when set, is a path relative to the player's install root using forward slashes (for example `Assets/Specs/shiplist.txt` or `Specs/shiplist.txt`). It is never an absolute path, a drive letter, a UNC path, or any other machine-local path. This matches `docs/formats/README.md` (#65).
 
 ## Registry
 
