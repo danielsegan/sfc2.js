@@ -35,6 +35,8 @@ export function defaultOverheadDistance(aspect: number, fovDeg: number, majorUni
  * Pick the minor/major steps for the current pixels-per-range-unit.
  * Minors fade out over a 25% zoom-out past 16 px, then the old majors
  * become the new minors at the next ×5 step.
+ * The 16 px threshold is CSS pixels of the play field. The field is not
+ * HUD-scaled, so this is not a logical HUD unit (hud-layout.md §7.2).
  */
 export function gridLevel(pxPerUnit: number): GridLevel {
   let minor = GRID_MINOR_UNIT;

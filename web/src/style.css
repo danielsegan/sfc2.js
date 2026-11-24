@@ -249,7 +249,7 @@ dialog h2, dialog h3 { margin: 8px 0 4px; letter-spacing: 0.08em; text-transform
 #field-systems-fill { background: var(--state-warning); }
 #field-target-fill { background: var(--state-hostile); }
 .speed-bar { width: calc(140px * var(--hud-scale)); cursor: pointer; }
-#field-speed-marker {
+#field-speed-marker, #field-speed-power {
   position: absolute;
   top: -2px;
   bottom: -2px;
@@ -258,6 +258,7 @@ dialog h2, dialog h3 { margin: 8px 0 4px; letter-spacing: 0.08em; text-transform
   background: var(--text);
   pointer-events: none;
 }
+#field-speed-power { background: var(--state-warning); }
 .turn-gauge { width: calc(64px * var(--hud-scale)); }
 .power-stack { display: flex; flex-direction: column; gap: 2px; width: calc(120px * var(--hud-scale)); }
 .power-stack.overdraw { outline: 1px solid var(--state-warning); }
@@ -267,9 +268,10 @@ dialog h2, dialog h3 { margin: 8px 0 4px; letter-spacing: 0.08em; text-transform
   height: calc(18px * var(--hud-scale));
   padding: 0;
   font-size: calc(11px * var(--hud-scale));
-  opacity: 0.35;
+  color: var(--text-dim);
+  background: transparent;
+  opacity: 1;
 }
-.lamp.on { opacity: 1; }
 #lamp-green.on { background: var(--state-normal); color: #07140e; }
 #lamp-yellow.on { background: var(--state-warning); color: #1a1406; }
 #lamp-red.on { background: var(--state-damage); color: #1a0608; }
@@ -317,6 +319,8 @@ dialog h2, dialog h3 { margin: 8px 0 4px; letter-spacing: 0.08em; text-transform
 .tag-arrow.left { transform: rotate(180deg); }
 .tag-arrow.top { transform: rotate(-90deg); }
 .tag-arrow.bottom { transform: rotate(90deg); }
+.tag-mark { width: calc(12px * var(--hud-scale)); height: calc(12px * var(--hud-scale)); flex: 0 0 auto; }
+.tag-code { font-size: calc(11px * var(--hud-scale)); letter-spacing: 0.06em; color: var(--text); }
 .tag-class { color: var(--text); max-width: calc(88px * var(--hud-scale)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tag-range { color: var(--text); }
 

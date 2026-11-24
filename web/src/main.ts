@@ -18,6 +18,8 @@ import { filesFromDevInstall } from './dev-install-client.ts';
 import { devInstallUrl } from '../dev-install-shared.ts';
 import { DuelScene } from './scene.ts';
 import { hudScaleFromLocation, paintFieldHud } from './field-hud.ts';
+import { speedScale } from './tactical/frame.ts';
+import { fieldRelease, orbitOnPress } from './tactical/pointer.ts';
 import { pickContact } from './tactical/tags.ts';
 import { createKeyTracker } from './input/keymap.ts';
 import { runAction, type CommandHost } from './commands.ts';
@@ -263,27 +265,23 @@ document.getElementById('shields')?.addEventListener('click', (event) => {
 
 const stage = document.getElementById('stage');
 let orbiting = false;
-let rightClick = false;
 let dragX = 0;
 let dragY = 0;
 let downX = 0;
 let downY = 0;
 stage?.addEventListener('pointerdown', (event) => {
-  if (event.button === 0 && event.altKey) {
+  downX = event.clientX;
+  downY = event.clientY;
+  dragX = event.clientX;
+  dragY = event.clientY;
+  // Plain left-press is helm. Only Alt+left and middle-drag orbit.
+  if (orbitOnPress(event.button, event.altKey)) {
     orbiting = true;
-    dragX = event.clientX;
-    dragY = event.clientY;
-    downX = event.clientX;
-    downY = event.clientY;
+    if (event.button === 1) event.preventDefault();
     audio.unlock();
     return;
   }
-  if (event.button === 2) {
-    rightClick = true;
-    downX = event.clientX;
-    downY = event.clientY;
-    audio.unlock();
-  }
+  if (event.button === 2) audio.unlock();
 });
 stage?.addEventListener('pointermove', (event) => {
   if (!orbiting) return;
@@ -292,16 +290,14 @@ stage?.addEventListener('pointermove', (event) => {
   dragY = event.clientY;
 });
 stage?.addEventListener('pointerup', (event) => {
-  if (event.button === 0) orbiting = false;
-  if (event.button !== 2 || !rightClick) return;
-  rightClick = false;
   const moved = Math.hypot(event.clientX - downX, event.clientY - downY);
-  if (moved > 4) return;
-  targetAt(event.clientX, event.clientY);
+  const gesture = fieldRelease(event.button, event.altKey, moved, hudScale);
+  if (event.button === 0 || event.button === 1) orbiting = false;
+  // Alt+left and middle-drag never steer, even when the press moved under 4 px.
+  if (gesture === 'target') targetAt(event.clientX, event.clientY);
 });
 stage?.addEventListener('pointerleave', () => {
   orbiting = false;
-  rightClick = false;
 });
 stage?.addEventListener('contextmenu', (event) => event.preventDefault());
 document.getElementById('offscreen-tags')?.addEventListener('click', (event) => {
@@ -364,7 +360,8 @@ function setSpeedFromBar(clientX: number): void {
   if (!bar) return;
   const rect = bar.getBoundingClientRect();
   const fraction = rect.width <= 0 ? 0 : (clientX - rect.left) / rect.width;
-  match.setSpeed(Math.round(Math.max(0, Math.min(1, fraction)) * 32));
+  const max = speedScale(latest?.self ?? null).max;
+  match.setSpeed(Math.round(Math.max(0, Math.min(1, fraction)) * max));
   syncSpeedInput();
 }
 

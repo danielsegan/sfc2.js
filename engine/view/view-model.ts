@@ -84,6 +84,23 @@ export interface ShieldReadout {
   readonly reinforced: number;
 }
 
+/** Remaining hull boxes. The sim does not store a separate maximum. */
+export interface HullReadout {
+  readonly forward: number;
+  readonly center: number;
+  readonly aft: number;
+}
+
+export const EMPTY_HULL: HullReadout = { forward: 0, center: 0, aft: 0 };
+
+export function hullOf(ship: { systems: { hullForward: number; hullCenter: number; hullAft: number } }): HullReadout {
+  return {
+    forward: ship.systems.hullForward,
+    center: ship.systems.hullCenter,
+    aft: ship.systems.hullAft,
+  };
+}
+
 export interface EnergyReadout {
   readonly warp: number;
   readonly impulse: number;
@@ -102,6 +119,7 @@ export interface SelfView {
   readonly index: number;
   readonly energy: EnergyReadout;
   readonly shields: readonly ShieldReadout[];
+  readonly hull: HullReadout;
   readonly weapons: readonly WeaponReadout[];
   readonly speed: number;
   readonly heading16: number;
@@ -135,6 +153,7 @@ export interface ContactView {
   readonly targeted: boolean;
   readonly kind: 'ship' | 'shot' | 'fighter' | 'mine';
   readonly shields: readonly ShieldReadout[];
+  readonly hull: HullReadout;
   readonly rangeFromSelf: number;
   readonly cloaked: boolean;
   readonly detected: boolean;
@@ -354,6 +373,7 @@ function shotContacts(
       targeted: false,
       kind: 'shot',
       shields: [],
+      hull: EMPTY_HULL,
       rangeFromSelf: selfPose ? hypot(dx, dy) : 0,
       cloaked: false,
       detected: true,
@@ -441,6 +461,7 @@ export function buildViewModel(input: ViewBuildInput): ViewModel {
       targeted: targetId !== null && id === targetId,
       kind: ship.classCode === CLASS_FIGHTER ? 'fighter' : 'ship',
       shields: shieldsOf(ship),
+      hull: hullOf(ship),
       rangeFromSelf: 0,
       cloaked: ship.cloakState !== CLOAK_OFF,
       detected: seen,
@@ -473,6 +494,7 @@ export function buildViewModel(input: ViewBuildInput): ViewModel {
         targeted: false,
         kind: 'mine',
         shields: [],
+        hull: EMPTY_HULL,
         rangeFromSelf: 0,
         cloaked: false,
         detected: true,
@@ -515,6 +537,7 @@ export function buildViewModel(input: ViewBuildInput): ViewModel {
           lastVerb: ship.lastVerb,
         },
         shields: shieldsOf(ship),
+        hull: hullOf(ship),
         weapons,
         speed: ship.speed,
         heading16: ship.heading,

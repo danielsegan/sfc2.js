@@ -36,7 +36,7 @@ Mouse actions are presentation or targeting. They do not write the sim except **
 | EW toward ECM / ECCM | `[` / `]` |
 | EW power down / up | Ctrl+`[` / Ctrl+`]` |
 | Cycle camera | `V` |
-| Orbit the camera | Alt+drag the view, or Alt+Left / Alt+Right. Left-click steers and right-click targets (Daniel, 2026-11-24, `hud-layout.md` D1), so neither button orbits on its own. |
+| Orbit the camera | Middle-drag or Alt+left-drag, or Alt+Left / Alt+Right. A plain left-press does not orbit. Left-click steers and right-click targets (Daniel, 2026-11-24, `hud-layout.md` D1). |
 | Toggle the sensor map size | `M` |
 | Toggle north-up / heading-up | `H` |
 | Reset the camera | `Home` |

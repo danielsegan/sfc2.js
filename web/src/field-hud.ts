@@ -4,6 +4,7 @@
  */
 import type { RosterEntry } from '../../engine/duel/fixture.ts';
 import type { ViewModel } from '../../engine/view/view-model.ts';
+import { empireBadge } from './tactical/empire.ts';
 import {
   alertLamp,
   barSize,
@@ -12,6 +13,8 @@ import {
   hudFrame,
   missionClock,
   powerBars,
+  soonestCountdown,
+  speedScale,
   turnFraction,
 } from './tactical/frame.ts';
 import { avoidObstacles, formatRangeTag, offscreenPoint, stackTags, type Rect, type StackedTag } from './tactical/tags.ts';
@@ -37,11 +40,18 @@ export interface FieldHudInput {
 
 const eventLines: { text: string; until: number }[] = [];
 
+/** D3: 1.0–4.0 in 0.25 steps. Values outside that range clamp, then snap. */
 export function hudScaleFromLocation(search: string): number {
   const raw = new URLSearchParams(search).get('hudScale');
-  const value = raw === null ? 1 : Number(raw);
-  if (!Number.isFinite(value) || value < 0.5 || value > 3) return 1;
-  return value;
+  if (raw === null || raw.trim() === '') return 1;
+  const value = Number(raw);
+  if (!Number.isFinite(value)) return 1;
+  const clamped = Math.min(4, Math.max(1, value));
+  const snapped = Math.round(clamped / 0.25) * 0.25;
+  const rounded = Math.round(snapped * 100) / 100;
+  if (rounded < 1) return 1;
+  if (rounded > 4) return 4;
+  return rounded;
 }
 
 export function applyHudFrame(width: number, height: number, scale: number): void {
@@ -64,12 +74,11 @@ export function paintFieldHud(input: FieldHudInput): void {
   const self = input.vm.self;
   const target = input.vm.contacts.find((contact) => contact.kind !== 'shot' && contact.id === input.vm.targetId)
     ?? input.vm.contacts.find((contact) => contact.kind === 'ship' && contact.hostility === 'hostile');
-  setBar('field-hull-fill', hullFraction(self?.shields ?? []));
-  setBar('field-target-fill', hullFraction(target?.shields ?? []));
+  setBar('field-hull-fill', self ? hullFraction(self.id, self.hull) : 0);
+  setBar('field-target-fill', target ? hullFraction(target.id, target.hull) : 0);
   setBar('field-cap-fill', capacitorFraction(self?.weapons ?? []));
   text('field-clock', missionClock(input.vm.tick));
-  const countdown = input.vm.mission.timers.length > 0 ? String(input.vm.mission.timers.length) : '';
-  text('field-countdown', countdown);
+  text('field-countdown', soonestCountdown(input.vm.mission.timers));
   const name = target ? input.roster[target.index]?.name ?? 'Contact' : 'No target';
   text('field-target-name', name);
   text('field-speed', self ? String(self.speed) : '0');
@@ -78,9 +87,20 @@ export function paintFieldHud(input: FieldHudInput): void {
     speedBar.setAttribute('aria-valuenow', String(input.planSpeed));
     speedBar.setAttribute('aria-valuetext', `Desired speed ${String(input.planSpeed)}`);
   }
-  setBar('field-speed-fill', self ? Math.max(0, Math.min(1, self.speed / 32)) : 0);
+  const speeds = speedScale(self);
+  setBar('field-speed-fill', self ? Math.max(0, Math.min(1, self.speed / speeds.max)) : 0);
   const marker = document.getElementById('field-speed-marker');
-  if (marker) marker.style.left = `${String(Math.round(Math.max(0, Math.min(32, input.planSpeed)) / 32 * 100))}%`;
+  if (marker) marker.style.left = `${String(Math.round(Math.max(0, Math.min(speeds.max, input.planSpeed)) / speeds.max * 100))}%`;
+  const powerTick = document.getElementById('field-speed-power');
+  if (powerTick) {
+    if (speeds.powerTick === null) {
+      powerTick.hidden = true;
+    } else {
+      powerTick.hidden = false;
+      const fraction = Math.max(0, Math.min(1, speeds.powerTick / speeds.max));
+      powerTick.style.left = `${String(Math.round(fraction * 100))}%`;
+    }
+  }
   const turn = turnFraction(self);
   setBar('field-turn-fill', turn ?? 0);
   const power = powerBars(self?.energy ?? { warp: 0, impulse: 0, apr: 0, lastReason: '' }, self?.weapons ?? []);
@@ -148,15 +168,18 @@ function paintTags(input: FieldHudInput): void {
     const contact = input.vm.contacts.find((item) => item.id === tag.id);
     if (!contact) continue;
     const name = input.roster[contact.index]?.name ?? 'Contact';
+    const badge = empireBadge(input.roster[contact.index]?.empire ?? '');
     const range = formatRangeTag(contact.rangeFromSelf);
     const button = document.createElement('button');
     button.type = 'button';
     button.className = `offscreen-tag ${contact.hostility}`;
     if (contact.id === input.vm.targetId || contact.targeted) button.classList.add('bracket');
     button.dataset.id = String(contact.id);
-    button.title = `${name}  ${range}`;
+    button.dataset.empire = badge.id;
+    button.title = `${badge.code}  ${name}  ${range}`;
     button.style.left = `${String(tag.x)}px`;
     button.style.top = `${String(tag.y)}px`;
+    button.append(empireMark(badge.mark), empireCode(badge.code));
     const shape = document.createElement('span');
     shape.className = `tag-shape ${contact.hostility === 'hostile' ? 'chevron' : contact.hostility === 'friendly' ? 'chevron solid' : 'diamond'}`;
     shape.setAttribute('aria-hidden', 'true');
@@ -172,6 +195,27 @@ function paintTags(input: FieldHudInput): void {
     button.append(shape, arrow, label, readout);
     host.append(button);
   }
+}
+
+function empireMark(path: string): SVGSVGElement {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 16 16');
+  svg.setAttribute('class', 'tag-mark');
+  svg.setAttribute('aria-hidden', 'true');
+  const stroke = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  stroke.setAttribute('d', path);
+  stroke.setAttribute('fill', 'none');
+  stroke.setAttribute('stroke', 'currentColor');
+  stroke.setAttribute('stroke-width', '1.5');
+  svg.append(stroke);
+  return svg;
+}
+
+function empireCode(code: string): HTMLSpanElement {
+  const node = document.createElement('span');
+  node.className = 'tag-code';
+  node.textContent = code;
+  return node;
 }
 
 function setBar(id: string, fraction: number): void {

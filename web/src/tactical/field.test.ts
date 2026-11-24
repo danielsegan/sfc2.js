@@ -9,6 +9,7 @@ import {
   type ArcWeapon,
 } from './arcs.ts';
 import { reportedBeams, reportedFlashes } from './beams.ts';
+import { empireBadge } from './empire.ts';
 import {
   alertLamp,
   backingStore,
@@ -18,7 +19,12 @@ import {
   hullFraction,
   missionClock,
   powerBars,
+  resetHullPeaks,
+  soonestCountdown,
+  speedScale,
 } from './frame.ts';
+import { hudScaleFromLocation } from '../field-hud.ts';
+import { fieldRelease, orbitOnPress } from './pointer.ts';
 import { defaultOverheadDistance, gridLevel, gridSegments, latticeCoords, visibleWorldWidth } from './grid.ts';
 import { avoidObstacles, formatRangeTag, markerHeading, offscreenPoint, pickContact, stackTags } from './tags.ts';
 import {
@@ -150,8 +156,36 @@ describe('tactical field', () => {
     expect(hudFrame(2560, 1080).mode).toBe('wide');
   });
 
+  it('reads hull boxes, not shield totals, and snaps the HUD scale', () => {
+    resetHullPeaks();
+    expect(hullFraction(1, { forward: 0, center: 0, aft: 0 })).toBe(0);
+    expect(hullFraction(2, { forward: 4, center: 2, aft: 2 })).toBe(1);
+    expect(hullFraction(2, { forward: 2, center: 1, aft: 1 })).toBe(0.5);
+    expect(hudScaleFromLocation('')).toBe(1);
+    expect(hudScaleFromLocation('?hudScale=0.5')).toBe(1);
+    expect(hudScaleFromLocation('?hudScale=1.2')).toBe(1.25);
+    expect(hudScaleFromLocation('?hudScale=1.5')).toBe(1.5);
+    expect(hudScaleFromLocation('?hudScale=4.4')).toBe(4);
+    expect(empireBadge('Klingon')).toMatchObject({ id: 'kli', code: 'KLI' });
+    expect(empireBadge('Federation').mark.length).toBeGreaterThan(0);
+    expect(empireBadge('unknown').code).toBe('NEU');
+    expect(soonestCountdown([])).toBe('');
+    expect(soonestCountdown([{ ticks: 90 }, { remaining: 30 }])).toBe('00:01');
+    expect(speedScale(null).max).toBe(32);
+    expect(speedScale({ speedMax: 16, speedMaxForPower: 8 })).toEqual({ max: 16, powerTick: 8 });
+    expect(orbitOnPress(0, false)).toBe(false);
+    expect(orbitOnPress(0, true)).toBe(true);
+    expect(orbitOnPress(1, false)).toBe(true);
+    expect(orbitOnPress(2, false)).toBe(false);
+    expect(fieldRelease(2, false, 3, 1)).toBe('target');
+    expect(fieldRelease(2, false, 5, 1)).toBe('none');
+    expect(fieldRelease(2, false, 6, 1.5)).toBe('target');
+    expect(fieldRelease(0, true, 2, 1)).toBe('none');
+    expect(fieldRelease(0, false, 2, 1)).toBe('steer');
+    expect(fieldRelease(1, false, 2, 1)).toBe('none');
+  });
+
   it('reads gauges and ordered heading from the view model', () => {
-    expect(hullFraction([{ current: 6, max: 12 }, { current: 6, max: 12 }])).toBe(0.5);
     expect(capacitorFraction([{ family: 'phaser', charge: 1, cost: 4 }, { family: 'photon', charge: 4, cost: 4 }])).toBe(0.25);
     expect(missionClock(0)).toBe('00:00');
     expect(missionClock(1800)).toBe('01:00');
@@ -171,6 +205,7 @@ describe('tactical field', () => {
     expect(match.stateHash()).toBe(before);
     const phaser = vm.self?.weapons.find((item) => item.code === 'TEST-PH');
     const photon = vm.self?.weapons.find((item) => item.code === 'TEST-PHOT');
+    expect(vm.self?.hull).toEqual({ forward: 0, center: 0, aft: 0 });
     expect(phaser?.rangeMax).toBe(20);
     expect(phaser?.rangeBands).toEqual([10, 20]);
     expect(photon?.rangeMax).toBe(30);

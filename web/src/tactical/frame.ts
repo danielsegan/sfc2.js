@@ -2,6 +2,7 @@
  * HUD frame for the thin bars. Fractional scale is a real CSS size,
  * not a bitmap blown up after the fact.
  */
+import type { HullReadout } from '../../../engine/view/view-model.ts';
 export type FrameMode = 'classic' | 'safe' | 'wide';
 
 export interface HudFrame {
@@ -45,15 +46,24 @@ export function hudFrame(width: number, height: number): HudFrame {
   return { mode: 'safe', left: safeLeft, width: safeWidth, safeLeft, safeWidth };
 }
 
-export function hullFraction(shields: readonly { current: number; max: number }[]): number {
-  let current = 0;
-  let max = 0;
-  for (const facing of shields) {
-    current += facing.current;
-    max += facing.max;
-  }
-  if (max <= 0) return 1;
-  return Math.max(0, Math.min(1, current / max));
+/** Remaining hull boxes over the most seen for this contact. Shields are not hull. */
+const hullPeak = new Map<number, number>();
+
+export function hullBoxes(hull: HullReadout): number {
+  return hull.forward + hull.center + hull.aft;
+}
+
+export function hullFraction(id: number, hull: HullReadout): number {
+  const current = hullBoxes(hull);
+  const seen = hullPeak.get(id) ?? 0;
+  const max = current > seen ? current : seen;
+  hullPeak.set(id, max);
+  if (max <= 0) return 0;
+  return current / max;
+}
+
+export function resetHullPeaks(): void {
+  hullPeak.clear();
 }
 
 export function capacitorFraction(weapons: readonly { family: string; charge: number; cost: number }[]): number {
@@ -66,6 +76,28 @@ export function capacitorFraction(weapons: readonly { family: string; charge: nu
   }
   if (cost <= 0) return 0;
   return Math.max(0, Math.min(1, charge / cost));
+}
+
+/** Soonest mission timer, as mm:ss. Empty when no timer carries a tick count. */
+export function soonestCountdown(timers: readonly unknown[], hz = 30): string {
+  let best: number | null = null;
+  for (const timer of timers) {
+    if (typeof timer !== 'object' || timer === null) continue;
+    const record = timer as { ticks?: unknown; remaining?: unknown };
+    const ticks = typeof record.ticks === 'number' ? record.ticks : typeof record.remaining === 'number' ? record.remaining : null;
+    if (ticks === null || ticks < 0) continue;
+    if (best === null || ticks < best) best = ticks;
+  }
+  if (best === null) return '';
+  return missionClock(best, hz);
+}
+
+/** Ordered-speed scale. 32 until the view model reports speedMax. */
+export function speedScale(self: object | null): { max: number; powerTick: number | null } {
+  const record = (self ?? {}) as { speedMax?: unknown; speedMaxForPower?: unknown };
+  const max = typeof record.speedMax === 'number' && record.speedMax > 0 ? record.speedMax : 32;
+  const powerTick = typeof record.speedMaxForPower === 'number' ? record.speedMaxForPower : null;
+  return { max, powerTick };
 }
 
 export function missionClock(tick: number, hz = 30): string {
@@ -81,7 +113,11 @@ export interface PowerBars {
   readonly overdraw: boolean;
 }
 
-/** Generators against the weapon costs already on the view model. */
+/**
+ * Generators against weapon costs on the view model.
+ * TODO(engine): replace `systems` with the ViewModel's total draw and surplus
+ * (EnergyView) once those fields exist. Weapon costs are only a stand-in.
+ */
 export function powerBars(
   energy: { warp: number; impulse: number; apr: number; lastReason: string },
   weapons: readonly { cost: number }[],
@@ -94,6 +130,10 @@ export function powerBars(
 
 export type AlertLamp = 'green' | 'yellow' | 'red';
 
+/**
+ * Provisional. The lamps follow hit and alert events. The original buttons
+ * set the alert; there is no alert command in this duel yet.
+ */
 export function alertLamp(events: readonly { kind: string; severity?: string; id?: string }[]): AlertLamp {
   for (let i = events.length - 1; i >= 0; i--) {
     const event = events[i];
