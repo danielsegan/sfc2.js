@@ -28,6 +28,13 @@ export interface ShiplistOption {
   readonly label: string;
 }
 
+export interface SlotSnapshot {
+  readonly control: string;
+  readonly side: string;
+  readonly empire: string;
+  readonly ship: string;
+}
+
 interface Row {
   readonly control: HTMLSelectElement;
   readonly side: HTMLSelectElement;
@@ -38,16 +45,101 @@ interface Row {
 let mode: 'synthetic' | 'shiplist' = 'synthetic';
 let shiplist: readonly ShiplistOption[] = [];
 const rows: Row[] = [];
+let onBoardChange: (() => void) | null = null;
 
 export function skirmishMode(): 'synthetic' | 'shiplist' {
   return mode;
 }
 
-export function mountSkirmish(host: HTMLElement): void {
+export function snapshotSlots(): SlotSnapshot[] {
+  return rows.map((row) => ({
+    control: row.control.value,
+    side: row.side.value,
+    empire: row.empire.value,
+    ship: row.ship.value,
+  }));
+}
+
+/** True when the board is no longer the default two-ship duel. */
+export function isDefaultDuelSetup(boardMode: 'synthetic' | 'shiplist', slots: readonly SlotSnapshot[]): boolean {
+  if (slots.length < 2) return false;
+  if (slots[0]?.control !== 'you' || slots[1]?.control !== 'ai') return false;
+  for (let i = 2; i < slots.length; i++) {
+    if (slots[i] && slots[i].control !== 'empty') return false;
+  }
+  if (boardMode === 'synthetic') {
+    return (
+      slots[0].empire === 'federation' &&
+      slots[0].ship === 'cruiser' &&
+      slots[1].empire === 'klingon' &&
+      slots[1].ship === 'cruiser'
+    );
+  }
+  return true;
+}
+
+/**
+ * Decide how a newly arrived shiplist should land on the board.
+ * A late catalog must not wipe slots 2–6 or switch away from a custom
+ * synthetic fleet. `reset` is for an intentional 1v1 reload.
+ */
+export function resolveShiplistAssignments(
+  previous: readonly SlotSnapshot[],
+  previousMode: 'synthetic' | 'shiplist',
+  options: readonly ShiplistOption[],
+  player: number,
+  opponent: number,
+  reset: boolean,
+): { mode: 'synthetic' | 'shiplist'; slots: SlotSnapshot[]; catalogOnly: boolean } {
+  if (!reset && previousMode === 'synthetic' && !isDefaultDuelSetup(previousMode, previous)) {
+    return { mode: 'synthetic', slots: [...previous], catalogOnly: true };
+  }
+  if (!reset && previousMode === 'shiplist' && previous.length > 0) {
+    const slots: SlotSnapshot[] = previous.map((slot) => {
+      if (slot.control === 'empty') return slot;
+      const index = Number(slot.ship);
+      const option = options.find((item) => item.index === index);
+      if (!option) return { control: 'empty', side: slot.side, empire: slot.empire, ship: slot.ship };
+      return { control: slot.control, side: slot.side, empire: option.empire, ship: String(option.index) };
+    });
+    return { mode: 'shiplist', slots, catalogOnly: false };
+  }
+  const slots: SlotSnapshot[] = [];
+  const count = previous.length > 0 ? previous.length : SKIRMISH_SLOTS;
+  const playerOpt = options.find((item) => item.index === player);
+  const opponentOpt = options.find((item) => item.index === opponent);
+  for (let i = 0; i < count; i++) {
+    if (i === 0) {
+      slots.push({
+        control: 'you',
+        side: '0',
+        empire: playerOpt?.empire ?? '',
+        ship: String(player),
+      });
+    } else if (i === 1) {
+      slots.push({
+        control: 'ai',
+        side: '1',
+        empire: opponentOpt?.empire ?? '',
+        ship: String(opponent),
+      });
+    } else {
+      slots.push({ control: 'empty', side: i % 2 === 0 ? '0' : '1', empire: '', ship: '' });
+    }
+  }
+  return { mode: 'shiplist', slots, catalogOnly: false };
+}
+
+export function mountSkirmish(host: HTMLElement, notify?: () => void): void {
+  onBoardChange = notify ?? null;
   host.replaceChildren();
   rows.length = 0;
   for (let i = 0; i < SKIRMISH_SLOTS; i++) host.append(buildRow(i));
   fillSynthetic('duel');
+}
+
+function notifyBoard(): void {
+  onBoardChange?.();
 }
 
 export function fillSynthetic(preset: 'duel' | '3v3'): void {
@@ -66,20 +158,46 @@ export function fillSynthetic(preset: 'duel' | '3v3'): void {
   }
 }
 
-export function fillShiplist(options: readonly ShiplistOption[], player: number, opponent: number): void {
-  mode = 'shiplist';
+export function fillShiplist(
+  options: readonly ShiplistOption[],
+  player: number,
+  opponent: number,
+  opts?: { reset?: boolean },
+): void {
+  const previous = snapshotSlots();
+  const previousMode = mode;
+  const resolved = resolveShiplistAssignments(
+    previous,
+    previousMode,
+    options,
+    player,
+    opponent,
+    opts?.reset === true,
+  );
   shiplist = options;
+  if (resolved.catalogOnly) return;
+  mode = 'shiplist';
   const empires: string[] = [];
   for (const option of options) {
     if (!empires.includes(option.empire)) empires.push(option.empire);
   }
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
-    if (!row) continue;
+    const slot = resolved.slots[i];
+    if (!row || !slot) continue;
     fillEmpireOptions(row, empires);
-    if (i === 0) applyCandidate(row, player, 'you', 0);
-    else if (i === 1) applyCandidate(row, opponent, 'ai', 1);
-    else row.control.value = 'empty';
+    if (slot.control === 'empty') {
+      row.control.value = 'empty';
+      continue;
+    }
+    const index = Number(slot.ship);
+    const control: 'you' | 'ai' = slot.control === 'you' ? 'you' : 'ai';
+    const side: 0 | 1 = slot.side === '1' ? 1 : 0;
+    if (Number.isInteger(index)) applyCandidate(row, index, control, side);
+    else {
+      row.control.value = control;
+      row.side.value = slot.side;
+    }
   }
 }
 
@@ -152,12 +270,19 @@ function buildRow(index: number): HTMLDivElement {
   control.ariaLabel = `Slot ${String(index + 1)} control`;
   side.ariaLabel = `Slot ${String(index + 1)} side`;
   control.addEventListener('change', () => {
-    if (control.value !== 'you') return;
-    for (const other of rows) {
-      if (other.control !== control && other.control.value === 'you') other.control.value = 'ai';
+    if (control.value === 'you') {
+      for (const other of rows) {
+        if (other.control !== control && other.control.value === 'you') other.control.value = 'ai';
+      }
     }
+    notifyBoard();
   });
-  empire.addEventListener('change', () => fillShipOptions(rows[index]!));
+  side.addEventListener('change', () => notifyBoard());
+  empire.addEventListener('change', () => {
+    fillShipOptions(rows[index]!);
+    notifyBoard();
+  });
+  ship.addEventListener('change', () => notifyBoard());
   row.append(mark, control, side, empire, ship);
   rows.push({ control, side, empire, ship });
   return row;

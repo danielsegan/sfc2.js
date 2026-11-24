@@ -24,7 +24,8 @@ import {
 } from './frame.ts';
 import { hudScaleFromLocation } from '../field-hud.ts';
 import { fieldRelease, orbitOnPress } from './pointer.ts';
-import { defaultOverheadDistance, gridLevel, gridSegments, latticeCoords, visibleWorldWidth } from './grid.ts';
+import { defaultOverheadDistance, gridLevel, gridSegments, latticeCoords, overheadFitAspect, visibleWorldWidth } from './grid.ts';
+import { fieldChromeBudget } from './chrome.ts';
 import { avoidObstacles, formatRangeTag, markerHeading, offscreenPoint, pickContact, stackTags } from './tags.ts';
 import {
   FIELD_FOV,
@@ -60,6 +61,29 @@ describe('tactical field', () => {
     const distance = defaultOverheadDistance(aspect, FIELD_FOV, major, MAJOR_CELLS_ACROSS);
     const width = visibleWorldWidth(distance, FIELD_FOV, aspect);
     expect(width / major).toBeCloseTo(MAJOR_CELLS_ACROSS, 5);
+  });
+
+  it('zooms an ultra-wide short stage out instead of fitting five cells across the long edge', () => {
+    const wide = 1920 / 337;
+    expect(overheadFitAspect(wide)).toBeCloseTo(16 / 9, 10);
+    const major = GRID_MINOR_UNIT * GRID_MAJOR_FACTOR;
+    const distance = defaultOverheadDistance(wide, FIELD_FOV, major, MAJOR_CELLS_ACROSS);
+    const fitted = defaultOverheadDistance(16 / 9, FIELD_FOV, major, MAJOR_CELLS_ACROSS);
+    expect(distance).toBeCloseTo(fitted, 8);
+    const height = visibleWorldWidth(distance, FIELD_FOV, wide) / wide;
+    expect(height / major).toBeCloseTo(MAJOR_CELLS_ACROSS / (16 / 9) * 1, 5);
+    expect(height).toBeGreaterThan(major * 2);
+  });
+
+  it('reserves a playable field at 16:9 window sizes used in playtest', () => {
+    for (const height of [1080, 900, 720]) {
+      const budget = fieldChromeBudget(height, 1);
+      expect(budget.headerMax + budget.skirmishMax + budget.consoleMax + budget.topBar + budget.bottomBar + budget.fieldMin).toBe(height);
+      expect(budget.fieldMin).toBeGreaterThanOrEqual(280);
+    }
+    const tight = fieldChromeBudget(720, 4);
+    expect(tight.fieldMin + tight.topBar + tight.bottomBar + tight.headerMax + tight.skirmishMax + tight.consoleMax).toBe(720);
+    expect(tight.fieldMin).toBeGreaterThanOrEqual(200);
   });
 
   it('keeps grid lines on the world lattice and fades minors when they crowd', () => {

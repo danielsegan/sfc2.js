@@ -169,22 +169,23 @@
       </section>
       <section class="plate" aria-label="Helm">
         <h2>Helm</h2>
-        <div class="helm-grid" role="group" aria-label="High-energy turn buttons, disabled until a later sim change">
-          <button type="button" id="helm-nw" disabled title="High-energy turn is a later sim change.">↖</button>
-          <button type="button" id="helm-n" disabled title="High-energy turn is a later sim change.">↑</button>
-          <button type="button" id="helm-ne" disabled title="High-energy turn is a later sim change.">↗</button>
-          <button type="button" id="helm-w" disabled title="High-energy turn is a later sim change.">←</button>
-          <button type="button" id="helm-hold" disabled title="High-energy turn is a later sim change.">·</button>
-          <button type="button" id="helm-e" disabled title="High-energy turn is a later sim change.">→</button>
-          <button type="button" id="helm-sw" disabled title="High-energy turn is a later sim change.">↙</button>
-          <button type="button" id="helm-s" disabled title="High-energy turn is a later sim change.">↓</button>
-          <button type="button" id="helm-se" disabled title="High-energy turn is a later sim change.">↘</button>
+        <div class="helm-grid" role="group" aria-label="High-energy turn buttons. Port and starboard are live.">
+          <button type="button" id="helm-nw" disabled title="This High-energy turn heading is not in this duel.">↖</button>
+          <button type="button" id="helm-n" disabled title="This High-energy turn heading is not in this duel.">↑</button>
+          <button type="button" id="helm-ne" disabled title="This High-energy turn heading is not in this duel.">↗</button>
+          <button type="button" id="helm-w" data-action="helm.hetPort" title="High-energy turn to port">←</button>
+          <button type="button" id="helm-hold" disabled title="This High-energy turn heading is not in this duel.">·</button>
+          <button type="button" id="helm-e" data-action="helm.hetStarboard" title="High-energy turn to starboard">→</button>
+          <button type="button" id="helm-sw" disabled title="This High-energy turn heading is not in this duel.">↙</button>
+          <button type="button" id="helm-s" disabled title="This High-energy turn heading is not in this duel.">↓</button>
+          <button type="button" id="helm-se" disabled title="This High-energy turn heading is not in this duel.">↘</button>
         </div>
         <p class="read"><span>Speed</span> <span id="speed" class="num">0</span></p>
         <p class="read"><span>Ordered</span> <span id="speed-ordered" class="num">0</span></p>
         <p class="read"><span>Heading</span> <span id="heading" class="num">0</span></p>
         <p class="read"><span>Ordered heading</span> <span id="heading-ordered" class="num">—</span></p>
         <p class="read"><span>Turn ticks</span> <span id="turn-ticks" class="num">—</span></p>
+        <p class="read"><span>HET delay</span> <span id="het-delay" class="num">—</span></p>
         <p class="read"><span>Tick</span> <span id="tick" class="num">0</span></p>
         <p class="read"><span>Plan</span> <span id="plan" class="num">0</span> t</p>
         <label class="step">Ordered speed

@@ -13,6 +13,7 @@ describe('heading wedge', () => {
   it('drives the wedge from HelmView values and hides it when mode is none', () => {
     expect(helmWedge({ mode: 'none', remainingTurn16: 20000 })).toBeNull();
     expect(helmWedge(null)).toBeNull();
+    expect(helmWedge({ mode: 'heading', remainingTurn16: 0 })).toBeNull();
     expect(helmWedge({ mode: 'heading', remainingTurn16: WEDGE_MIN_16 - 1 })).toBeNull();
     expect(helmWedge({ mode: 'heading', remainingTurn16: 6000 })).toEqual({
       arc16: 6000,
