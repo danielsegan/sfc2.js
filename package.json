@@ -1,0 +1,19 @@
+{
+  "name": "sfc2.js",
+  "private": true,
+  "type": "module",
+  "description": "Clean-room browser engine for Star Trek: Starfleet Command 2",
+  "license": "GPL-3.0-only",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "test": "node --experimental-strip-types --test tools/formats/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm test && node tools/check-rules-fixtures.mjs && bash tools/check-no-game-files.sh"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.1",
+    "typescript": "^5.9.3"
+  }
+}

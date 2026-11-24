@@ -59,4 +59,4 @@ Shiplist-specific: `duplicateClassKey`, `duplicateClassName`, `crewTotalMismatch
 
 Ftrlist-specific: `duplicateFighterType`, `missingShipRef`.
 
-`unknownWeapon` and `unknownArc` are **not** parser codes. Format parsers keep the exact file strings; the loader checks them against Combat's mapping table and emits those codes with `source: "loader"`.
+`unknownWeapon` and `unknownArc` are **not** parser codes. Format parsers keep the exact file strings. They currently append the vocabulary check onto the same result, still with `source: "loader"`, because `engine/data` is not in the repo yet. The loader remains the owner of those codes.

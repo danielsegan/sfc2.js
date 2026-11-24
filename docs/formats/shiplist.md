@@ -329,9 +329,9 @@ Errors keep the row but mark it unusable for spawning. Warnings keep it usable.
 | V14 | `specsMetaassetsDiffer` | warning | Importer-level: the two copies differ. |
 | V15 | `duplicateClassKey` | error | Two rows produce the same spawn key `${race}:${className}` (case-insensitive). `details: { race, className, rows: number[] }` (1-based lines of every row involved). Both rows are kept; lookups by key resolve to the first. Same code and shape as in the planned engine diagnostics registry. |
 
-### Loader diagnostics (not raised by this parser)
+### Loader diagnostics (`source: "loader"`)
 
-Weapon and arc values are kept as the exact file strings. The engine loader checks them against the mapping table in `docs/rules` (owned by Combat). These codes use `source: "loader"` and are not emitted by the shiplist parser. There is no loader module in the repo yet, so this is documentation only.
+Weapon and arc values are kept as the exact file strings. The engine loader checks them against the mapping table in `docs/rules` (owned by Combat). These codes use `source: "loader"`, not `"shiplist"`. There is no `engine/data` module yet, so `parseShiplist` appends them to its own result.
 
 | Code | Source | Severity | Rule |
 | --- | --- | --- | --- |
@@ -339,6 +339,8 @@ Weapon and arc values are kept as the exact file strings. The engine loader chec
 | `unknownArc` | `loader` | warning | Arc token is not in the `docs/rules` mapping table. |
 
 The CE weapon and arc code lists themselves will come later from the `sfc2-ci` inventory and are not listed here.
+
+`parseShiplist` appends these two codes with `source: "loader"` on the same result until `engine/data` exists (`{ checkVocabulary: false }` skips them). Reload-counted racks (`DroA`, `DroB`, `DroC`, `DroF`, `DroG`, `ADD6`, `ADD12`) store an Arc cell of exactly `1`, `2` or `3` in `reloads` and set `arc` to null. Any other Arc cell on those codes, including empty, is `unknownArc`. `DroI` and `DroVI` are not reload-counted and keep a letter arc such as `ALL`. Each of the ten `Pla*` spellings is its own mapping-table row; any other spelling, including `PLAF` or `plaF`, is `unknownWeapon`.
 
 ## 8. Open questions
 
