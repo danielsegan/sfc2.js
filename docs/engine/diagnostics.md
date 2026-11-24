@@ -96,7 +96,29 @@ interface Diagnostic {
 | mod | `textureNameRejected` | warning | Formats | `{ reason: 'texture-name' }`. The pool string is not a single basename. The name is omitted |
 | mod | `lodOutOfRange` | warning | Formats | `{ requested, lods }` |
 | mission | `badMapBounds` | error | Engine | axis not a whole number, or outside ±8,192 range units; `location.field` names the offending value (sim-core.md §2; merged PR #52) |
-| rules | `noSuchSystem` | (ruleResult reason) | Combat | example from Combat; full list to be added by Combat |
+| rules | `ok` | info | Combat | `ruleResult` applied. Not logged as a warning |
+| rules | `noSuchShip` | warning | Combat | Spawn id is not a live ship |
+| rules | `shipDestroyed` | warning | Combat | The ship is already destroyed |
+| rules | `notAShip` | warning | Combat | Fighter. Duel commands accept ship and pf |
+| rules | `negativeValue` | warning | Combat | A numeric input is negative |
+| rules | `badFacing` | warning | Combat | Shield index outside 0..5 |
+| rules | `unknownDraw` | warning | Combat | Allocation names a draw this slice does not recognise |
+| rules | `unknownWeaponSlot` | warning | Combat | `slotIndex` is not a mount |
+| rules | `notInDuelSlice` | warning | Combat | Weapon or mode is outside the Phase 2 duel |
+| rules | `notCharged` | warning | Combat | Mount has not finished charging or arming |
+| rules | `noFireControl` | warning | Combat | Fire control was not paid |
+| rules | `outOfArc` | warning | Combat | Target bearing is outside the mount arc |
+| rules | `outOfRange` | warning | Combat | Target is beyond the weapon's last range |
+| rules | `weaponDestroyed` | warning | Combat | Mount has no boxes left |
+| rules | `turnModeUnverified` | warning | Combat | Turn letter has no playtest rate |
+| rules | `crewDisabled` | warning | Combat | Crew is below the minimum |
+| rules | `overDraw` | warning | Combat | Generation plus battery could not pay the plan |
+| rules | `speedClamped` | warning | Combat | Speed was reduced to the acceleration limit |
+| rules | `immobile` | warning | Combat | Hull cannot move; ordered speed became 0 |
+| rules | `shieldAboveMax` | warning | Combat | `setShields` was clamped to the facing maximum |
+| rules | `shieldDepleted` | warning | Combat | `damageShield` stopped at zero on that facing |
+| rules | `chargeCapped` | warning | Combat | Weapon request was cut to what the mount can store |
+| rules | `reinforceCapped` | warning | Combat | Reinforcement was cut by the per-turn cap or shield room |
 
 The loader emits `unknownWeapon` and `unknownArc` with `source: "loader"` (not the format parser). One problem has one code; there are no separate `...Code` variants.
 
