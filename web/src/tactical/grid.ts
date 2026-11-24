@@ -19,13 +19,24 @@ export interface GridLevel {
   readonly majorAlpha: number;
 }
 
+export const OVERHEAD_FIT_ASPECT_MIN = 4 / 3;
+export const OVERHEAD_FIT_ASPECT_MAX = 16 / 9;
+
+/** Clamp the aspect used to fit five major cells, so a short wide stage zooms out instead of cropping to a ribbon. */
+export function overheadFitAspect(aspect: number): number {
+  const safe = aspect > 0.2 ? aspect : 16 / 9;
+  if (safe < OVERHEAD_FIT_ASPECT_MIN) return OVERHEAD_FIT_ASPECT_MIN;
+  if (safe > OVERHEAD_FIT_ASPECT_MAX) return OVERHEAD_FIT_ASPECT_MAX;
+  return safe;
+}
+
 export function visibleWorldWidth(distance: number, fovDeg: number, aspect: number): number {
   const half = Math.tan((fovDeg * Math.PI) / 360) * distance;
   return half * 2 * Math.max(aspect, 0.0001);
 }
 
 export function defaultOverheadDistance(aspect: number, fovDeg: number, majorUnit: number, cellsAcross: number): number {
-  const safeAspect = aspect > 0.2 ? aspect : 16 / 9;
+  const safeAspect = overheadFitAspect(aspect);
   const width = majorUnit * cellsAcross;
   const half = width / (2 * safeAspect);
   return half / Math.tan((fovDeg * Math.PI) / 360);

@@ -54,6 +54,8 @@ export function runAction(host: CommandHost, id: string): void {
   if (id === 'helm.speedUp') host.match.bumpSpeed(1);
   else if (id === 'helm.speedDown') host.match.bumpSpeed(-1);
   else if (id === 'helm.stop') host.match.setSpeed(0);
+  else if (id === 'helm.hetPort') host.match.orderHet(-1);
+  else if (id === 'helm.hetStarboard') host.match.orderHet(1);
   else if (id === 'weapons.fire') fireGroup(host);
   else if (id === 'weapons.overload') toggleMode(host, MODE_OVERLOAD);
   else if (id === 'ops.tractor') host.match.setTractor(1, host.match.plan.tractorEnergy);

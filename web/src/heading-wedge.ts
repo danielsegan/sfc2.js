@@ -26,13 +26,15 @@ export function wedgeColor(arc16: number): number {
 
 /**
  * Pure drawing helper. The remaining arc comes from `HelmView.remainingTurn16`;
- * this does not compute a bearing. Hidden when mode is `none` or the arc is
- * smaller than `WEDGE_MIN_16`.
+ * this does not compute a bearing. Hidden when mode is `none`, when
+ * `remainingTurn16` is 0 that frame, or when the arc is smaller than
+ * `WEDGE_MIN_16`.
  */
 export function helmWedge(helm: HelmWedgeView | null | undefined): HelmWedgeDraw | null {
   if (!helm || helm.mode === 'none') return null;
+  if (helm.remainingTurn16 === 0) return null;
   const arc16 = helm.remainingTurn16 | 0;
   const mag = arc16 < 0 ? -arc16 : arc16;
-  if (mag < WEDGE_MIN_16) return null;
+  if (mag === 0 || mag < WEDGE_MIN_16) return null;
   return { arc16, color: wedgeColor(arc16) };
 }

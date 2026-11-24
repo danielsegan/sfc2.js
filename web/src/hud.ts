@@ -2,8 +2,16 @@ import type { RosterEntry } from '../../engine/duel/fixture.ts';
 import type { DuelPlan } from '../../engine/duel/match.ts';
 import { MODE_OVERLOAD, MODE_PROXIMITY } from '../../engine/sim/rules-tables.ts';
 import { toDisplayHeading } from '../../engine/view/units.ts';
-import type { HudEvent, ViewModel, WeaponReadout } from '../../engine/view/view-model.ts';
+import type { HelmView, HudEvent, ViewModel, WeaponReadout } from '../../engine/view/view-model.ts';
 import { mapOffset } from './map-geom.ts';
+
+/** Sim ticks are 30 Hz. HET delay is shown in seconds. */
+export const TICKS_PER_SECOND = 30;
+
+export function formatHetDelay(helm: Pick<HelmView, 'mode' | 'hetDelayTicks'> | null | undefined): string {
+  if (!helm || helm.mode !== 'het') return '—';
+  return `${(helm.hetDelayTicks / TICKS_PER_SECOND).toFixed(1)} s`;
+}
 
 const FACING = ['Bow', 'Forward starboard', 'Aft starboard', 'Stern', 'Aft port', 'Forward port'];
 
@@ -42,6 +50,7 @@ export function updateHud(vm: ViewModel, roster: readonly RosterEntry[], hud: Hu
   text('heading', self ? formatDeg(self.heading16) : '—');
   text('heading-ordered', self && self.orderedHeading16 !== null ? formatDeg(self.orderedHeading16) : '—');
   text('turn-ticks', self && self.turnTicksRemaining !== null ? String(self.turnTicksRemaining) : '—');
+  text('het-delay', formatHetDelay(self?.helm));
   text('plan', self ? String(self.energy.planTicksLeft) : '0');
   text('gen-warp', fmt(self?.energy.warp ?? 0));
   text('gen-impulse', fmt(self?.energy.impulse ?? 0));
@@ -171,7 +180,7 @@ function appendLog(vm: ViewModel): void {
   const list = document.getElementById('log');
   if (!list) return;
   for (const event of vm.events) {
-    const line = logLine(vm.tick, event);
+    const line = hudLogLine(vm.tick, event);
     if (!line) continue;
     const key = `${String(vm.tick)}:${line}`;
     if (seen.has(key)) continue;
@@ -183,7 +192,7 @@ function appendLog(vm: ViewModel): void {
   while (list.childElementCount > 200) list.firstElementChild?.remove();
 }
 
-function logLine(tick: number, event: HudEvent): string | null {
+export function hudLogLine(tick: number, event: HudEvent): string | null {
   const mark = `t${String(tick)}`;
   if (event.kind === 'hit') return `${mark}  Hit facing ${String(event.facing)}, absorbed ${String(event.amount)}`;
   if (event.kind === 'alert') {
@@ -194,6 +203,8 @@ function logLine(tick: number, event: HudEvent): string | null {
     if (event.id === 'turnModeUnverified') {
       return `${mark}  Turn mode unverified; using fallback yaw ${String(event.amount)}`;
     }
+    if (event.id === 'hetActive') return `${mark}  hetActive`;
+    if (event.id === 'hetInvalidDir') return `${mark}  hetInvalidDir`;
     return `${mark}  ${event.id}`;
   }
   if (event.kind === 'sim') return `${mark}  Event ${String(event.code)}`;

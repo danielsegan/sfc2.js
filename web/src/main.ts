@@ -30,7 +30,17 @@ import { headingToward } from './helm-aim.ts';
 import { applyEmpireSkin } from './skins/apply.ts';
 import { fitUiScale, formatUiScale } from './skins/scale.ts';
 import { shieldFacingAt } from './shield-hit.ts';
-import { fillShiplist, fillSynthetic, mountSkirmish, readSkirmish, type SlotChoice } from './skirmish-ui.ts';
+import { applyChromeBudget, fieldChromeBudget } from './tactical/chrome.ts';
+import {
+  fillShiplist,
+  fillSynthetic,
+  isDefaultDuelSetup,
+  mountSkirmish,
+  readSkirmish,
+  skirmishMode,
+  snapshotSlots,
+  type SlotChoice,
+} from './skirmish-ui.ts';
 
 const space = document.getElementById('space');
 if (!(space instanceof HTMLCanvasElement)) throw new Error('missing view');
@@ -62,8 +72,15 @@ if (source) source.textContent = `Synthetic skirmish · ${SYNTHETIC_FIXTURE_PATH
 
 void opening.groups.then((groups) => scene.setHulls(groups));
 
+let setupCustomized = false;
+let matchLive = false;
+
 const slotsHost = document.getElementById('skirmish-slots');
-if (slotsHost) mountSkirmish(slotsHost);
+if (slotsHost) {
+  mountSkirmish(slotsHost, () => {
+    setupCustomized = !isDefaultDuelSetup(skirmishMode(), snapshotSlots());
+  });
+}
 
 const hud = {
   get selectedSlot() {
@@ -190,6 +207,7 @@ document.getElementById('skirmish-start')?.addEventListener('click', () => {
 });
 document.getElementById('skirmish-3v3')?.addEventListener('click', () => {
   fillSynthetic('3v3');
+  setupCustomized = true;
   void startSkirmish();
 });
 
@@ -461,27 +479,92 @@ function syncSpeedInput(): void {
   }
 }
 
-function fillShipPicker(loaded: LoadedDuel): void {
+function candidateLabel(candidate: LoadedDuel['candidates'][number]): string {
+  const hull = candidate.hullType.length > 0 ? ` (${candidate.hullType})` : '';
+  return `${candidate.race} ${candidate.className}${hull}`.trim();
+}
+
+function rosterLabel(entry: RosterEntry): string {
+  const name = entry.name.trim();
+  const empire = entry.empire.trim();
+  if (empire.length === 0) return name;
+  if (name.toLowerCase().startsWith(empire.toLowerCase())) return name;
+  return `${empire} ${name}`;
+}
+
+function fillShipPicker(loaded: LoadedDuel, selectDefaults = true): void {
   const player = document.getElementById('player-ship');
   const opponent = document.getElementById('opponent-ship');
   if (!(player instanceof HTMLSelectElement) || !(opponent instanceof HTMLSelectElement)) return;
+  const previousPlayer = player.value;
+  const previousOpponent = opponent.value;
   fillingShips = true;
   player.replaceChildren();
   opponent.replaceChildren();
   for (let i = 0; i < loaded.candidates.length; i++) {
     const candidate = loaded.candidates[i];
     if (!candidate) continue;
-    const label = `${candidate.race} ${candidate.className} (${candidate.hullType})`;
     const weapon = candidate.supported ? '' : ' — no phaser or photon';
     for (const select of [player, opponent]) {
       const option = document.createElement('option');
       option.value = String(i);
-      option.textContent = `${label}${weapon}`;
+      option.textContent = `${candidateLabel(candidate)}${weapon}`;
       select.append(option);
     }
   }
-  player.value = String(loaded.player);
-  opponent.value = String(loaded.opponent);
+  if (selectDefaults) {
+    player.value = String(loaded.player);
+    opponent.value = String(loaded.opponent);
+  } else {
+    if ([...player.options].some((option) => option.value === previousPlayer)) player.value = previousPlayer;
+    if ([...opponent.options].some((option) => option.value === previousOpponent)) opponent.value = previousOpponent;
+  }
+  fillingShips = false;
+}
+
+function candidateIndexFor(entry: RosterEntry, loaded: LoadedDuel): number | null {
+  const name = entry.name.trim().toLowerCase();
+  const empire = entry.empire.trim().toLowerCase();
+  const exact = loaded.candidates.findIndex((candidate) => {
+    const className = candidate.className.trim().toLowerCase();
+    const race = candidate.race.trim().toLowerCase();
+    const label = candidateLabel(candidate).trim().toLowerCase();
+    return (
+      (className.length > 0 && (name === className || name.endsWith(` ${className}`))) &&
+      (race.length === 0 || empire === race || name.startsWith(race))
+    ) || label === name || label === `${empire} ${name}`.trim();
+  });
+  return exact >= 0 ? exact : null;
+}
+
+function ensurePickerOption(select: HTMLSelectElement, value: string, label: string): void {
+  if (![...select.options].some((option) => option.value === value)) {
+    const option = document.createElement('option');
+    option.value = value;
+    option.textContent = label;
+    select.append(option);
+  }
+  select.value = value;
+}
+
+/** Point "Your ship" / Opponent at the live roster, not the catalog default. */
+function syncShipHeader(): void {
+  const player = document.getElementById('player-ship');
+  const opponent = document.getElementById('opponent-ship');
+  if (!(player instanceof HTMLSelectElement) || !(opponent instanceof HTMLSelectElement)) return;
+  const selfIndex = latest?.self?.index ?? match.selfIndex;
+  const self = roster[selfIndex];
+  const other = roster.find((_, index) => index !== selfIndex);
+  fillingShips = true;
+  if (self) {
+    const value = catalog ? String(candidateIndexFor(self, catalog) ?? `roster:${String(selfIndex)}`) : `roster:${String(selfIndex)}`;
+    ensurePickerOption(player, value, rosterLabel(self));
+  }
+  if (other) {
+    const otherIndex = roster.indexOf(other);
+    const value = catalog ? String(candidateIndexFor(other, catalog) ?? `roster:${String(otherIndex)}`) : `roster:${String(otherIndex)}`;
+    ensurePickerOption(opponent, value, rosterLabel(other));
+  }
   fillingShips = false;
 }
 
@@ -493,21 +576,28 @@ function appendNote(note: string): void {
   list.append(item);
 }
 
-function adoptLoaded(loaded: LoadedDuel): void {
+function shiplistOptions(loaded: LoadedDuel) {
+  return loaded.candidates.map((candidate, index) => ({
+    index,
+    empire: candidate.race.length > 0 ? candidate.race : 'Empire',
+    label: `${candidate.className} (${candidate.hullType})`,
+  }));
+}
+
+function adoptLoaded(loaded: LoadedDuel, opts?: { replaceMatch?: boolean; resetSlots?: boolean }): void {
+  const replaceMatch = opts?.replaceMatch ?? (!matchLive && !setupCustomized);
+  const resetSlots = opts?.resetSlots ?? replaceMatch;
   catalog = loaded;
   installVfs = loaded.vfs;
-  fillShipPicker(loaded);
-  fillShiplist(
-    loaded.candidates.map((candidate, index) => ({
-      index,
-      empire: candidate.race.length > 0 ? candidate.race : 'Empire',
-      label: `${candidate.className} (${candidate.hullType})`,
-    })),
-    loaded.player,
-    loaded.opponent,
-  );
-  adopt(loaded.match, loaded.groups, loaded.roster, loaded.note);
-  appendNote(loaded.note);
+  fillShipPicker(loaded, replaceMatch);
+  fillShiplist(shiplistOptions(loaded), loaded.player, loaded.opponent, { reset: resetSlots });
+  if (replaceMatch) {
+    adopt(loaded.match, loaded.groups, loaded.roster, loaded.note);
+    appendNote(loaded.note);
+  } else {
+    syncShipHeader();
+    appendNote(`Install catalog ready. Skirmish setup unchanged.`);
+  }
   void attachSounds(vfsRead(loaded.vfs));
 }
 
@@ -535,7 +625,7 @@ async function rebuildFromPicker(): Promise<void> {
     opponent.value = String(catalog.opponent);
     return;
   }
-  adoptLoaded(loaded);
+  adoptLoaded(loaded, { replaceMatch: true, resetSlots: false });
 }
 
 function adopt(next: DuelMatch, groups: readonly Group[], nextRoster: readonly RosterEntry[], note: string): void {
@@ -547,6 +637,7 @@ function adopt(next: DuelMatch, groups: readonly Group[], nextRoster: readonly R
   match.setTimeScale(paused ? 0 : scale);
   if (source) source.textContent = note;
   document.body.dataset.ready = '0';
+  syncShipHeader();
   void paintSkin();
 }
 
@@ -566,7 +657,11 @@ function frame(now: number): void {
   match.frame(dt);
   const vm = match.view();
   latest = vm;
-  if (vm.contacts.some((contact) => contact.kind === 'ship')) document.body.dataset.ready = '1';
+  if (vm.contacts.some((contact) => contact.kind === 'ship')) {
+    const wasReady = document.body.dataset.ready === '1';
+    document.body.dataset.ready = '1';
+    if (!wasReady) syncShipHeader();
+  }
   document.body.dataset.camera = scene.cameraMode;
   scene.resize(canvas.clientWidth, canvas.clientHeight, window.devicePixelRatio || 1);
   const groupSlots = groups[selectedGroup] ?? [];
@@ -604,12 +699,14 @@ function frame(now: number): void {
 }
 
 window.addEventListener('resize', () => {
+  applyChromeBudget(fieldChromeBudget(window.innerHeight, hudScale));
   scene.resize(canvas.clientWidth, canvas.clientHeight, window.devicePixelRatio || 1);
 });
 
 const pageInstall = new URLSearchParams(location.search).get('install');
 mountKeymapDialog(keys, (text) => host.note(text));
 bindVolume();
+applyChromeBudget(fieldChromeBudget(window.innerHeight, hudScale));
 bindUiScale();
 void paintSkin();
 void attachSounds((path) => readDevFile(pageInstall, path));
@@ -642,6 +739,7 @@ function bindUiScale(): void {
   const apply = () => {
     document.documentElement.style.setProperty('--ui-scale', select.value);
     localStorage.setItem('sfc2js.uiScale.v1', select.value);
+    applyChromeBudget(fieldChromeBudget(window.innerHeight, hudScale));
   };
   select.addEventListener('change', apply);
   apply();
@@ -772,6 +870,7 @@ async function startSkirmish(): Promise<void> {
     return;
   }
   const built = syntheticFleet(choices);
+  matchLive = true;
   adopt(built.match, await built.groups, built.roster, `Synthetic skirmish · ${String(occupied.length)} ships`);
   if (alert) alert.textContent = '';
 }
@@ -827,6 +926,7 @@ async function startShiplist(choices: readonly SlotChoice[]): Promise<void> {
     fleet,
     timeScale: scale,
   });
+  matchLive = true;
   adopt(next, groups, nextRoster, `Skirmish · ${String(active.length)} ships from the install.`);
   if (alert) alert.textContent = '';
 }

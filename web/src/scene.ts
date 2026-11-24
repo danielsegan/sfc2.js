@@ -241,6 +241,11 @@ export class DuelScene {
     this.camera.updateProjectionMatrix();
     this.renderer.setPixelRatio(ratio);
     this.renderer.setSize(width, height, false);
+    // setSize updates the viewport, not the scissor. Keep the scissor box
+    // in sync with the CSS size (three.js multiplies by the pixel ratio)
+    // so a stale constructor default cannot clip the left of the field.
+    this.renderer.setViewport(0, 0, width, height);
+    this.renderer.setScissor(0, 0, width, height);
     if (this.fitted && this.mode === 'overhead') {
       this.overheadDistance = defaultOverheadDistance(
         this.camera.aspect,
@@ -291,6 +296,8 @@ export class DuelScene {
     } else {
       this.headingWedge.visible = false;
       this.headingEdge.visible = false;
+      this.headingWedge.geometry.setDrawRange(0, 0);
+      this.headingEdge.geometry.setDrawRange(0, 0);
     }
     this.noteReported(vm, now);
     this.expire(now);
@@ -303,6 +310,8 @@ export class DuelScene {
     if (!drawn || !(material instanceof MeshBasicMaterial)) {
       this.headingWedge.visible = false;
       this.headingEdge.visible = false;
+      this.headingWedge.geometry.setDrawRange(0, 0);
+      this.headingEdge.geometry.setDrawRange(0, 0);
       return;
     }
     const arc = drawn.arc16;

@@ -15,6 +15,8 @@ describe('ui scale', () => {
     expect(formatUiScale(fitUiScale(1024, 768))).toBe('1');
     expect(formatUiScale(fitUiScale(1600, 1200))).toBe('1.5');
     expect(formatUiScale(fitUiScale(4096, 3072))).toBe('4');
+    expect(formatUiScale(fitUiScale(1280, 720))).toBe('1');
+    expect(formatUiScale(fitUiScale(1920, 1080))).toBe('1.25');
   });
 
   it('samples bitmap plates from the nearest larger tier', () => {

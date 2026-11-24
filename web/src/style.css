@@ -25,6 +25,9 @@
   --hud-frame-left: 0px;
   --hud-frame-width: 100%;
   --hud-safe-left: 0px;
+  --chrome-header-max: 12vh;
+  --chrome-skirmish-max: 16vh;
+  --chrome-console-max: 22vh;
   color: var(--text);
   background: var(--space);
   font-family: "Saira Semi Condensed", "Segoe UI", sans-serif;
@@ -73,6 +76,10 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   background-color: rgba(11, 17, 24, 0.92);
   background-image: var(--plate-image);
   background-size: 96px 48px;
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: calc(var(--chrome-header-max) / var(--ui-scale));
+  overflow: auto;
 }
 
 .brand { display: flex; gap: 8px; align-items: center; }
@@ -92,7 +99,9 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   background-color: rgba(11, 17, 24, 0.92);
   background-image: var(--plate-image);
   background-size: 96px 48px;
-  max-height: 18vh;
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: calc(var(--chrome-skirmish-max) / var(--ui-scale));
   overflow: auto;
 }
 .skirmish-head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
@@ -112,7 +121,12 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 #space, #overlay { position: absolute; inset: 0; width: 100%; height: 100%; }
 #space { background: #000; }
 #overlay { pointer-events: none; }
-#console { max-height: 30vh; overflow: auto; }
+#console {
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: calc(var(--chrome-console-max) / var(--ui-scale));
+  overflow: auto;
+}
 
 .top, .skirmish, #console, .float, .keys, #notice { zoom: var(--ui-scale); }
 
