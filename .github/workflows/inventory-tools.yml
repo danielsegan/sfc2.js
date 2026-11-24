@@ -1,0 +1,22 @@
+# Public CI: run the inventory tools against synthetic fixtures only.
+# Does not touch the private CE 2.670 trees and does not change the
+# no-game-files check.
+name: Inventory tools
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Synthetic fixture tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Run inventory unit tests
+        run: python3 tools/inventory/test_inventory.py -v
