@@ -173,7 +173,7 @@ interface WeaponView {
 }
 ```
 
-**Drawing.** A list of weapon chips grouped by fire group. Each chip shows family icon, label, a charge bar (`ticksDone/ticksNeeded`, label "12/30 t" or a fraction, per the provisional contract), and a mode badge. The selected weapon or group draws its arcs on the sensor map (6) and as a ground-plane fan in the 3D view. The `reloadCounted` set is `DroA`, `DroB`, `DroC`, `DroF`, `DroG`, `ADD6` and `ADD12`, matched exactly as in `docs/engine/data-loader.md` (Engine Lead's PR #55). For those racks the Arc cell is a whole-number count and the rack draws no firing arc; the HUD shows the count next to the rack. **TO VERIFY** only whether that count means reloads or rack capacity, and why ADD racks always show 1. Fighter drones `DroI` and `DroVI` keep `ALL` as a normal arc. A numeric Arc on any other weapon, or a letter or empty cell on a `reloadCounted` rack, is the loader's `unknownArc` diagnostic, shown via the `loader.unknownArc` locale key. See `asset-pipeline.md` §3a.
+**Drawing.** A list of weapon chips grouped by fire group. Each chip shows family icon, label, a charge bar (`ticksDone/ticksNeeded`, label "12/30 t" or a fraction, per the provisional contract), and a mode badge. The selected weapon or group draws its arcs on the sensor map (6) and as a ground-plane fan in the 3D view. The `reloadCounted` set is `DroA`, `DroB`, `DroC`, `DroF`, `DroG`, `ADD6` and `ADD12`, matched exactly as in [`docs/engine/data-loader.md`](https://github.com/danielsegan/sfc2.js/blob/078f02e/docs/engine/data-loader.md#4-engine-ship-model) (pinned to 078f02e, §4). For those racks the Arc cell is a whole-number count and the rack draws no firing arc; the HUD shows the count next to the rack. **TO VERIFY** only whether that count means reloads or rack capacity, and why ADD racks always show 1. Fighter drones `DroI` and `DroVI` keep `ALL` as a normal arc. A numeric Arc on any other weapon, or a letter or empty cell on a `reloadCounted` rack, is the loader's `unknownArc` diagnostic, shown via the `loader.unknownArc` locale key. See `asset-pipeline.md` §3a.
 
 **States.** Ready (normal, single pulse); charging (charging blue, filling); holding a charge (warning outline, and a hold cost line in energy if the rules have one, **TO VERIFY**); overload armed (warning, "OVL" badge); damaged/destroyed (damage, cross-hatch); no power (disabled); out of arc / out of range (disabled tint, dashed arc).
 
@@ -387,7 +387,7 @@ These are the HUD parts that answer to the Mission API (`docs/missions`, merged 
 
 ## Proposed default keymap (summary)
 
-All keys are **proposals**. SFC2's original defaults are **TO VERIFY** against CE 2.670, and we may offer a "classic" profile that matches them. Everything is rebindable (`modern-ux.md`).
+**Decision (Daniel, 2026-11-24):** the default keymap uses the modern bindings below. An optional "SFC2 classic" preset may be offered later as a remap profile, once the original defaults are verified against CE 2.670; it is not the default, and the original key table is not listed here. All bindings are remappable (`modern-ux.md`). Controller support is unaffected.
 
 | Area | Keys |
 | --- | --- |
@@ -422,4 +422,4 @@ All keys are **proposals**. SFC2's original defaults are **TO VERIFY** against C
 10. Do per-ship HUD icons and silhouettes exist in `sprites.q3`, and how are they keyed to shiplist entries?
 
 **Daniel**
-11. Default keymap: our modern proposal, or the SFC2 originals as the default?
+11. Default keymap: our modern proposal, or the SFC2 originals as the default? **Resolved (2026-11-24):** modern bindings are the default. An optional "SFC2 classic" remap preset may be offered later. All bindings remain remappable; controller support is unaffected.
