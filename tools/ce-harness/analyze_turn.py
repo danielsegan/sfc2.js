@@ -34,6 +34,9 @@ def energy(path):
         try: out[k] = float(v)
         except ValueError: out[k] = None
     return out
+HET_BUTTONS = {"port", "stbd", "hard_port", "hard_stbd", "u_turn"}
+def turn_kind(button):
+    return "het" if button in HET_BUTTONS else "normal"
 os.makedirs("/out/runs", exist_ok=True)
 for label in sys.argv[1:]:
     cap = json.load(open(f"/out/frames/{label}/capture.json")); a0 = cap["action_wall"]
@@ -58,7 +61,7 @@ for label in sys.argv[1:]:
     cl = [(r["t"], r["clock"]) for r in rows if r["clock"] is not None]
     gr = (cl[-1][1] - cl[0][1]) / (cl[-1][0] - cl[0][0]) if len(cl) > 3 and cl[-1][0] > cl[0][0] else None
     spd = [r["speed"] for r in rows if r["speed"] is not None]
-    res = {"label": label, "energy_panel": energy(f"/out/frames/{label}/energy.png"), "button": cap["button"], "target_speed": cap["target_speed"],
+    res = {"label": label, "energy_panel": energy(f"/out/frames/{label}/energy.png"), "button": cap["button"], "kind": turn_kind(cap["button"]), "target_speed": cap["target_speed"],
            "settled_speed": cap["speed_history"][-1] if cap["speed_history"] else None,
            "speed_during_run": [min(spd), max(spd)] if spd else None,
            "fps": round(len(rows) / (rows[-1]["t"] - rows[0]["t"]), 2),

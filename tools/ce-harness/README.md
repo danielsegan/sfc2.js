@@ -34,7 +34,7 @@ licensed install lives at `/srv/sfc2/reference/2.670`.
 | `analyze_turn.py` | Unwraps the heading, applies a median filter, and works out the total turn, the order delay and the 10/50/90% times. It also computes the mean turn rate (deg/s, wall clock and game clock) and reads the HUD clock, speed and energy panel with OCR. |
 | `mouse_helm.py` | Clicks a point in the overhead tactical view and records the heading series. This is the normal mouse-set heading turn. |
 | `weapons_probe.py` | Federation HUD only. Arms weapons (NORMAL), fires repeatedly, and OCRs the game's own on-screen volley readout and the target range tag. |
-| `summarize.py` | Collects the per-run JSON files into `results.json` and `results.csv`. |
+| `summarize.py` | Collects the per-run JSON files into `results.json` and `results.csv`. Each run includes `kind`: `het` for helm-panel buttons, `normal` for mouse-heading turns. Ship-audit scores those separately, keyed by speed. |
 
 ## Run on the VM by hand
 
@@ -58,7 +58,7 @@ gh workflow run "Private CE harness capture" -f scenario=fed -f speeds="5 10 15 
 
 ## Known limits
 
-- The helm-panel turn arrows order **High-Energy Turns**. A HET power bar appears and the ship turns fast after a delay of about 5 s. A normal turn is set by left-clicking a bearing in the tactical view (`mouse_helm.py`), and it is far slower. Measure the two separately.
+- The helm-panel turn arrows order **High-Energy Turns**. A HET power bar appears and the ship turns fast after a delay of about 5 s. A normal turn is set by left-clicking a bearing in the tactical view (`mouse_helm.py`), and it is far slower. Measure the two separately. Tag every turn run with `kind` `het` or `normal` (analyze_turn.py and summarize.py do this from the button). Untagged rows are skipped by ship-audit.
 
 - The heading comes from pixels, so it has a few degrees of noise. The
   analysis uses a 5-sample median and the 10% to 90% part of each turn.
