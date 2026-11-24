@@ -41,7 +41,8 @@ import {
   type WeaponDef,
 } from './rules-tables.ts';
 
-export const VERB_SET_EW = 7;
+/** 7 is setAllegiance. EW starts at 11 so the two tables do not share a verb. */
+export const VERB_SET_EW = 11;
 export const VERB_SET_WEAPON_MODE = 8;
 export const VERB_SET_TRACTOR = 9;
 export const VERB_SET_CLOAK = 10;
