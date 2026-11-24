@@ -47,7 +47,7 @@ Section types beyond these (EW, tractor/transporter, cloak, craft) follow hud-sp
 
 ## 4. Self-illumination maps
 
-The three.js renderer samples `_i` self-illumination (glow) maps **by UV**. A glow map may differ in size from its base texture; never assume equal dimensions. One `_i` map is 4-bit; expand palettes to 8-bit at load.
+The three.js renderer samples `_i` self-illumination (glow) maps **by UV**. A glow map may differ in size from its base texture; never assume equal dimensions. One `_i` map is 4-bit; expand palettes to 8-bit at load. The loader that does this is [docs/formats/bmp.md](../formats/bmp.md).
 
 ## 5. Unverified / open
 

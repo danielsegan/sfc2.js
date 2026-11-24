@@ -33,3 +33,28 @@ export {
   type FtrlistParseOptions,
   type FtrlistRow,
 } from "./ftrlist.ts";
+
+export {
+  DIAGNOSTIC_SOURCES,
+  diagnostic,
+  installRelativeFile,
+  machinePathLeak,
+} from "./src/diagnostic.ts";
+
+export {
+  BMP_COLOR_KEYS,
+  BMP_MAX_DIMENSION,
+  parseBmp,
+  type BmpColorKey,
+  type DecodedBmp,
+  type ParseBmpOptions,
+} from "./src/bmp.ts";
+
+export { encodeBmp, type BmpEncodeOptions } from "./src/encode-bmp.ts";
+
+export {
+  SELF_ILLUM_STEM,
+  pairSelfIllumination,
+  type SelfIllumIndex,
+  type TexturePairRef,
+} from "./src/self-illum.ts";

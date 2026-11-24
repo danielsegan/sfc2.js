@@ -3,6 +3,8 @@
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["node"],
     "strict": true,
     "erasableSyntaxOnly": true,
     "noEmit": true,
@@ -10,8 +12,18 @@
     "verbatimModuleSyntax": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
-    "types": ["node"],
+    "isolatedModules": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleDetection": "force",
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "rootDir": "."
   },
-  "include": ["tools/formats/**/*.ts", "docs/rules/data/weapon-arcs.json"]
+  "include": [
+    "tools/formats/**/*.ts",
+    "engine/platform/src/**/*.ts",
+    "engine/render/src/**/*.ts",
+    "docs/rules/data/weapon-arcs.json",
+    "vitest.config.ts"
+  ]
 }

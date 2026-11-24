@@ -5,7 +5,7 @@
 
 export type Severity = "error" | "warning" | "info";
 
-/** Add-only. `loader` is the engine data loader, not a format parser. */
+/** Add-only. `loader` is the engine data loader. `importer` is the user-install index. */
 export type DiagnosticSource =
   | "shiplist"
   | "ftrlist"
@@ -17,7 +17,8 @@ export type DiagnosticSource =
   | "fms"
   | "loader"
   | "rules"
-  | "mission";
+  | "mission"
+  | "importer";
 
 export interface DiagnosticLocation {
   /** Install-relative path, forward slashes, no leading slash. */
