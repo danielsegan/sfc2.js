@@ -2,7 +2,7 @@
 
 Status: draft v0.1 (2026-11-24). Owner: UI & Art Director. Baseline: Community Edition (CE) 2.670.
 
-Why this exists: Daniel's playtest feedback was that the ship should be moved and turned with the mouse as in the original, that the original UI should be **cleaned up and preserved**, and that the main UI should **change with the selected empire**. This file sets the panel arrangement, the clean-up rules, the per-empire skin contract and the HUD side of mouse helm. It refines the "Layout overview" sketch in `hud-spec.md` and the regions in `style-guide.md` §1, which were drawn before this research.
+Why this exists: Daniel's playtest feedback was that the ship should be moved and turned with the mouse as in the original, that the original UI should be **cleaned up and preserved**, and that the main UI should **change with the selected empire**. This file sets the panel arrangement, the clean-up rules, the per-empire skin contract, the HUD side of mouse helm and the play-field overlays. It refines the "Layout overview" sketch in `hud-spec.md` and the regions in `style-guide.md` §1, which were drawn before this research.
 
 Related files:
 
@@ -270,7 +270,103 @@ Pointer rules:
 
 ---
 
-## 7. Open questions
+## 7. Play-field overlays
+
+Daniel wants the play field itself to look like the original: an overhead camera, a black starfield, a faint blue world-fixed grid, arc wedges, beam lines, off-screen target tags, and thin HUD bars along the top and bottom. A separate original-style play-field PR builds these in the **renderer and view layer only**. The console (officer MFD column and interface bar, §3) stays with this spec and the skin layer. This section sets the HUD-side rules those overlays must meet. Looks and positions taken from the original are **TO VERIFY**, like everything in §2.
+
+All overlays read the `ViewModel` and its event list. None of them computes or predicts sim state, and none sends anything except the click-to-target on tags (§7.5).
+
+### 7.1 Top and bottom bars
+
+These are the thin, always-visible forms of the upper and lower data displays (§2.1, §2.2).
+
+| Bar | Holds, left to right (order **TO VERIFY**) | Height |
+| --- | --- | --- |
+| **Top** | Own hull-integrity bar, phaser capacitor bar (click sets recharge rate, a `Command`), mission timers (elapsed, plus countdown when active), target hull-integrity bar with target name | **24 units** (3 × 8) |
+| **Bottom** | Speed number + speed bar with desired-speed marker and max-for-power tick, turn-rate gauge (§5), power bar over systems bar on one scale, fire-selected button, alert state + green/yellow/red buttons | **32 units** (4 × 8): two stacked 12-unit bars plus padding |
+
+- Bars span the full width of the HUD frame. In **Classic** and **Safe-area centred** (`modern-ux.md` §2) they span the 4:3 box. In **Wide** they span the screen but their contents split into left and right clusters at the 4:3 box edges, so no readout sits more than the Wide cap off centre. They always stay inside the platform safe area.
+- Bar plates are 85% opaque so they read against any field. Readouts use the style-guide sizes (12 for numbers, 11 for micro labels).
+- **Interface bar relationship.** The bars are **never hidden** by the interface-bar toggle (`hud.toggleInterfaceBar`). When the interface bar is shown, it docks between the bottom bar and the 3D view, and the officer MFD column docks under the top bar. When it is hidden, the play field extends to the bars. The bars are 1 px-separated from the console by `--panel-edge`, so they read as their own strips. Whether the original's data displays move when its interface bar slides: **TO VERIFY**.
+
+### 7.2 World grid
+
+- **World-fixed** on the movement plane. It does not move with the ship or camera.
+- **Faint blue:** a new neutral token `--field-grid` (proposed `#2A4C7A`), drawn at 20–30% alpha for minor lines and 40% for major lines. Hue and spacing in the original: **TO VERIFY**.
+- **Spacing in range units**, through the same single range constant as `toDisplayRange()` (`hud-spec.md` §0). Proposed: minor every 1 range unit and major every 5 (**TO VERIFY**).
+- **Zoom fade:** when minor lines would be closer than 16 logical px on screen, they fade out over the next 25% of zoom and majors become the minor set at the next ×5 step. Lines are never closer than 8 px or brighter than 40% alpha. This avoids moiré at overhead zoom-out.
+- The grid is drawn **under everything except the starfield** (§7.7). It never draws over ships, tags, bars, console or any HUD text, and tag/readout plates mask it.
+
+### 7.3 Arc wedges
+
+- Drawn on the movement plane around own ship for the **selected weapon or fire group** only (`hud-spec.md` §3), plus hover preview from a hardpoint icon or chip.
+- Each span in `WeaponView.arc` gets a **translucent fill** (12–18% alpha) and a 1.5 px **edge stroke** at full alpha, out to `rangeMax`. Range bands, if provided, are thin arcs inside the wedge.
+- Colours come from **empire-neutral state tokens** only: `--state-normal` ready, `--state-charging` charging, `--state-warning` overload armed/holding, `--state-disabled` no power/out of arc. A colour-blind **pattern** goes with each: solid stroke for ready, dashed for charging, dash-dot plus hatch fill for overload or hold, dotted with no fill for disabled.
+- Several selected weapons with the same arc draw one wedge; overlapping different arcs draw one wedge each, stroke only, to keep the field readable.
+- **No arc for `reloadCounted` racks** (`DroA`, `DroB`, `DroC`, `DroF`, `DroG`, `ADD6`, `ADD12`), consistent with `hud-spec.md` §3. Fighter drones `DroI` / `DroVI` keep their `ALL` arc. Whether the original shows wedges as filled fans: **TO VERIFY**.
+
+### 7.4 Beam lines
+
+- Drawn only from what the `ViewModel` or its event stream provides (for example a fire or hit event with shooter, target and weapon family). The view layer does **no** hit, range, arc or damage logic, never infers a shot that wasn't reported, and never draws from sim random streams (`hud-spec.md` §0).
+- Look per weapon family follows `style-guide.md` §8.2. Duration is fixed presentation time; under reduced motion beams draw as a static line for the same duration, with no flicker above 3 Hz.
+- Beams are play-field VFX, under tags, bars and console.
+
+### 7.5 Off-screen target tags
+
+- One tag per off-screen contact the HUD info level allows (target always; others per level, §2.4), **clamped to the screen edge inside the safe area** and outside the bars and console rects.
+- Each tag has a **shape plus colour** for hostility, shared with the mini map: hostile = hollow chevron in `--state-hostile`, neutral or unknown = hollow diamond in `--state-neutral`, ally = solid chevron in `--state-friendly`. The current target adds a bracket. An arrow points along the bearing.
+- A **range readout** via `toDisplayRange()` sits next to the shape, on a small plate that masks the grid.
+- **Click to target:** sends `setTarget`, the same as right-click in the field. Tags have 24 × 24 unit hit targets and tooltips (name or class, range).
+- Tags never overlap: when they collide along an edge they stack with 4-unit spacing in bearing order.
+- **TO VERIFY:** whether SFC2 has off-screen tags at all; our only source is the SFC1 quickstart. Daniel asked for them anyway, so they ship regardless; only their look waits on verification.
+
+### 7.6 Overhead camera and starfield (renderer-owned)
+
+The camera and starfield belong to the renderer. The HUD needs only:
+
+- A **near-black field** (no brighter than about `#101418` on average under the console and bar areas) so that overlays hold contrast: grid ≥ 1.5:1, wedge strokes and tags ≥ 3:1, and text ≥ 4.5:1 against its plate. Star brightness is capped where tags and bars sit, or plates mask it.
+- No starfield or nebula sprite may draw over HUD layers, and no bloom bleeds onto bars or console.
+- The overhead camera exposes a **world-to-screen transform and current zoom** to the view layer each frame, so wedges, grid fade and tags clamp correctly. Camera angle and default zoom of the original: **TO VERIFY**.
+
+### 7.7 Draw order (back to front)
+
+1. Starfield (renderer)
+2. Grid
+3. Arc wedges and beam lines
+4. Ships and other 3D objects, with on-ship tags and reticle
+5. Off-screen and unit tags, heading ghost and turn arc (§5)
+6. Top and bottom bars
+7. Console (officer MFD column, interface bar), then tooltips and menus
+
+Nothing in layers 1–4 may draw above layer 5 or later. HUD text is never under grid, wedges or beams.
+
+### 7.8 Skin tokens on overlays
+
+| Overlay | May use skin tokens | Must stay empire-neutral |
+| --- | --- | --- |
+| Top and bottom bars | Accent strip on the bar edge, `panelBg`, header weight/case | Readout text colours, state colours on the bars themselves |
+| Grid | — | `--field-grid` only |
+| Arc wedges | — | State tokens and patterns only |
+| Beam lines | — | Family VFX (`style-guide.md` §8.2), not the player's empire |
+| Off-screen and unit tags | — | Hostility tokens and shapes |
+| Heading ghost, turn arc | — | State and band tokens (§5) |
+
+An empire accent may never appear in the field itself, so a player can't mistake their own accent for a hostility or state colour.
+
+### 7.9 Review notes for the play-field PR
+
+1. Renderer and view layer only. Nothing in the console column, skin layer or `docs/ui/empire-skins.md`.
+2. Overlays read the `ViewModel` and events only. No arc, range, hit or turn computation in the view layer. Wedge spans come from `WeaponView.arc`, and beams from events.
+3. No wedge for `reloadCounted` racks; `DroI` / `DroVI` keep theirs.
+4. Grid is world-fixed, uses `--field-grid`, fades by zoom as in §7.2, and stays under ships and all HUD text.
+5. Draw order matches §7.7, checked with a frame that puts a tag, a wedge and grid under a bar.
+6. Tags clamp inside the safe area and outside the bar and console rects, use shape plus colour, show range, and click sends `setTarget`.
+7. Bar heights 24 and 32 units, Wide mode splits at the 4:3 box, and the interface-bar toggle doesn't hide them.
+8. No empire accent in the field. Accent appears only on bar edges.
+9. No original art or screenshots committed; starfield and grid are procedural or our own.
+10. Reduced motion and the 3 Hz flash limit hold for beams and tag animations.
+
+## 8. Open questions
 
 **Wintermute (CE 2.670 per-empire HUD reference notes, written notes only)**
 
@@ -299,3 +395,8 @@ Pointer rules:
 **Cloud agent / empire-skins PR**
 
 13. Align `empire-skins.md` types and slot ids with §4.2 and the resolution order in §4.4 during review.
+
+**Play-field PR / Renderer**
+
+14. Grid hue and spacing, wedge look, and overhead camera angle and zoom in the original (§7, TO VERIFY with Wintermute's notes).
+15. Confirm `--field-grid` as a new style-guide token, and that the camera exposes the world-to-screen transform and zoom to the view layer.
