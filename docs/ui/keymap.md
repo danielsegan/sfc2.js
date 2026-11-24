@@ -46,6 +46,6 @@ Mouse actions are presentation or targeting. They do not write the sim except **
 | Target a contact | Left-click the contact on the map |
 | Add one point of reinforcement | Left-click a shield arc. Shift-click clears it. |
 
-EW, tractor, cloak, fighter, and mine keys are bound so the console matches the layout. In this duel they only report that the system is not in the slice. They do not send a sim order.
+EW, tractor, cloak, fighter, mine, and boarding keys send the same sim verbs the captain uses. Reverse, erratic maneuvers, and drones still only report that they are not in this duel.
 
 Volume sliders (master, effects, alerts) are separate from the keymap and are stored under `sfc2js.volume.v1`.

@@ -174,6 +174,7 @@ describe('replay corpus', () => {
     expect(result.stdout).toContain('OK replays/idle-rng.s2replay');
     expect(result.stdout).toContain('OK replays/scripted-duel.s2replay');
     expect(result.stdout).toContain('OK replays/ai-regen.s2replay');
+    expect(result.stdout).toContain('OK replays/every-empire.s2replay');
   });
 
   it('the check CLI names the first divergent tick for a tampered file', () => {
