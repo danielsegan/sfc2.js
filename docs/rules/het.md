@@ -60,7 +60,11 @@ Current CE 2.670 summary (`CE in-battle audit`, Wintermute, 2026-11-24):
 
 | Hull key | Speeds | `delayTicks` | `turnAngle16` (16-bit) | `turnRate16PerTick` (30 Hz) | Status |
 | --- | --- | --- | --- | --- | --- |
-| `F-CA` | `5, 10, 15, 20, 31` | `171` (≈`5.7 s`) | `16384` (≈`90°`) | `285` (`47°/s`, band `261–309` = `43–51°/s`) | **Measured** (CE capture 2026-11-24); per-speed curve **TO VERIFY** |
+| `F-CA` | `5, 10, 15, 20, 31` | `171` (≈`5.7 s`) | `16384` (≈`90°`) | `283, 285, 251, 285, 291` (`46.7, 47, 41.4, 47, 48.0°/s`) | Tier-2 rates **measured** at `5, 15, 31`; `20` keeps `285` (Tier-1 `47.69°/s`); `10` and speed-15 Tier-1/Tier-2 spread **TO VERIFY** |
+| `F-CL` | `5, 15` (clamped outside) | `171` | `16384` | `313, 296` (`51.5, 48.7°/s`) | Tier-2 rates **measured** at `5, 15`; speed `31` and per-hull sweep/delay **TO VERIFY** |
+| `F-CC` | `5` (clamped) | `171` | `16384` | `283` (`46.6°/s`) | Tier-2 rate **measured** at `5`; speeds `15, 31` and per-hull sweep/delay **TO VERIFY** |
+| `F-DN` | `5` (clamped) | `171` | `16384` | `253` (`41.7°/s`) | Tier-2 rate **measured** at `5`; speeds `15, 31` and per-hull sweep/delay **TO VERIFY** |
+| `F-DD` | `31` (clamped) | `171` | `16384` | `335` (`55.2°/s`) | Tier-2 rate **measured** at `31`; speeds `5, 15` and per-hull sweep/delay **TO VERIFY** |
 | `K-D7` | `5, 10, 15, 20, 31` | `171` (≈`5.7 s`) | `15110` (`83°`, range `14928–15292` = `82–84°`) | `285` (**TO VERIFY**) | Angle & delay **measured** (CE capture 2026-11-24); rate **TO VERIFY** |
 | `default` | `5, 31` | `171` | `16384` | `285` | Fallback **TO VERIFY** for unmeasured hulls |
 
@@ -74,7 +78,7 @@ Current CE 2.670 summary (`CE in-battle audit`, Wintermute, 2026-11-24):
 - `turn.het.<speed>.degPerSecond` (from `mean_rate_deg_per_game_s_10_90`)
 - `turn.het.<speed>.delayS` (from `order_delay_s`)
 
-[`data/het.json`](data/het.json) stores per-hull `audit.expect` and `audit.tolerances` maps matching those exact field names for speeds `5`, `10`, `15`, `20`, and `31` (`F-CA`: `deg = 90 ± 2`, `degPerSecond = 47 ± 4`, `delayS = 5.7 ± 0.2`; `K-D7`: `deg = 83 ± 1`, `delayS = 5.7 ± 0.2`, `degPerSecond` **TO VERIFY**).
+[`data/het.json`](data/het.json) stores per-hull `audit.expect` and `audit.tolerances` maps matching those exact field names (`F-CA`: `deg = 90 ± 6`, `delayS = 5.7 ± 0.3`, `degPerSecond` at `5/10/15/20/31` = `46.7/47/41.4/47/48.0 ± 6`; `F-CL`/`F-CC`/`F-DN`/`F-DD`: `deg = 90 ± 6`, `delayS = 5.7 ± 0.3`, `degPerSecond ± 5` at measured speeds; `K-D7`: `deg = 83 ± 1`, `delayS = 5.7 ± 0.2`, `degPerSecond` **TO VERIFY**). `tools/ship-audit` compares `|total_turn_deg|` against table `deg` expectations because captures record port turns negatively.
 
 ## 5. Two-phase execution (delay then turn)
 
@@ -108,8 +112,8 @@ Tests: `engine/sim/het.test.ts` runs both directions, the §5 timing, `K-D7` and
 
 ## 7. Pending playtest (TO VERIFY)
 
-- `K-D7` turn rate (`turn.het.<speed>.degPerSecond` / `turnRate16PerTick`) and HET sweep/rate for remaining empire hulls.
-- Exact per-speed variation within the `F-CA` `43–51°/s` band (and whether any hull varies `delayTicks`, `turnAngle16`, or `turnRate16PerTick` across speed points).
+- `K-D7` turn rate (`turn.het.<speed>.degPerSecond` / `turnRate16PerTick`), `F-FF` HET rate (currently uses `default`), missing speed points (`F-CA` `10`, `F-CL` `31`, `F-CC` `15/31`, `F-DN` `15/31`, `F-DD` `5/15`), and HET sweep/rate for all remaining empire hulls.
+- Whether any Federation hull varies `delayTicks` within `5.4–6.0 s` (`162–180` ticks) or `turnAngle16` within `~84–96°`, and the Tier-1 vs Tier-2 `F-CA` speed-15 spread (`50.6` vs `41.4°/s`).
 - Whether 3×3 helm arrows trigger distinct sweep angles (45°/90°/180° or the hull-fixed table sweep already selected by `dir`) and whether `Go` executes a queued angle.
 - Energy cost, `hetChance` / `hetBreakdown` shiplist columns, breakdown effects, cooldowns, and whether `orderHeading` / `orderHelm` / a second `orderHet` can cancel an in-flight HET (the sim refuses all three for now).
 - Whether a crew-disabled or tractored ship finishes an HET already in flight (the sim lets it finish).

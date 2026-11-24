@@ -18,23 +18,31 @@
   },
   "energyCost": 0,
   "energyCostNote": "Placeholder: HET energy cost and breakdown roll are TO VERIFY.",
-  "hullOrder": ["F-CA", "K-D7", "default"],
+  "hullOrder": [
+    "F-CA",
+    "K-D7",
+    "default",
+    "F-CL",
+    "F-CC",
+    "F-DN",
+    "F-DD"
+  ],
   "hullOrderNote": "Stable sim ids: engine/sim numbers hull rows by their position in this list, so append new hull keys at the end. Every key under hulls must be listed. default is the row for hulls with no entry of their own. Editing a row's speedPoints needs no code change.",
   "hulls": {
     "F-CA": {
-      "status": "measured",
-      "note": "CE in-battle capture 2026-11-24: ~90 deg total (16384 units) at 43-51 deg/s (261-309 units/tick, midpoint 47 deg/s -> 285 units/tick), ~5.7 s delay (171 ticks). Per-speed variation within the band is TO VERIFY.",
+      "status": "partial",
+      "note": "CE Tier-1 and Tier-2 in-battle captures 2026-11-24: ~90 deg sweep (16384 units; Tier-2 usable Fed sweeps ~84-96 deg) and ~5.7 s delay (171 ticks, covering 5.4-6.0 s = 162-180 ticks). Tier-2 measured rates at speeds 5 (46.7 deg/s -> 283), 15 (41.4 deg/s -> 251), and 31 (48.0 deg/s -> 291); speed 20 keeps 285 (47 deg/s band midpoint; Tier-1 measured 47.69 deg/s) and unmeasured speed 10 keeps placeholder 285 (TO VERIFY).",
       "verification": {
-        "delayTicks": "measured (CE capture 2026-11-24)",
-        "turnAngle16": "measured (CE capture 2026-11-24)",
-        "turnRate16PerTick": "measured band 261-309 (43-51 deg/s, CE capture 2026-11-24); exact per-speed curve TO VERIFY"
+        "delayTicks": "measured (CE Tier-1/Tier-2 captures 2026-11-24; 5.4-6.0 s -> midpoint 171 ticks)",
+        "turnAngle16": "measured (CE Tier-1/Tier-2 captures 2026-11-24; 90 deg -> 16384, ~84-96 deg range)",
+        "turnRate16PerTick": "measured at speeds 5, 15, 31 (Tier-2 2026-11-24) and 20 (Tier-1 band midpoint 285); speed 10 and Tier-1/Tier-2 spread at 15 (50.6 vs 41.4) TO VERIFY"
       },
       "speedPoints": [
         {
           "speed": 5,
           "delayTicks": 171,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 285
+          "turnRate16PerTick": 283
         },
         {
           "speed": 10,
@@ -46,7 +54,7 @@
           "speed": 15,
           "delayTicks": 171,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 285
+          "turnRate16PerTick": 251
         },
         {
           "speed": 20,
@@ -58,45 +66,45 @@
           "speed": 31,
           "delayTicks": 171,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 285
+          "turnRate16PerTick": 291
         }
       ],
       "audit": {
-        "source": "CE in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "measured (CE capture 2026-11-24); per-speed curve variation within 43-51 deg/s TO VERIFY",
+        "source": "CE Tier-1 and Tier-2 in-battle audits (Wintermute, 2026-11-24)",
+        "verification": "5/15/31 rates from Tier-2; 10 rate TO VERIFY; deg tolerance 6 covers 84-96 deg; delayS tolerance 0.3 covers 5.4-6.0 s",
         "expect": {
           "turn.het.5.deg": 90,
-          "turn.het.5.degPerSecond": 47,
+          "turn.het.5.degPerSecond": 46.7,
           "turn.het.5.delayS": 5.7,
           "turn.het.10.deg": 90,
           "turn.het.10.degPerSecond": 47,
           "turn.het.10.delayS": 5.7,
           "turn.het.15.deg": 90,
-          "turn.het.15.degPerSecond": 47,
+          "turn.het.15.degPerSecond": 41.4,
           "turn.het.15.delayS": 5.7,
           "turn.het.20.deg": 90,
           "turn.het.20.degPerSecond": 47,
           "turn.het.20.delayS": 5.7,
           "turn.het.31.deg": 90,
-          "turn.het.31.degPerSecond": 47,
+          "turn.het.31.degPerSecond": 48,
           "turn.het.31.delayS": 5.7
         },
         "tolerances": {
-          "turn.het.5.deg": 2,
-          "turn.het.5.degPerSecond": 4,
-          "turn.het.5.delayS": 0.2,
-          "turn.het.10.deg": 2,
-          "turn.het.10.degPerSecond": 4,
-          "turn.het.10.delayS": 0.2,
-          "turn.het.15.deg": 2,
-          "turn.het.15.degPerSecond": 4,
-          "turn.het.15.delayS": 0.2,
-          "turn.het.20.deg": 2,
-          "turn.het.20.degPerSecond": 4,
-          "turn.het.20.delayS": 0.2,
-          "turn.het.31.deg": 2,
-          "turn.het.31.degPerSecond": 4,
-          "turn.het.31.delayS": 0.2
+          "turn.het.5.deg": 6,
+          "turn.het.5.degPerSecond": 6,
+          "turn.het.5.delayS": 0.3,
+          "turn.het.10.deg": 6,
+          "turn.het.10.degPerSecond": 6,
+          "turn.het.10.delayS": 0.3,
+          "turn.het.15.deg": 6,
+          "turn.het.15.degPerSecond": 6,
+          "turn.het.15.delayS": 0.3,
+          "turn.het.20.deg": 6,
+          "turn.het.20.degPerSecond": 6,
+          "turn.het.20.delayS": 0.3,
+          "turn.het.31.deg": 6,
+          "turn.het.31.degPerSecond": 6,
+          "turn.het.31.delayS": 0.3
         }
       }
     },
@@ -191,6 +199,170 @@
           "turnRate16PerTick": 285
         }
       ]
+    },
+    "F-CL": {
+      "status": "partial",
+      "note": "CE Tier-2 in-battle capture 2026-11-24 (Wintermute): usable HET rates at speed(s) 5 (51.5 deg/s -> 313 units/tick), 15 (48.7 deg/s -> 296 units/tick); sweeps ~84-96 deg (kept at 90 deg / 16384 units) and delays 5.4-6.0 s (kept at midpoint 171 ticks). Missing speeds (10, 20, 31) clamp to endpoints and are TO VERIFY.",
+      "verification": {
+        "delayTicks": "measured Tier-2 range 5.4-6.0 s (162-180 ticks -> midpoint 171); per-hull confirmation TO VERIFY",
+        "turnAngle16": "measured Tier-2 range ~84-96 deg (kept 16384 / 90 deg); per-hull sweep TO VERIFY",
+        "turnRate16PerTick": "measured at speed(s) 5, 15; speed(s) 10, 20, 31 TO VERIFY"
+      },
+      "speedPoints": [
+        {
+          "speed": 5,
+          "delayTicks": 171,
+          "turnAngle16": 16384,
+          "turnRate16PerTick": 313
+        },
+        {
+          "speed": 15,
+          "delayTicks": 171,
+          "turnAngle16": 16384,
+          "turnRate16PerTick": 296
+        }
+      ],
+      "audit": {
+        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
+        "verification": "degPerSecond measured at speed(s) 5, 15; speed(s) 10, 20, 31 degPerSecond and per-hull sweep/delay TO VERIFY",
+        "expect": {
+          "turn.het.5.deg": 90,
+          "turn.het.5.delayS": 5.7,
+          "turn.het.15.deg": 90,
+          "turn.het.15.delayS": 5.7,
+          "turn.het.31.deg": 90,
+          "turn.het.31.delayS": 5.7,
+          "turn.het.5.degPerSecond": 51.5,
+          "turn.het.15.degPerSecond": 48.7
+        },
+        "tolerances": {
+          "turn.het.5.deg": 6,
+          "turn.het.5.delayS": 0.3,
+          "turn.het.15.deg": 6,
+          "turn.het.15.delayS": 0.3,
+          "turn.het.31.deg": 6,
+          "turn.het.31.delayS": 0.3,
+          "turn.het.5.degPerSecond": 5,
+          "turn.het.15.degPerSecond": 5
+        }
+      }
+    },
+    "F-CC": {
+      "status": "partial",
+      "note": "CE Tier-2 in-battle capture 2026-11-24 (Wintermute): usable HET rates at speed(s) 5 (46.6 deg/s -> 283 units/tick); sweeps ~84-96 deg (kept at 90 deg / 16384 units) and delays 5.4-6.0 s (kept at midpoint 171 ticks). Missing speeds (15, 31) clamp to endpoints and are TO VERIFY.",
+      "verification": {
+        "delayTicks": "measured Tier-2 range 5.4-6.0 s (162-180 ticks -> midpoint 171); per-hull confirmation TO VERIFY",
+        "turnAngle16": "measured Tier-2 range ~84-96 deg (kept 16384 / 90 deg); per-hull sweep TO VERIFY",
+        "turnRate16PerTick": "measured at speed(s) 5; speed(s) 15, 31 TO VERIFY"
+      },
+      "speedPoints": [
+        {
+          "speed": 5,
+          "delayTicks": 171,
+          "turnAngle16": 16384,
+          "turnRate16PerTick": 283
+        }
+      ],
+      "audit": {
+        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
+        "verification": "degPerSecond measured at speed(s) 5; speed(s) 15, 31 degPerSecond and per-hull sweep/delay TO VERIFY",
+        "expect": {
+          "turn.het.5.deg": 90,
+          "turn.het.5.delayS": 5.7,
+          "turn.het.15.deg": 90,
+          "turn.het.15.delayS": 5.7,
+          "turn.het.31.deg": 90,
+          "turn.het.31.delayS": 5.7,
+          "turn.het.5.degPerSecond": 46.6
+        },
+        "tolerances": {
+          "turn.het.5.deg": 6,
+          "turn.het.5.delayS": 0.3,
+          "turn.het.15.deg": 6,
+          "turn.het.15.delayS": 0.3,
+          "turn.het.31.deg": 6,
+          "turn.het.31.delayS": 0.3,
+          "turn.het.5.degPerSecond": 5
+        }
+      }
+    },
+    "F-DN": {
+      "status": "partial",
+      "note": "CE Tier-2 in-battle capture 2026-11-24 (Wintermute): usable HET rates at speed(s) 5 (41.7 deg/s -> 253 units/tick); sweeps ~84-96 deg (kept at 90 deg / 16384 units) and delays 5.4-6.0 s (kept at midpoint 171 ticks). Missing speeds (15, 31) clamp to endpoints and are TO VERIFY.",
+      "verification": {
+        "delayTicks": "measured Tier-2 range 5.4-6.0 s (162-180 ticks -> midpoint 171); per-hull confirmation TO VERIFY",
+        "turnAngle16": "measured Tier-2 range ~84-96 deg (kept 16384 / 90 deg); per-hull sweep TO VERIFY",
+        "turnRate16PerTick": "measured at speed(s) 5; speed(s) 15, 31 TO VERIFY"
+      },
+      "speedPoints": [
+        {
+          "speed": 5,
+          "delayTicks": 171,
+          "turnAngle16": 16384,
+          "turnRate16PerTick": 253
+        }
+      ],
+      "audit": {
+        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
+        "verification": "degPerSecond measured at speed(s) 5; speed(s) 15, 31 degPerSecond and per-hull sweep/delay TO VERIFY",
+        "expect": {
+          "turn.het.5.deg": 90,
+          "turn.het.5.delayS": 5.7,
+          "turn.het.15.deg": 90,
+          "turn.het.15.delayS": 5.7,
+          "turn.het.31.deg": 90,
+          "turn.het.31.delayS": 5.7,
+          "turn.het.5.degPerSecond": 41.7
+        },
+        "tolerances": {
+          "turn.het.5.deg": 6,
+          "turn.het.5.delayS": 0.3,
+          "turn.het.15.deg": 6,
+          "turn.het.15.delayS": 0.3,
+          "turn.het.31.deg": 6,
+          "turn.het.31.delayS": 0.3,
+          "turn.het.5.degPerSecond": 5
+        }
+      }
+    },
+    "F-DD": {
+      "status": "partial",
+      "note": "CE Tier-2 in-battle capture 2026-11-24 (Wintermute): usable HET rates at speed(s) 31 (55.2 deg/s -> 335 units/tick); sweeps ~84-96 deg (kept at 90 deg / 16384 units) and delays 5.4-6.0 s (kept at midpoint 171 ticks). Missing speeds (5, 15) clamp to endpoints and are TO VERIFY.",
+      "verification": {
+        "delayTicks": "measured Tier-2 range 5.4-6.0 s (162-180 ticks -> midpoint 171); per-hull confirmation TO VERIFY",
+        "turnAngle16": "measured Tier-2 range ~84-96 deg (kept 16384 / 90 deg); per-hull sweep TO VERIFY",
+        "turnRate16PerTick": "measured at speed(s) 31; speed(s) 5, 15 TO VERIFY"
+      },
+      "speedPoints": [
+        {
+          "speed": 31,
+          "delayTicks": 171,
+          "turnAngle16": 16384,
+          "turnRate16PerTick": 335
+        }
+      ],
+      "audit": {
+        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
+        "verification": "degPerSecond measured at speed(s) 31; speed(s) 5, 15 degPerSecond and per-hull sweep/delay TO VERIFY",
+        "expect": {
+          "turn.het.5.deg": 90,
+          "turn.het.5.delayS": 5.7,
+          "turn.het.15.deg": 90,
+          "turn.het.15.delayS": 5.7,
+          "turn.het.31.deg": 90,
+          "turn.het.31.delayS": 5.7,
+          "turn.het.31.degPerSecond": 55.2
+        },
+        "tolerances": {
+          "turn.het.5.deg": 6,
+          "turn.het.5.delayS": 0.3,
+          "turn.het.15.deg": 6,
+          "turn.het.15.delayS": 0.3,
+          "turn.het.31.deg": 6,
+          "turn.het.31.delayS": 0.3,
+          "turn.het.31.degPerSecond": 5
+        }
+      }
     }
   }
 }

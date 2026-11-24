@@ -405,3 +405,96 @@ test("table expect scores F-CA and K-D7 normal turns when the run omits expect",
   const printed = formatSummary(summary);
   assert.doesNotMatch(printed, /F-CA|K-D7|TEST-|6\.9|1\.45/);
 });
+
+test("table expect scores signed HET sweeps by magnitude, skips noop runs, and covers Tier-2 Fed hulls", () => {
+  const text = [
+    "Race\tHull Type\tClass\tTurn mode\tMove Cost\tAcceleration\tShield 1\tShield 2 _ 6\tShield 3 _ 5\tShield 4\tShield Total\tR_L_Warp\tC_Warp\tImpulse\tApr\tBattery",
+    "Federation\tCA\tF-CA\tC\t1\t3\t10\t8\t6\t4\t42\t5\t3\t4\t2\t6",
+    "Federation\tFF\tF-FF\tA\t1\t3\t10\t8\t6\t4\t42\t5\t3\t4\t2\t6",
+    "Federation\tCL\tF-CL\tB\t1\t3\t10\t8\t6\t4\t42\t5\t3\t4\t2\t6",
+    "Federation\tDD\tF-DD\tB\t1\t3\t10\t8\t6\t4\t42\t5\t3\t4\t2\t6",
+  ].join("\n");
+  const harness = {
+    source: "synthetic",
+    method: "test",
+    heading_convention: "degrees, negative = port",
+    runs: [
+      {
+        label: "fca-het-5-port",
+        spawnKey: "Federation:F-CA",
+        turn: "het",
+        target_speed: 5,
+        total_turn_deg: -90.6,
+        mean_rate_deg_per_game_s_10_90: 46.7,
+        order_delay_s: 5.7,
+      },
+      {
+        label: "fca-het-31-stbd",
+        spawnKey: "Federation:F-CA",
+        turn: "het",
+        target_speed: 31,
+        total_turn_deg: 90.6,
+        mean_rate_deg_per_game_s_10_90: 48.0,
+        order_delay_s: 5.95,
+      },
+      {
+        label: "fca-het-5-noop-flag",
+        spawnKey: "Federation:F-CA",
+        turn: "het",
+        noop: true,
+        target_speed: 5,
+        total_turn_deg: -1.2,
+        mean_rate_deg_per_game_s_10_90: 2.0,
+        order_delay_s: 0.1,
+      },
+      {
+        label: "fcl-het-15-noop-status",
+        spawnKey: "Federation:F-CL",
+        turn: "het",
+        status: "noop",
+        target_speed: 15,
+        total_turn_deg: 0.5,
+      },
+      {
+        label: "fdd-het-5-noop-turn",
+        spawnKey: "Federation:F-DD",
+        turn: "noop",
+        target_speed: 5,
+        total_turn_deg: 1.0,
+      },
+      {
+        label: "fff-normal-10",
+        spawnKey: "Federation:F-FF",
+        turn: "normal",
+        target_speed: 10,
+        mean_rate_deg_per_game_s_10_90: 9.45,
+        order_delay_s: 1.45,
+      },
+      {
+        label: "fcl-het-5-port",
+        spawnKey: "Federation:F-CL",
+        turn: "het",
+        target_speed: 5,
+        total_turn_deg: -92.0,
+        mean_rate_deg_per_game_s_10_90: 51.5,
+        order_delay_s: 5.6,
+      },
+    ],
+  };
+  const { summary } = auditText(text, { harness, tolerance: 0, turnTolerance: 1 });
+  assert.equal(summary.harness?.unmatched, 0);
+  assert.equal(summary.harness?.turnUntagged, 0);
+  assert.equal(summary.harness?.turnNoop, 3);
+  assert.equal(summary.harness?.fields["turn.het.5.deg"]?.pass, 2);
+  assert.equal(summary.harness?.fields["turn.het.5.deg"]?.fail, 0);
+  assert.equal(summary.harness?.fields["turn.het.5.degPerSecond"]?.pass, 2);
+  assert.equal(summary.harness?.fields["turn.het.5.delayS"]?.pass, 2);
+  assert.equal(summary.harness?.fields["turn.het.31.deg"]?.pass, 1);
+  assert.equal(summary.harness?.fields["turn.het.31.delayS"]?.pass, 1);
+  assert.equal(summary.harness?.fields["turn.normal.10.degPerSecond"]?.pass, 1);
+  assert.equal(summary.harness?.fields["turn.normal.10.delayS"]?.skip, 1);
+  assert.equal(summaryFailed(summary), false);
+  const printed = formatSummary(summary);
+  assert.match(printed, /harness\.turnNoop 3/);
+  assert.doesNotMatch(printed, /F-FF|F-CL|F-DD|90\.6|51\.5/);
+});

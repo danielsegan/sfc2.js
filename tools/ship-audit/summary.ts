@@ -117,6 +117,7 @@ export function formatSummary(summary: AuditSummary): string {
     lines.push(`harness.unmatched ${summary.harness.unmatched}`);
     lines.push(`harness.turnUntagged ${summary.harness.turnUntagged}`);
     lines.push(`harness.turnNoSpeed ${summary.harness.turnNoSpeed}`);
+    lines.push(`harness.turnNoop ${summary.harness.turnNoop}`);
     const names = Object.keys(summary.harness.fields).sort();
     for (const name of names) {
       const tally = summary.harness.fields[name];
