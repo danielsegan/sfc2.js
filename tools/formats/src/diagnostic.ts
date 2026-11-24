@@ -1,8 +1,18 @@
 /**
- * Shared diagnostic shape from docs/engine/diagnostics.md and
- * docs/formats/README.md. Codes are flat camelCase and add-only.
- * `location.file` is a path relative to the player's install root.
+ * Helpers for the BMP pipeline and the install index.
+ * The shared diagnostic types live in ../diagnostics.ts so shiplist,
+ * ftrlist and BMP use one shape.
  */
+
+export type {
+  Diagnostic,
+  DiagnosticLocation,
+  DiagnosticSource,
+  ParseResult,
+  Severity,
+} from '../diagnostics.ts';
+
+import type { Diagnostic, DiagnosticLocation, DiagnosticSource, Severity } from '../diagnostics.ts';
 
 export const DIAGNOSTIC_SOURCES = [
   'shiplist',
@@ -17,37 +27,7 @@ export const DIAGNOSTIC_SOURCES = [
   'rules',
   'mission',
   'importer',
-] as const;
-
-export type DiagnosticSource = (typeof DIAGNOSTIC_SOURCES)[number];
-
-export type Severity = 'error' | 'warning' | 'info';
-
-export interface DiagnosticLocation {
-  /** Install-relative path, forward slashes. Never absolute or machine-local. */
-  file?: string;
-  /** 1-based line for text formats. */
-  line?: number;
-  /** 1-based field index for tab-delimited tables. */
-  column?: number;
-  /** Raw header name, when known. */
-  field?: string;
-  /** Byte offset for binary formats. */
-  offset?: number;
-}
-
-export interface Diagnostic {
-  code: string;
-  source: DiagnosticSource;
-  severity: Severity;
-  details?: Record<string, unknown>;
-  location?: DiagnosticLocation;
-}
-
-export interface ParseResult<T> {
-  data: T;
-  diagnostics: Diagnostic[];
-}
+] as const satisfies readonly DiagnosticSource[];
 
 const DRIVE_LETTER = /^[a-zA-Z]:/;
 

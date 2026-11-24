@@ -31,7 +31,7 @@ Public documentation of this file is thin, and much thinner than for `shiplist.t
 
 Same expectations and parsing rules as [`shiplist.md` §3](shiplist.md#3-encoding-and-layout), including **parser output keys = raw file header names** and values as written (no scaling, no renaming, exact weapon/arc strings): single-byte Windows text, TAB-delimited, header row(s) of labels, empty cells allowed, header-driven column mapping, unknown columns kept in `extra`, raw cells kept. Confidence: **unverified** (F6 shows it is a ShipEdit text table; everything else is assumed by analogy with the ship list).
 
-Diagnostics use the shared `{ code, source, severity, details?, location? }` type (see [`README`](README.md#parser-conventions) and the planned [`docs/engine/diagnostics.md`](../engine/diagnostics.md)). Parser diagnostics carry `source: "ftrlist"` and the same flat, stable camelCase codes as the ship list, with the same meanings (`emptyFile`, `noHeader`, `raggedRow`, `badNumber`, `duplicateFighterType`, `multipleHeaderRows`, `specsMetaassetsDiffer`). `unknownWeapon` and `unknownArc` are loader diagnostics (`source: "loader"`), not raised by this parser; see §7.
+Diagnostics use the shared `{ code, source, severity, details?, location? }` type (see [`README`](README.md#parser-conventions) and the planned [`docs/engine/diagnostics.md`](../engine/diagnostics.md)). Parser diagnostics carry `source: "ftrlist"` and the same flat, stable camelCase codes as the ship list, with the same meanings (`emptyFile`, `noHeader`, `raggedRow`, `badNumber`, `duplicateFighterType`, `multipleHeaderRows`, `specsMetaassetsDiffer`). `unknownWeapon` and `unknownArc` are loader diagnostics (`source: "loader"`). `parseFtrlist` appends them until `engine/data` exists; see §7.
 
 ## 4. Field table
 
@@ -108,9 +108,9 @@ This parser raises codes only for fields it can't read (empty or malformed) and 
 | W8 | `missingShipRef` | warning | Cross-file (importer-level): `shipClassRef` names no shiplist row, or a carrier bay references a fighter type that does not exist. |
 | W9 | `specsMetaassetsDiffer` | warning | Importer-level: the two copies differ. |
 
-### Loader diagnostics (not raised by this parser)
+### Loader diagnostics (`source: "loader"`)
 
-Weapon and arc values are kept as the exact file strings. The engine loader checks them against the mapping table in `docs/rules` (owned by Combat). These codes use `source: "loader"` and are not emitted by the ftrlist parser. There is no loader module in the repo yet, so this is documentation only. Same codes as in [`shiplist.md` §7](shiplist.md#loader-diagnostics-not-raised-by-this-parser).
+Weapon and arc values are kept as the exact file strings. The engine loader checks them against the mapping table in `docs/rules` (owned by Combat). These codes use `source: "loader"`, not `"ftrlist"`. There is no `engine/data` module yet, so `parseFtrlist` appends them to its own result. Same codes as in [`shiplist.md` §7](shiplist.md#loader-diagnostics-source-loader).
 
 | Code | Source | Severity | Rule |
 | --- | --- | --- | --- |
@@ -118,6 +118,8 @@ Weapon and arc values are kept as the exact file strings. The engine loader chec
 | `unknownArc` | `loader` | warning | Arc token is not in the `docs/rules` mapping table. |
 
 The CE weapon and arc code lists themselves will come later from the `sfc2-ci` inventory and are not listed here.
+
+`parseFtrlist` appends `unknownWeapon` and `unknownArc` with `source: "loader"` on the same result until `engine/data` exists. `Shots` is `load`. A reload-counted Arc cell of `1`, `2` or `3` is `reload` and clears the firing arc. `DroI` and `DroVI` keep `ALL`. The ten `Pla*` spellings each stay their own code.
 
 ## 8. Open questions
 
