@@ -7,12 +7,12 @@ CE 2.670 is now installed on `sfc2-ci`. **No field below counts as verified** un
 ## 1. Pipeline
 
 ```
-Vfs (player install) → tools/formats parsers → { data, diagnostics } (raw, file units, float-friendly)
+Vfs (player install, `@sfc2js/platform`) → tools/formats parsers → { data, diagnostics } (raw, file units, float-friendly)
                      → engine/data loader → GameDatabase (immutable, integer/fixed-point, interned ids) + LoadReport
                      → engine/sim (reads only GameDatabase)
 ```
 
-- **The importer** reads `Specs/shiplist.txt` (the `Assets/Specs` copy of the ship list). Which copy campaign mode uses is still as in §6.
+- **The importer** (`engine/platform`, [#16](https://github.com/danielsegan/sfc2.js/issues/16)) reads `Assets/Specs/shiplist.txt`, or `Specs/shiplist.txt` when the player picked the `Assets` folder. Which copy campaign mode uses is still as in §6. BMP textures from that same index are decoded by `@sfc2js/formats` and uploaded by `@sfc2js/render` ([docs/formats/bmp.md](../formats/bmp.md)).
 - **Parsers** (Asset & Formats, `docs/formats/README.md`) are pure and never throw. They return `{ data, diagnostics }` with values exactly as the file has them (raw shields, all 25 hardpoint slots, unknown columns in `extra`, raw cells in `raw`).
 - **The loader** is the only place where file data becomes sim data. It runs once per session, on the same input on every peer, and is deterministic: no `parseFloat`, no locale functions, no Map/object iteration order [determinism.md N6, N8].
 

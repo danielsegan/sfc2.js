@@ -3,3 +3,5 @@
 Deterministic game engine: simulation core, renderer, mission runtime, AI, audio, and netcode.
 
 The sim core should be independent of the wall clock and of unsourced random numbers (seeded RNG, fixed timestep) so it stays replayable and lockstep-ready. Rendering, UI, and audio read sim state; they do not drive it.
+
+`platform/` is the user-install virtual file system (`@sfc2js/platform`). `render/` uploads BMP textures, including self-illumination, to three.js (`@sfc2js/render`). The byte decoder is `tools/formats` (`@sfc2js/formats`). See [docs/formats/bmp.md](../docs/formats/bmp.md).

@@ -13,7 +13,7 @@ Status values: **spec draft** (written from public sources, unverified), **plann
 | Ship list | `assets/specs/shiplist.txt` (copy in `metaassets/`) | Engine, Combat, Missions, UI, ship viewer | [#13](https://github.com/danielsegan/sfc2-browser-edition/issues/13) | [spec draft](shiplist.md) | not started | no |
 | Fighter list | `assets/specs/ftrlist.txt` (copy in `metaassets/`) | Combat (fighters, PFs), UI | [#14](https://github.com/danielsegan/sfc2-browser-edition/issues/14) | [spec draft](ftrlist.md) | not started | no |
 | Models | `assets/models/<folder>/*.mod`, `*_brk.mod` (break-up / damaged mesh) | Renderer, ship viewer | [#19](https://github.com/danielsegan/sfc2-browser-edition/issues/19) | planned | not started | no |
-| Textures + self-illumination | BMP files next to each model | Renderer, UI & Art | [#15](https://github.com/danielsegan/sfc2-browser-edition/issues/15) | planned | not started | no |
+| Textures + self-illumination | BMP files next to each model (`_<n>i` glow maps) | Renderer, UI & Art | [#15](https://github.com/danielsegan/sfc2.js/issues/15) | [spec draft](bmp.md) | synthetic tests | no |
 | UI sprites | `assets/sprites/sprites.q3` | HUD, menus | — | planned | not started | no |
 | Sounds | `sounds.txt` index + WAV files | Audio | [#35](https://github.com/danielsegan/sfc2-browser-edition/issues/35) | planned | not started | no |
 | Strings | `assets/strings/strings.txt`, `aaStrings.txt`, `quicktips.txt`, `shipnames.txt` | UI, Missions (string keys) | — | planned | not started | no |
@@ -34,8 +34,10 @@ Every parser in this project follows the same contract, so the importer, tests a
      | 'shiplist' | 'ftrlist' | 'mod' | 'bmp' | 'sprites' | 'sounds' | 'strings' | 'fms'
      | 'loader'
      | 'rules'
-     | 'mission';
+     | 'mission'
+     | 'importer';
      // add-only, like codes; 'loader' is the engine data loader, not a format parser.
+     // 'importer' is the user-install index (engine/platform), not a format parser.
      // 'rules' is only for ruleResult reasons (docs/rules/reason-codes.md).
      // 'mission' is the mission host / mission-file importer.
 
