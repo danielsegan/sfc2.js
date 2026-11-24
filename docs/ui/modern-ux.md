@@ -7,7 +7,7 @@ Status: draft v0.1. These are layers on top of SFC2's own HUD (baseline Communit
 - The 3D view renders at native resolution × `renderScale` (0.5–2.0, default 1.0; auto-lowered by the quality preset).
 **Agreed with Engine Lead (pending docs/engine HUD contract):** the tactical HUD draws on its own 2D overlay canvas above the three.js view, scaled in **whole-number steps** so original sprites stay pixel-exact. Menus, options, briefings and accessibility surfaces are **HTML** and scale freely.
 
-- **Tactical HUD (overlay canvas), integer scale.** The HUD is authored on a **1024 × 768 logical canvas** (style-guide §1). The canvas backing store is sized in physical pixels (`devicePixelRatio` applied), and `hudScale = N`, a whole number: `Nmax = max(1, floor(min(physW / 1024, physH / 768)))`. The default is `N = Nmax`; the user can step down (`N = 1 … Nmax`). Sprites draw with `imageSmoothingEnabled = false` at exactly N× so original `sprites.q3` art stays pixel-exact. Space left over after the integer scale goes to the 3D view (anchors push outwards, see §2); the HUD is never stretched by a fractional amount.
+- **Tactical HUD (overlay canvas), integer scale.** The HUD is authored on a **1024 × 768 logical canvas** (style-guide §1). The canvas backing store is sized in physical pixels (`devicePixelRatio` applied), and `hudScale = N`, a whole number: `Nmax = max(1, floor(min(physW / 1024, physH / 768)))`. The default is `N = Nmax`; the user can step down (`N = 1 … Nmax`). Sprites draw with `imageSmoothingEnabled = false` at exactly N× so original `sprites.q3` art stays pixel-exact. Space left over after the integer scale goes to the 3D view (anchors push outwards, see §2); the HUD is never stretched by a fractional amount. **Superseded 2026-11-24:** Daniel allowed fractional HUD scale 1.0–4.0× (`hud-layout.md` §6, D3).
 - **Fallback vector and HD art** are rasterised at the same N× step, so the layout is identical whatever the art source.
 - **Canvas text** (readouts, labels) is drawn at N× the style-guide size; the smallest canvas size is 11 logical px, so it never drops below 11 physical px.
 - **HTML layer, free scale.** Menus, options, briefings, the message-log reader and accessibility mirrors use CSS pixels with the user's **text size** setting (§5) and browser zoom. They aren't bound to N.
@@ -92,7 +92,7 @@ The plan targets a Tauri desktop shell (plan.md, "Vision and scope"; Phase 8 "Ta
 
 ## Open questions
 
-1. Daniel / Engine Lead: at 1080p and 1440p the integer rule gives N = 1, so the HUD is fairly small. Should we add an opt-in fractional scale for fallback and HD art only (original sprites would stay integer)? Off by default, to keep the agreed pixel-exact rule.
+1. **Resolved 2026-11-24 (Daniel): fractional scale allowed, see `hud-layout.md` §6.** Daniel / Engine Lead: at 1080p and 1440p the integer rule gives N = 1, so the HUD is fairly small. Should we add an opt-in fractional scale for fallback and HD art only (original sprites would stay integer)? Off by default, to keep the agreed pixel-exact rule.
 2. Engine Lead: does the sim support a single-player time-scale (for example 0.5×) without breaking determinism, or should "game speed" be dropped?
 3. Engine Lead: Tauri webview differences (WebView2 / WKWebView / WebKitGTK) for the Gamepad API and pointer lock: test matrix owner?
 4. Daniel: default layout on 16:9 — safe-area centred (closer to the original) or wide (more modern)?

@@ -365,7 +365,7 @@ interface CraftView {
 
 **Modes.** Chase (behind own ship), orbit (free around own ship), target lock (keeps own ship and target in frame), tactical overhead, free fly (spectator/replay).
 
-**Interactions.** Right-drag orbit; wheel zoom; `V` cycle mode; `Home` reset; `Ctrl+V` target lock. Camera shake is off with reduced motion. Camera state is purely client-side.
+**Interactions.** Orbit (not right-drag; right-click targets per `hud-layout.md` D1, binding picked by the Engine Lead); wheel zoom; `V` cycle mode; `Home` reset; `Ctrl+V` target lock. Camera shake is off with reduced motion. Camera state is purely client-side.
 
 **TO VERIFY.** Which camera modes SFC2 offers and their default keys.
 
