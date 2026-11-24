@@ -77,6 +77,8 @@ Synthetic rates used by fixtures only ([`data/turn-modes.json`](data/turn-modes.
 
 Yaw is allowed at speed 0 for `TEST-*` modes. Whether CE lets a ship rotate in place is unverified. A requested yaw larger than the cap is `yawClamped` to the cap, sign preserved. Heading wraps mod 65536.
 
+The measured per-hull, speed-keyed **normal** turn curve is specified in [turning.md](turning.md) ([`data/turn-normal.json`](data/turn-normal.json): integer rates in 16-bit angle units per tick at 30 Hz, delay in ticks, fixed-point linear interpolation, clamp outside the table). The engine still uses the letter fallback above until a later change consumes that table.
+
 High-energy turns are specified in [het.md](het.md) (separate sim verb, per-hull speed-keyed integer table with fixed-point linear interpolation, delay then turn, no speed cutoff; CE 2.670 measurements for delay, F-CA sweep/rate band, and K-D7 sweep are recorded, remaining hulls/curves **TO VERIFY**). `hetChance` and `hetBreakdown` remain stored without breakdown rolls in this slice.
 
 ## 5. Shields

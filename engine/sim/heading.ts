@@ -17,8 +17,11 @@ import { H, readHull } from './hull.ts';
 import { rulesDiv } from './rules-div.ts';
 import { CLASS_FIGHTER, turnHasRate, turnImmobile, turnYawCap } from './rules-tables.ts';
 
-/** Free verb. 1–11 and 20–27 are combat, allegiance, phase-3, and small craft. */
+/** Free verbs. 1–11 and 20–27 are combat, allegiance, phase-3, and small craft. */
 export const VERB_ORDER_HEADING = 12;
+
+/** High-Energy Turn. The handler is not registered in this change; the id is reserved here. */
+export const VERB_ORDER_HET = 13;
 
 export const EVENT_HEADING = 19;
 

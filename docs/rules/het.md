@@ -19,18 +19,20 @@ All HET angles, durations, and rates follow [`docs/engine/sim-core.md`](../engin
 
 HET uses its **own sim verb**, separate from `orderHeading` (verb `12` in `engine/sim/heading.ts`) and `orderHelm` (verb `6`):
 
-- **Proposed verb:** `orderHet` (next free Phase 3 verb id `13`; payload: `entity: i32`, `delta16: i32` in signed 16-bit angle units, or default hull sweep when signed direction is supplied).
-- **UI trigger:** the helm panel's 3×3 arrow buttons ([`docs/ui/hud-layout.md`](../ui/hud-layout.md) §5). Left/right helm arrow buttons issue `orderHet` with the hull's signed `turnAngle16` (e.g., `∓16384` for `F-CA`; exact button set and `Go` behavior **TO VERIFY**).
+- **Verb:** `orderHet`. The id is reserved as `VERB_ORDER_HET = 13` in `engine/sim/heading.ts`, next to `VERB_ORDER_HEADING`. No handler is registered yet.
+- **Payload:** a single shape `{ entity: i32, dir: i32 }`. `dir` is `-1` (port / left) or `+1` (starboard / right). Any other value is rejected with `hetInvalidDir`. Sweep, rate, and delay come from [`data/het.json`](data/het.json) by hull and speed. There is no `delta16` override in the payload.
+- **UI trigger:** the helm panel's 3×3 arrow buttons ([`docs/ui/hud-layout.md`](../ui/hud-layout.md) §5). Left/right helm arrow buttons issue `orderHet` with `dir = ∓1`. The signed sweep is `dir × turnAngle16` from the table (e.g., `∓16384` for `F-CA`). Exact button set and `Go` behavior are **TO VERIFY**.
 
 ## 3. Acceptance checks and no speed cutoff
 
-When `orderHet(entity, delta16)` arrives in the input phase:
+When `orderHet({ entity, dir })` arrives in the input phase:
 
 1. Reject if the entity is missing (`noSuchShip`), a fighter (`notAShip`), destroyed (`shipDestroyed`), or crew-disabled (`crewDisabled`).
-2. Clamp/refuse if the ship's turn mode is immobile `H` (`immobile`).
-3. Reject if `delta16 === 0` (`negativeValue`, or a dedicated invalid-delta check — **TO VERIFY**).
+2. Reject if `dir` is not `-1` or `+1` (`hetInvalidDir`).
+3. Clamp/refuse if the ship's turn mode is immobile `H` (`immobile`).
 4. Reject if an HET is already pending or executing (`hetActive`, **provisional / TO VERIFY**; whether a second press cancels or is ignored is **TO VERIFY**).
 5. **No speed cutoff:** CE in-battle capture (2026-11-24) confirmed HET works at speeds `15`, `20`, and `31` as well as lower speeds (`5`, `10`). The earlier "no HET at speed 15+" observation was wrong and has been removed; there is no speed-cutoff rejection.
+6. Look up sweep (`turnAngle16`), rate (`turnRate16PerTick`), and delay (`delayTicks`) from [`data/het.json`](data/het.json) by hull and current speed (clamp or interpolate as in §4). The signed remaining turn is `dir × turnAngle16`. The command cannot override those table values.
 
 Accepted `orderHet` supersedes any active `orderHeading` for that ship. Whether `orderHeading` or manual `orderHelm` can cancel an active HET during its delay or turn phase is **TO VERIFY** (provisional: rejected/locked until the HET finishes).
 
@@ -88,7 +90,7 @@ Fixture: [`tests/het.json`](tests/het.json).
 
 ## 6. `HelmView` contract
 
-Consistent with Engine Lead's `engine/sim` heading/helm move PR (this spec does not edit engine code):
+Consistent with Engine Lead's `engine/sim` heading/helm move PR. `VERB_ORDER_HET = 13` is reserved in `engine/sim/heading.ts`; the handler is not registered yet:
 
 | Field | Type / units | Meaning |
 | --- | --- | --- |
@@ -100,5 +102,5 @@ Consistent with Engine Lead's `engine/sim` heading/helm move PR (this spec does 
 
 - `K-D7` turn rate (`turn.het.<speed>.degPerSecond` / `turnRate16PerTick`) and HET sweep/rate for remaining empire hulls.
 - Exact per-speed variation within the `F-CA` `43–51°/s` band (and whether any hull varies `delayTicks`, `turnAngle16`, or `turnRate16PerTick` across speed points).
-- Whether 3×3 helm arrows trigger distinct sweep angles (45°/90°/180° or hull-fixed sweep) and whether `Go` executes a queued angle.
+- Whether 3×3 helm arrows trigger distinct sweep angles (45°/90°/180° or the hull-fixed table sweep already selected by `dir`) and whether `Go` executes a queued angle.
 - Energy cost, `hetChance` / `hetBreakdown` shiplist columns, breakdown effects, cooldowns, and whether `orderHeading` / `orderHelm` / a second `orderHet` can cancel an in-flight HET.

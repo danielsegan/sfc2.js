@@ -66,3 +66,4 @@ Canonical machine list: [`data/reason-codes.json`](data/reason-codes.json).
 | `raidRepulsed` | rejected | The hit-and-run dice lost. No party was spent. |
 | `boardingRepulsed` | rejected | The boarding dice lost. The committed parties stay spent. |
 | `hetActive` | rejected | Provisional (TO VERIFY): a High-Energy Turn is already pending delay or executing. |
+| `hetInvalidDir` | rejected | `orderHet` `dir` is not `-1` (port) or `+1` (starboard). |

@@ -7,7 +7,7 @@
   "additionalProperties": true,
   "properties": {
     "id": { "type": "string", "minLength": 1 },
-    "mode": { "enum": ["pure", "scale", "load", "resolve", "ticks", "bounds"] },
+    "mode": { "enum": ["pure", "scale", "load", "resolve", "ticks", "bounds", "turning"] },
     "seed": { "type": "integer" },
     "endTick": { "type": "integer", "minimum": 0 },
     "constants": { "type": "object" },

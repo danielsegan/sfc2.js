@@ -3,6 +3,7 @@
  * The summarize.py envelope is { source, method, heading_convention, runs[] }.
  * A run may add spawnKey and fields. Numbers in the file are not printed.
  */
+import { tableExpectForTurnField } from "../turn-curve.mjs";
 import { derivedFields, type HullAudit } from "./derive.ts";
 
 export interface FieldTally {
@@ -181,14 +182,26 @@ export function diffHarness(
     const expect = asMap(run.expect) ?? {};
     const measured = { ...measuredOf(run), ...turns.fields };
     const runTol = asMap(run.tolerances) ?? {};
+    const hullKeys = [
+      typeof run.hull === "string" ? run.hull : "",
+      hull.spawnKey,
+      typeof run.spawnKey === "string" ? run.spawnKey : "",
+      typeof run.label === "string" ? run.label : "",
+    ];
     for (const [field, value] of Object.entries(measured)) {
-      const expected = Object.prototype.hasOwnProperty.call(expect, field) ? expect[field] : derived[field];
+      const fromTable = field.startsWith("turn.") ? tableExpectForTurnField(hullKeys, field) : undefined;
+      const expected = Object.prototype.hasOwnProperty.call(expect, field)
+        ? expect[field]
+        : derived[field] ?? fromTable?.value;
       if (expected === undefined) {
         bump(fields, field, "skip");
         continue;
       }
       const limit =
-        runTol[field] ?? parsed.tolerances[field] ?? (field.startsWith("turn.") ? turnTolerance : tolerance);
+        runTol[field] ??
+        parsed.tolerances[field] ??
+        fromTable?.tolerance ??
+        (field.startsWith("turn.") ? turnTolerance : tolerance);
       const delta = value > expected ? value - expected : expected - value;
       bump(fields, field, delta <= limit + 1e-9 ? "pass" : "fail");
     }

@@ -10,6 +10,12 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  delayTicksFromSecondsHundredths,
+  interpInt,
+  lookupTurnPoint,
+  rate16FromDegHundredths,
+} from "./turn-curve.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -23,6 +29,7 @@ const WEAPONS = readJson("docs/rules/data/weapon-arcs.json");
 const TURNS = readJson("docs/rules/data/turn-modes.json");
 const REASONS = readJson("docs/rules/data/reason-codes.json");
 const HET = readJson("docs/rules/data/het.json");
+const TURN_NORMAL = readJson("docs/rules/data/turn-normal.json");
 
 const reasonByCode = new Map(REASONS.codes.map((c) => [c.code, c]));
 const FX_SHIFT = 16;
@@ -824,20 +831,6 @@ function commandHelm(world, cmd) {
 }
 
 
-function intFloorDiv(n, d) {
-  const q = Math.trunc(n / d);
-  return n !== 0 && (n < 0) !== (d < 0) && q * d !== n ? q - 1 : q;
-}
-
-function interpInt(s, s0, y0, s1, y1) {
-  const dx = s1 - s0;
-  const t = s - s0;
-  const num = (y1 - y0) * t;
-  const half = dx >> 1;
-  if (num >= 0) return y0 + intFloorDiv(num + half, dx);
-  return y0 - intFloorDiv(-num + half, dx);
-}
-
 function hetParamsForShip(ship) {
   const entry = HET.hulls[ship.hetHull] ?? HET.hulls.default;
   const pts = entry.speedPoints;
@@ -867,12 +860,11 @@ function commandHet(world, cmd) {
   if (found.error) return found.error;
   const ship = found.ship;
   if (ship.disabled) return result("rejected", "crewDisabled", null);
+  const dir = cmd.dir;
+  if (dir !== -1 && dir !== 1) return result("rejected", "hetInvalidDir", null);
   const turn = turnDef(ship.turnMode);
   const params = hetParamsForShip(ship);
-  const sign = cmd.direction != null && cmd.direction < 0 ? -1 : 1;
-  const delta = cmd.delta16 ?? sign * params.turnAngle16;
-  if (!Number.isInteger(delta)) return result("rejected", "precisionExceeded", null);
-  if (delta === 0) return result("rejected", "negativeValue", null);
+  const delta = dir * params.turnAngle16;
   if (turn.immobile) return result("clamped", "immobile", 0);
   if (ship.het.mode === "het") return result("rejected", "hetActive", null);
   ship.het = {
@@ -1303,6 +1295,66 @@ function runBounds(test, file) {
   subset({ positionMath: "i64", mapBound: limit }, test.expect, "expect", file);
 }
 
+function runTurning(test, file) {
+  const actual = [];
+  for (const step of test.cases || []) {
+    if (step.op === "rateFromDegHundredths") {
+      actual.push({
+        op: step.op,
+        degHundredths: step.degHundredths,
+        value: rate16FromDegHundredths(step.degHundredths),
+      });
+    } else if (step.op === "delayFromSecondsHundredths") {
+      actual.push({
+        op: step.op,
+        secondsHundredths: step.secondsHundredths,
+        value: delayTicksFromSecondsHundredths(step.secondsHundredths),
+      });
+    } else if (step.op === "lookup") {
+      const point = lookupTurnPoint(TURN_NORMAL, step.hull, step.speedHundredths);
+      actual.push({
+        op: step.op,
+        hull: step.hull,
+        speedHundredths: step.speedHundredths,
+        turnRate16PerTick: point.turnRate16PerTick,
+        delayTicks: point.delayTicks,
+      });
+    } else {
+      fail(file, `unknown turning op ${step.op}`);
+    }
+  }
+  const expect = (test.cases || []).map((step) => {
+    if (step.op === "rateFromDegHundredths") {
+      return { op: step.op, degHundredths: step.degHundredths, value: step.expect };
+    }
+    if (step.op === "delayFromSecondsHundredths") {
+      return { op: step.op, secondsHundredths: step.secondsHundredths, value: step.expect };
+    }
+    const row = {
+      op: step.op,
+      hull: step.hull,
+      speedHundredths: step.speedHundredths,
+      turnRate16PerTick: step.expect.turnRate16PerTick,
+    };
+    if (step.expect.delayTicks != null) row.delayTicks = step.expect.delayTicks;
+    return row;
+  });
+  // lookup cases may omit delayTicks in expect; compare the listed fields only
+  if (actual.length !== expect.length) {
+    fail(file, `turning cases length ${actual.length} != ${expect.length}`);
+    return;
+  }
+  for (let i = 0; i < actual.length; i += 1) {
+    const got = actual[i];
+    const want = expect[i];
+    for (const [key, value] of Object.entries(want)) {
+      if (got[key] !== value) {
+        fail(file, `case ${i} ${want.op}: ${key} expected ${value}, got ${got[key]}`);
+      }
+    }
+  }
+}
+
 function main() {
   checkMappingShape();
   checkReasonDocs();
@@ -1335,6 +1387,7 @@ function main() {
       else if (test.mode === "resolve") runResolve(test, rel);
       else if (test.mode === "ticks") runTicks(test, rel);
       else if (test.mode === "bounds") runBounds(test, rel);
+      else if (test.mode === "turning") runTurning(test, rel);
       else fail(rel, `unknown mode ${test.mode}`);
     } catch (err) {
       fail(rel, err.stack || err.message);

@@ -316,3 +316,92 @@ test("install lookup prefers Assets/Specs and reports differing copies as a coun
   fs.rmSync(dir, { recursive: true, force: true });
   fs.rmSync(out, { recursive: true, force: true });
 });
+
+test("table expect scores F-CA and K-D7 normal turns when the run omits expect", () => {
+  const text = [
+    "Race\tHull Type\tClass\tTurn mode\tMove Cost\tAcceleration\tShield 1\tShield 2 _ 6\tShield 3 _ 5\tShield 4\tShield Total\tR_L_Warp\tC_Warp\tImpulse\tApr\tBattery",
+    "Federation\tCA\tF-CA\tC\t1\t3\t10\t8\t6\t4\t42\t5\t3\t4\t2\t6",
+    "Klingon\tCA\tK-D7\tC\t1\t3\t10\t8\t6\t4\t42\t5\t3\t4\t2\t6",
+    "Federation\tCA\tTEST-CA-01\tC\t1\t3\t10\t8\t6\t4\t42\t5\t3\t4\t2\t6",
+  ].join("\n");
+  const harness = {
+    source: "synthetic",
+    method: "test",
+    heading_convention: "degrees, negative = port",
+    runs: [
+      {
+        label: "fca-normal-8",
+        spawnKey: "Federation:F-CA",
+        turn: "normal",
+        target_speed: 8,
+        mean_rate_deg_per_game_s_10_90: 6.9,
+        order_delay_s: 1.45,
+      },
+      {
+        label: "fca-normal-8-edge",
+        spawnKey: "Federation:F-CA",
+        turn: "normal",
+        target_speed: 8,
+        mean_rate_deg_per_game_s_10_90: 7.2,
+        order_delay_s: 1.3,
+      },
+      {
+        label: "fca-normal-8-miss",
+        spawnKey: "Federation:F-CA",
+        turn: "normal",
+        target_speed: 8,
+        mean_rate_deg_per_game_s_10_90: 7.3,
+        order_delay_s: 1.2,
+      },
+      {
+        label: "fca-normal-29-5",
+        spawnKey: "Federation:F-CA",
+        turn: "normal",
+        target_speed: 29.5,
+        mean_rate_deg_per_game_s_10_90: 8.0,
+        order_delay_s: 1.45,
+      },
+      {
+        label: "kd7-normal-7",
+        spawnKey: "Klingon:K-D7",
+        turn: "normal",
+        target_speed: 7,
+        mean_rate_deg_per_game_s_10_90: 8.6,
+        order_delay_s: 1.45,
+      },
+      {
+        label: "test-no-table",
+        spawnKey: "Federation:TEST-CA-01",
+        turn: "normal",
+        target_speed: 8,
+        mean_rate_deg_per_game_s_10_90: 6.9,
+        order_delay_s: 0.75,
+      },
+      {
+        label: "fca-override",
+        spawnKey: "Federation:F-CA",
+        turn: "normal",
+        target_speed: 8,
+        mean_rate_deg_per_game_s_10_90: 5.75,
+        order_delay_s: 0.75,
+        expect: { "turn.normal.8.degPerSecond": 5.75, "turn.normal.8.delayS": 0.75 },
+        tolerances: { "turn.normal.8.degPerSecond": 0.25, "turn.normal.8.delayS": 0.15 },
+      },
+    ],
+  };
+  const { summary } = auditText(text, { harness, tolerance: 0, turnTolerance: 1 });
+  assert.equal(summary.harness?.unmatched, 0);
+  assert.equal(summary.harness?.fields["turn.normal.8.degPerSecond"]?.pass, 3);
+  assert.equal(summary.harness?.fields["turn.normal.8.degPerSecond"]?.fail, 1);
+  assert.equal(summary.harness?.fields["turn.normal.8.degPerSecond"]?.skip, 1);
+  assert.equal(summary.harness?.fields["turn.normal.8.delayS"]?.pass, 3);
+  assert.equal(summary.harness?.fields["turn.normal.8.delayS"]?.fail, 1);
+  assert.equal(summary.harness?.fields["turn.normal.8.delayS"]?.skip, 1);
+  assert.equal(summary.harness?.fields["turn.normal.29.5.degPerSecond"]?.pass, 1);
+  assert.equal(summary.harness?.fields["turn.normal.29.5.delayS"]?.pass, 1);
+  assert.equal(summary.harness?.fields["turn.normal.7.degPerSecond"]?.pass, 1);
+  assert.equal(summary.harness?.fields["turn.normal.7.delayS"]?.skip, 1);
+  assert.equal(summaryFailed(summary), true);
+  const printed = formatSummary(summary);
+  assert.doesNotMatch(printed, /F-CA|K-D7|TEST-|6\.9|1\.45/);
+});

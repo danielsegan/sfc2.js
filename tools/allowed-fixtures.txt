@@ -46,6 +46,7 @@ docs/rules/tests/damage-seeded.json
 docs/rules/tests/facing-bins.json
 docs/rules/tests/fire-checks.json
 docs/rules/tests/helm.json
+docs/rules/tests/turning.json
 docs/rules/tests/het.json
 docs/rules/tests/life-support.json
 docs/rules/tests/loader-ftrlist-codes.json

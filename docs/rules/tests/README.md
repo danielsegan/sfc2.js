@@ -14,7 +14,7 @@ There is no engine test runner yet. `tools/check-rules-fixtures.mjs` is the harn
 
 | Field | Role |
 | --- | --- |
-| `id`, `mode` | Required. Mode is `pure`, `scale`, `load`, `resolve`, `ticks`, or `bounds`. |
+| `id`, `mode` | Required. Mode is `pure`, `scale`, `load`, `resolve`, `ticks`, `bounds`, or `turning`. |
 | `constants` | Optional overrides of [`../data/constants.json`](../data/constants.json) for this file. |
 | `seed` | `combat` stream seed when a chart draw is not scripted. Default 1. |
 | `ships` | Engine-model ships. `className` must start with `test-`. |
@@ -24,7 +24,7 @@ There is no engine test runner yet. `tools/check-rules-fixtures.mjs` is the harn
 | `timeline`, `endTick` | `ticks` commands by input-phase tick. The loop runs tick 0 through `endTick`. |
 | `expect` | `ruleResult` list and a partial state. Extra state fields are ignored. Rejected commands use `appliedValue: null`. |
 
-Command `entry` is one of `setShields`, `damageShield`, `repairSystem`, `damageSystem`, `setEnergy`, `orderHelm`, `orderHet`, `fire`.
+Command `entry` is one of `setShields`, `damageShield`, `repairSystem`, `damageSystem`, `setEnergy`, `orderHelm`, `orderHet`, `fire`. `orderHet` takes `dir` (`-1` port or `+1` starboard); sweep, rate, and delay come from [`../data/het.json`](../data/het.json). Mode `turning` runs unit-conversion, interpolation, and clamp cases against [`../data/turn-normal.json`](../data/turn-normal.json).
 
 `damageSystem` and `fire` may carry `scriptedDraws` and `warheadRolls`. Those arrays are a harness feature so a chart expectation does not depend on the production RNG. The sim always uses the `combat` stream.
 
