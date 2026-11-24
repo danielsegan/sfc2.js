@@ -1,9 +1,10 @@
 /**
  * Counts-only summary. Hull values stay in the out directory.
  */
-import { columnCounts } from "./columns.ts";
+import { columnCounts, isKnownHeader } from "./columns.ts";
 import type { CheckResult, HullAudit } from "./derive.ts";
 import type { HarnessDiff } from "./harness.ts";
+import type { CopyReport } from "./run.ts";
 
 export interface CheckTally {
   pass: number;
@@ -24,7 +25,7 @@ export interface AuditSummary {
   fileColumns: number;
   unmappedColumns: number;
   unmappedNames: string[];
-  copiesDiffer: number;
+  copies: CopyReport;
   harness: HarnessDiff | null;
 }
 
@@ -39,8 +40,7 @@ function add(tally: CheckTally, check: CheckResult): void {
 export function summarize(
   hulls: readonly HullAudit[],
   fileColumns: readonly string[],
-  known: ReadonlySet<string>,
-  copiesDiffer: number,
+  copies: CopyReport,
   harness: HarnessDiff | null,
 ): AuditSummary {
   const checks = {
@@ -59,7 +59,8 @@ export function summarize(
   }
   const unmappedNames: string[] = [];
   for (const name of fileColumns) {
-    if (!known.has(name)) unmappedNames.push(name === "" ? "(empty)" : name);
+    if (isKnownHeader(name)) continue;
+    unmappedNames.push(name === "" ? "(empty)" : name);
   }
   return {
     rows: hulls.length,
@@ -70,7 +71,7 @@ export function summarize(
     fileColumns: fileColumns.length,
     unmappedColumns: unmappedNames.length,
     unmappedNames,
-    copiesDiffer,
+    copies,
     harness,
   };
 }
@@ -97,12 +98,25 @@ export function formatSummary(summary: AuditSummary): string {
     `file.unmapped ${summary.unmappedColumns}`,
   ];
   if (summary.unmappedNames.length > 0) lines.push(`file.unmappedNames ${summary.unmappedNames.join(",")}`);
-  lines.push(`copiesDiffer ${summary.copiesDiffer}`);
+  lines.push(`copiesDiffer ${summary.copies.differ}`);
+  lines.push(`copies.note ${summary.copies.note}`);
+  if (summary.copies.note !== "not compared (one file)") {
+    lines.push(`copies.assetsRows ${summary.copies.assetsRows}`);
+    lines.push(`copies.metaRows ${summary.copies.metaRows}`);
+    lines.push(`copies.assetsColumns ${summary.copies.assetsColumns}`);
+    lines.push(`copies.metaColumns ${summary.copies.metaColumns}`);
+    lines.push(`copies.onlyInOne ${summary.copies.onlyInOne}`);
+    lines.push(`copies.rowsDiffer ${summary.copies.rowsDiffer}`);
+    lines.push(`copies.headerNamesDiffer ${summary.copies.headerNamesDiffer}`);
+    lines.push(`copies.columnsDiffer ${summary.copies.columnsDiffer}`);
+  }
   if (summary.harness === null) {
     lines.push("harness off");
   } else {
     lines.push(`harness.runs ${summary.harness.runs}`);
     lines.push(`harness.unmatched ${summary.harness.unmatched}`);
+    lines.push(`harness.turnUntagged ${summary.harness.turnUntagged}`);
+    lines.push(`harness.turnNoSpeed ${summary.harness.turnNoSpeed}`);
     const names = Object.keys(summary.harness.fields).sort();
     for (const name of names) {
       const tally = summary.harness.fields[name];

@@ -50,7 +50,7 @@ Ignored `yes` means current sim and rules code does not read the column. There a
 | 10 | Move Cost | moveCost | engine/sim/bind-shiplist.ts ShipSetup.moveCost100 → engine/sim/hull.ts H.moveCost100 → engine/sim/combat.ts movement budget | File decimal, at most two places, stored as hundredths (1 → 100, 0.75 → 75). Not a ×2. | assumed | no |
 | 11 | HET +2 Turns & Nimble | hetChance | none in engine/sim or engine/render | Header is HET +2 Turns & Nimble. Parsed. The loader does not read it. | unused | yes |
 | 12 | HET Breakdown | hetBreakdown | none in engine/sim or engine/render | Parsed. The loader does not read it. | unused | yes |
-| 13 | Stealth (+ECM) | stealth | engine/sim/bind-shiplist.ts ShipSetup.stealth → engine/sim/phase3.ts defensiveEcm → engine/sim/hull.ts H.stealth | ×1. May be negative. Added to paid ECM, then floored at 0. | assumed | no |
+| 13 | Stealth (+ECM) | stealth | engine/sim/bind-shiplist.ts ShipSetup.stealth → engine/sim/phase3.ts defensiveEcm → engine/sim/hull.ts H.stealth | CE header `Stealth (+ECM)`. A trailing `_`, extra spaces, or different case is the same column (the audit keys headers that way). ×1. May be negative. Added to paid ECM, then floored at 0. | assumed | no |
 | 14 | Regular Crew | crew | engine/sim/bind-shiplist.ts ShipSetup.crew → engine/sim/hull.ts H.crew | ×1 whole crew. | assumed | no |
 | 15 | Boarding Parties Base | boardingPartiesBase | none in engine/sim or engine/render | Parsed. The loader does not read it. | unused | yes |
 | 16 | Boarding Parties Max | boardingPartiesMax | none in engine/sim or engine/render | Parsed. The loader does not read it. | unused | yes |

@@ -333,7 +333,8 @@ const STATIC: Record<number, Ann> = {
   13: {
     parser: "stealth",
     consumer: "engine/sim/bind-shiplist.ts ShipSetup.stealth → engine/sim/phase3.ts defensiveEcm → engine/sim/hull.ts H.stealth",
-    transform: "×1. May be negative. Added to paid ECM, then floored at 0.",
+    transform:
+      "CE header `Stealth (+ECM)`. A trailing `_`, extra spaces, or different case is the same column (the audit keys headers that way). ×1. May be negative. Added to paid ECM, then floored at 0.",
     status: "assumed",
     ignored: false,
   },
@@ -611,6 +612,17 @@ function annotate(index: number): Ann {
   const row = STATIC[index];
   if (!row) throw new Error(`missing shiplist annotation ${index}`);
   return row;
+}
+
+/** Catalog key: case, spacing, and a trailing underscore do not make a second column. */
+export function headerKey(name: string): string {
+  return name.trim().toLowerCase().replace(/\u00a0/g, " ").replace(/_+$/g, "").replace(/\s+/g, "");
+}
+
+const KNOWN_HEADER_KEYS = new Set(CE_HEADERS.map((name) => headerKey(name)));
+
+export function isKnownHeader(name: string): boolean {
+  return KNOWN_HEADER_KEYS.has(headerKey(name));
 }
 
 export const FIELD_COLUMNS: readonly FieldColumn[] = CE_HEADERS.map((column, index) => {

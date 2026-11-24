@@ -14,6 +14,10 @@ export interface FieldTally {
 export interface HarnessDiff {
   runs: number;
   unmatched: number;
+  /** Turn samples with a rate, delay, or swept angle and no normal|het kind. Skipped, not failed. */
+  turnUntagged: number;
+  /** Tagged turn samples with no target or settled speed. Skipped, not failed. */
+  turnNoSpeed: number;
   fields: Record<string, FieldTally>;
 }
 
@@ -23,7 +27,16 @@ interface RunRecord {
   hull?: unknown;
   energy_panel?: unknown;
   mean_rate_deg_per_game_s_10_90?: unknown;
+  total_turn_deg?: unknown;
+  order_delay_s?: unknown;
+  target_speed?: unknown;
+  settled_speed?: unknown;
+  /** `normal` or `het`. A string. Legacy captures omit it. */
+  turn?: unknown;
+  turnKind?: unknown;
+  kind?: unknown;
   fields?: unknown;
+  expect?: unknown;
   tolerances?: unknown;
 }
 
@@ -76,13 +89,61 @@ function measuredOf(run: RunRecord): Record<string, number> {
   const out: Record<string, number> = {};
   const energy = isRecord(run.energy_panel) ? asNumber(run.energy_panel.power) : null;
   if (energy !== null) out["power.generation"] = energy;
-  const rate = asNumber(run.mean_rate_deg_per_game_s_10_90);
-  if (rate !== null) out["turn.degPerGameSecond"] = rate;
   const extra = asMap(run.fields);
   if (extra) {
     for (const [key, value] of Object.entries(extra)) out[key] = value;
   }
   return out;
+}
+
+function turnKind(run: RunRecord): "normal" | "het" | null {
+  const candidates = [run.turnKind, run.kind, run.turn];
+  for (const candidate of candidates) {
+    if (typeof candidate !== "string") continue;
+    const text = candidate.trim().toLowerCase();
+    if (text === "normal" || text === "het") return text;
+  }
+  return null;
+}
+
+function speedKey(run: RunRecord): string | null {
+  const speed = asNumber(run.target_speed) ?? asNumber(run.settled_speed);
+  if (speed === null) return null;
+  if (Number.isInteger(speed)) return String(speed);
+  return String(speed);
+}
+
+function isTurnSample(run: RunRecord): boolean {
+  return (
+    asNumber(run.mean_rate_deg_per_game_s_10_90) !== null ||
+    asNumber(run.order_delay_s) !== null ||
+    asNumber(run.total_turn_deg) !== null
+  );
+}
+
+/**
+ * Normal turns and High-Energy Turns are different measurements.
+ * Untagged legacy rows are not scored against yaw.
+ */
+function turnFields(run: RunRecord): { untagged: boolean; noSpeed: boolean; fields: Record<string, number> } {
+  const fields: Record<string, number> = {};
+  if (!isTurnSample(run)) return { untagged: false, noSpeed: false, fields };
+  const kind = turnKind(run);
+  if (kind === null) return { untagged: true, noSpeed: false, fields };
+  const speed = speedKey(run);
+  if (speed === null) return { untagged: false, noSpeed: true, fields };
+  const rate = asNumber(run.mean_rate_deg_per_game_s_10_90);
+  const delay = asNumber(run.order_delay_s);
+  if (kind === "normal") {
+    if (rate !== null) fields[`turn.normal.${speed}.degPerSecond`] = rate;
+    if (delay !== null) fields[`turn.normal.${speed}.delayS`] = delay;
+  } else {
+    const swept = asNumber(run.total_turn_deg);
+    if (swept !== null) fields[`turn.het.${speed}.deg`] = swept;
+    if (rate !== null) fields[`turn.het.${speed}.degPerSecond`] = rate;
+    if (delay !== null) fields[`turn.het.${speed}.delayS`] = delay;
+  }
+  return { untagged: false, noSpeed: false, fields };
 }
 
 /**
@@ -104,7 +165,12 @@ export function diffHarness(
   const parsed = parseHarness(document);
   const fields: Record<string, FieldTally> = {};
   let unmatched = 0;
+  let turnUntagged = 0;
+  let turnNoSpeed = 0;
   for (const run of parsed.runs) {
+    const turns = turnFields(run);
+    if (turns.untagged) turnUntagged += 1;
+    if (turns.noSpeed) turnNoSpeed += 1;
     const key = resolveKey(run, hulls, hullMap);
     const hull = key === null ? undefined : hulls.find((item) => item.spawnKey === key);
     if (!hull) {
@@ -112,17 +178,20 @@ export function diffHarness(
       continue;
     }
     const derived = derivedFields(hull);
+    const expect = asMap(run.expect) ?? {};
+    const measured = { ...measuredOf(run), ...turns.fields };
     const runTol = asMap(run.tolerances) ?? {};
-    for (const [field, measured] of Object.entries(measuredOf(run))) {
-      const expected = derived[field];
+    for (const [field, value] of Object.entries(measured)) {
+      const expected = Object.prototype.hasOwnProperty.call(expect, field) ? expect[field] : derived[field];
       if (expected === undefined) {
         bump(fields, field, "skip");
         continue;
       }
-      const limit = runTol[field] ?? parsed.tolerances[field] ?? (field === "turn.degPerGameSecond" ? turnTolerance : tolerance);
-      const delta = measured > expected ? measured - expected : expected - measured;
-      bump(fields, field, delta <= limit ? "pass" : "fail");
+      const limit =
+        runTol[field] ?? parsed.tolerances[field] ?? (field.startsWith("turn.") ? turnTolerance : tolerance);
+      const delta = value > expected ? value - expected : expected - value;
+      bump(fields, field, delta <= limit + 1e-9 ? "pass" : "fail");
     }
   }
-  return { runs: parsed.runs.length, unmatched, fields };
+  return { runs: parsed.runs.length, unmatched, turnUntagged, turnNoSpeed, fields };
 }

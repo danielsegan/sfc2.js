@@ -4,8 +4,7 @@
  */
 import { readdir, readFile, realpath, stat } from "node:fs/promises";
 import path from "node:path";
-import { parseShiplist } from "../../tools/formats/shiplist.ts";
-import { CE_HEADERS } from "./columns.ts";
+import { parseShiplist, type Shiplist, type ShiplistRow } from "../../tools/formats/shiplist.ts";
 import { auditRow, type HullAudit } from "./derive.ts";
 import { diffHarness, type HarnessDiff } from "./harness.ts";
 import { writeAuditOutput } from "./report.ts";
@@ -18,7 +17,31 @@ export interface AuditRun {
   failed: boolean;
 }
 
-const KNOWN = new Set(CE_HEADERS);
+export interface CopyReport {
+  differ: number;
+  assetsRows: number;
+  metaRows: number;
+  assetsColumns: number;
+  metaColumns: number;
+  onlyInOne: number;
+  rowsDiffer: number;
+  headerNamesDiffer: number;
+  columnsDiffer: number;
+  note: string;
+}
+
+export const SINGLE_FILE_COPY: CopyReport = {
+  differ: 0,
+  assetsRows: 0,
+  metaRows: 0,
+  assetsColumns: 0,
+  metaColumns: 0,
+  onlyInOne: 0,
+  rowsDiffer: 0,
+  headerNamesDiffer: 0,
+  columnsDiffer: 0,
+  note: "not compared (one file)",
+};
 
 function rank(rel: string): number {
   const lower = rel.toLowerCase();
@@ -42,8 +65,83 @@ async function listFiles(rootReal: string): Promise<string[]> {
   return files;
 }
 
+function rowIndex(rows: readonly ShiplistRow[]): Map<string, string[][]> {
+  const map = new Map<string, string[][]>();
+  for (const row of rows) {
+    const key = row.spawnKey.toLowerCase();
+    const list = map.get(key) ?? [];
+    list.push(row.raw);
+    map.set(key, list);
+  }
+  return map;
+}
+
+function sameCells(left: readonly string[], right: readonly string[]): boolean {
+  const width = Math.max(left.length, right.length);
+  for (let i = 0; i < width; i++) {
+    if ((left[i] ?? "") !== (right[i] ?? "")) return false;
+  }
+  return true;
+}
+
+/** Counts only. Spawn keys stay inside this function. */
+export function diffShiplistCopies(assets: Shiplist, meta: Shiplist): CopyReport {
+  const left = rowIndex(assets.rows);
+  const right = rowIndex(meta.rows);
+  let onlyInOne = 0;
+  let rowsDiffer = 0;
+  const dirtyColumns = new Set<number>();
+  const keys = new Set<string>([...left.keys(), ...right.keys()]);
+  for (const key of keys) {
+    const a = left.get(key);
+    const b = right.get(key);
+    if (!a || !b) {
+      onlyInOne += 1;
+      continue;
+    }
+    let keyDiffers = a.length !== b.length;
+    const shared = Math.min(a.length, b.length);
+    for (let i = 0; i < shared; i++) {
+      const rowA = a[i] ?? [];
+      const rowB = b[i] ?? [];
+      if (!sameCells(rowA, rowB)) {
+        keyDiffers = true;
+        const width = Math.max(rowA.length, rowB.length);
+        for (let column = 0; column < width; column++) {
+          if ((rowA[column] ?? "") !== (rowB[column] ?? "")) dirtyColumns.add(column);
+        }
+      }
+    }
+    if (keyDiffers) rowsDiffer += 1;
+  }
+  const width = Math.max(assets.columns.length, meta.columns.length);
+  let headerNamesDiffer = 0;
+  for (let i = 0; i < width; i++) {
+    if ((assets.columns[i] ?? "") !== (meta.columns[i] ?? "")) headerNamesDiffer += 1;
+  }
+  const differ =
+    assets.rows.length !== meta.rows.length ||
+    headerNamesDiffer > 0 ||
+    onlyInOne > 0 ||
+    rowsDiffer > 0
+      ? 1
+      : 0;
+  return {
+    differ,
+    assetsRows: assets.rows.length,
+    metaRows: meta.rows.length,
+    assetsColumns: assets.columns.length,
+    metaColumns: meta.columns.length,
+    onlyInOne,
+    rowsDiffer,
+    headerNamesDiffer,
+    columnsDiffer: dirtyColumns.size,
+    note: differ === 0 ? "assets/specs and metaassets shiplist.txt match" : "assets/specs and metaassets shiplist.txt differ",
+  };
+}
+
 /** Locate shiplist.txt under an install root. Does not return the absolute path. */
-export async function readInstallShiplist(root: string): Promise<{ bytes: Uint8Array; copiesDiffer: number }> {
+export async function readInstallShiplist(root: string): Promise<{ bytes: Uint8Array; copies: CopyReport }> {
   let rootReal: string;
   try {
     const info = await stat(root);
@@ -58,18 +156,28 @@ export async function readInstallShiplist(root: string): Promise<{ bytes: Uint8A
   if (!chosen) throw new Error("shiplist.txt was not found under SFC2_INSTALL");
   const bytes = await readFile(path.join(rootReal, chosen));
   const meta = hits.find((rel) => rank(rel) === 2);
-  let copiesDiffer = 0;
-  if (meta) {
-    const other = await readFile(path.join(rootReal, meta));
-    if (!bytes.equals(other)) copiesDiffer = 1;
+  if (!meta) {
+    const parsed = parseShiplist(bytes, { checkVocabulary: false });
+    return {
+      bytes,
+      copies: {
+        ...SINGLE_FILE_COPY,
+        assetsRows: parsed.data.rows.length,
+        assetsColumns: parsed.data.columns.length,
+        note: "one shiplist.txt (assets/specs); no metaassets copy",
+      },
+    };
   }
-  return { bytes, copiesDiffer };
+  const other = await readFile(path.join(rootReal, meta));
+  const assets = parseShiplist(bytes, { checkVocabulary: false });
+  const metaList = parseShiplist(other, { checkVocabulary: false });
+  return { bytes, copies: diffShiplistCopies(assets.data, metaList.data) };
 }
 
 export function auditText(
   text: string | Uint8Array,
   options?: {
-    copiesDiffer?: number;
+    copies?: CopyReport;
     harness?: unknown;
     hullMap?: Readonly<Record<string, string>>;
     tolerance?: number;
@@ -89,14 +197,14 @@ export function auditText(
       options.turnTolerance ?? 1,
     );
   }
-  const summary = summarize(hulls, columns, KNOWN, options?.copiesDiffer ?? 0, harness);
+  const summary = summarize(hulls, columns, options?.copies ?? SINGLE_FILE_COPY, harness);
   return { hulls, summary };
 }
 
 export async function runAudit(options: {
   text: string | Uint8Array;
   outDir: string;
-  copiesDiffer?: number;
+  copies?: CopyReport;
   harness?: unknown;
   hullMap?: Readonly<Record<string, string>>;
   tolerance?: number;
