@@ -1,0 +1,22 @@
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { defineConfig } from 'vite';
+
+const here = dirname(fileURLToPath(import.meta.url));
+const repo = resolve(here, '../..');
+
+export default defineConfig({
+  root: here,
+  publicDir: false,
+  server: {
+    host: '127.0.0.1',
+    port: 4174,
+    strictPort: true,
+    fs: { allow: [repo] },
+  },
+  preview: {
+    host: '127.0.0.1',
+    port: 4174,
+    strictPort: true,
+  },
+});

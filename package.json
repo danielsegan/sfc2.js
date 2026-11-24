@@ -19,6 +19,7 @@
     "replay:check": "node --experimental-strip-types engine/replay/cli.ts check replays",
     "replay:record": "node --experimental-strip-types engine/replay/cli.ts record replays",
     "replay:browsers": "playwright test",
+    "dev:viewer": "vite --config web/ship-viewer/vite.config.ts",
     "check": "pnpm typecheck && pnpm lint:sim && pnpm lut:check && pnpm test && pnpm replay:check && node tools/check-rules-fixtures.mjs && bash tools/check-no-game-files.sh"
   },
   "devDependencies": {
