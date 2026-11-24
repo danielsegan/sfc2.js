@@ -263,10 +263,10 @@ describe('shiplist binding', () => {
     'Federation\tFTR\tTEST-FTR-01\tH\t0\t1\t1\t1\t1\t0\t0\t0\t0\t0\t1\t1\t\t\t\t\tassets/models/test_ftr/test_ftr.mod\tTF',
   ].join('\n');
 
-  it('fans shields out by two and doubles the side warp', () => {
+  it('maps shields 1:1 with fan-out and doubles the side warp', () => {
     const parsed = parseShiplist(text, { file: 'Assets/Specs/shiplist.txt' });
     const ship = bindShiplistRow(parsed.data.rows[0]!, parsed.data.columns);
-    expect(ship.shieldsMax).toEqual([20, 16, 12, 8, 12, 16]);
+    expect(ship.shieldsMax).toEqual([10, 8, 6, 4, 6, 8]);
     expect(ship.shields).toEqual(ship.shieldsMax);
     expect(ship.warp).toBe(13);
     expect(ship.impulse).toBe(1);
@@ -278,7 +278,7 @@ describe('shiplist binding', () => {
     expect(ship.minCrew).toBe(1);
     expect(ship.acceleration).toBe(4);
     expect(ship.turnMode).toBe(TURN_H);
-    expect(shieldMaxFromCells(10, 8, 6, 4)).toEqual([20, 16, 12, 8, 12, 16]);
+    expect(shieldMaxFromCells(10, 8, 6, 4)).toEqual([10, 8, 6, 4, 6, 8]);
     expect(shieldMaxFromCells(10, 8, 6, 4, {
       sideColumnFactor: 1,
       endFactor: 3,
@@ -312,8 +312,8 @@ describe('shiplist binding', () => {
     ].join('\n');
     const parsed = parseShiplist(ce, { file: 'Assets/Specs/shiplist.txt' });
     const ship = bindShiplistRow(parsed.data.rows[0]!, parsed.data.columns);
-    // File cells 40, 30, 20, 40. Sides are the paired columns, then ×2.
-    expect(ship.shieldsMax).toEqual([80, 60, 40, 80, 40, 60]);
+    // File cells 40, 30, 20, 40. Sides are the paired columns, 1:1 (no ×2).
+    expect(ship.shieldsMax).toEqual([40, 30, 20, 40, 20, 30]);
     expect(ship.shields).toEqual(ship.shieldsMax);
     expect(ship.warp).toBe(13);
     expect(ship.crew).toBe(12);
@@ -1106,7 +1106,7 @@ describe('energy, shields, and fire', () => {
       eventHashes.push(fired.eventHash);
       expect(viewAt(sim, 0).warp100).toBe(10 * ENERGY_SCALE);
       expect(viewAt(sim, 0).moveCost100).toBe(ENERGY_SCALE);
-      expect(viewAt(sim, 1).shields).toEqual([7, 10, 10, 10, 10, 10]);
+      expect(viewAt(sim, 1).shields).toEqual([2, 5, 5, 5, 5, 5]);
       expect(fired.events.find((event) => event.kind === EVENT_HIT)?.a).toBe(0);
       return { hashes, eventHashes, sim };
     };
@@ -1136,7 +1136,7 @@ describe('CE weapon codes', () => {
     const parsed = parseShiplist(text, { file: 'Assets/Specs/shiplist.txt' });
     const diagnostics: Diagnostic[] = [];
     const attacker = bindShiplistRow(parsed.data.rows[0]!, parsed.data.columns, diagnostics);
-    expect(attacker.shieldsMax).toEqual([20, 16, 12, 8, 12, 16]);
+    expect(attacker.shieldsMax).toEqual([10, 8, 6, 4, 6, 8]);
     expect(attacker.warp).toBe(22);
     expect(attacker.mounts.map((mount) => [mount.slotIndex, mount.weapon, mount.arc])).toEqual([
       [0, 'Phot', 'FA'],
@@ -1201,5 +1201,5 @@ describe('CE weapon codes', () => {
   });
 });
 
-const GOLDEN_HASHES = [4281461520, 839740439, 3179577620, 3837719086];
+const GOLDEN_HASHES = [2693120973, 731687729, 978246665, 3745810545];
 const GOLDEN_EVENTS = [304015889, 2931359003, 4167057522];

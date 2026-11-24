@@ -2,7 +2,7 @@
 
 Correlates every shiplist row with the rules mapping in this repo. It is a clean-room tool. It does not embed Community Edition rows, and it does not change shield factors or `simSourceHash`.
 
-The column map is [docs/formats/shiplist-field-map.md](../../docs/formats/shiplist-field-map.md). Shield facings are measured 1:1 (Shield 1 front, Shield 2 _ 6 on each front-side facing, Shield 3 _ 5 on each rear-side facing, Shield 4 rear, total = S1 + 2×S2_6 + 2×S3_5 + S4). The loader still applies the ×2 fallbacks. Combat removes that factor in a separate change. This tool only counts how many hulls still diverge.
+The column map is [docs/formats/shiplist-field-map.md](../../docs/formats/shiplist-field-map.md). Shield facings are measured 1:1 (Shield 1 front, Shield 2 _ 6 on each front-side facing, Shield 3 _ 5 on each rear-side facing, Shield 4 rear, total = S1 + 2×S2_6 + 2×S3_5 + S4). The loader now applies the measured 1:1 factors from `docs/rules/data/measured.json`, so `shieldScale.engineNotOneToOne` is 0 on matching rows.
 
 ## What it writes
 
@@ -31,7 +31,7 @@ A normal rate is not a High-Energy Turn, and a HET snap is not the hull's yaw ca
 
 Stdout is counts only: pass, fail, and skip per check and per harness field, plus column-status totals. Per-hull JSON and CSV go to `--out` (default `out/ship-audit`, gitignored). Do not commit, upload, or paste that directory. Only the printed summary may leave `sfc2-ci`.
 
-Exit 0 when every check passes and every scored harness field matches. Exit 1 when a check fails, a harness field fails, or a run does not match a hull. Exit 2 when the install or the JSON cannot be read. The shield ×2 count, an untagged turn, and a tagged turn with no speed do not by themselves fail the run. `copiesDiffer` does not either.
+Exit 0 when every check passes and every scored harness field matches. Exit 1 when a check fails, a harness field fails, or a run does not match a hull. Exit 2 when the install or the JSON cannot be read. A `shieldScale.engineNotOneToOne` divergence, an untagged turn, and a tagged turn with no speed do not by themselves fail the run. `copiesDiffer` does not either.
 
 ## Wintermute on sfc2-ci
 
@@ -53,7 +53,7 @@ SFC2_INSTALL=/srv/sfc2/reference/2.670 pnpm ship-audit \
   --out ~/harness/out/ship-audit
 ```
 
-A run label such as `ca-5` uses the map key `ca` (the text before the trailing speed). `spawnKey` on a run overrides the map. Vessel Library facings belong in `fields["shieldsMeasured.N"]`. Engine facings, still doubled, belong in `fields["shields.N"]`.
+A run label such as `ca-5` uses the map key `ca` (the text before the trailing speed). `spawnKey` on a run overrides the map. Measured 1:1 facings belong in `fields["shieldsMeasured.N"]` and `fields["shields.N"]` (the CE Vessel Library screen is unreliable on some rear values, e.g. D7/POL/E4 rows).
 
 Helm-button captures are High-Energy Turns. Mouse-heading captures are normal turns. Put `"turn": "het"` or `"turn": "normal"` on each run. A `results-*.json` from the current `summarize.py`, which has no kind field, counts as `harness.turnUntagged` and is not scored against yaw.
 

@@ -19,12 +19,12 @@ There is no engine test runner yet. `tools/check-rules-fixtures.mjs` is the harn
 | `seed` | `combat` stream seed when a chart draw is not scripted. Default 1. |
 | `ships` | Engine-model ships. `className` must start with `test-`. |
 | `cases` | `pure` inputs (`facing` or `inArc`). |
-| `raw` | `scale` input, four shield cells plus power fields, before fan-out and ×2. |
+| `raw` | `scale` input, four shield cells (1:1 after fan-out) plus power fields (`warpSide` ×2), before loader scaling. |
 | `commands` | `resolve` commands, applied in order as if each were already due. |
 | `timeline`, `endTick` | `ticks` commands by input-phase tick. The loop runs tick 0 through `endTick`. |
 | `expect` | `ruleResult` list and a partial state. Extra state fields are ignored. Rejected commands use `appliedValue: null`. |
 
-Command `entry` is one of `setShields`, `damageShield`, `repairSystem`, `damageSystem`, `setEnergy`, `orderHelm`, `fire`.
+Command `entry` is one of `setShields`, `damageShield`, `repairSystem`, `damageSystem`, `setEnergy`, `orderHelm`, `orderHet`, `fire`.
 
 `damageSystem` and `fire` may carry `scriptedDraws` and `warheadRolls`. Those arrays are a harness feature so a chart expectation does not depend on the production RNG. The sim always uses the `combat` stream.
 

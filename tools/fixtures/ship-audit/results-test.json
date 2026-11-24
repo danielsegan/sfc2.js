@@ -19,7 +19,7 @@
       "t90_s": 0,
       "mean_rate_deg_per_game_s_10_90": 329.58984375,
       "energy_panel": { "power": 19, "systems": null, "other": null, "excess": null },
-      "fields": { "shieldsMeasured.0": 10, "shields.0": 20, "crew": 20 }
+      "fields": { "shieldsMeasured.0": 10, "shields.0": 10, "crew": 20 }
     },
     {
       "label": "test-ca-off",

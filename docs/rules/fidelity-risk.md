@@ -11,7 +11,8 @@ The duel slice in [`duel-slice.md`](duel-slice.md) is a mechanism spec with synt
 Uncertain, and marked pending playtest in the spec:
 
 - How many seconds one CE rules-turn lasts. The unit is seconds, and sim-core converts at 30 ticks per second into a whole number of ticks. The placeholder is 30 seconds.
-- Whether shield file values and side-warp ratings are doubled in CE 2.670. The scale table follows the SFC1-lineage note in [`docs/formats/shiplist.md`](../formats/shiplist.md) and is unverified on our baseline. The side-column factor, the front/rear factor, and the side-column pairing are the null overrides in [`data/measured.json`](data/measured.json); today's fallbacks stay in force, and `turnModeUnverified` still fires for a letter with no measured yaw.
+- Shield 1:1 mapping and pairing are verified on CE 2.670 (CE in-battle capture 2026-11-24): [`data/measured.json`](data/measured.json) sets `sideColumnFactor = 1`, `endFactor = 1`, and the 4-to-6 pairing (`Shield 1` → 0, `Shield 2 _ 6` / `shieldForwardSide` → 1 and 5, `Shield 3 _ 5` / `shieldAftSide` → 2 and 4, `Shield 4` → 3), and `Shield Total = S1 + 2·S2_6 + 2·S3_5 + S4` held on all 1,157 CE rows. Note: the CE Vessel Library screen is unreliable for shields (some rear values, e.g. on D7/POL/E4 rows, disagree with the table), whereas the in-battle six-segment ring and the table agree.
+- Whether side-warp ratings (`warpSide` ×2) are doubled in CE 2.670 remains unverified, and `turnModeUnverified` still fires for a letter with no measured yaw.
 - Pay order when the ship asks for more energy than it has, and whether batteries dump freely or on a delay.
 - Whether specific (per-facing) reinforcement exists in CE, or only a general pool. The HUD asks the same question.
 - Shield facing edges. The duel slice bins the uint16 circle into six facings. CE may use model-specific cones.
@@ -23,7 +24,7 @@ Uncertain, and marked pending playtest in the spec:
 - Shiplist weapon codes, arc codes, and header detection. Still pending #6. The ship section of the mapping table is synthetic `TEST-*` codes only.
 - Whether ftrlist `Shots` is a loaded magazine or a reload stock, and whether `ADD_6` does anything on a fighter.
 
-[phase3-systems.md](phase3-systems.md) now resolves electronic warfare, overload arming cost, tractors, and cloaks with synthetic numbers. Those numbers are **not yet verified** against the original. Still unspecified as resolution rules: hit-and-run, boarding, mines, seeking weapons, plasma, hellbores, fighters as flying entities, PF small-craft modifiers, high-energy turns, and breakdown.
+[phase3-systems.md](phase3-systems.md) now resolves electronic warfare, overload arming cost, tractors, and cloaks with synthetic numbers. Those numbers are **not yet verified** against the original. [het.md](het.md) specifies High-Energy Turns with CE 2.670 measurements (171-tick / 5.7 s delay, no speed cutoff — works at speeds 15, 20, and 31, F-CA ≈90° at 43–51°/s, K-D7 ≈82–84°) and remaining **TO VERIFY** items (K-D7 and other hulls' rates, per-speed curve variation, energy cost, and breakdown). Still unspecified as resolution rules: seeking weapons, plasma, hellbores, and HET breakdown rolls.
 
 ## How we verify
 

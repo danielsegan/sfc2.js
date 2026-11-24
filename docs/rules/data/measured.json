@@ -1,20 +1,25 @@
 {
-  "status": "fallback",
-  "note": "Drop Community Edition 2.670 measurements into the override fields. A null shield override, and a turn letter absent from measuredMaxYawPerTick, keep today's fallback. While a letter is absent, spawn still emits turnModeUnverified and yaw uses fallbackMaxYawPerTick from turn-modes.json. No code change is required to replace a fallback.",
+  "status": "partial",
+  "note": "Drop Community Edition 2.670 measurements into the override fields. Shield scale (1:1) and 4-to-6 pairing are measured (CE in-battle capture 2026-11-24; Shield Total = S1 + 2*S2_6 + 2*S3_5 + S4 held on all 1,157 CE rows). Turn-mode yaw letters absent from measuredMaxYawPerTick keep today's fallback and emit turnModeUnverified. No code change is required to replace a fallback.",
   "shields": {
-    "sideColumnFactor": null,
+    "sideColumnFactor": 1,
     "fallbackSideColumnFactor": 2,
-    "endFactor": null,
+    "endFactor": 1,
     "fallbackEndFactor": 2,
-    "sideColumnFactorNote": "Multiplies the paired side cells (forwardSide and aftSide) after fan-out. Unverified on CE 2.670. The fallback is the SFC1-lineage ×2. Set sideColumnFactor to a measured non-negative integer to replace it. endFactor does the same for the front and rear cells.",
-    "pairing": null,
+    "sideColumnFactorNote": "Measured 1:1 per facing (factor 1), no x2 (CE in-battle capture 2026-11-24). Note: the CE Vessel Library screen is unreliable for shields (some rear values, e.g. on D7/POL/E4 rows, disagree with the table); the in-battle six-segment ring and the shiplist table agree.",
+    "pairing": {
+      "front": [0],
+      "forwardSide": [1, 5],
+      "aftSide": [2, 4],
+      "rear": [3]
+    },
     "fallbackPairing": {
       "front": [0],
       "forwardSide": [1, 5],
       "aftSide": [2, 4],
       "rear": [3]
     },
-    "pairingNote": "forwardSide is the Shield 2 _ 6 column. aftSide is Shield 3 _ 5. Indexes are shield facings, 0 = front, clockwise. Unverified. Set pairing to an object with those four keys, each a list of facings 0–5 used once, to replace the fallback."
+    "pairingNote": "Measured (CE in-battle capture 2026-11-24): facing 0 (front) = Shield 1; facings 1 and 5 (front right, front left) = Shield 2 _ 6 (shieldForwardSide); facings 2 and 4 (rear right, rear left) = Shield 3 _ 5 (shieldAftSide); facing 3 (rear) = Shield 4. Indexes are shield facings, 0 = front, clockwise."
   },
   "turnYaw": {
     "measuredMaxYawPerTick": {},

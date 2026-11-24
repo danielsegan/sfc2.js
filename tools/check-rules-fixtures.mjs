@@ -22,6 +22,7 @@ const SCALE = readJson("docs/rules/data/scale-factors.json");
 const WEAPONS = readJson("docs/rules/data/weapon-arcs.json");
 const TURNS = readJson("docs/rules/data/turn-modes.json");
 const REASONS = readJson("docs/rules/data/reason-codes.json");
+const HET = readJson("docs/rules/data/het.json");
 
 const reasonByCode = new Map(REASONS.codes.map((c) => [c.code, c]));
 const FX_SHIFT = 16;
@@ -191,6 +192,8 @@ function loadShip(spec) {
     ecm: spec.ecm ?? null,
     bay: spec.bay ?? null,
     speedRating: spec.speed ?? null,
+    hetHull: spec.hetHull ?? "default",
+    het: { mode: "none", remainingTurn16: 0, hetDelayTicksLeft: 0, rate16PerTick: 0 },
   };
   const shields = spec.shields || [0, 0, 0, 0, 0, 0];
   const shieldsMax = spec.shieldsMax || shields;
@@ -230,6 +233,7 @@ function exportShip(ship) {
     disabled: ship.disabled,
     fcPaid: ship.fcPaid,
     heading16: ship.heading16,
+    helm: { mode: ship.het.mode, remainingTurn16: ship.het.remainingTurn16, hetDelayTicksLeft: ship.het.hetDelayTicksLeft },
     speed: ship.speed,
     shields: ship.shields.map(fromMilli),
     capacitor: fromMilli(ship.capacitor),
@@ -819,6 +823,96 @@ function commandHelm(world, cmd) {
   return result("applied", "ok", mag);
 }
 
+
+function intFloorDiv(n, d) {
+  const q = Math.trunc(n / d);
+  return n !== 0 && (n < 0) !== (d < 0) && q * d !== n ? q - 1 : q;
+}
+
+function interpInt(s, s0, y0, s1, y1) {
+  const dx = s1 - s0;
+  const t = s - s0;
+  const num = (y1 - y0) * t;
+  const half = dx >> 1;
+  if (num >= 0) return y0 + intFloorDiv(num + half, dx);
+  return y0 - intFloorDiv(-num + half, dx);
+}
+
+function hetParamsForShip(ship) {
+  const entry = HET.hulls[ship.hetHull] ?? HET.hulls.default;
+  const pts = entry.speedPoints;
+  const speed = Math.trunc(ship.speed);
+  if (speed <= pts[0].speed) return pts[0];
+  const last = pts[pts.length - 1];
+  if (speed >= last.speed) return last;
+  for (let i = 0; i < pts.length - 1; i += 1) {
+    const a = pts[i];
+    const b = pts[i + 1];
+    if (speed === a.speed) return a;
+    if (speed === b.speed) return b;
+    if (speed > a.speed && speed < b.speed) {
+      return {
+        speed,
+        delayTicks: interpInt(speed, a.speed, a.delayTicks, b.speed, b.delayTicks),
+        turnAngle16: interpInt(speed, a.speed, a.turnAngle16, b.speed, b.turnAngle16),
+        turnRate16PerTick: interpInt(speed, a.speed, a.turnRate16PerTick, b.speed, b.turnRate16PerTick),
+      };
+    }
+  }
+  return last;
+}
+
+function commandHet(world, cmd) {
+  const found = identity(world, cmd.ship);
+  if (found.error) return found.error;
+  const ship = found.ship;
+  if (ship.disabled) return result("rejected", "crewDisabled", null);
+  const turn = turnDef(ship.turnMode);
+  const params = hetParamsForShip(ship);
+  const sign = cmd.direction != null && cmd.direction < 0 ? -1 : 1;
+  const delta = cmd.delta16 ?? sign * params.turnAngle16;
+  if (!Number.isInteger(delta)) return result("rejected", "precisionExceeded", null);
+  if (delta === 0) return result("rejected", "negativeValue", null);
+  if (turn.immobile) return result("clamped", "immobile", 0);
+  if (ship.het.mode === "het") return result("rejected", "hetActive", null);
+  ship.het = {
+    mode: "het",
+    remainingTurn16: delta,
+    hetDelayTicksLeft: params.delayTicks,
+    rate16PerTick: params.turnRate16PerTick,
+  };
+  return result("applied", "ok", delta);
+}
+
+function stepHet(world) {
+  for (const ship of Object.values(world.ships)) {
+    if (ship.het.mode !== "het") continue;
+    if (ship.destroyed || ship.disabled) {
+      ship.het = { mode: "none", remainingTurn16: 0, hetDelayTicksLeft: 0, rate16PerTick: 0 };
+      continue;
+    }
+    if (ship.het.hetDelayTicksLeft > 0) {
+      ship.het.hetDelayTicksLeft -= 1;
+      continue;
+    }
+    const rem = ship.het.remainingTurn16;
+    if (rem === 0) {
+      ship.het.mode = "none";
+      ship.het.rate16PerTick = 0;
+      continue;
+    }
+    const mag = Math.abs(rem);
+    const stepMag = Math.min(mag, ship.het.rate16PerTick);
+    const step = rem < 0 ? -stepMag : stepMag;
+    ship.heading16 = mod16(ship.heading16 + step);
+    ship.het.remainingTurn16 -= step;
+    if (ship.het.remainingTurn16 === 0) {
+      ship.het.mode = "none";
+      ship.het.rate16PerTick = 0;
+    }
+  }
+}
+
 function commandFire(world, cmd, constants, rng) {
   const found = identity(world, cmd.ship);
   if (found.error) return found.error;
@@ -911,6 +1005,8 @@ function dispatch(world, cmd, constants, rng) {
       return commandSetEnergy(world, cmd, constants);
     case "orderHelm":
       return commandHelm(world, cmd);
+    case "orderHet":
+      return commandHet(world, cmd);
     case "fire":
       return commandFire(world, cmd, constants, rng);
     default:
@@ -1101,6 +1197,7 @@ function runTicks(test, file) {
     }
     for (const ship of Object.values(world.ships)) applyReinforcementAndCharge(ship, constants);
     flyProjectiles(world, constants, rng);
+    stepHet(world);
   }
   subset(results, test.expect.results, "results", file);
   if (test.expect.state) {

@@ -47,13 +47,13 @@ test("field map covers every CE header and matches the committed doc", () => {
     assert.equal(column?.status, "measured");
     assert.equal(column?.ignored, false);
     assert.match(column?.transform ?? "", /1:1/);
-    assert.match(column?.transform ?? "", /×2|fallback/);
+    assert.match(column?.transform ?? "", /no ×2/);
   }
   assert.match(renderFieldMap(), /Shield Total = Shield 1 \+ 2×Shield 2 _ 6 \+ 2×Shield 3 _ 5 \+ Shield 4/);
   assert.equal(measured.shields.fallbackEndFactor, 2);
   assert.equal(measured.shields.fallbackSideColumnFactor, 2);
-  assert.equal(measured.shields.endFactor, null);
-  assert.equal(measured.shields.sideColumnFactor, null);
+  assert.equal(measured.shields.endFactor, 1);
+  assert.equal(measured.shields.sideColumnFactor, 1);
 });
 
 test("synthetic rows exercise shield, power, and weapon checks", () => {
@@ -63,9 +63,9 @@ test("synthetic rows exercise shield, power, and weapon checks", () => {
   const byName = new Map(hulls.map((hull) => [hull.spawnKey, hull]));
   const good = byName.get("Federation:TEST-CA-01");
   assert.ok(good);
-  assert.deepEqual(good.shields, [20, 16, 12, 8, 12, 16]);
+  assert.deepEqual(good.shields, [10, 8, 6, 4, 6, 8]);
   assert.deepEqual(good.shieldsMeasured, [10, 8, 6, 4, 6, 8]);
-  assert.equal(good.shieldScaleDivergent, true);
+  assert.equal(good.shieldScaleDivergent, false);
   assert.equal(good.power?.warp, 13);
   assert.equal(good.power?.generation, 19);
   assert.equal(good.cruiseSpeed, 19);
@@ -106,7 +106,7 @@ test("synthetic rows exercise shield, power, and weapon checks", () => {
   assert.equal(summary.checks.shieldTotal.fail, 1);
   assert.equal(summary.checks.powerSum.fail, 1);
   assert.equal(summary.checks.weaponCount.fail, 1);
-  assert.equal(summary.shieldScaleDivergent, 4);
+  assert.equal(summary.shieldScaleDivergent, 0);
   assert.equal(summary.harness?.unmatched, 1);
   assert.equal(summary.harness?.fields["power.generation"]?.pass, 1);
   assert.equal(summary.harness?.fields["power.generation"]?.fail, 1);

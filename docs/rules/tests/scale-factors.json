@@ -14,7 +14,7 @@
     "moveCost": 0.5
   },
   "expect": {
-    "shields": [20, 16, 12, 8, 12, 16],
+    "shields": [10, 8, 6, 4, 6, 8],
     "power": {
       "warp": 13,
       "impulse": 4,

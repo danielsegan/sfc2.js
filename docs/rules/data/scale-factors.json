@@ -1,21 +1,21 @@
 {
-  "status": "unverified",
+  "status": "partial",
   "appliedBy": "loader",
   "when": "At fixed-point conversion, after raw headers have been bound to provisional source keys. The parser does not apply this table.",
-  "baseline": "Community Edition 2.670 (issue #37). The factors are the SFC1-lineage hypothesis recorded in docs/formats/shiplist.md. They are not confirmed on the CE 2.670 install.",
+  "baseline": "Community Edition 2.670 (issue #37). Shield 1:1 mapping is measured (CE in-battle capture 2026-11-24). warpSide x2 remains an unverified SFC1-lineage hypothesis from docs/formats/shiplist.md.",
   "shieldFanOut": ["front", "forwardSide", "aftSide", "rear", "aftSide", "forwardSide"],
   "factors": [
     {
       "source": "shieldFileValue",
-      "factor": 2,
+      "factor": 1,
       "engine": "shields[0..5] maximum, after fan-out",
-      "note": "Each of the four file cells is multiplied by 2. The two side cells are written to two indices each. The live side-column factor, end factor, and pairing are the fallbacks in measured.json until an override is set."
+      "note": "Measured 1:1 per facing (CE in-battle capture 2026-11-24), no x2. Each of the two paired side cells (Shield 2 _ 6 and Shield 3 _ 5) fans out to two facings at x1. Live overrides are in measured.json."
     },
     {
       "source": "warpSide",
       "factor": 2,
       "engine": "power.warp (side-engine term)",
-      "note": "The file stores one side-engine rating. The loader doubles it, then adds the unscaled centre engine."
+      "note": "The file stores one side-engine rating. The loader doubles it, then adds the unscaled centre engine. Unverified on CE 2.670."
     },
     {
       "source": "warpCenter",

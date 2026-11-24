@@ -64,7 +64,7 @@ The CE 2.670 shiplist has 15 `FTR` hull rows and no PF rows. `class: "pf"` stays
 
 ## 2. Shiplist source key → engine field
 
-Provisional keys, pending real headers. Fan-out and ×2 happen in the loader, in that order.
+Provisional keys, pending real headers. Shield fan-out (1:1 per facing) and `warpSide` ×2 happen in the loader, in that order.
 
 | Provisional source | Engine field | Transform |
 | --- | --- | --- |
@@ -76,7 +76,7 @@ Provisional keys, pending real headers. Fan-out and ×2 happen in the loader, in
 | `crew` | `crew.crewUnits` | ×1. Observed CE header: `Regular Crew`. |
 | `boardingPartiesBase` | `crew.boardingParties` | Current parties. `boardingPartiesMax` kept beside it. |
 | `minCrew`, `deckCrews` | `crew.minCrew`, `crew.deckCrews` | ×1. |
-| shield front, forward-side, aft-side, rear | `shieldsMax[0..5]` | Fan out, then ×2. See the scale table. Observed CE headers: `Shield 1`, `Shield 2 _ 6`, `Shield 3 _ 5`, `Shield 4`. |
+| shield front (`Shield 1`), forward-side (`Shield 2 _ 6`, role `shieldForwardSide`), aft-side (`Shield 3 _ 5`, role `shieldAftSide`), rear (`Shield 4`) | `shieldsMax[0..5]` | Fan out, ×1 (1:1 per facing; measured CE in-battle capture 2026-11-24). See the scale table. |
 | `cloakCost` | `cloakCost` | Empty means no cloak. Resolution is [phase3-systems.md](phase3-systems.md). |
 | hardpoint `slotIndex`, `weapon`, `arc`, `count` | `weapons[]` | Codes stay exact, including case. File slot 1 is `slotIndex` 0. Empty slots drop only after `slotIndex` is kept. |
 | hardpoint numeric `Arc` on `DroA`/`DroB`/`DroC`/`DroF`/`DroG`/`ADD6`/`ADD12` | `weapons[].reloads` | The cell is a whole number (1–3 observed; ADD only ever shows 1). Those racks have no firing arc. A number on any other weapon, or a letter or empty cell on these weapons, is `unknownArc`. |
@@ -95,7 +95,7 @@ Canonical copy: [`data/scale-factors.json`](data/scale-factors.json). The loader
 
 | Source | Factor | Engine result | Verification |
 | --- | --- | --- | --- |
-| Each shield file cell, after fan-out | ×2 | `shieldsMax[i]` | Unverified on CE 2.670. The live side-column factor, end factor, and pairing are [`data/measured.json`](data/measured.json). Null overrides keep this ×2 and the pairing below. |
+| Each shield file cell, after fan-out (`Shield 1`, `Shield 2 _ 6`, `Shield 3 _ 5`, `Shield 4`) | ×1 | `shieldsMax[i]` | Measured on CE 2.670 (CE in-battle capture 2026-11-24): 1:1 per facing, no ×2. `Shield Total = S1 + 2·S2_6 + 2·S3_5 + S4` held on all 1,157 CE rows. Live overrides are [`data/measured.json`](data/measured.json). |
 | `warpSide` | ×2 | Side-engine term of `power.warp` | Unverified on CE 2.670. The file stores one side rating; the model treats two engines. |
 | `warpCenter` | ×1 | Centre-engine term, added to the side term | |
 | `impulse`, `apr`, `battery` | ×1 | `power` fields | |
@@ -112,11 +112,11 @@ Shield fan-out, file order front, forward-side, aft-side, rear:
 | 4 | rear-left (SFB #5) | aft-side |
 | 5 | front-left (SFB #6) | forward-side |
 
-Worked synthetic case: file cells 10, 8, 6, 4 and `warpSide` 5, `warpCenter` 3 become shields `[20, 16, 12, 8, 12, 16]` and `power.warp` 13. Fixture: `tests/scale-factors.json`.
+Worked synthetic case: file cells 10, 8, 6, 4 and `warpSide` 5, `warpCenter` 3 become shields `[10, 8, 6, 4, 6, 8]` and `power.warp` 13. Fixture: `tests/scale-factors.json`.
 
-The observed CE 2.670 header (inventory metadata, no rows copied) has four shield columns, not six: `Shield 1`, `Shield 2 _ 6`, `Shield 3 _ 5`, `Shield 4`. Side values are not separate columns. The loader reads `Shield 2 _ 6` as the forward-side cell and `Shield 3 _ 5` as the aft-side cell, fans each out to the two facings in the table above, then applies ×2. A row that shows bow and stern filled and all four sides at 0 is that paired header left unbound.
+The observed CE 2.670 header (inventory metadata, no rows copied) has four shield columns, not six: `Shield 1`, `Shield 2 _ 6`, `Shield 3 _ 5`, `Shield 4`. Side values are not separate columns. The loader reads `Shield 1` to facing index 0 (front), `Shield 2 _ 6` (`shieldForwardSide`) to facing indexes 1 (front right) and 5 (front left), `Shield 3 _ 5` (`shieldAftSide`) to facing indexes 2 (rear right) and 4 (rear left), and `Shield 4` to facing index 3 (rear), each 1:1 with no ×2. A row that shows bow and stern filled and all four sides at 0 is that paired header left unbound.
 
-Still unverified against CE play: the ×2 factor, and that the underscore pairs name SFB shields 2 with 6 and 3 with 5 rather than some other split. No sixth shield column was in the observed header.
+Measured against CE 2.670 (CE in-battle capture 2026-11-24): each cell maps 1:1 to its facing(s) with no ×2, `Shield Total = S1 + 2·S2_6 + 2·S3_5 + S4` held on all 1,157 CE rows, and no sixth shield column is in the header. Note: the CE Vessel Library screen is unreliable for shields (some rear values, e.g. on D7/POL/E4 rows, disagree with the table); the in-battle six-segment ring and the table agree.
 
 ## 4. Weapon and arc mapping
 
