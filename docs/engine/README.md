@@ -14,6 +14,7 @@ Clean room: these docs are original design. Allowed references are listed in [`d
 | [mission-host.md](mission-host.md) | Engine Lead (API surface: Mission & Campaign Designer) | Emit-only mission runtime host: commands on slot 255, token events, sandbox, operation budget, read-only queries |
 | [hud-viewmodel.md](hud-viewmodel.md) | Engine Lead (HUD: UI & Art Director) | The per-frame read-only `ViewModel`, event list and render surfaces |
 | [diagnostics.md](diagnostics.md) | Engine Lead | Shared diagnostic registry (`{ code, source, severity, details?, location? }`), including `duplicateClassName`, loader `unknownWeapon` / `unknownArc`, and mission `badMapBounds` |
+| [replay.md](replay.md) | Audio & Netcode QA Lead (envelope with Engine Lead) | Replay file layout, scenario hash, and the CI hash gate for [#25](https://github.com/danielsegan/sfc2.js/issues/25) |
 
 Related specs, all on `main` @ `8492a39`: [`determinism.md`](determinism.md) (PR #53), [`docs/missions/mission-api.md`](../missions/mission-api.md) (PR #1, with #52), [`docs/formats/`](../formats/README.md) (PR #38, with #42 and #45), [`docs/ui/hud-spec.md`](../ui/hud-spec.md) (PR #39, with #44 and #51), and [`docs/rules/`](../rules/README.md) (PR #50).
 
@@ -34,12 +35,13 @@ engine/
   render/    three.js renderer
   audio/     Web Audio engine (Audio & Netcode QA Lead)
   net/       LocalSession, LockstepSession, transports, desync reports (Audio & Netcode QA Lead)
+  replay/    Replay envelope, record/playback, synthetic scenarios, headless checker (determinism.md C8, #25)
   platform/  Vfs + Platform interfaces (browser FS Access / archive import, Tauri, Node on sfc2-ci)
   wasm/      AssemblyScript sources for hot paths
 tools/
   formats/   parsers: pure, browser-safe, imported by web/ and by Node CLIs (Asset & Formats)
   fixtures/  synthetic fixture generators (test time)
-  cli/       dump-*, inventory, replay runner, bench, Wine comparison harness
+  cli/       dump-*, inventory, bench, Wine comparison harness
 web/         Vite app: importer, ship viewer, HUD overlay canvas + HTML menus (UI & Art Director), composition root
 desktop/     Tauri shell (release in Phase 8)
 server/      Cloudflare lobby + Conquest server (Phase 7), headless sim
