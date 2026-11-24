@@ -92,7 +92,7 @@ The plan targets a Tauri desktop shell (plan.md, "Vision and scope"; Phase 8 "Ta
 
 ## Open questions
 
-1. **Resolved 2026-11-24 (Daniel): fractional scale allowed, see `hud-layout.md` §6.** Daniel / Engine Lead: at 1080p and 1440p the integer rule gives N = 1, so the HUD is fairly small. Should we add an opt-in fractional scale for fallback and HD art only (original sprites would stay integer)? Off by default, to keep the agreed pixel-exact rule.
+1. **Resolved 2026-11-24 (Daniel): fractional scale allowed, 1.0–4.0× in 0.25 steps. See `hud-layout.md` §6.**
 2. Engine Lead: does the sim support a single-player time-scale (for example 0.5×) without breaking determinism, or should "game speed" be dropped?
 3. Engine Lead: Tauri webview differences (WebView2 / WKWebView / WebKitGTK) for the Gamepad API and pointer lock: test matrix owner?
 4. Daniel: default layout on 16:9 — safe-area centred (closer to the original) or wide (more modern)?

@@ -52,6 +52,13 @@ import {
 import type { ShipSetup } from '../sim/bind-shiplist.ts';
 import { CRUISE_TABLE, createCruise } from './cruise.ts';
 import { VERB_ORDER_HELM, helmHandler, helmPayload } from './helm.ts';
+import {
+  HEADING_ORDER_TABLE,
+  VERB_ORDER_HEADING,
+  createHeadingSteer,
+  headingHandler,
+  headingPayload,
+} from '../sim/heading.ts';
 import { buildViewModel, type ViewModel } from '../view/view-model.ts';
 import {
   SYNTHETIC_PLAN,
@@ -156,6 +163,8 @@ export interface DuelMatch {
   setTractor(mode: number, energy: number): void;
   setCloak(on: boolean): void;
   orderYaw(yaw16: number): void;
+  /** Turn toward this fixed heading at the hull's turn rate. */
+  orderHeading(heading16: number): void;
   orderFire(slotIndex: number): void;
   setTarget(id: number): void;
   /** Step through hostile contacts. Negative steps go backwards. */
@@ -235,9 +244,9 @@ class Match implements DuelMatch {
       fighters: options.fighters ?? [],
       setups: options.setups,
     });
-    const tables = [...combat.tables, CRUISE_TABLE, ...craft.tables];
-    const systems = [...combat.systems, createCruise(period), ...craft.systems];
-    const handlers = [...withHelm(combat.handlers), ...craft.handlers];
+    const tables = [...combat.tables, CRUISE_TABLE, HEADING_ORDER_TABLE, ...craft.tables];
+    const systems = [...combat.systems, createHeadingSteer(), createCruise(period), ...craft.systems];
+    const handlers = [...withHeading(withHelm(combat.handlers)), ...craft.handlers];
     if (fleet) {
       tables.push(ALLEGIANCE_TABLE);
       systems.push(createCaptain());
@@ -467,6 +476,14 @@ class Match implements DuelMatch {
     this.session.issue(VERB_ORDER_HELM, helmPayload(this.selfEntity, yaw16));
   }
 
+  orderHeading(heading16: number): void {
+    if (this.selfEntity === null || !Number.isInteger(heading16)) return;
+    const target = this.tick + 1;
+    if (this.helmStamp === target) return;
+    this.helmStamp = target;
+    this.session.issue(VERB_ORDER_HEADING, headingPayload(this.selfEntity, heading16 & 0xffff));
+  }
+
   orderFire(slotIndex: number): void {
     if (this.selfEntity === null || this.targetEntity === null) return;
     if (!Number.isInteger(slotIndex) || slotIndex < 0) return;
@@ -643,6 +660,19 @@ function withHelm(handlers: readonly CommandHandler[]): CommandHandler[] {
     if (handler.kind === VERB_ORDER_HELM) return handlers.slice();
   }
   return [...handlers, helmHandler];
+}
+
+function withHeading(handlers: readonly CommandHandler[]): CommandHandler[] {
+  const extra = [headingHandler];
+  const next = handlers.slice();
+  for (const handler of extra) {
+    let found = false;
+    for (const existing of next) {
+      if (existing.kind === handler.kind) found = true;
+    }
+    if (!found) next.push(handler);
+  }
+  return next;
 }
 
 export function createDuelMatch(options: DuelMatchOptions): DuelMatch {

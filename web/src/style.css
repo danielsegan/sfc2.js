@@ -13,6 +13,13 @@
   --focus: #ffffff;
   --accent: #4f8fd6;
   --space: #070b10;
+  --plate-image: url("../art/skins/fed/plate.svg");
+  --panel-alpha: 85%;
+  --header-weight: 600;
+  --header-tracking: 0.12em;
+  --header-transform: uppercase;
+  --header-variant: normal;
+  --ui-scale: 1;
   --field-grid: #2A4C7A;
   --hud-scale: 1;
   --hud-frame-left: 0px;
@@ -40,8 +47,11 @@ body {
 button, input, select {
   font: inherit;
   color: var(--text);
-  background: #101820;
+  background-color: #101820;
+  background-image: var(--plate-image);
+  background-size: 96px 48px;
   border: 1px solid var(--panel-edge);
+  border-top: 2px solid var(--accent);
   border-radius: 0;
 }
 
@@ -60,7 +70,9 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   gap: 16px;
   padding: 8px 12px;
   border-bottom: 1px solid var(--panel-edge);
-  background: rgba(11, 17, 24, 0.92);
+  background-color: rgba(11, 17, 24, 0.92);
+  background-image: var(--plate-image);
+  background-size: 96px 48px;
 }
 
 .brand { display: flex; gap: 8px; align-items: center; }
@@ -77,18 +89,14 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   gap: 6px;
   padding: 8px 12px;
   border-bottom: 1px solid var(--panel-edge);
-  background: rgba(11, 17, 24, 0.92);
+  background-color: rgba(11, 17, 24, 0.92);
+  background-image: var(--plate-image);
+  background-size: 96px 48px;
   max-height: 18vh;
   overflow: auto;
 }
 .skirmish-head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.skirmish-head h2 {
-  margin: 0;
-  font-size: 12px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-}
+.skirmish-head h2 { margin: 0; }
 .slot-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
 .skirmish-slot { display: grid; grid-template-columns: 16px 72px 84px minmax(0, 1fr) minmax(0, 1.2fr); gap: 4px; align-items: center; }
 .skirmish-slot select { width: 100%; max-width: none; }
@@ -106,21 +114,35 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 #overlay { pointer-events: none; }
 #console { max-height: 30vh; overflow: auto; }
 
+.top, .skirmish, #console, .float, .keys, #notice { zoom: var(--ui-scale); }
+
+.empire-code {
+  display: inline-block;
+  width: 36px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+}
+#empire-mark { width: 16px; height: 16px; }
+
 .plate {
-  background: rgba(11, 17, 24, 0.85);
+  background-color: color-mix(in srgb, var(--panel-bg) var(--panel-alpha), transparent);
+  background-image: var(--plate-image);
+  background-size: 96px 48px;
   border: 1px solid var(--panel-edge);
   border-top: 2px solid var(--accent);
   clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
   padding: 8px;
 }
 
-.plate h2 {
+.plate h2, .skirmish-head h2 {
   margin: 0 0 6px;
   font-size: 12px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  letter-spacing: var(--header-tracking);
+  text-transform: var(--header-transform);
+  font-variant: var(--header-variant);
   color: var(--text-dim);
-  font-weight: 600;
+  font-weight: var(--header-weight);
 }
 
 .float { position: absolute; z-index: 2; width: 220px; }
@@ -188,6 +210,20 @@ dialog h2, dialog h3 { margin: 8px 0 4px; letter-spacing: 0.08em; text-transform
 .weapon .bar > span { display: block; height: 100%; background: var(--state-charging); }
 .weapon.ready .bar > span { background: var(--state-normal); }
 .weapon .meta { color: var(--text-dim); font-size: 11px; }
+
+.helm-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 32px);
+  gap: 4px;
+  justify-content: center;
+  margin: 0 auto 8px;
+}
+.helm-grid button {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+}
+.helm-grid button:disabled { opacity: 0.45; }
 
 #shields { display: block; margin: 0 auto; width: 160px; height: 160px; }
 #shield-table { width: 100%; border-collapse: collapse; font-size: 12px; }
@@ -290,6 +326,7 @@ dialog h2, dialog h3 { margin: 8px 0 4px; letter-spacing: 0.08em; text-transform
 #offscreen-tags { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
 .offscreen-tag {
   position: absolute;
+  background-image: none;
   transform: translate(-50%, -50%);
   pointer-events: auto;
   display: flex;

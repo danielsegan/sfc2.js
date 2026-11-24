@@ -6,7 +6,7 @@ Bindings use `KeyboardEvent.code` (the physical key), so the same binding works 
 
 Held keys (turn) are sampled every frame. Speed up and speed down also accept key repeat. Everything else fires once per keydown.
 
-Mouse actions are presentation or targeting. They do not write the sim except **click a contact**, which sends `setTarget`, and **click a shield facing**, which sends the same reinforcement order as the numpad.
+Mouse actions on the 3D view and the sensor map follow the original grammar. A plain left-click stores a fixed heading toward the clicked point, including when a ship is under the cursor. Alt+left-drag and middle-drag orbit and never steer. A right-click under 4 logical pixels targets. The gate grows with `--hud-scale`. Shield facing clicks still send reinforcement.
 
 | Action | Default |
 | --- | --- |
@@ -36,7 +36,9 @@ Mouse actions are presentation or targeting. They do not write the sim except **
 | EW toward ECM / ECCM | `[` / `]` |
 | EW power down / up | Ctrl+`[` / Ctrl+`]` |
 | Cycle camera | `V` |
-| Orbit the camera | Middle-drag or Alt+left-drag, or Alt+Left / Alt+Right. A plain left-press does not orbit. Left-click steers and right-click targets (Daniel, 2026-11-24, `hud-layout.md` D1). |
+| Orbit the camera | Middle-drag or Alt+left-drag, or Alt+Left / Alt+Right. A plain left-press does not orbit. |
+| Order a heading | Left-click in the 3D view or on the sensor map. A ship under the cursor is only the bearing. |
+| Target a contact | Right-click under 4 logical px in the 3D view or on the sensor map, or click an off-screen tag. |
 | Toggle the sensor map size | `M` |
 | Toggle north-up / heading-up | `H` |
 | Reset the camera | `Home` |
@@ -44,7 +46,6 @@ Mouse actions are presentation or targeting. They do not write the sim except **
 | Zoom the camera | Wheel on the view |
 | Zoom the sensor map | Wheel on the map |
 | Change desired speed | Wheel or click the lower speed bar |
-| Target a contact | Right-click the ship in the 3D view, or click its off-screen tag. Left-click on the sensor map still selects a contact there. |
 | Add one point of reinforcement | Left-click a shield arc. Shift-click clears it. |
 
 EW, tractor, cloak, fighter, mine, and boarding keys send the same sim verbs the captain uses. Reverse, erratic maneuvers, and drones still only report that they are not in this duel.

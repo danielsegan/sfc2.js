@@ -20,6 +20,8 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Install Chromium for the skin layout check
+        run: pnpm exec playwright install --with-deps chromium
       - name: Typecheck
         run: pnpm typecheck
       - name: Lint sim packages

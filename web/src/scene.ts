@@ -16,14 +16,17 @@ import {
   PerspectiveCamera,
   Points,
   PointsMaterial,
+  Raycaster,
   Scene,
   Sprite,
   SpriteMaterial,
+  Vector2,
   Vector3,
   WebGLRenderer,
   type Material,
 } from 'three';
 import type { ContactView, ViewModel } from '../../engine/view/view-model.ts';
+import { remainingArc16, wedgeColor } from './heading-wedge.ts';
 import { sectorOutline, sectorPositions, wedgesFor, type ArcWeapon, type WedgePattern } from './tactical/arcs.ts';
 import { reportedBeams, reportedFlashes } from './tactical/beams.ts';
 import { defaultOverheadDistance, gridLevel, gridSegments, visibleWorldWidth } from './tactical/grid.ts';
@@ -42,6 +45,15 @@ import { photonMarks, rememberPhotonSample, type PhotonSample } from './photon-v
 const FULL = 65536;
 const BEAM_MS = 180;
 const FLASH_MS = 180;
+const HEADING_STEPS = 48;
+const HEADING_REFUSED = new Set([
+  'immobile',
+  'turnModeUnverified',
+  'crewDisabled',
+  'noSuchShip',
+  'notAShip',
+  'shipDestroyed',
+]);
 
 interface Ndc {
   readonly x: number;
@@ -76,6 +88,11 @@ export class DuelScene {
   private readonly reduced: boolean;
   private readonly ndc = new Vector3();
   private readonly camSpace = new Vector3();
+  private readonly raycaster = new Raycaster();
+  private readonly pointer = new Vector2();
+  private readonly headingPositions = new Float32Array(HEADING_STEPS * 9);
+  private readonly headingWedge: Mesh;
+  private preview: number | null = null;
 
   constructor(canvas: HTMLCanvasElement, options?: { preserveDrawingBuffer?: boolean }) {
     this.renderer = new WebGLRenderer({
@@ -111,6 +128,23 @@ export class DuelScene {
     this.compass.renderOrder = 4;
     this.scene.add(this.compass);
     this.photonGlow = photonGlowTexture();
+    const headingGeo = new BufferGeometry();
+    headingGeo.setAttribute('position', new BufferAttribute(this.headingPositions, 3));
+    headingGeo.setDrawRange(0, 0);
+    this.headingWedge = new Mesh(
+      headingGeo,
+      new MeshBasicMaterial({
+        color: 0xe08a2e,
+        transparent: true,
+        opacity: 0.55,
+        depthWrite: false,
+        side: DoubleSide,
+      }),
+    );
+    this.headingWedge.frustumCulled = false;
+    this.headingWedge.visible = false;
+    this.headingWedge.renderOrder = 2;
+    this.scene.add(this.headingWedge);
     this.reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }
 
@@ -145,6 +179,34 @@ export class DuelScene {
 
   cycleCamera(): void {
     this.mode = this.mode === 'chase' ? 'overhead' : 'chase';
+  }
+
+  /** Show this heading at once. The next confirmed order replaces it. */
+  setHeadingPreview(heading: number): void {
+    this.preview = heading & 0xffff;
+  }
+
+  /**
+   * World point on the tactical plane under the cursor.
+   * three.js Y is up. Sim +y is three.js -z.
+   */
+  groundPoint(clientX: number, clientY: number): { x: number; y: number } | null {
+    const canvas = this.renderer.domElement;
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width < 1 || rect.height < 1) return null;
+    this.pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    this.pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+    this.raycaster.setFromCamera(this.pointer, this.camera);
+    const origin = this.raycaster.ray.origin;
+    const dir = this.raycaster.ray.direction;
+    if (Math.abs(dir.y) < 1e-8) return null;
+    const t = -origin.y / dir.y;
+    if (!Number.isFinite(t) || t < 0) return null;
+    const wx = origin.x + dir.x * t;
+    const wz = origin.z + dir.z * t;
+    if (!Number.isFinite(wx) || !Number.isFinite(wz)) return null;
+    if (Math.abs(wx) > 400 || Math.abs(wz) > 400) return null;
+    return { x: wx, y: -wz };
   }
 
   /** Orbit uses a modifier or keys. It never binds the steer or target button by itself. */
@@ -226,10 +288,62 @@ export class DuelScene {
       this.stars.position.set(self.x, 0, -self.y);
       this.updateWedges(vm, self, selection);
       this.updateCompass(vm, self);
+      const refused = vm.events.some((event) => event.kind === 'alert' && HEADING_REFUSED.has(event.id));
+      this.drawHeadingWedge(self, vm.self?.orderedHeading16 ?? null, refused);
+    } else {
+      this.headingWedge.visible = false;
     }
     this.noteReported(vm, now);
     this.expire(now);
     this.renderer.render(this.scene, this.camera);
+  }
+
+  private drawHeadingWedge(self: ContactView, ordered: number | null, refused: boolean): void {
+    const aim = this.aimHeading(ordered, refused);
+    const material = this.headingWedge.material;
+    if (aim === null || !(material instanceof MeshBasicMaterial)) {
+      this.headingWedge.visible = false;
+      return;
+    }
+    const arc = remainingArc16(self.heading16, aim);
+    const mag = arc < 0 ? -arc : arc;
+    if (mag < 8) {
+      this.headingWedge.visible = false;
+      return;
+    }
+    const steps = Math.max(2, Math.min(HEADING_STEPS, Math.ceil(mag / 1400)));
+    const radius = 7;
+    const y = 0.08;
+    let write = 0;
+    for (let i = 0; i < steps; i++) {
+      const a0 = self.heading16 + (arc * i) / steps;
+      const a1 = self.heading16 + (arc * (i + 1)) / steps;
+      const t0 = (a0 / FULL) * Math.PI * 2;
+      const t1 = (a1 / FULL) * Math.PI * 2;
+      this.headingPositions[write++] = self.x;
+      this.headingPositions[write++] = y;
+      this.headingPositions[write++] = -self.y;
+      this.headingPositions[write++] = self.x + Math.cos(t0) * radius;
+      this.headingPositions[write++] = y;
+      this.headingPositions[write++] = -self.y - Math.sin(t0) * radius;
+      this.headingPositions[write++] = self.x + Math.cos(t1) * radius;
+      this.headingPositions[write++] = y;
+      this.headingPositions[write++] = -self.y - Math.sin(t1) * radius;
+    }
+    const attr = this.headingWedge.geometry.getAttribute('position');
+    attr.needsUpdate = true;
+    this.headingWedge.geometry.setDrawRange(0, steps * 3);
+    material.color.setHex(wedgeColor(arc));
+    this.headingWedge.visible = true;
+  }
+
+  private aimHeading(ordered: number | null, refused: boolean): number | null {
+    if (this.preview === null) return ordered;
+    if (refused || ordered === this.preview) {
+      this.preview = null;
+      return ordered;
+    }
+    return this.preview;
   }
 
   private get activeDistance(): number {

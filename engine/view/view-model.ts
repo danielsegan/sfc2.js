@@ -39,11 +39,27 @@ import {
   HELM_YAW_CLAMPED,
 } from '../duel/helm.ts';
 import {
+  EVENT_HEADING,
+  HEADING_DESTROYED,
+  HEADING_DISABLED,
+  HEADING_FIELDS,
+  HEADING_HOLD,
+  HEADING_IMMOBILE,
+  HEADING_NOT_SHIP,
+  HEADING_NO_SHIP,
+  HEADING_ORDER,
+  HEADING_ORDERED,
+  HEADING_STEER,
+  HEADING_UNVERIFIED,
+  HORD,
+} from '../sim/heading.ts';
+import {
   INTERNAL_DRONE,
   INTERNAL_PHASER,
   INTERNAL_PHOTON,
   MODE_OVERLOAD,
   arcDef,
+  turnYawCap,
   weaponDef,
   type WeaponDef,
 } from '../sim/rules-tables.ts';
@@ -123,6 +139,15 @@ export interface SelfView {
   readonly weapons: readonly WeaponReadout[];
   readonly speed: number;
   readonly heading16: number;
+  /** Null when the ship has no heading order. Otherwise the ordered heading. */
+  readonly orderedHeading16: number | null;
+  /** Same value as `orderedHeading16`, for the field heading tick. Absent when there is no order. */
+  readonly headingOrdered16?: number;
+  /** Ticks of yaw still needed to reach the ordered heading. Null when there is no order. */
+  readonly turnTicksRemaining: number | null;
+  readonly turnRateLimit16PerTick: number;
+  /** Remaining-angle band. 0 under 22.5°, then 45°, 90°, and at least 90°. Null when there is no order. */
+  readonly turnBand: 0 | 1 | 2 | 3 | null;
   readonly destroyed: boolean;
   readonly disabled: boolean;
   readonly ecm: number;
@@ -291,6 +316,40 @@ function shieldsOf(ship: ReturnType<typeof shipView>): ShieldReadout[] {
   return out;
 }
 
+function helmReadout(snap: WorldSnap, index: number, turnMode: number): {
+  orderedHeading16: number | null;
+  turnTicksRemaining: number | null;
+  turnRateLimit16PerTick: number;
+  turnBand: 0 | 1 | 2 | 3 | null;
+} {
+  const cap = turnYawCap(turnMode);
+  const blank = { orderedHeading16: null, turnTicksRemaining: null, turnRateLimit16PerTick: cap, turnBand: null as 0 | 1 | 2 | 3 | null };
+  const data = table(snap, HEADING_ORDER);
+  if (!data || snap.live[index] !== 1) return blank;
+  const base = index * HEADING_FIELDS;
+  const mode = data[base + HORD.mode] ?? 0;
+  if (mode !== HEADING_STEER && mode !== HEADING_HOLD) return blank;
+  const band = data[base + HORD.band] ?? 0;
+  const turnBand: 0 | 1 | 2 | 3 = band === 1 || band === 2 || band === 3 ? band : 0;
+  return {
+    orderedHeading16: (data[base + HORD.heading] ?? 0) & 0xffff,
+    turnTicksRemaining: data[base + HORD.ticks] ?? 0,
+    turnRateLimit16PerTick: cap,
+    turnBand,
+  };
+}
+
+function headingId(code: number): string {
+  if (code === HEADING_ORDERED) return 'headingOrdered';
+  if (code === HEADING_IMMOBILE) return 'immobile';
+  if (code === HEADING_UNVERIFIED) return 'turnModeUnverified';
+  if (code === HEADING_DISABLED) return 'crewDisabled';
+  if (code === HEADING_NO_SHIP) return 'noSuchShip';
+  if (code === HEADING_NOT_SHIP) return 'notAShip';
+  if (code === HEADING_DESTROYED) return 'shipDestroyed';
+  return 'headingOrdered';
+}
+
 function helmId(code: number): string {
   if (code === HELM_OK) return 'helm';
   if (code === HELM_YAW_CLAMPED) return 'yawClamped';
@@ -320,6 +379,11 @@ function toHud(event: SimEvent): HudEvent | null {
   if (event.kind === EVENT_HELM) {
     const id = helmId(event.a);
     const severity = event.a === HELM_OK || event.a === HELM_YAW_CLAMPED ? 'info' : 'warn';
+    return { kind: 'alert', tick: event.tick as number, id, severity, ship: event.entity, amount: event.b };
+  }
+  if (event.kind === EVENT_HEADING) {
+    const id = headingId(event.a);
+    const severity = event.a === HEADING_ORDERED ? 'info' : 'warn';
     return { kind: 'alert', tick: event.tick as number, id, severity, ship: event.entity, amount: event.b };
   }
   if (event.kind === EVENT_CRAFT) {
@@ -521,6 +585,7 @@ export function buildViewModel(input: ViewBuildInput): ViewModel {
         weapons.push(weaponReadout(slot, mount));
       }
       const reason = ship.lastVerb === 0 ? '' : (REASON_NAME[ship.lastReason] ?? '');
+      const helm = helmReadout(input.curr.world, input.selfIndex, ship.turnMode);
       self = {
         id: entityId(curr, input.selfIndex),
         index: input.selfIndex,
@@ -541,6 +606,8 @@ export function buildViewModel(input: ViewBuildInput): ViewModel {
         weapons,
         speed: ship.speed,
         heading16: ship.heading,
+        ...helm,
+        headingOrdered16: helm.orderedHeading16 ?? undefined,
         destroyed: ship.destroyed === 1,
         disabled: ship.disabled === 1,
         ecm: ship.ecmPaid,

@@ -21,6 +21,25 @@ export function mapOffset(contact: MapPoint, self: MapSelf | undefined, headingU
   return { x: dx * cos - dy * sin, y: dx * sin + dy * cos };
 }
 
+/** Inverse of the map projection. localX/localY are pixels from the map centre. */
+export function mapWorldAt(
+  self: MapSelf,
+  headingUp: boolean,
+  scale: number,
+  localX: number,
+  localY: number,
+): MapPoint {
+  const ox = localX / scale;
+  const oy = -localY / scale;
+  if (!headingUp) return { x: self.x + ox, y: self.y + oy };
+  const angle = Math.PI / 2 - (self.heading16 / 65536) * Math.PI * 2;
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  const dx = ox * cos + oy * sin;
+  const dy = -ox * sin + oy * cos;
+  return { x: self.x + dx, y: self.y + dy };
+}
+
 export function nearestContact(
   contacts: readonly { id: number; x: number; y: number; kind: string }[],
   self: MapSelf | undefined,

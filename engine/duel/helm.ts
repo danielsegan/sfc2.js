@@ -20,6 +20,7 @@ import {
   turnImmobile,
   turnYawCap,
 } from '../sim/rules-tables.ts';
+import { holdHeading } from '../sim/heading.ts';
 
 export { turnYawCap };
 
@@ -102,6 +103,7 @@ function apply(world: World, cmd: Command, ctx: TickContext): void {
     const heading = (world.heading(id) as number) + applied;
     world.setHeading(id, angle16(heading));
   }
+  holdHeading(world, id, world.heading(id) as number);
   ctx.emit({ kind: EVENT_HELM, entity: id as number, a: code, b: applied });
 }
 

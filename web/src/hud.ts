@@ -40,6 +40,8 @@ export function updateHud(vm: ViewModel, roster: readonly RosterEntry[], hud: Hu
   text('speed', self ? String(self.speed) : '0');
   text('speed-ordered', String(plan.speed));
   text('heading', self ? formatDeg(self.heading16) : '—');
+  text('heading-ordered', self && self.orderedHeading16 !== null ? formatDeg(self.orderedHeading16) : '—');
+  text('turn-ticks', self && self.turnTicksRemaining !== null ? String(self.turnTicksRemaining) : '—');
   text('plan', self ? String(self.energy.planTicksLeft) : '0');
   text('gen-warp', fmt(self?.energy.warp ?? 0));
   text('gen-impulse', fmt(self?.energy.impulse ?? 0));
@@ -187,6 +189,7 @@ function logLine(tick: number, event: HudEvent): string | null {
   if (event.kind === 'alert') {
     if (event.id === 'ok') return `${mark}  Order applied (${String(event.amount)})`;
     if (event.id === 'helm') return null;
+    if (event.id === 'headingOrdered') return `${mark}  Heading ordered ${formatDeg(event.amount)}`;
     if (event.id === 'yawClamped') return `${mark}  Yaw clamped to ${String(event.amount)}`;
     if (event.id === 'turnModeUnverified') {
       return `${mark}  Turn mode unverified; using fallback yaw ${String(event.amount)}`;
