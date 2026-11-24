@@ -441,7 +441,6 @@ function steerAt(clientX: number, clientY: number): void {
   const heading = headingToward(self.x, self.y, point.x, point.y);
   if (heading === null) return;
   pendingHeading = heading;
-  scene.setHeadingPreview(heading);
 }
 
 function clampZoom(value: number): number {

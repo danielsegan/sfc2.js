@@ -1,6 +1,6 @@
 # Tactical HUD layout: preserved arrangement, clean-up and empire skins
 
-Status: draft v0.3 (2026-11-24, HelmView remaining-turn units and Combat Q17 recorded). Owner: UI & Art Director. Baseline: Community Edition (CE) 2.670.
+Status: draft v0.4 (2026-11-24, HelmView landed in #102; wedge reads SelfView.helm). Owner: UI & Art Director. Baseline: Community Edition (CE) 2.670.
 
 Why this exists: Daniel's playtest feedback was that the ship should be moved and turned with the mouse as in the original, that the original UI should be **cleaned up and preserved**, and that the main UI should **change with the selected empire**. This file sets the panel arrangement, the clean-up rules, the per-empire skin contract, the HUD side of mouse helm and the play-field overlays. It refines the "Layout overview" sketch in `hud-spec.md` and the regions in `style-guide.md` §1, which were drawn before this research.
 
@@ -270,22 +270,22 @@ The HUD draws these from the `ViewModel` and sends `Command`s; it does not compu
 
 | Field | Meaning |
 | --- | --- |
-| helm mode | `none`, `heading` (a persistent heading order is active) or `het` (a High-Energy Turn is pending or running) |
-| remaining turn | signed i32 in **16-bit angle units** (65536 = one full turn), the same units as `engine/sim/heading.ts`. Sign is the turn direction. This is **not** Q16.16 (the position and velocity fixed-point scale). The UI stopgap `remainingArc16` in `web/src/heading-wedge.ts` already returns this unit, so when the sim fills the field the wedge can use it as a direct replacement. |
-| HET delay | ticks left before a pending HET executes |
+| `mode` | `none`, `heading` (a persistent heading order is active) or `het` (a High-Energy Turn is pending or running). Engine #102: `mode` is never `het` until a high-energy turn exists in the sim. |
+| `remainingTurn16` | signed i32 in **16-bit angle units** (65536 = one full turn), the same units as `engine/sim/heading.ts`. Sign is the turn direction. This is **not** Q16.16 (the position and velocity fixed-point scale). |
+| `hetDelayTicks` | ticks left before a pending HET may begin. 0 until HET exists. |
 
-A HET turn angle, when Combat publishes it, is also a signed i32 in 16-bit angle units, not Q16.16.
+These are the real fields on `SelfView.helm` (`HelmView`, landed in Engine #102). A HET turn angle, when Combat publishes it, is also a signed i32 in 16-bit angle units, not Q16.16. The heading wedge reads `mode` and `remainingTurn16` only; it no longer computes a remaining arc in the UI.
 
 There is **no tracked-target id**: a heading order never follows a ship. The only bearing the UI handles is the one it sends: a click is turned into one uint16 heading with the shared integer `atan2` (`web/src/helm-aim.ts`) and sent as `orderHeading`; from then on the wedge reads the sim's values only.
 
 | Affordance | Where in the preserved layout | Reads | Sends |
 | --- | --- | --- | --- |
 | **Heading cursor** | 3D view and sensor map. A left-click sends a persistent heading order toward the clicked point, including when a hostile is under the cursor. A new click replaces it. Over any HUD panel the click does not steer. | `self` pose (for the clicked bearing only) | left-click: `orderHeading` |
-| **Ordered heading wedge** | 3D view, orange, from the current nose to the ordered bearing, drawn as soon as the click lands and shrinking as the turn closes. Translucent fill plus a **full-opacity edge stroke** (both radii and the outer arc) in the same colour, so the dark-red band holds 3:1 on the black field | `self.heading16` and `HelmView` remaining turn | — |
-| **Turn arc colour** | The same wedge. Orange while the remaining angle is under about 150°, dark red from there up (about 150° as implemented, `LARGE_TURN_16` in `web/src/heading-wedge.ts`). Colour goes by remaining angle, not time, and is the same for every empire (per CE capture, 2026-11-24). | `HelmView` remaining turn | — |
+| **Ordered heading wedge** | 3D view, orange, from the current nose along `remainingTurn16`, shrinking as the turn closes. Hidden when `mode` is `none`. Translucent fill plus a **full-opacity edge stroke** (both radii and the outer arc) in the same colour, so the dark-red band holds 3:1 on the black field | `self.heading16` (pose only) and `self.helm.mode`, `self.helm.remainingTurn16` | — |
+| **Turn arc colour** | The same wedge. Orange while the remaining angle is under about 150°, dark red from there up (about 150° as implemented, `LARGE_TURN_16` in `web/src/heading-wedge.ts`, unchanged). Colour goes by `remainingTurn16`, not time, and is the same for every empire (per CE capture, 2026-11-24). | `self.helm.remainingTurn16` | — |
 | **Turn-rate indicator** | Lower display, right of the speed bar: a small horizontal gauge of current turn rate vs the limit at this speed, with the turn mode as text | `HelmView.turnRateLimit16PerTick`, proposed `turnRateNow16PerTick`, turn mode | — |
 | **Speed control** | Lower display speed bar. Click or drag sets the desired-speed marker; wheel over the bar steps it; keys per `keymap.md`. A "max for power" tick shows on the bar. | `HelmView.speed`, `speedOrdered`, `speedMaxForPower` | `setSpeed` |
-| **Helm page** | Officer MFD Helm page: a 3×3 grid of arrow buttons plus **Camera** and **Go**, with no compass (per CE capture, 2026-11-24). The arrows are High-Energy Turn (HET) buttons and stay disabled until Combat's HET sim PR lands; so does Go. Camera cycles the camera. | `HelmView` helm mode and HET delay | `view.camera` now. HET command shape comes with Combat's HET PR |
+| **Helm page** | Officer MFD Helm page: a 3×3 grid of arrow buttons plus **Camera** and **Go**, with no compass (per CE capture, 2026-11-24). The arrows are High-Energy Turn (HET) buttons and stay disabled, as does Go: Engine is still confirming the HET command verb, and the existing helm grid has no countdown slot, so `hetDelayTicks` is not shown here yet. Camera cycles the camera. | `self.helm.mode`, `self.helm.hetDelayTicks` | `view.camera` now. No HET command is sent. |
 | **Shields** | Ship schematic: in battle a **six-segment ring**, one segment per facing. Facings start at the bow and go clockwise as seen from above; each keeps its original shield number (Combat, Q17, 2026-11-24). The ring is labelled 1–6; tooltips use the short names in the table below. Each segment shows that facing's own value. No doubled or summed total is shown (per CE capture, 2026-11-24). | `self.shields` | facing click: reinforce |
 
 **Shield facings (Combat, Q17, 2026-11-24).** Index 0 is the bow. Clockwise from above. Column names are the exact CE headers, with spaces around the underscore. `shieldForwardSide` and `shieldAftSide` are alternative lookup keys for the two side columns.
@@ -306,16 +306,16 @@ Pointer rules:
 - **Hit testing order:** HUD canvas hit map → HTML tooltips/menus → 3D view. A click on a panel never reaches helm.
 - **Default mouse scheme (D1, Daniel 2026-11-24, CE 2.670 playtest; Q9):** the original's. A left-click in the 3D view or on the sensor map, including a click on a hostile, sends `orderHeading` toward the clicked bearing. The order persists until a new click replaces it. There is no target-follow. Right-click targets and never steers.
 - **Click vs drag:** a press that moves less than 4 logical px before release is a click. The gate is `4 * hudScale`, and `hudScale` snaps to 1.0–4.0 in 0.25 steps. **Camera orbit must not take right-click.** Middle-drag and Alt+left-drag are equal orbit options, both remappable (Engine Lead, 2026-11-24). Neither starts on a plain left-press, and neither ever steers. Wheel over the 3D view zooms; over the speed bar it changes speed.
-- **Pending state:** after a click, the wedge shows the ordered bearing immediately and then follows the sim's `HelmView` remaining turn. A rejected order clears it and logs the reason (`hud-spec.md` §14).
+- **Pending state:** after a click, `orderHeading` is applied before the next `view()`, and the wedge follows `self.helm.remainingTurn16` when `mode` is `heading` or `het`. A rejected order returns `mode` to `none`, which hides the wedge, and logs the reason (`hud-spec.md` §14).
 - **Keyboard parity:** every mouse helm action keeps a key path (`keymap.md`), and the HTML mirror announces the ordered heading on request.
 
 ### 5.1 Review notes for the mouse-helm PR
 
 1. Plain left-click steers: one persistent `orderHeading` toward the clicked point, on a hostile too, replaced by the next click. No target-follow (Q9). Right-click under 4 logical px targets and never steers (D1).
 2. No camera action is bound to the right button, including right-drag. Orbit is middle-drag and Alt+left-drag, equal and both remappable; neither starts on a plain left-press.
-3. Clicks on any HUD panel never reach helm; the helm only sends `Command`s and never predicts turns. The wedge reads `HelmView` (mode, remaining turn as a signed i32 in 16-bit angle units, HET delay); the UI never computes a bearing beyond the one click it sends.
+3. Clicks on any HUD panel never reach helm; the helm only sends `Command`s and never predicts turns. The wedge reads `self.helm` (`mode`, `remainingTurn16`); the UI never computes a remaining arc or a bearing beyond the one click it sends.
 4. The turn wedge is orange, dark red from about 150° of remaining angle, with a full-opacity edge stroke. It does not use remaining time or the empire accent.
-5. Helm panel: 3×3 HET arrows plus Camera and Go, no compass. Arrows and Go stay disabled until Combat's HET sim PR.
+5. Helm panel: 3×3 HET arrows plus Camera and Go, no compass. Arrows and Go stay disabled until Engine confirms the HET command verb; `hetDelayTicks` is not shown as a countdown yet.
 6. Shields: six-segment ring labelled 1–6 per Combat Q17 (Front through Front left, clockwise from the bow), no doubled total.
 
 ---
@@ -448,7 +448,7 @@ An empire accent may never appear in the field itself, so a player can't mistake
 
 **Engine / Combat**
 
-8. Land the `HelmView` contract in §5: helm mode (`none`/`heading`/`het`), the remaining turn as a signed i32 in 16-bit angle units (65536 = full turn, same as `engine/sim/heading.ts`, **not** Q16.16) and HET delay ticks, all filled by the sim, with no tracked-target id. A HET turn angle, when Combat publishes it, uses the same 16-bit units. Until then the wedge derives the remaining angle from `self.heading16` and the ordered heading in the view via `remainingArc16`, which already returns those units, so the swap is a direct replacement. `turnRateNow16PerTick` for the turn-rate gauge stays open.
+8. ~~Land the `HelmView` contract in §5.~~ **Resolved (Engine #102, `d9ddf9c`):** `SelfView.helm` is `{ mode: 'none' | 'heading' | 'het', remainingTurn16, hetDelayTicks }`. `remainingTurn16` is a signed i32 in 16-bit angle units (65536 = full turn, same as `engine/sim/heading.ts`, **not** Q16.16). There is no tracked-target id. The heading wedge reads `mode` and `remainingTurn16` and no longer computes a remaining arc in the UI. `mode` is never `het` until a high-energy turn exists; `hetDelayTicks` is 0 until then. `turnRateNow16PerTick` for the turn-rate gauge stays open.
 9. ~~A `setCourseTo(ship)` command, or does left-click on a hostile send a plain heading order?~~ **Resolved (verified on CE 2.670):** a **persistent heading order, no target-follow**. A left-click on the tactical view or the sensor map, including a click on a hostile, sends `orderHeading` toward the clicked bearing. The ship turns the short way at its table turn rate until it arrives. A new click replaces the order. Right-click never steers. There is no track-a-ship verb.
 10. HET command shape, from Combat's HET sim PR. The 3×3 helm arrows are HET buttons and stay disabled until it lands. Do not treat them as ordinary turns.
 
