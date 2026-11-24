@@ -1,0 +1,59 @@
+{
+  "source": "synthetic TEST fixture, not a Community Edition capture",
+  "method": "stand-in for tools/ce-harness/summarize.py",
+  "heading_convention": "degrees, negative = port",
+  "runs": [
+    {
+      "label": "test-ca-0",
+      "spawnKey": "Federation:TEST-CA-01",
+      "button": "port",
+      "target_speed": 0,
+      "settled_speed": 0,
+      "speed_during_run": [0, 0],
+      "fps": 10,
+      "game_s_per_wall_s": 1,
+      "total_turn_deg": 0,
+      "order_delay_s": 0,
+      "t10_s": 0,
+      "t50_s": 0,
+      "t90_s": 0,
+      "mean_rate_deg_per_game_s_10_90": 329.58984375,
+      "energy_panel": { "power": 19, "systems": null, "other": null, "excess": null },
+      "fields": { "shieldsMeasured.0": 10, "shields.0": 20, "crew": 20 }
+    },
+    {
+      "label": "test-ca-off",
+      "spawnKey": "Federation:TEST-CA-01",
+      "button": "port",
+      "target_speed": 0,
+      "settled_speed": 0,
+      "speed_during_run": null,
+      "fps": 10,
+      "game_s_per_wall_s": null,
+      "total_turn_deg": null,
+      "order_delay_s": null,
+      "t10_s": null,
+      "t50_s": null,
+      "t90_s": null,
+      "mean_rate_deg_per_game_s_10_90": 10,
+      "energy_panel": { "power": 1, "systems": null, "other": null, "excess": null },
+      "fields": { "shieldsMeasured.0": 99 }
+    },
+    {
+      "label": "not-a-hull",
+      "button": "port",
+      "target_speed": 1,
+      "settled_speed": 1,
+      "speed_during_run": null,
+      "fps": null,
+      "game_s_per_wall_s": null,
+      "total_turn_deg": null,
+      "order_delay_s": null,
+      "t10_s": null,
+      "t50_s": null,
+      "t90_s": null,
+      "mean_rate_deg_per_game_s_10_90": null,
+      "energy_panel": { "power": 1, "systems": null, "other": null, "excess": null }
+    }
+  ]
+}

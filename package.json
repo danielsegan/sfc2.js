@@ -11,8 +11,10 @@
   },
   "scripts": {
     "test:formats": "node --experimental-strip-types --test tools/formats/*.test.ts",
+    "test:ship-audit": "node --experimental-strip-types --test tools/ship-audit/*.test.ts",
     "test:engine": "vitest run",
-    "test": "pnpm test:formats && pnpm test:engine",
+    "ship-audit": "node --experimental-strip-types tools/ship-audit/cli.ts",
+    "test": "pnpm test:formats && pnpm test:ship-audit && pnpm test:engine",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint:sim": "node tools/check-sim-syntax.mjs && eslint .",
     "lut:check": "node tools/generate-angle-lut.mjs --check",

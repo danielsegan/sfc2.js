@@ -11,6 +11,8 @@
 tools/fixtures/formats/shiplist/minimal.txt
 tools/fixtures/formats/shiplist/edges.txt
 tools/fixtures/formats/shiplist/weapons.txt
+tools/fixtures/ship-audit/rows.txt
+tools/fixtures/ship-audit/results-test.json
 tools/fixtures/formats/ftrlist/minimal.txt
 tools/fixtures/formats/ftrlist/edges.txt
 
