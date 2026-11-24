@@ -16,7 +16,7 @@ flowchart TD
 ```
 
 1. **HD pack**, only if installed **and** the HD tier is on for that feature.
-2. **The player's own files**: `sprites.q3` GUI archives and BMPs from their install. This is the default look; we use it wherever possible.
+2. **The player's own files**: `sprites.q3` GUI archives and BMPs from their install. This is the intended default look, but the HUD ships with our original fallback art first. The player's GUI art is used only once a format spec and reader exist (a separate format-spec issue; see §3a).
 3. **Project fallback**: original vector art committed to the repo. Always present, so the HUD works with zero original assets (useful for CI, tests and a missing or partial install).
 
 Imported originals stay on the player's machine: in browser storage (Origin Private File System / IndexedDB) or read live via a File System Access handle. They are never uploaded, never sent to the multiplayer server, never placed in CI artifacts.
@@ -55,11 +55,25 @@ interface SlotBinding {
 
 | Need | Detail |
 | --- | --- |
-| `sprites.q3` reader | List entries; decode each to RGBA (`ImageBitmap` or `Uint8ClampedArray` + width and height); expose sub-frames or animation frames if the format has them. Entry naming and palette handling: **TO VERIFY** against CE 2.670, documented in `docs/formats/sprites-q3.md`. |
-| BMP decoder | 8-bit palettised and 24-bit, with the colour-key / transparent colour convention the original uses (**TO VERIFY** against CE 2.670: magenta, black, or palette index 0?). Output premultiplied RGBA. |
+| `sprites.q3` reader | List entries; decode each to RGBA (`ImageBitmap` or `Uint8ClampedArray` + width and height); expose sub-frames or animation frames if the format has them. The CE 2.670 archive is a proprietary `MDM!` container with no readable directory yet (see §3a), so this reader is blocked on a format spec (`docs/formats/sprites-q3.md`). Entry naming and palette handling remain **TO VERIFY**. |
+| BMP decoder | 8-bit palettised and 24-bit, plus 4-bit expanded to 8-bit on load. Colour-key / transparent colour convention: unknown (**TO VERIFY** by a pixel check against the CE install on sfc2-ci: magenta, black, or palette index 0?). Output premultiplied RGBA. |
 | Fonts | If the original UI fonts are bitmap sheets, a glyph-metrics reader. Otherwise we use our open fonts (style-guide §3). |
 | Inventory | A list of GUI entries with sizes so we can build the slot binding table without screenshots in the repo. |
 | Validation | Reports missing or unexpected entries so the HUD can log "using fallback for N slots". |
+
+## 3a. CE 2.670 inventory findings
+
+Metadata only, from the inventory on `formats/inventory-ce2670` at [`04a70f5`](https://github.com/danielsegan/sfc2.js/blob/04a70f5/docs/formats/inventory/README.md) (PR #46, still a draft). Figures below match that commit.
+
+**GUI art.** `Assets/Sprites/sprites.q3` is 80,717,666 bytes (~80.7 MB). It is a proprietary archive with magic `MDM!` (`4d444d21`), not ZIP or PACK, and has no readable directory yet ([`*.q3` archives](https://github.com/danielsegan/sfc2.js/blob/04a70f5/docs/formats/inventory/ce-2.670.md#L1147-L1154), [observations](https://github.com/danielsegan/sfc2.js/blob/04a70f5/docs/formats/inventory/observations-ce-2.670.json)). The HUD ships with our original fallback art first. The player's GUI art is used only once a format spec and reader exist (a separate format-spec issue; planned as `docs/formats/sprites-q3.md`).
+
+**Self-illum maps.** Naming, pair counts, size mismatches and the 4-bit exception are in §4, from the [pair inventory](https://github.com/danielsegan/sfc2.js/blob/04a70f5/docs/formats/inventory/ce-2.670.md#L1175-L1189).
+
+**BMP colour key.** Unknown. **TO VERIFY** by a pixel check against the CE install on sfc2-ci.
+
+**ftrlist `UI` column.** Probably the fighter icon key (**TO VERIFY**). The column is present in the CE 2.670 header ([ftrlist inventory](https://github.com/danielsegan/sfc2.js/blob/04a70f5/docs/formats/inventory/shiplist-ftrlist-ce-2.670.md#L1031)). See hud-spec §11 (shuttles, fighters, PFs) and open question 10 (how HUD icons are keyed).
+
+**HUD weapon panel.** The no-firing-arc rule is keyed on weapon code, not on heavy slots. The `reloadCounted` set is `DroA`, `DroB`, `DroC`, `DroF`, `DroG`, `ADD6` and `ADD12`, matched exactly as in `docs/engine/data-loader.md` (Engine Lead's PR #55). For those racks the Arc cell is a whole-number count, the rack draws no firing arc, and the HUD shows the count next to the rack. **TO VERIFY** only whether that count means reloads or rack capacity, and why ADD racks always show 1. Fighter drones `DroI` and `DroVI` keep `ALL` as a normal arc. A numeric Arc on any other weapon, or a letter or empty cell on a `reloadCounted` rack, is the loader's `unknownArc` diagnostic, shown via the `loader.unknownArc` locale key (hud-spec §3 and §14d).
 
 ## 4. Texture and self-illumination conventions for the renderer
 
@@ -69,7 +83,9 @@ What the renderer needs from the importer for ships, bases and terrain (Phase 1 
 | --- | --- |
 | Colour space | Base textures are sRGB; self-illum maps are sRGB on load and converted to linear for emissive. |
 | Alpha | Premultiplied after decode. Colour-key pixels become alpha 0. |
-| Self-illum pairing | The importer resolves which file is the self-illum map for each base texture (naming rule **TO VERIFY** against CE 2.670, e.g. a suffix) and returns `{ base, selfIllum? }` per material. |
+| Self-illum pairing | The importer pairs each self-illum map with its base by the `_<n>i` suffix next to the base texture ([inventory](https://github.com/danielsegan/sfc2.js/blob/04a70f5/docs/formats/inventory/ce-2.670.md#L1175-L1189)). CE 2.670 has 1,073 such maps; 1,072 have a base. Returns `{ base, selfIllum? }` per material. |
+| Self-illum size | 166 glow/base pairs differ in width or height. The renderer samples the glow map by UV and must never assume it matches the base size. |
+| Self-illum bit depth | All glow maps are 8-bit except one 4-bit map (`ksd/Ksd_1_3i.bmp`). The loader expands 4-bit to 8-bit when it loads. |
 | Self-illum semantics | Black = unlit; brightness = emission strength. Period tier: add unlit on top of the lit base. HD tier: `emissive` × `emissiveIntensity`, bloom threshold tuned so only self-illum areas bloom. |
 | UV origin | Normalised to three.js convention (origin bottom-left) in the importer, not in shaders. |
 | Mipmaps | Generated at load for 3D textures; never for HUD sprites. |
@@ -101,9 +117,9 @@ What the renderer needs from the importer for ships, bases and terrain (Phase 1 
 ## Open questions
 
 **Asset & Formats Engineer**
-1. `sprites.q3` structure: entry naming, palettes, multi-frame entries, and whether HUD fonts are inside.
-2. BMP transparency convention and the self-illum naming rule.
-3. Can the importer produce a GUI inventory (entry, size) that we can review without images?
+1. `sprites.q3` structure: the container is `MDM!` (`4d444d21`), not ZIP or PACK, with no readable directory yet (see §3a). Entry naming, palettes, multi-frame entries, and whether HUD fonts are inside remain open.
+2. BMP colour key (still **TO VERIFY** on sfc2-ci, see §3a). The self-illum naming rule is `_<n>i` (see §4).
+3. Can the importer produce a GUI inventory (entry, size) that we can review without images? Blocked on the `sprites.q3` reader.
 
 **Engine Lead**
 4. Texture cache location (OPFS vs IndexedDB) and eviction; who owns the cache?

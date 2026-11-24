@@ -173,7 +173,7 @@ interface WeaponView {
 }
 ```
 
-**Drawing.** A list of weapon chips grouped by fire group. Each chip shows family icon, label, a charge bar (`ticksDone/ticksNeeded`, label "12/30 t" or a fraction, per the provisional contract), and a mode badge. The selected weapon or group draws its arcs on the sensor map (6) and as a ground-plane fan in the 3D view.
+**Drawing.** A list of weapon chips grouped by fire group. Each chip shows family icon, label, a charge bar (`ticksDone/ticksNeeded`, label "12/30 t" or a fraction, per the provisional contract), and a mode badge. The selected weapon or group draws its arcs on the sensor map (6) and as a ground-plane fan in the 3D view. The `reloadCounted` set is `DroA`, `DroB`, `DroC`, `DroF`, `DroG`, `ADD6` and `ADD12`, matched exactly as in `docs/engine/data-loader.md` (Engine Lead's PR #55). For those racks the Arc cell is a whole-number count and the rack draws no firing arc; the HUD shows the count next to the rack. **TO VERIFY** only whether that count means reloads or rack capacity, and why ADD racks always show 1. Fighter drones `DroI` and `DroVI` keep `ALL` as a normal arc. A numeric Arc on any other weapon, or a letter or empty cell on a `reloadCounted` rack, is the loader's `unknownArc` diagnostic, shown via the `loader.unknownArc` locale key. See `asset-pipeline.md` §3a.
 
 **States.** Ready (normal, single pulse); charging (charging blue, filling); holding a charge (warning outline, and a hold cost line in energy if the rules have one, **TO VERIFY**); overload armed (warning, "OVL" badge); damaged/destroyed (damage, cross-hatch); no power (disabled); out of arc / out of range (disabled tint, dashed arc).
 
