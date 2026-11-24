@@ -265,7 +265,10 @@ function paintStatus(): void {
     status.textContent = catalog.failures.length > 0 ? 'No ship could be shown. See the list.' : 'The shiplist has no rows.';
     return;
   }
-  const maps = [ship.textured ? 'texture' : 'no texture', ship.selfIlluminated ? 'self-illum' : 'no self-illum'];
+  const maps = [
+    ship.placeholder ? 'placeholder hull' : ship.textured ? 'texture' : 'no texture',
+    ship.selfIlluminated ? 'self-illum' : 'no self-illum',
+  ];
   const spin = reduced ? 'spin off (reduced motion)' : turntable.spinning ? 'spinning' : 'spin paused';
   status.textContent = `${ship.spawnKey} · ${maps.join(' · ')} · ${spin}`;
 }

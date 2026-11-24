@@ -59,6 +59,26 @@ interface Shadeable {
   transparent: boolean;
 }
 
+/** Untextured stand-in for a hull that ships with no model. Coordinates are invented. */
+export function placeholderShipMesh(): BuiltShipMesh {
+  const positions = new Float32Array([
+    0, 0.15, 1.4, 0.45, 0, -0.8, -0.45, 0, -0.8,
+    0, 0.15, 1.4, 0, 0.45, -0.2, 0.45, 0, -0.8,
+    0, 0.15, 1.4, -0.45, 0, -0.8, 0, 0.45, -0.2,
+    0.45, 0, -0.8, 0, 0.45, -0.2, -0.45, 0, -0.8,
+  ]);
+  const geometry = new BufferGeometry();
+  geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
+  geometry.computeVertexNormals();
+  const material = new MeshLambertMaterial({ color: 0x8d97a6 });
+  const mesh = new Mesh(geometry, material);
+  const lod = new Group();
+  lod.add(mesh);
+  const root = new Group();
+  root.add(lod);
+  return { root, lods: [lod], attachments: [], materials: [material] };
+}
+
 export async function buildShipMesh(
   model: ModModel,
   options: BuildShipMeshOptions,
