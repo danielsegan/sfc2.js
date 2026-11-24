@@ -64,22 +64,24 @@
     {
       "tick": 0,
       "commands": [
-        { "entry": "orderHet", "ship": "test-empire-a:test-ca-01", "direction": 1 },
-        { "entry": "orderHet", "ship": "test-empire-a:test-ca-02", "direction": -1 },
-        { "entry": "orderHet", "ship": "test-empire-b:test-d7-03", "direction": 1 },
-        { "entry": "orderHet", "ship": "test-empire-b:test-ff-05", "direction": 1 }
+        { "entry": "orderHet", "ship": "test-empire-a:test-ca-01", "dir": 1 },
+        { "entry": "orderHet", "ship": "test-empire-a:test-ca-02", "dir": -1 },
+        { "entry": "orderHet", "ship": "test-empire-b:test-d7-03", "dir": 1 },
+        { "entry": "orderHet", "ship": "test-empire-b:test-ff-05", "dir": 1 }
       ]
     },
     {
       "tick": 10,
       "commands": [
-        { "entry": "orderHet", "ship": "test-empire-a:test-ca-01", "direction": -1 }
+        { "entry": "orderHet", "ship": "test-empire-a:test-ca-01", "dir": -1 }
       ]
     },
     {
       "tick": 100,
       "commands": [
-        { "entry": "orderHet", "ship": "test-empire-b:test-dd-04", "direction": 1 }
+        { "entry": "orderHet", "ship": "test-empire-b:test-dd-04", "dir": 1 },
+        { "entry": "orderHet", "ship": "test-empire-a:test-ca-01", "dir": 0 },
+        { "entry": "orderHet", "ship": "test-empire-a:test-ca-02", "dir": 2 }
       ]
     }
   ],
@@ -90,7 +92,9 @@
       { "tick": 0, "token": 3, "status": "applied", "reason": "ok", "appliedValue": 15110 },
       { "tick": 0, "token": 4, "status": "applied", "reason": "ok", "appliedValue": 16384 },
       { "tick": 10, "token": 5, "status": "rejected", "reason": "hetActive", "appliedValue": null },
-      { "tick": 100, "token": 6, "status": "applied", "reason": "ok", "appliedValue": 16384 }
+      { "tick": 100, "token": 6, "status": "applied", "reason": "ok", "appliedValue": 16384 },
+      { "tick": 100, "token": 7, "status": "rejected", "reason": "hetInvalidDir", "appliedValue": null },
+      { "tick": 100, "token": 8, "status": "rejected", "reason": "hetInvalidDir", "appliedValue": null }
     ],
     "state": {
       "test-empire-a:test-ca-01": {
