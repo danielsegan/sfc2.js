@@ -8,6 +8,7 @@
  *
  *   pnpm tutorial        v1, Piper
  *   pnpm tutorial:v2     v2, Kokoro (pass --tts piper to fall back)
+ *   pnpm tutorial:v3     v3, Kokoro, concepts then the v2 walkthrough
  */
 import { spawn } from 'node:child_process';
 import { copyFileSync, createWriteStream, existsSync, mkdirSync, rmSync } from 'node:fs';
@@ -17,6 +18,7 @@ import { recordSession } from './capture.mjs';
 import { buildNarration, ffprobe, grabFrames, muxVideo, writeCaptions, writeScript } from './mux.mjs';
 import * as v1 from './segments.mjs';
 import * as v2 from './segments-v2.mjs';
+import * as v3 from './segments-v3.mjs';
 import { ensureKokoro, synthesizeKokoro, VOICE_ID as KOKORO_VOICE_ID } from './tts-kokoro.mjs';
 import { VOICE_ID as PIPER_VOICE_ID, ensurePiper, probeDuration, synthesize } from './tts.mjs';
 
@@ -152,6 +154,26 @@ function lessonFromArgs() {
       frameNames: ['intro', 'presets', 'arming', 'shields', 'arcs', 'het', 'close'],
       tts: argValue('--tts') ?? 'kokoro',
       doc: v2.doc,
+    };
+  }
+  if (name === 'v3') {
+    return {
+      id: 'v3',
+      segments: v3.segments,
+      openMs: v3.OPEN_MS,
+      padMs: v3.PAD_MS,
+      minMs: 360_000,
+      maxMs: 480_000,
+      targetMs: 420_000,
+      outDir: join(root, 'tools/tutorial/out-v3'),
+      scriptPath: join(root, 'docs/tutorial/script-v3.md'),
+      mp4Name: 'sfc2js-tutorial-v3.mp4',
+      artifactMp4: 'sfc2js-tutorial-v3.mp4',
+      artifactScript: 'script-v3.md',
+      framePrefix: 'tutorial-v3-',
+      frameNames: ['what', 'loop', 'lineage', 'presets', 'shields', 'het'],
+      tts: argValue('--tts') ?? 'kokoro',
+      doc: v3.doc,
     };
   }
   throw new Error(`unknown lesson ${name}`);

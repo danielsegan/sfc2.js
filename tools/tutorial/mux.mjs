@@ -168,6 +168,19 @@ export function writeScript({ path, segments, walls, openMs, voice, lengthScale,
   const skipRows = doc.skipped.map((item) => `| ${item.item} | ${item.why} |`);
   const sourceRows = doc.sources.map(([control, where, note]) => `| ${control} | \`${where}\` | ${note} |`);
   const cut = doc.notInCut.map((line) => `- ${line}`).join('\n');
+  const unsourcedRows = (doc.unsourced ?? []).map((item) => `| ${item.item} | ${item.note} |`);
+  const unsourced = unsourcedRows.length === 0
+    ? ''
+    : `
+
+## Unsourced from this code
+
+These lines are general knowledge about the games. They are not a claim that a file in this repository states them, and they are not a quotation from a rulebook.
+
+| Topic | Mark |
+| --- | --- |
+${unsourcedRows.join('\n')}
+`;
   const body = `# ${doc.title}
 
 ${doc.lede}
@@ -194,6 +207,7 @@ ${skipRows.join('\n')}
 The default keymap has more working bindings than a four-minute lesson can show. They are real. This recording does not press them:
 
 ${cut}
+${unsourced}
 
 ## Where the controls live
 

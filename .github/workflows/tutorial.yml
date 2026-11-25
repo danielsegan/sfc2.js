@@ -5,9 +5,9 @@
 # run it from the Actions tab: Tutorial capture -> Run workflow.
 #
 # The job builds the web app, serves the production build on port 1701,
-# and records the synthetic fixture twice: the v1 key lesson and the v2
-# concept lesson. It does not read an SFC2 install. The MP4s are Actions
-# artifacts. They are not committed.
+# and records the synthetic fixture three times: the v1 key lesson, the v2
+# concept lesson, and the v3 briefing plus walkthrough. It does not read
+# an SFC2 install. The MP4s are Actions artifacts. They are not committed.
 
 name: Tutorial capture
 
@@ -25,7 +25,7 @@ jobs:
   capture:
     name: Record tutorial
     runs-on: ubuntu-22.04
-    timeout-minutes: 70
+    timeout-minutes: 90
     steps:
       - name: Check out repository
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -107,5 +107,20 @@ jobs:
         with:
           name: sfc2js-tutorial-v2
           path: tools/tutorial/out-v2/sfc2js-tutorial-v2.mp4
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Record the v3 tutorial
+        shell: bash
+        run: |
+          set -euo pipefail
+          unset SFC2_INSTALL SFC2_REFERENCE SFC2_EXTRACTED
+          pnpm tutorial:v3
+
+      - name: Upload the v3 tutorial MP4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: sfc2js-tutorial-v3
+          path: tools/tutorial/out-v3/sfc2js-tutorial-v3.mp4
           if-no-files-found: error
           retention-days: 14

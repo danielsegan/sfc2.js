@@ -11,7 +11,7 @@ Each command builds the web app, serves the production build with Vite preview o
 
 The page is opened at `/?hudScale=1` with no `install` query. `SFC2_INSTALL`, `SFC2_REFERENCE`, and `SFC2_EXTRACTED` are removed from the server environment. The capture stops if `/__dev/install/manifest` returns a file list. No game files are read.
 
-`pnpm tutorial` is the v1 key lesson. `pnpm tutorial:v2` is the longer concept lesson. `--tts piper` on v2 uses the v1 voice instead of Kokoro.
+`pnpm tutorial` is the v1 key lesson. `pnpm tutorial:v2` is the concept lesson. `pnpm tutorial:v3` starts with a short briefing, then the same walkthrough as v2. `--tts piper` uses the v1 voice instead of Kokoro.
 
 ## Output
 
@@ -21,8 +21,10 @@ The page is opened at `/?hudScale=1` with no `install` query. `SFC2_INSTALL`, `S
 | `docs/tutorial/script.md` | v1 narration and timestamps |
 | `tools/tutorial/out-v2/sfc2js-tutorial-v2.mp4` | v2, 1920×1080 |
 | `docs/tutorial/script-v2.md` | v2 narration, timestamps, and source lines |
+| `tools/tutorial/out-v3/sfc2js-tutorial-v3.mp4` | v3, 1920×1080 |
+| `docs/tutorial/script-v3.md` | v3 briefing plus the walkthrough |
 
-Intermediate media and voice models stay under `tools/tutorial/.cache/`, `tools/tutorial/out/`, and `tools/tutorial/out-v2/`. Those directories are gitignored. Do not commit an MP4, a WAV, or a model.
+Intermediate media and voice models stay under `tools/tutorial/.cache/`, `tools/tutorial/out/`, `tools/tutorial/out-v2/`, and `tools/tutorial/out-v3/`. Those directories are gitignored. Do not commit an MP4, a WAV, or a model.
 
 `TUTORIAL_OUT` or `--out` changes the MP4 path. `TUTORIAL_PORT` or `--port` changes the preview port. `--skip-build` reuses `web/dist`. `--screenshot` saves a layout still instead of recording.
 

@@ -79,6 +79,7 @@ Thumbs.db
 tools/tutorial/.cache/
 tools/tutorial/out/
 tools/tutorial/out-v2/
+tools/tutorial/out-v3/
 
 # Likely install / rip locations
 assets/original/
