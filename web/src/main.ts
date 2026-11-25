@@ -19,6 +19,8 @@ import { devInstallUrl } from '../dev-install-shared.ts';
 import { DuelScene } from './scene.ts';
 import { hudScaleFromLocation, paintFieldHud } from './field-hud.ts';
 import { speedScale } from './tactical/frame.ts';
+import { barFractionFromClientX, speedBarGesture, speedFromBarFraction } from './speed-bar.ts';
+import { toggleSlot } from './weapon-select.ts';
 import { fieldRelease, orbitOnPress } from './tactical/pointer.ts';
 import { pickContact } from './tactical/tags.ts';
 import { createKeyTracker } from './input/keymap.ts';
@@ -54,6 +56,7 @@ const opening = syntheticFleet(readDefaultDuel());
 let match: DuelMatch = opening.match;
 let roster: readonly RosterEntry[] = opening.roster;
 let selectedSlot = 0;
+let selectedSlots: number[] = [0];
 let selectedGroup = 0;
 let mapZoom = 8;
 let headingUp = false;
@@ -103,7 +106,11 @@ const hud = {
   get targetId() {
     return match.targetId;
   },
-  onSelect(slot: number) {
+  get selectedSlots() {
+    return selectedSlots;
+  },
+  onSelect(slot: number, additive = false) {
+    selectedSlots = additive ? toggleSlot(selectedSlots, slot) : [slot];
     selectedSlot = slot;
   },
   onTarget(id: number) {
@@ -130,6 +137,14 @@ const host: CommandHost = {
   getSlot: () => selectedSlot,
   setSlot(slot) {
     selectedSlot = slot;
+    selectedSlots = [slot];
+  },
+  getSlots: () => selectedSlots,
+  setSlots(slots) {
+    selectedSlots = [...new Set(slots)];
+    if (selectedSlots.length > 0 && !selectedSlots.includes(selectedSlot)) {
+      selectedSlot = selectedSlots[0]!;
+    }
   },
   groups,
   get group() {
@@ -333,11 +348,20 @@ document.getElementById('offscreen-tags')?.addEventListener('click', (event) => 
   if (!button?.dataset.id) return;
   match.setTarget(Number(button.dataset.id));
 });
-document.getElementById('field-speed-bar')?.addEventListener('pointerdown', (event) => {
-  if (event.button !== 0) return;
+const speedBar = document.getElementById('field-speed-bar');
+speedBar?.addEventListener('pointerdown', (event) => {
+  if (speedBarGesture(event.type, event.button, false) !== 'start' || !(speedBar instanceof HTMLElement)) return;
+  speedBar.setPointerCapture(event.pointerId);
   setSpeedFromBar(event.clientX);
 });
-document.getElementById('field-speed-bar')?.addEventListener('wheel', (event) => {
+speedBar?.addEventListener('pointermove', (event) => {
+  if (!(speedBar instanceof HTMLElement)) return;
+  if (speedBarGesture(event.type, event.button, speedBar.hasPointerCapture(event.pointerId)) !== 'move') return;
+  setSpeedFromBar(event.clientX);
+});
+speedBar?.addEventListener('pointerup', (event) => releaseSpeedBar(speedBar, event));
+speedBar?.addEventListener('pointercancel', (event) => releaseSpeedBar(speedBar, event));
+speedBar?.addEventListener('wheel', (event) => {
   match.bumpSpeed(event.deltaY > 0 ? -1 : 1);
   syncSpeedInput();
   event.preventDefault();
@@ -373,13 +397,19 @@ function chromePointer(target: EventTarget | null): boolean {
   return target instanceof Element && target.closest('.plate, button, a, input, select, label') !== null;
 }
 
+function releaseSpeedBar(bar: Element, event: PointerEvent): void {
+  if (!(bar instanceof HTMLElement) || !bar.hasPointerCapture(event.pointerId)) return;
+  if (speedBarGesture(event.type, event.button, true) === 'end') setSpeedFromBar(event.clientX);
+  bar.releasePointerCapture(event.pointerId);
+}
+
 function setSpeedFromBar(clientX: number): void {
   const bar = document.getElementById('field-speed-bar');
   if (!bar) return;
   const rect = bar.getBoundingClientRect();
-  const fraction = rect.width <= 0 ? 0 : (clientX - rect.left) / rect.width;
+  const fraction = barFractionFromClientX(clientX, rect.left, rect.width);
   const max = speedScale(latest?.self ?? null).max;
-  match.setSpeed(Math.round(Math.max(0, Math.min(1, fraction)) * max));
+  match.setSpeed(speedFromBarFraction(fraction, max));
   syncSpeedInput();
 }
 
@@ -460,6 +490,14 @@ function steerAt(clientX: number, clientY: number): void {
   const heading = headingToward(self.x, self.y, point.x, point.y);
   if (heading === null) return;
   pendingHeading = heading;
+}
+
+function uniqueSlots(slots: readonly number[]): number[] {
+  const list: number[] = [];
+  for (const slot of slots) {
+    if (!list.includes(slot)) list.push(slot);
+  }
+  return list;
 }
 
 function clampZoom(value: number): number {
@@ -633,6 +671,7 @@ function adopt(next: DuelMatch, groups: readonly Group[], nextRoster: readonly R
   match = next;
   roster = nextRoster;
   selectedSlot = 0;
+  selectedSlots = [0];
   audioMemory = emptyAudioMemory();
   scene.setHulls(groups);
   match.setTimeScale(paused ? 0 : scale);
@@ -666,7 +705,10 @@ function frame(now: number): void {
   document.body.dataset.camera = scene.cameraMode;
   scene.resize(canvas.clientWidth, canvas.clientHeight, window.devicePixelRatio || 1);
   const groupSlots = groups[selectedGroup] ?? [];
-  const selection = groupSlots.includes(selectedSlot) ? groupSlots : [selectedSlot, ...groupSlots];
+  const selection = uniqueSlots([
+    ...selectedSlots,
+    ...(groupSlots.includes(selectedSlot) ? groupSlots : [selectedSlot, ...groupSlots]),
+  ]);
   scene.render(vm, now, selection);
   updateHud(vm, roster, hud, match.plan, now);
   const stageRect = stage?.getBoundingClientRect();

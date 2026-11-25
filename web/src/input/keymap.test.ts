@@ -19,6 +19,11 @@ describe('modern keymap', () => {
     expect(actionFor(profile, chordFromEvent({ code: 'Digit1', ctrlKey: true, shiftKey: false, altKey: false, metaKey: false }))).toBe('weapons.assign1');
     expect(actionFor(profile, chordFromEvent({ code: 'KeyG', ctrlKey: false, shiftKey: true, altKey: false, metaKey: false }))).toBe('ops.repel');
     expect(formatChord(profile['helm.stop'] ?? null)).toBe('X');
+    expect(actionFor(profile, chordFromEvent({ code: 'KeyQ', ctrlKey: false, shiftKey: false, altKey: false, metaKey: false }))).toBe('helm.hetPort');
+    expect(actionFor(profile, chordFromEvent({ code: 'KeyF', ctrlKey: false, shiftKey: false, altKey: false, metaKey: false }))).toBe('helm.hetStarboard');
+    expect(profile).toHaveProperty('weapons.selectAll', null);
+    expect(profile).toHaveProperty('weapons.alphaStrike', null);
+    expect(profile).toHaveProperty('weapons.proximity', null);
     expect(actionFor(profile, { code: 'MouseMiddle', ctrl: false, shift: false, alt: false, meta: false })).toBe('view.orbitMiddle');
     expect(actionFor(profile, { code: 'MouseLeft', ctrl: false, shift: false, alt: true, meta: false })).toBe('view.orbitAlt');
     expect(actionFor(profile, { code: 'MouseLeft', ctrl: false, shift: false, alt: false, meta: false })).toBeNull();
