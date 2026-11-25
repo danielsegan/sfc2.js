@@ -1,0 +1,95 @@
+# Manual tutorial capture for SFC2.js.
+#
+# workflow_dispatch only. It does not run on pull_request or push, so it
+# does not add a required check. After this file is on the default branch,
+# run it from the Actions tab: Tutorial capture -> Run workflow.
+#
+# The job builds the web app, serves the production build on port 1701,
+# and records the synthetic fixture. It does not read an SFC2 install.
+# The MP4 is an Actions artifact. It is not committed.
+
+name: Tutorial capture
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tutorial-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    name: Record tutorial
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Refuse an SFC2 install path
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -n "${SFC2_INSTALL:-}" || -n "${SFC2_REFERENCE:-}" || -n "${SFC2_EXTRACTED:-}" ]]; then
+            echo "Refusing to capture: SFC2_INSTALL, SFC2_REFERENCE, or SFC2_EXTRACTED is set."
+            echo "This workflow must not read Starfleet Command 2 game files."
+            exit 1
+          fi
+
+      - name: Install ffmpeg and caption fonts
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg fonts-dejavu-core
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: 10.33.4
+
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Check Node and pnpm
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module -e '
+            const [major, minor] = process.versions.node.split(".").map(Number);
+            if (major < 22 || (major === 22 && minor < 18)) {
+              console.error(`Node ${process.versions.node} is older than the engines field (>=22.18).`);
+              process.exit(1);
+            }
+            console.log(`Node ${process.versions.node}`);
+          '
+          test "$(pnpm -v)" = "10.33.4"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Record the tutorial
+        shell: bash
+        run: |
+          set -euo pipefail
+          unset SFC2_INSTALL SFC2_REFERENCE SFC2_EXTRACTED
+          pnpm tutorial
+
+      - name: Upload the tutorial MP4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: sfc2js-tutorial-1080p
+          path: tools/tutorial/out/sfc2js-tutorial-1080p.mp4
+          if-no-files-found: error
+          retention-days: 14

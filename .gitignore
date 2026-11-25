@@ -74,6 +74,11 @@ Thumbs.db
 *.msi
 *.iso
 
+# Tutorial capture. The MP4, intermediate media, and the TTS voice
+# are produced at run time and must stay out of git.
+tools/tutorial/.cache/
+tools/tutorial/out/
+
 # Likely install / rip locations
 assets/original/
 **/Starfleet Command II*/
