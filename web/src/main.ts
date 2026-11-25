@@ -22,7 +22,7 @@ import { speedScale } from './tactical/frame.ts';
 import { barFractionFromClientX, speedBarGesture, speedFromBarFraction } from './speed-bar.ts';
 import type { SchematicMode, SystemMfdPage } from './schematic.ts';
 import { clampReinforceAmount, REINFORCE_STEP, selectFacing, toggleAllFacings } from './shield-select.ts';
-import { toggleSlot } from './weapon-select.ts';
+import { selectWeaponClassSlots, toggleSlot } from './weapon-select.ts';
 import { fieldRelease, orbitOnPress } from './tactical/pointer.ts';
 import { pickContact } from './tactical/tags.ts';
 import { createKeyTracker } from './input/keymap.ts';
@@ -130,7 +130,9 @@ const hud = {
     selectedSlot = slot;
   },
   onSchematicSelect(slot: number, additive = false) {
-    selectedSlots = additive ? toggleSlot(selectedSlots, slot) : [slot];
+    selectedSlots = additive
+      ? toggleSlot(selectedSlots, slot)
+      : selectWeaponClassSlots(latest?.self?.weapons ?? [], slot);
     selectedSlot = slot;
     setSystemMfd('weapons');
   },

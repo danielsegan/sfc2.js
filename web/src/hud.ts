@@ -867,8 +867,25 @@ function syncWeaponsMfdSummary(vm: ViewModel, hud: HudHandles, plan: DuelPlan): 
   const picked = weapons.filter((w) => slots.includes(w.slotIndex));
   const active = picked[0] ?? weapons[0];
   const families = new Set(picked.map((w) => w.family));
-  const title = picked.length === 0 ? 'No mounts' : families.size > 1 ? 'MULTIPLE' : (active?.code ?? 'Weapons');
+  const phaserClass = picked.length > 0 && families.size === 1 && active?.family === 'phaser';
+  const title =
+    picked.length === 0
+      ? 'No mounts'
+      : families.size > 1
+        ? 'MULTIPLE'
+        : active?.family === 'phaser'
+          ? 'PHASERS'
+          : active?.family === 'photon'
+            ? 'PHOTONS'
+            : (active?.code ?? 'Weapons');
   text('mfd-weapon-title', title);
+  const normalBtn = document.getElementById('weapons-normal');
+  if (normalBtn instanceof HTMLButtonElement) normalBtn.textContent = phaserClass ? 'Online' : 'Normal';
+  const overloadBtn = document.getElementById('weapons-overload');
+  if (overloadBtn instanceof HTMLButtonElement) {
+    overloadBtn.hidden = phaserClass;
+    overloadBtn.disabled = phaserClass;
+  }
   const bar = document.getElementById('mfd-weapon-bar');
   const barWrap = bar?.parentElement;
   if (bar instanceof HTMLElement) {

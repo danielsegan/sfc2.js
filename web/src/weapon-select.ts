@@ -37,3 +37,13 @@ export function assignSlotsToGroup(groups: number[][], group: number, slots: rea
   if (!target) return;
   for (const slot of unique) target.push(slot);
 }
+
+export function selectWeaponClassSlots(
+  weapons: readonly { slotIndex: number; family: string }[],
+  slot: number,
+): number[] {
+  const target = weapons.find((item) => item.slotIndex === slot);
+  if (!target) return [slot];
+  const sameClass = weapons.filter((item) => item.family === target.family).map((item) => item.slotIndex);
+  return sameClass.length > 0 ? sameClass : [slot];
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { assignSlotsToGroup, selectAllSlots, supportsProximity, toggleSlot } from './weapon-select.ts';
+import { assignSlotsToGroup, selectAllSlots, selectWeaponClassSlots, supportsProximity, toggleSlot } from './weapon-select.ts';
 
 describe('weapon selection', () => {
   it('toggles a slot in or out of a multi-selection', () => {
@@ -26,5 +26,16 @@ describe('weapon selection', () => {
     expect(supportsProximity({ family: 'phaser' })).toBe(false);
     expect(supportsProximity({ family: 'disruptor' })).toBe(false);
     expect(supportsProximity(undefined)).toBe(false);
+  });
+
+  it('selects every mount of the clicked weapon class for schematic clicks', () => {
+    const mounts = [
+      { slotIndex: 0, family: 'phaser' },
+      { slotIndex: 1, family: 'phaser' },
+      { slotIndex: 2, family: 'photon' },
+    ];
+    expect(selectWeaponClassSlots(mounts, 0)).toEqual([0, 1]);
+    expect(selectWeaponClassSlots(mounts, 2)).toEqual([2]);
+    expect(selectWeaponClassSlots(mounts, 9)).toEqual([9]);
   });
 });
