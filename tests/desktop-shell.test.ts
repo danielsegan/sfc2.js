@@ -31,7 +31,7 @@ describe('desktop shell scaffold', () => {
     expect(cargoVersion).toBe(pkg.version);
     expect(config.identifier).toBe('io.segan.sfc2js');
     expect(config.build.frontendDist).toBe('../../web/dist');
-    expect(config.build.devUrl).toBe('http://127.0.0.1:5174');
+    expect(config.build.devUrl).toBe('http://127.0.0.1:1701');
     expect(config.build.beforeDevCommand).toBe('pnpm dev:web');
     expect(config.build.beforeBuildCommand).toBe('pnpm build:web');
     expect(config.bundle.targets).toEqual(['dmg', 'app', 'msi', 'nsis', 'appimage', 'deb', 'rpm']);

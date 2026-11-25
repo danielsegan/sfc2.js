@@ -5,7 +5,7 @@
   "identifier": "io.segan.sfc2js",
   "build": {
     "frontendDist": "../../web/dist",
-    "devUrl": "http://127.0.0.1:5174",
+    "devUrl": "http://127.0.0.1:1701",
     "beforeDevCommand": "pnpm dev:web",
     "beforeBuildCommand": "pnpm build:web"
   },
@@ -20,7 +20,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self' http://127.0.0.1:5174; script-src 'self' 'unsafe-inline' 'unsafe-eval' http://127.0.0.1:5174; style-src 'self' 'unsafe-inline' http://127.0.0.1:5174; img-src 'self' blob: data: http://127.0.0.1:5174; media-src 'self' blob: data:; connect-src 'self' ipc: http://ipc.localhost http://127.0.0.1:5174 ws://127.0.0.1:5174; worker-src 'self' blob:; object-src 'none'"
+      "csp": "default-src 'self' http://127.0.0.1:1701; script-src 'self' 'unsafe-inline' 'unsafe-eval' http://127.0.0.1:1701; style-src 'self' 'unsafe-inline' http://127.0.0.1:1701; img-src 'self' blob: data: http://127.0.0.1:1701; media-src 'self' blob: data:; connect-src 'self' ipc: http://ipc.localhost http://127.0.0.1:1701 ws://127.0.0.1:1701; worker-src 'self' blob:; object-src 'none'"
     }
   },
   "bundle": {

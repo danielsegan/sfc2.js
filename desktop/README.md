@@ -17,7 +17,7 @@ pnpm desktop:dev
 pnpm desktop:build
 ```
 
-`desktop:dev` starts the Vite dev server at `http://127.0.0.1:5174` (`pnpm dev:web`) and opens the shell against it. `desktop:build` runs `pnpm build:web` and then packages `web/dist`.
+`desktop:dev` starts the Vite dev server at `http://127.0.0.1:1701` (`pnpm dev:web`) and opens the shell against it. `desktop:build` runs `pnpm build:web` and then packages `web/dist`.
 
 Bundle targets are macOS `dmg` and `app`, Windows `msi` and `nsis`, and Linux `appimage`, `deb`, and `rpm`. A full `desktop:build` only produces the installers for the OS you are on.
 
