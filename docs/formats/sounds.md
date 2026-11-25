@@ -77,3 +77,12 @@ Cells past these are kept on `extra`.
 ## 6. What this player uses
 
 The Web Audio layer reads this index from the player's install (`SFC2_INSTALL` or `?install=` on the dev server, or the folder they pick). It plays standard PCM WAV in place. It does not copy files into the repo. Cue names (`weapon.fire.phaser`, `impact.shield`, and the others in `engine/audio/cues.ts`) match identifier, description, and class text. They do not hard-code a filename.
+
+## Edge cases
+
+`parseSounds` returns a `SoundIndex` for every string or byte buffer. Empty or whitespace-only input is `emptyFile` with no `location`. A line with no tab is a comment unless its first word is `class`, `format`, `wave`, `pcm22k16s`, or `pcm22k16m`. A bad numeric cell is `badNumber`; the field stays null and the row is kept. A filename that is absolute, has `..`, or is otherwise not install-relative is dropped (`pathRejected`) and is not copied into `details`. `options.file` is omitted from `location` when it is not install-relative. Fixtures are `tools/fixtures/formats/sounds/`. Arbitrary inputs are covered by [`tools/formats/fuzz.test.ts`](../../tools/formats/fuzz.test.ts).
+
+## Unknown / unparsed
+
+- **Unknown for CE 2.670.** Whether the shipped index uses tabs or runs of spaces. The byte size and the real preempt vocabulary beyond the three words in the public header. What a leading `d` or `3` does beyond the labels Dolby and 3D.
+- **Unparsed on purpose.** WAV bytes are not opened. Interplay compression (`2` and `4` in the public header) is not decoded. Cells past the documented columns stay on `extra` and are ignored. A custom first-cell type is kept as text and is not played.

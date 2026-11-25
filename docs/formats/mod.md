@@ -210,3 +210,25 @@ Against `/srv/sfc2/reference/2.670` (the Wine install, not the extracted categor
 9. Inventory recount: 317 `.mod` files under `Assets/MODELS`, 108 `*_brk.mod`, each paired with a same-stem sibling, none orphaned. Confirm `Geometry` strings resolve through the VFS, including case (`MODELS` versus `models`).
 10. Any chunk id other than the seven in §3, and the real maximum vertex and face counts. The parser refuses counts above 65,536.
 11. One intact hull and its `_brk`, in the ship viewer, period and HD, with the base map and the glow map. Headless CI only checks synthetic bytes.
+
+## Edge cases
+
+`parseMod` returns a model for every byte string. It throws only when the argument is not an `ArrayBuffer` or `Uint8Array`.
+
+| Input | Result |
+| --- | --- |
+| Zero bytes | `emptyFile`. No `location`. |
+| Longer than 8 MiB | `fileTooLarge`. The body is not parsed. |
+| First four bytes are not a printable fourcc | `badSignature`, then `missingHeader` if no `MDLS` was read. |
+| Chunk size negative | `badCount`. That level stops. Bytes already stored are kept. |
+| Chunk size past the parent | `truncated`. Bytes already stored are kept. |
+| Size zero | The parser advances to the next aligned chunk. It does not loop. |
+| Nested chunks deeper than 4 | `truncated`. No further recursion. |
+| Ninth `MOD0`, or a vertex or face count above 65,536 | `badCount`. The extra mesh or the array is not stored. |
+| `options.file` is a drive letter or contains `..` | `location.file` is omitted. |
+
+A `Uint8Array` view with a non-zero `byteOffset` is read from that view, not from the start of the underlying buffer. Synthetic coverage is [`tools/formats/src/mod.test.ts`](../../tools/formats/src/mod.test.ts) and [`tools/formats/fuzz.test.ts`](../../tools/formats/fuzz.test.ts). No `.mod` fixture is committed.
+
+## Unknown / unparsed
+
+Fields marked **hypothesised** in §§4–9 are stored and not interpreted. §11 lists what the parser refuses to guess. The sfc2-ci list in §12 is still open: no real `.mod` has been parsed. In particular, version numbers, which LOD index is the high-detail mesh, whether any face has a vertex count other than 3, what corner `flags` and `light` mean, whether `0x0010` is additive, the up axis, and the real maximum vertex count are **unknown** until that checklist is run. Chunk ids other than the seven in §3 are kept on `unknownChunks` and are not decoded.

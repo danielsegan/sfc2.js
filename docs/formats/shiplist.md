@@ -235,7 +235,7 @@ These are the fields that name or select a ship's art. Anything marked **TO VERI
 | Hull-type code | `hullType` | Category (FF, CL, CA, DN, BS …); likely picks generic icons and Vessel Library grouping (S1). | unverified (S1) | TO VERIFY |
 | Empire | `race` | Empire colour scheme and HUD skin. | unverified (S1) | TO VERIFY |
 
-## 5. Proposed data model (sketch, not code in this PR)
+## 5. Parser data model
 
 ### 5.1 Who does what
 
@@ -261,6 +261,7 @@ interface ShiplistRow {
   fields: Record<string, string | number>; // key = raw header name; numeric cells parsed, never scaled
   hardpoints: HardpointSlot[];   // always 25 entries, empty slots included
   raw: string[];                 // original cells, for exact round-trip
+  extra: Record<string, string | number>; // cells past the header, keyed col<N>
 }
 
 interface HardpointSlot {
@@ -301,7 +302,7 @@ Provisional until the CE 2.670 headers are observed. The engine loader builds th
 
 ## 7. Validation rules
 
-The shared diagnostic type is `{ code, source, severity, details?, location? }` (see [README](README.md#parser-conventions)). Codes are flat, stable camelCase strings: add-only, never renamed. The single registry is the planned [`docs/engine/diagnostics.md`](../engine/diagnostics.md) (Engine Lead; not on `main` yet).
+The shared diagnostic type is `{ code, source, severity, details?, location? }` (see [README](README.md#parser-conventions)). Codes are flat, stable camelCase strings: add-only, never renamed. The single registry is [`docs/engine/diagnostics.md`](../engine/diagnostics.md).
 
 This parser raises codes only for fields it can't read (empty or malformed) and for structural checks on the table it parsed. Every diagnostic from this parser carries `source: "shiplist"`. Example:
 
@@ -366,4 +367,31 @@ The CE weapon and arc code lists themselves will come later from the `sfc2-ci` i
 
 ## 9. Fixture
 
-[`tools/fixtures/formats/shiplist/minimal.txt`](../../tools/fixtures/formats/shiplist/minimal.txt) is a hand-made, reduced-column table for tokenizer and header-mapping tests. It has 3 invented rows (`TEST-CA-01`, `TEST-FF-02`, `TEST-BS-03`), a few columns only, one empty cell and one trailing tab. Its header labels are placeholders based on S1's column names, not copied from any CE file. It is not a full-width row and carries no real ship data.
+[`tools/fixtures/formats/shiplist/minimal.txt`](../../tools/fixtures/formats/shiplist/minimal.txt) is a hand-made, reduced-column table for tokenizer and header-mapping tests. It has 3 invented rows (`TEST-CA-01`, `TEST-FF-02`, `TEST-BS-03`), a few columns only, one empty cell and one trailing tab. Its header labels are placeholders based on S1's column names, not copied from any CE file. It is not a full-width row and carries no real ship data. `edges.txt` and `weapons.txt` in the same directory are the malformed and weapon-vocabulary fixtures. [`tools/formats/fuzz.test.ts`](../../tools/formats/fuzz.test.ts) feeds arbitrary tables and byte strings to `parseShiplist`.
+
+## Edge cases
+
+The parser returns a `Shiplist` for every input below. It throws only when the argument is not a string or bytes, or when `options` is not an object.
+
+| Input | Result |
+| --- | --- |
+| Empty, or only whitespace | `emptyFile`. No rows. No `location`. |
+| UTF-8 BOM, then text | BOM stripped. Windows-1252 for bytes. |
+| CR, LF, or CRLF | All three split lines. One trailing empty line is dropped. |
+| Line 1 is blank, a sentence, then empty cells | Instruction row. Not a column header. Kept in `headerRows`. |
+| First data line has no `Race` cell and is mostly numeric | `noHeader` (warning). Columns fall back to `col<N>` and the index order in §4. |
+| Fewer cells than the header, or extra cells with text | `raggedRow`. Missing cells read as empty. Extras stay on `extra`. |
+| Numeric cell that is not a plain decimal (`1e2`, `0x10`, `12abc`) | `badNumber`. The field becomes 0. The raw cell stays on `raw`. |
+| Empty numeric cell | 0. Not a diagnostic. |
+| Two rows with the same spawn key | `duplicateClassKey`. Both rows kept. Lookup uses the first. |
+| Header cell `__proto__` | Stored as an own field. It does not change the object's prototype and it does not throw. |
+| `options.file` is a drive letter, `..`, or otherwise not install-relative | `location.file` is omitted. The path is not copied into the diagnostic. |
+
+## Unknown / unparsed
+
+Confidence labels are in §4. These are the gaps, stated on their own so they are not buried in the field table.
+
+- **Unknown.** PF tender columns. A per-bay fighter-type link beyond the observed `Fighter Type 1`–`4` headers. Whether CE has columns for flag bridge, emergency bridge, auxiliary control, probe launchers, or separate drone storage. Icon and portrait columns (none are documented). Whether the stealth header is honoured in CE 2.670. Which of the two copies skirmish actually reads. The full CE race and hull token sets. Year encoding (offset, not a calendar year).
+- **Unverified, not unknown.** The S1 column meanings and the proposed index order. The parser does not depend on that order: it binds by header label. The [field map](shiplist-field-map.md) records the observed CE 2.670 header names.
+- **Read and not interpreted.** `W1`–`W25` stay extra columns, not weapon slots. Unknown headers are kept on `fields` under the raw label. `add6` and `add12` are stored; S7 says the game ignores them. The parser does not apply the ×2 shield or side-warp scale, does not rename weapon codes, and does not check that `geometry` exists on disk.
+- **Not in this file.** Textures, self-illumination, and the breakup mesh. Those are [mod.md](mod.md) and [bmp.md](bmp.md). HUD art named by `uiKey` is [sprites-q3.md](sprites-q3.md), which has no parser.

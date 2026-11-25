@@ -24,10 +24,11 @@ import {
   isShotsHeader,
 } from "./tokens.ts";
 import {
+  assignOwn,
   decodeSpecText,
   normHeader,
-  normalizeInstallPath,
   parseNumberCell,
+  specLocationFile,
   splitHeader,
   tableLines,
   type TextLine,
@@ -141,7 +142,7 @@ function readOptions(options: FtrlistParseOptions | undefined): {
   if (file != null && typeof file !== "string") throw new TypeError("parse options.file must be a string");
   const names = options.shipClassNames;
   return {
-    file: file == null || file === "" ? undefined : normalizeInstallPath(file),
+    file: specLocationFile(file),
     checkVocabulary: options.checkVocabulary !== false,
     shipClassNames: names ? new Set(names.map((name) => name.toLowerCase())) : undefined,
   };
@@ -530,7 +531,7 @@ function putField(
   value: string | number,
 ): void {
   if (!Object.prototype.hasOwnProperty.call(fields, rawName)) {
-    fields[rawName] = value;
+    assignOwn(fields, rawName, value);
     return;
   }
   extra[`col${index}`] = value;

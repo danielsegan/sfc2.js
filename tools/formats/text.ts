@@ -4,6 +4,7 @@
  */
 
 import { makeDiagnostic, type Diagnostic, type DiagnosticSource } from "./diagnostics.ts";
+import { installRelativeFile } from "./src/diagnostic.ts";
 
 const NUMBER_RE = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/;
 
@@ -31,6 +32,33 @@ export function normalizeInstallPath(file: string): string {
   while (path.startsWith("./")) path = path.slice(2);
   while (path.startsWith("/")) path = path.slice(1);
   return path;
+}
+
+/**
+ * Install-relative path for `location.file`. A drive letter, a `..` segment,
+ * or any other unsafe path is omitted rather than copied into a diagnostic.
+ */
+export function specLocationFile(file: string | null | undefined): string | undefined {
+  if (file == null || file === "") return undefined;
+  return installRelativeFile(normalizeInstallPath(file));
+}
+
+/**
+ * Store an own enumerable field. Bracket assignment of `__proto__` is the
+ * prototype setter: a string or number is dropped, so a header of that name
+ * would not round-trip. File headers go through defineProperty instead.
+ */
+export function assignOwn(
+  target: Record<string, string | number>,
+  key: string,
+  value: string | number,
+): void {
+  Object.defineProperty(target, key, {
+    value,
+    writable: true,
+    enumerable: true,
+    configurable: true,
+  });
 }
 
 export function decodeSpecText(input: ArrayBuffer | Uint8Array | string): string {

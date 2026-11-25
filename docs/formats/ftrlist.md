@@ -31,7 +31,7 @@ Public documentation of this file is thin, and much thinner than for `shiplist.t
 
 Same expectations and parsing rules as [`shiplist.md` §3](shiplist.md#3-encoding-and-layout), including **parser output keys = raw file header names** and values as written (no scaling, no renaming, exact weapon/arc strings): single-byte Windows text, TAB-delimited, header row(s) of labels, empty cells allowed, header-driven column mapping, unknown columns kept in `extra`, raw cells kept. Confidence: **unverified** (F6 shows it is a ShipEdit text table; everything else is assumed by analogy with the ship list).
 
-Diagnostics use the shared `{ code, source, severity, details?, location? }` type (see [`README`](README.md#parser-conventions) and the planned [`docs/engine/diagnostics.md`](../engine/diagnostics.md)). Parser diagnostics carry `source: "ftrlist"` and the same flat, stable camelCase codes as the ship list, with the same meanings (`emptyFile`, `noHeader`, `raggedRow`, `badNumber`, `duplicateFighterType`, `multipleHeaderRows`, `specsMetaassetsDiffer`). `unknownWeapon` and `unknownArc` are loader diagnostics (`source: "loader"`). `parseFtrlist` appends them until `engine/data` exists; see §7.
+Diagnostics use the shared `{ code, source, severity, details?, location? }` type (see [`README`](README.md#parser-conventions) and [`docs/engine/diagnostics.md`](../engine/diagnostics.md)). Parser diagnostics carry `source: "ftrlist"` and the same flat, stable camelCase codes as the ship list, with the same meanings (`emptyFile`, `noHeader`, `raggedRow`, `badNumber`, `duplicateFighterType`, `multipleHeaderRows`, `specsMetaassetsDiffer`). `unknownWeapon` and `unknownArc` are loader diagnostics (`source: "loader"`). `parseFtrlist` appends them until `engine/data` exists; see §7.
 
 ## 4. Field table
 
@@ -58,7 +58,7 @@ The metadata-only CE 2.670 inventory (issue #6) reports 36 columns: a comment on
 
 **Totals:** 16 proposed field definitions in the wishlist table. The CE 2.670 header names themselves are now documented from the metadata inventory (36 columns, no row counts); the binding of those names is [`docs/rules/shiplist-mapping.md`](../rules/shiplist-mapping.md). File-level facts other than that header (which copy campaign reads, byte size) stay unverified until the format spec is revised against the inventory artifact.
 
-## 5. Proposed data model (sketch, not code in this PR)
+## 5. Parser data model
 
 **Parser output** (keys are raw header names):
 
@@ -72,9 +72,16 @@ interface Ftrlist {
 interface FtrlistRow {
   line: number;
   fields: Record<string, string | number>;    // key = raw header name; values as written
-  weapons: Array<{ slotIndex: number; weapon: string | null; arc: string | null;
-                   load: number | null; reload: number | null }>; // only if weapon groups are found
+  weapons: Array<{
+    slotIndex: number;                        // 0..4 for Weapon1..Weapon5
+    count: number | null;                     // Num. Null when the cell is empty
+    weapon: string | null;
+    arc: string | null;
+    load: number | null;                      // Shots
+    reload: number | null;                    // reload-counted Arc cell only
+  }>;                                         // only if weapon groups are found
   raw: string[];
+  extra: Record<string, string | number>;     // cells past the header, keyed col<N>
 }
 ```
 
@@ -137,4 +144,25 @@ The CE weapon and arc code lists themselves will come later from the `sfc2-ci` i
 
 ## 9. Fixture
 
-[`tools/fixtures/formats/ftrlist/minimal.txt`](../../tools/fixtures/formats/ftrlist/minimal.txt) is a hand-made table with **our own placeholder header labels** and 2 invented rows (`TEST-FTR-01`, `TEST-PF-02`). It exists only to exercise the shared TAB-table tokenizer. It is not the CE 2.670 header and carries no real fighter data. The observed header names live in the rules mapping, not in this fixture.
+[`tools/fixtures/formats/ftrlist/minimal.txt`](../../tools/fixtures/formats/ftrlist/minimal.txt) is a hand-made table with **our own placeholder header labels** and 2 invented rows (`TEST-FTR-01`, `TEST-PF-02`). It exists only to exercise the shared TAB-table tokenizer. It is not the CE 2.670 header and carries no real fighter data. The observed header names live in the rules mapping, not in this fixture. `edges.txt` is the malformed fixture. [`tools/formats/fuzz.test.ts`](../../tools/formats/fuzz.test.ts) feeds arbitrary tables and byte strings to `parseFtrlist`.
+
+## Edge cases
+
+Same text rules as [shiplist.md](shiplist.md#edge-cases), with two differences:
+
+| Input | Result |
+| --- | --- |
+| No header row | `noHeader` is an **error**. There is no index fallback. Cells stay on `extra` as `col<N>`. `fields` stays empty. |
+| Header cell `__proto__` | Stored as an own field. The prototype is unchanged. |
+| `options.file` is not install-relative | `location.file` is omitted. |
+| `options.shipClassNames` omitted | The cross-file `missingShipRef` check does not run. |
+
+A bad numeric cell is `badNumber` and becomes 0. The row is kept. Empty or whitespace input is `emptyFile` with no `location`.
+
+## Unknown / unparsed
+
+Public documentation of this file is thin. The wishlist in §4 is not a claim that those columns exist.
+
+- **Known from the CE 2.670 inventory metadata (names only, no cell values).** 36 columns, a comment on line 1, the header on line 2, 81 data rows, identical `Assets/specs` and `MetaAssets` copies. Combat's binding of those names is [`docs/rules/shiplist-mapping.md`](../rules/shiplist-mapping.md). The parser still keys `fields` by the raw header.
+- **Unknown.** How a carrier bay picks a row (explicit id, race and year, or loadout). Whether each type also needs an `FTR` row in `shiplist.txt` for the model, hull, and speed. Year encoding. Whether any PF row appears here in CE 2.670 (the shiplist inventory found none). Turn mode: the observed header summary has no turn-mode column, so the engine value stays null. What `Shots` counts in play (`load` in the parser; `reload` stays null until a playtest, except a reload-counted Arc cell of `1`, `2`, or `3`).
+- **Unparsed on purpose.** No ×2 scale. No renaming of weapon or arc codes. No check that a geometry path exists. PFs are not turned into the lighter fighter entity; the loader decides.
