@@ -92,10 +92,19 @@ export function soonestCountdown(timers: readonly unknown[], hz = 30): string {
   return missionClock(best, hz);
 }
 
-/** Ordered-speed scale. 32 until the view model reports speedMax. */
+/** Placeholder erratic cap, the same integer as `ERRATIC_SPEED_CAP` in the sim. */
+export const ERRATIC_SPEED_CAP = 16;
+
+/** Ordered-speed scale. 32 until the view model reports speedMax. Erratic lowers the track. */
 export function speedScale(self: object | null): { max: number; powerTick: number | null } {
-  const record = (self ?? {}) as { speedMax?: unknown; speedMaxForPower?: unknown };
-  const max = typeof record.speedMax === 'number' && record.speedMax > 0 ? record.speedMax : 32;
+  const record = (self ?? {}) as {
+    speedMax?: unknown;
+    speedMaxForPower?: unknown;
+    helm?: { erraticActive?: unknown };
+  };
+  const published = typeof record.speedMax === 'number' && record.speedMax > 0 ? record.speedMax : 32;
+  const erratic = record.helm?.erraticActive === true;
+  const max = erratic ? Math.min(published, ERRATIC_SPEED_CAP) : published;
   const powerTick = typeof record.speedMaxForPower === 'number' ? record.speedMaxForPower : null;
   return { max, powerTick };
 }

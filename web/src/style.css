@@ -553,6 +553,31 @@ section[aria-label="Helm"] .read span:first-child {
   white-space: nowrap;
 }
 section[aria-label="Helm"] .step { margin: 2px 0; font-size: 11px; }
+.helm-page h2 { font-size: calc(12px / var(--ui-scale)); margin: 0; }
+.helm-page .helm-compact { gap: calc(4px / var(--ui-scale)); }
+.helm-page .helm-grid {
+  grid-template-columns: repeat(3, calc(22px / var(--ui-scale)));
+  gap: calc(2px / var(--ui-scale));
+}
+.helm-page .helm-grid button {
+  width: calc(22px / var(--ui-scale));
+  height: calc(22px / var(--ui-scale));
+  font-size: calc(12px / var(--ui-scale));
+}
+.helm-page .read { font-size: calc(11px / var(--ui-scale)); margin: 0; }
+.helm-page .step { margin: 0; font-size: calc(11px / var(--ui-scale)); }
+.helm-page .step input { width: calc(44px / var(--ui-scale)); padding: calc(1px / var(--ui-scale)); }
+.helm-page .helm-actions { flex-wrap: nowrap; gap: calc(3px / var(--ui-scale)); margin: 0; }
+.helm-page .helm-actions button {
+  font-size: calc(11px / var(--ui-scale));
+  min-height: calc(18px / var(--ui-scale));
+  padding: calc(1px / var(--ui-scale)) calc(4px / var(--ui-scale));
+}
+#helm-erratic[aria-pressed="true"] {
+  border-color: var(--state-normal);
+  box-shadow: inset 0 0 0 1px var(--state-normal);
+  color: var(--focus);
+}
 section[aria-label="Helm"] .step input { width: 52px; padding: 1px 4px; }
 section[aria-label="Helm"] .presets { margin: 2px 0; }
 

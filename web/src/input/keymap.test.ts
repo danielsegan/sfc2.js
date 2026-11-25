@@ -134,7 +134,8 @@ describe('SFC2 Classic keymap preset', () => {
     expect(actionFor(profile, ev('KeyM'))).toBe('craft.mine');
     expect(actionFor(profile, ev('Minus'))).toBe('view.zoomIn');
     expect(actionFor(profile, ev('Equal'))).toBe('view.zoomOut');
-    expect(actionFor(profile, ev('NumpadAdd'))).toBe('view.mapZoomIn');
+    expect(actionFor(profile, ev('NumpadAdd'))).toBe('helm.het180');
+    expect(actionFor(profile, ev('Equal', { shift: true }))).toBe('view.mapZoomIn');
     expect(actionFor(profile, ev('NumpadSubtract'))).toBe('view.mapZoomOut');
     expect(actionFor(profile, ev('Pause'))).toBe('view.pause');
     expect(actionFor(profile, ev('NumpadDivide'))).toBe('helm.erratic');
@@ -153,7 +154,7 @@ describe('SFC2 Classic keymap preset', () => {
     expect(actionFor(profile, ev('Digit6'))).toBeNull();
     expect(actionFor(profile, ev('Escape'))).toBeNull();
     expect(actionFor(profile, ev('KeyQ'))).toBeNull();
-    expect(actionFor(profile, ev('Numpad5'))).toBeNull();
+    expect(actionFor(profile, ev('Numpad5'))).toBe('helm.hetOrdered');
     expect(profile['weapons.group5']).toBeNull();
     expect(profile['weapons.group6']).toBeNull();
     expect(profile['view.camera']).toBeNull();

@@ -56,7 +56,7 @@ Mouse actions on the 3D view follow the original grammar, and a left-click there
 | Change desired speed | Wheel (`±1`), or click / drag the lower speed bar. Click and drag map the bar position to a whole speed in `0..speedMax`. Whether CE 2.670 uses the same integer snap on drag is **TO VERIFY**. |
 | Select a shield facing | Left-click an arc. Shift-click adds or removes that facing. Click the centre ship to select all, then none. Set the Reinforcement amount (integer energy points, step 1; the CE 2.670 slider detent is **TO VERIFY**) and click Reinforce or Reinforce all, or use `N` / Shift+`N`. Down / Minimal / Up are disabled until a shield-state verb exists (issue #145). |
 
-EW, tractor, cloak, fighter, mine, and boarding keys send the same sim verbs the captain uses. Reverse, erratic maneuvers, and drones still only report that they are not in this duel.
+EW, tractor, cloak, fighter, mine, and boarding keys send the same sim verbs the captain uses. Reverse and drones still only report that they are not in this duel. Erratic maneuvers (`E`) toggle the sim. Emergency stop, HET onto the ordered heading, HET 180, and the free-angle pad actions are rebindable and unbound in Modern.
 
 Volume sliders (master, effects, alerts) are separate from the keymap and are stored under `sfc2js.volume.v1`.
 
@@ -69,7 +69,7 @@ Opt-in preset in the Keys dialog. It replaces the Modern defaults rather than ov
 | --- | --- |
 | Speed up / down | `S` / `A` |
 | All stop | Numpad `0` |
-| Erratic maneuvers | Numpad `/` (still reports that the verb is not in this duel) |
+| Erratic maneuvers | Numpad `/` (toggles erratic maneuvers) |
 | Fire the selection | `Z` |
 | Alpha strike | Shift+`Z` |
 | Select weapon groups 1–4 | `1`–`4` |
@@ -90,7 +90,9 @@ Opt-in preset in the Keys dialog. It replaces the Modern defaults rather than ov
 | Officer page: Options | `/` |
 | Officer page: Comms | `0` |
 | Viewport zoom in / out | `-` / `=` |
-| Map zoom in / out | Numpad `+` / Numpad `-` (the Map page `-`/`+` buttons still step the three zoom tiers). Main-row `-`/`=` stay on the viewport, as in the CE Fixed Keys tab. |
+| HET onto the ordered heading | Numpad `5` |
+| HET 180° | Numpad `+` |
+| Map zoom in / out | Shift+`=` / Numpad `-` (Numpad `+` is HET 180). The Map page `-`/`+` buttons still step the three zoom tiers. Main-row `-`/`=` stay on the viewport. |
 | Pause | `Pause` |
 | Orbit the camera | Middle-drag or Alt+left-drag, or Alt+Left / Alt+Right (unchanged mouse grammar) |
 
@@ -112,7 +114,7 @@ These CE keys have no action in this build yet, or the CE default in the notes i
 | `Esc` | End mission / exit menu | No exit-menu action (`view.pause` is on `Pause` instead) |
 | `Home` / `End` / `PageUp` / `PageDown` | Pan and tilt the camera | No pan/tilt actions (`view.reset` stays unbound so `Home` is not stolen) |
 | Numpad `*` / Numpad `.` | Follow target / Orbit target | Helm verbs not in this duel (`#144`) |
-| Numpad `5` / Numpad `+` | HET toward heading / HET 180 | HET verbs not fully wired (`#144`); HET port/starboard also have empty CE defaults and stay unbound |
+| Numpad `5` / Numpad `+` | HET toward heading / HET 180 | Bound: `helm.hetOrdered` and `helm.het180`. Free-angle and hard-port / hard-starboard pad actions stay unbound, matching the empty CE defaults. |
 | Numpad `4` / Numpad `6` | Reinforce all port / starboard shields | No side-pair reinforce action |
 | Unbound CE rows | Steady as she goes; HET hard port/starboard; flee; science / security / weapons officer shortcuts; self-destruct; weapon normal / offline / overload-all | No actions, or already empty in CE |
 | `W`, `E`, `Q`, `B` | Wild Weasel, scatter-pack, suicide shuttle, transporter bomb | No craft verbs (`#145`) |

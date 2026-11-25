@@ -109,7 +109,7 @@
       <section id="officer-mfd" class="float officer-mfd plate" aria-label="Officer MFD">
         <div class="officer-body">
           <div class="officer-pages">
-            <div class="officer-page active" data-officer-page="helm">
+            <div class="officer-page helm-page active" data-officer-page="helm">
               <h2>Helm</h2>
               <div class="helm-compact">
                 <div class="helm-grid" role="group" aria-label="High-energy turn buttons.">
@@ -137,14 +137,12 @@
               <label class="step">Ordered speed
                 <input id="ordered-speed" type="number" min="0" max="32" step="1" value="4" />
               </label>
-              <div class="presets">
+              <div class="presets helm-actions">
                 <button type="button" id="helm-camera" data-action="view.camera" title="Cycle the camera (V)">Camera</button>
                 <button type="button" id="helm-go" disabled title="Go waits for a later helm change. Speed stays on the ordered-speed control.">Go</button>
-                <button type="button" data-action="helm.stop">Stop</button>
-                <button type="button" data-action="helm.emerDecel" title="Emergency stop. Ordered speed goes to 0.">Emergency stop</button>
-                <button type="button" data-action="helm.erratic" title="Toggle erratic maneuvers.">Erratic</button>
+                <button type="button" id="helm-emer" data-action="helm.emerDecel" title="Emergency stop. Ordered speed goes to 0. All stop stays on its own key.">E-stop</button>
+                <button type="button" id="helm-erratic" data-action="helm.erratic" title="Toggle erratic maneuvers. Caps ordered speed while on." aria-pressed="false">Erratic</button>
               </div>
-              <p class="empty-state">Orbit, Follow, and Steady still have no verb. Chance for HET is the HET readout.</p>
             </div>
             <div class="officer-page" data-officer-page="repair">
               <h2>Repair</h2>

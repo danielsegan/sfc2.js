@@ -234,6 +234,8 @@ describe('tactical field', () => {
     expect(soonestCountdown([{ ticks: 90 }, { remaining: 30 }])).toBe('00:01');
     expect(speedScale(null).max).toBe(32);
     expect(speedScale({ speedMax: 16, speedMaxForPower: 8 })).toEqual({ max: 16, powerTick: 8 });
+    expect(speedScale({ helm: { erraticActive: true } }).max).toBe(16);
+    expect(speedScale({ speedMax: 32, helm: { erraticActive: true } }).max).toBe(16);
     expect(orbitOnPress(0, false)).toBe(false);
     expect(orbitOnPress(0, true)).toBe(true);
     expect(orbitOnPress(1, false)).toBe(true);

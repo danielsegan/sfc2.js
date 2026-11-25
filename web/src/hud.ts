@@ -87,6 +87,12 @@ export function updateHud(vm: ViewModel, roster: readonly RosterEntry[], hud: Hu
   text('heading-ordered', self && self.orderedHeading16 !== null ? formatDeg(self.orderedHeading16) : '—');
   text('turn-ticks', self && self.turnTicksRemaining !== null ? String(self.turnTicksRemaining) : '—');
   text('het-delay', formatHetReadout(self?.helm));
+  const erratic = document.getElementById('helm-erratic');
+  if (erratic) erratic.setAttribute('aria-pressed', self?.helm.erraticActive === true ? 'true' : 'false');
+  const speedInput = document.getElementById('ordered-speed');
+  if (speedInput instanceof HTMLInputElement) {
+    speedInput.max = String(self?.helm.erraticActive === true ? 16 : 32);
+  }
   text('plan', self ? String(self.energy.planTicksLeft) : '0');
   text('gen-warp', fmt(self?.energy.warp ?? 0));
   text('gen-impulse', fmt(self?.energy.impulse ?? 0));
