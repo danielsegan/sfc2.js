@@ -17,6 +17,9 @@ interface Recording {
   groups: number[][];
   group: number;
   plan: { modes: number[]; specific: number[]; general: number };
+  priorityCalls: Array<{ movement: number; weapons: number; shields: number; tractors: number; ecm: number }>;
+  batteryCalls: boolean[];
+  repairCalls: Array<readonly string[]>;
   facings: number[];
   amount: number;
 }
@@ -34,6 +37,12 @@ function hostRecording(opts?: { weapons?: Array<{ slotIndex: number; family: str
   const plan = { modes: [] as number[], specific: [] as number[], general: 0 };
   const facings: number[] = [];
   let amount = 1;
+  const priorityCalls: Array<{ movement: number; weapons: number; shields: number; tractors: number; ecm: number }> = [];
+  const batteryCalls: boolean[] = [];
+  const repairCalls: Array<readonly string[]> = [];
+  let pendingPriorities = { movement: 3, weapons: 3, shields: 3, tractors: 3, ecm: 3 };
+  let pendingBattery = true;
+  let pendingRepair: readonly string[] = [];
   const weapons = opts?.weapons ?? [];
   const match = {
     plan,
@@ -64,6 +73,15 @@ function hostRecording(opts?: { weapons?: Array<{ slotIndex: number; family: str
     },
     setGeneral(points: number) {
       plan.general = points;
+    },
+    setEnergyPriorities(priorities: { movement: number; weapons: number; shields: number; tractors: number; ecm: number }) {
+      priorityCalls.push(priorities);
+    },
+    setBattery(on: boolean) {
+      batteryCalls.push(on);
+    },
+    setRepairPriority(order: readonly string[]) {
+      repairCalls.push(order);
     },
   } as unknown as DuelMatch;
   const host: CommandHost = {
@@ -110,12 +128,24 @@ function hostRecording(opts?: { weapons?: Array<{ slotIndex: number; family: str
     setReinforceAmount(points) {
       amount = points;
     },
+    getEnergyPriorities: () => pendingPriorities,
+    setEnergyPriorities(next) {
+      pendingPriorities = next;
+    },
+    getBatteryDischarging: () => pendingBattery,
+    setBatteryDischarging(on) {
+      pendingBattery = on;
+    },
+    getRepairQueue: () => pendingRepair,
+    setRepairQueue(order) {
+      pendingRepair = order;
+    },
     view: () =>
       weapons.length === 0
         ? null
         : ({ self: { weapons } } as unknown as ViewModel),
   };
-  return { host, dirs, angles, emer, erratic, fired, modes, notes, slots, groups, group: 0, plan, facings, amount };
+  return { host, dirs, angles, emer, erratic, fired, modes, notes, slots, groups, group: 0, plan, facings, amount, priorityCalls, batteryCalls, repairCalls };
 }
 
 describe('HET command path', () => {
@@ -304,5 +334,31 @@ describe('Officer MFD page and map zoom actions', () => {
     expect(rec.host.mapZoom).toBe(32);
     runAction(rec.host, 'view.mapZoomOut');
     expect(rec.host.mapZoom).toBe(16);
+  });
+});
+
+describe('energy priority, battery, and repair commands', () => {
+  it('cycles priority 3 -> 2 -> 1 -> 5 -> 4 -> 3 across consecutive paused clicks', () => {
+    const { host, priorityCalls } = hostRecording();
+    for (let i = 0; i < 5; i++) runAction(host, 'energy.priority.weapons');
+    expect(priorityCalls.map((p) => p.weapons)).toEqual([2, 1, 5, 4, 3]);
+    expect(priorityCalls[0]?.movement).toBe(3);
+  });
+
+  it('toggles battery discharge through setBattery', () => {
+    const { host, batteryCalls } = hostRecording();
+    runAction(host, 'energy.battery');
+    runAction(host, 'energy.battery');
+    expect(batteryCalls).toEqual([false, true]);
+  });
+
+  it('promotes systems and resets the queue through setRepairPriority', () => {
+    const { host, repairCalls } = hostRecording();
+    runAction(host, 'repair.prioritize.sensors');
+    runAction(host, 'repair.prioritize.armor');
+    runAction(host, 'repair.reset');
+    expect(repairCalls[0]?.[0]).toBe('sensors');
+    expect(repairCalls[1]?.slice(0, 2)).toEqual(['armor', 'sensors']);
+    expect(repairCalls[2]).toEqual(['bridge', 'hullForward', 'hullCenter', 'hullAft', 'sensors', 'armor', 'extra']);
   });
 });

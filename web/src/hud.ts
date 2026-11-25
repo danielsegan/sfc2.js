@@ -2,7 +2,18 @@ import type { RosterEntry } from '../../engine/duel/fixture.ts';
 import type { DuelPlan } from '../../engine/duel/match.ts';
 import { MODE_OFFLINE, MODE_OVERLOAD, MODE_PROXIMITY } from '../../engine/sim/rules-tables.ts';
 import { toDisplayHeading } from '../../engine/view/units.ts';
-import type { HelmView, HudEvent, ViewModel, WeaponReadout } from '../../engine/view/view-model.ts';
+import type { DamageSystem, DamageView, EnergyReadout, HelmView, HudEvent, ViewModel, WeaponReadout } from '../../engine/view/view-model.ts';
+import {
+  DEFAULT_ENERGY_PRIORITIES,
+  ENERGY_ROWS,
+  REPAIR_SYSTEMS,
+  energyRowValues,
+  formatEnergyValue,
+  repairQueueRank,
+  repairSystemHealth,
+  repairSystemLabel,
+  type EnergyPriorities,
+} from './energy-repair.ts';
 import { EMPIRE_MARKS, empireIdForRace, empireMarkFor } from './empire-marks.ts';
 import { mapOffset } from './map-geom.ts';
 import {
@@ -56,6 +67,9 @@ export interface HudHandles {
   schematicMode: SchematicMode;
   officerPage?: string;
   logFilters?: Readonly<Partial<Record<LogChannel, boolean>>>;
+  energyPriorities?: EnergyPriorities;
+  batteryDischarging?: boolean;
+  repairQueue?: readonly string[];
   onSelect(slot: number, additive?: boolean): void;
   onSchematicSelect?(slot: number, additive?: boolean): void;
   onTarget?(id: number): void;
@@ -140,6 +154,8 @@ export function updateHud(vm: ViewModel, roster: readonly RosterEntry[], hud: Hu
   renderWeapons(vm, hud, plan);
   syncWeaponsMfdSummary(vm, hud, plan);
   syncProximityButton(vm, hud, plan);
+  renderEnergyPage(self?.energy ?? null, hud);
+  renderRepairPage(self?.damage ?? null, hud);
   renderContacts(vm, roster);
   renderShieldTable(vm, plan, hud);
 }
@@ -1031,4 +1047,153 @@ function syncWeaponsMfdSummary(vm: ViewModel, hud: HudHandles, plan: DuelPlan): 
 function wrapSpan(from16: number, to16: number): number {
   const span = to16 - from16;
   return span <= 0 ? span + 65536 : span;
+}
+
+function renderEnergyPage(energy: EnergyReadout | null, hud: HudHandles): void {
+  const priorities = hud.energyPriorities ?? energy?.priorities ?? DEFAULT_ENERGY_PRIORITIES;
+  const batteryOn = hud.batteryDischarging ?? energy?.batteryDischarging ?? true;
+  text('energy-power', energy ? formatEnergyValue(energy.generation) : '0');
+  text('energy-systems', energy ? formatEnergyValue(energy.demand) : '0');
+  text('energy-other', energy ? formatEnergyValue(energy.draws.other) : '0');
+  const excess = energy ? energy.surplus : 0;
+  const excessEl = document.getElementById('energy-excess');
+  if (excessEl) {
+    const label = excess > 0 ? `+${formatEnergyValue(excess)}` : formatEnergyValue(excess);
+    if (excessEl.textContent !== label) excessEl.textContent = label;
+    excessEl.classList.toggle('shortfall', excess < 0);
+  }
+  const batBtn = document.getElementById('energy-battery-btn');
+  if (batBtn) {
+    batBtn.setAttribute('aria-pressed', batteryOn ? 'true' : 'false');
+  }
+  for (const row of ENERGY_ROWS) {
+    const pri = priorities[row.id];
+    const priBtn = document.querySelector<HTMLElement>(`[data-energy-pri="${row.id}"]`);
+    if (priBtn) {
+      const val = String(pri);
+      if (priBtn.textContent !== val) priBtn.textContent = val;
+      priBtn.setAttribute('aria-label', `${row.label} priority ${val}`);
+    }
+    const bar = document.querySelector<HTMLElement>(`[data-energy-bar="${row.id}"]`);
+    const read = document.querySelector<HTMLElement>(`[data-energy-val="${row.id}"]`);
+    if (!energy) {
+      if (bar) {
+        bar.style.width = '0%';
+        bar.classList.remove('shortfall');
+      }
+      if (read && read.textContent !== '0/0') read.textContent = '0/0';
+      continue;
+    }
+    const values = energyRowValues(energy, row.id);
+    const shortfall = values.desired !== null && values.allocated < values.desired;
+    if (bar) {
+      bar.style.width = `${String(values.barPct)}%`;
+      bar.classList.toggle('shortfall', shortfall || (energy.lastReason === 'overDraw' && values.allocated === 0 && energy.demand > 0));
+    }
+    const desiredText = values.desired === null ? '—' : formatEnergyValue(values.desired);
+    const textVal = `${formatEnergyValue(values.allocated)}/${desiredText}`;
+    if (read && read.textContent !== textVal) read.textContent = textVal;
+  }
+}
+
+function orderedDamageSystems(damage: DamageView | null, queue: readonly string[]): readonly DamageSystem[] {
+  const byId = new Map<string, DamageSystem>();
+  for (const sys of damage?.systems ?? []) byId.set(sys.id, sys);
+  const out: DamageSystem[] = [];
+  for (const id of queue) {
+    const sys = byId.get(id);
+    if (sys) {
+      out.push(sys);
+      byId.delete(id);
+    }
+  }
+  for (const def of REPAIR_SYSTEMS) {
+    const sys = byId.get(def.id);
+    if (sys) {
+      out.push(sys);
+      byId.delete(def.id);
+    } else if (!damage) {
+      out.push({ id: def.id, label: def.label, boxesTotal: 0, boxesLeft: 0, repairing: false });
+    }
+  }
+  for (const sys of byId.values()) out.push(sys);
+  return out;
+}
+
+const repairRowNodes = new Map<string, HTMLButtonElement>();
+
+function renderRepairPage(damage: DamageView | null, hud: HudHandles): void {
+  text(
+    'repair-hull',
+    damage ? `Hull ${String(damage.hull.boxesLeft)}/${String(damage.hull.boxesTotal)}` : 'Hull 0/0',
+  );
+  text(
+    'repair-crew',
+    damage ? `Crew ${String(damage.crew.current)}/${String(damage.crew.max)}` : 'Crew 0/0',
+  );
+  const host = document.getElementById('repair-list');
+  if (!host) return;
+  const queue = hud.repairQueue ?? damage?.repairQueue ?? [];
+  const systems = orderedDamageSystems(damage, queue);
+  const damagedCount = systems.filter((s) => s.boxesLeft < s.boxesTotal).length;
+  const active = systems.find((s) => s.repairing);
+  text(
+    'repair-note',
+    active
+      ? `Repairing ${repairSystemLabel(active.id)}. Click a system to move to #1.`
+      : damagedCount > 0
+        ? 'Click a damaged system to prioritize (#1).'
+        : 'Click a system to set queue order.',
+  );
+  for (let i = 0; i < systems.length; i++) {
+    const sys = systems[i]!;
+    let btn = repairRowNodes.get(sys.id);
+    if (!btn) {
+      btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'repair-row';
+      btn.dataset.action = `repair.prioritize.${sys.id}`;
+      btn.dataset.repairId = sys.id;
+      btn.setAttribute('role', 'listitem');
+      const rankSpan = document.createElement('span');
+      rankSpan.className = 'repair-rank num';
+      const labelSpan = document.createElement('span');
+      labelSpan.className = 'repair-label';
+      const barSpan = document.createElement('span');
+      barSpan.className = 'repair-bar';
+      const barFill = document.createElement('span');
+      barFill.className = 'repair-bar-fill';
+      barSpan.append(barFill);
+      const boxesSpan = document.createElement('span');
+      boxesSpan.className = 'repair-boxes num';
+      const stateSpan = document.createElement('span');
+      stateSpan.className = 'repair-state';
+      btn.append(rankSpan, labelSpan, barSpan, boxesSpan, stateSpan);
+      repairRowNodes.set(sys.id, btn);
+    }
+    const rank = repairQueueRank(queue, sys.id);
+    const rankText = rank !== null ? `#${String(rank)}` : '—';
+    const health = repairSystemHealth(sys);
+    const rankEl = btn.children[0] as HTMLElement;
+    const labelEl = btn.children[1] as HTMLElement;
+    const barEl = btn.children[2] as HTMLElement;
+    const fillEl = barEl.firstElementChild as HTMLElement;
+    const boxesEl = btn.children[3] as HTMLElement;
+    const stateEl = btn.children[4] as HTMLElement;
+    if (rankEl.textContent !== rankText) rankEl.textContent = rankText;
+    const label = repairSystemLabel(sys.id);
+    if (labelEl.textContent !== label) labelEl.textContent = label;
+    fillEl.style.width = `${String(Math.round(health.ratio * 100))}%`;
+    fillEl.className = `repair-bar-fill ${health.state}`;
+    const boxesText = `${String(sys.boxesLeft)}/${String(sys.boxesTotal)}`;
+    if (boxesEl.textContent !== boxesText) boxesEl.textContent = boxesText;
+    const stateText = sys.repairing ? 'REP' : health.state === 'destroyed' ? 'OUT' : '';
+    if (stateEl.textContent !== stateText) stateEl.textContent = stateText;
+    btn.classList.toggle('repairing', sys.repairing);
+    btn.title = `Prioritize ${label} (${boxesText}) to #1 in repair queue`;
+    const currentAt = host.children[i];
+    if (currentAt !== btn) {
+      host.insertBefore(btn, currentAt ?? null);
+    }
+  }
 }

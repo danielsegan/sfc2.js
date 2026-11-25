@@ -144,9 +144,15 @@
                 <button type="button" id="helm-erratic" data-action="helm.erratic" title="Toggle erratic maneuvers. Caps ordered speed while on." aria-pressed="false">Erratic</button>
               </div>
             </div>
-            <div class="officer-page" data-officer-page="repair">
-              <h2>Repair</h2>
-              <p class="empty-state">Damage Control / Repair awaits ViewModel system-box state and repair verbs (issue #145).</p>
+            <div class="officer-page" data-officer-page="repair" aria-label="Damage control and repair">
+              <div class="mfd-head-row">
+                <h2>Repair</h2>
+                <span id="repair-hull" class="micro num">Hull 0/0</span>
+                <span id="repair-crew" class="micro num">Crew 0/0</span>
+                <button type="button" id="repair-reset" class="mini-btn" data-action="repair.reset" title="Reset repair queue order">Reset</button>
+              </div>
+              <div id="repair-list" class="repair-list" role="list" aria-label="Repair queue"></div>
+              <p id="repair-note" class="micro repair-note">Click a damaged system to move it to #1.</p>
             </div>
             <div class="officer-page" data-officer-page="science">
               <h2>Science</h2>
@@ -192,32 +198,78 @@
               <p class="empty-state">Fleet orders are not in this duel yet. The roster below is read-only.</p>
             </div>
             <div class="officer-page" data-officer-page="energy" id="energy" aria-label="Energy allocation">
-              <h2>Energy</h2>
-              <div class="energy-reads">
-                <p class="read"><span>Warp</span> <span id="gen-warp" class="num">0</span></p>
-                <p class="read"><span>Imp</span> <span id="gen-impulse" class="num">0</span></p>
-                <p class="read"><span>APR</span> <span id="gen-apr" class="num">0</span></p>
-                <p class="read"><span>Bat</span> <span id="gen-battery" class="num">0</span></p>
+              <div class="mfd-head-row">
+                <h2>Energy</h2>
+                <span class="energy-stat">POWER <strong id="energy-power" class="num">0</strong></span>
+                <span class="energy-stat">SYSTEMS <strong id="energy-systems" class="num">0</strong></span>
               </div>
-              <div class="presets">
-                <button type="button" data-action="power.attack">Attack</button>
-                <button type="button" data-action="power.balanced">Balanced</button>
-                <button type="button" data-action="power.run">Run</button>
-                <button type="button" data-action="power.defense">Defense</button>
+              <div id="energy-rows" class="energy-rows" role="group" aria-label="System energy priorities">
+                <div class="energy-row" data-energy-row="movement">
+                  <button type="button" class="energy-pri-btn num" data-action="energy.priority.movement" data-energy-pri="movement" title="Cycle Engines energy priority (left-click: 5→4→3→2→1→5)">3</button>
+                  <span class="energy-row-name">Engines</span>
+                  <div class="energy-meter" data-energy-meter="movement" aria-hidden="true"><span class="energy-meter-fill" data-energy-bar="movement"></span></div>
+                  <span class="energy-row-val num" data-energy-val="movement">0/0</span>
+                </div>
+                <div class="energy-row" data-energy-row="weapons">
+                  <button type="button" class="energy-pri-btn num" data-action="energy.priority.weapons" data-energy-pri="weapons" title="Cycle Weapons energy priority (left-click: 5→4→3→2→1→5)">3</button>
+                  <span class="energy-row-name">Weapons</span>
+                  <div class="energy-meter" data-energy-meter="weapons" aria-hidden="true"><span class="energy-meter-fill" data-energy-bar="weapons"></span></div>
+                  <span class="energy-row-val num" data-energy-val="weapons">0/0</span>
+                </div>
+                <div class="energy-row" data-energy-row="shields">
+                  <button type="button" class="energy-pri-btn num" data-action="energy.priority.shields" data-energy-pri="shields" title="Cycle Shields energy priority (left-click: 5→4→3→2→1→5)">3</button>
+                  <span class="energy-row-name">Shields</span>
+                  <div class="energy-meter" data-energy-meter="shields" aria-hidden="true"><span class="energy-meter-fill" data-energy-bar="shields"></span></div>
+                  <span class="energy-row-val num" data-energy-val="shields">0/0</span>
+                </div>
+                <div class="energy-row" data-energy-row="ecm">
+                  <button type="button" class="energy-pri-btn num" data-action="energy.priority.ecm" data-energy-pri="ecm" title="Cycle EW energy priority (left-click: 5→4→3→2→1→5)">3</button>
+                  <span class="energy-row-name">EW</span>
+                  <div class="energy-meter" data-energy-meter="ecm" aria-hidden="true"><span class="energy-meter-fill" data-energy-bar="ecm"></span></div>
+                  <span class="energy-row-val num" data-energy-val="ecm">0/0</span>
+                </div>
+                <div class="energy-row" data-energy-row="tractors">
+                  <button type="button" class="energy-pri-btn num" data-action="energy.priority.tractors" data-energy-pri="tractors" title="Cycle Tractors energy priority (left-click: 5→4→3→2→1→5)">3</button>
+                  <span class="energy-row-name">Tractors</span>
+                  <div class="energy-meter" data-energy-meter="tractors" aria-hidden="true"><span class="energy-meter-fill" data-energy-bar="tractors"></span></div>
+                  <span class="energy-row-val num" data-energy-val="tractors">0/0</span>
+                </div>
               </div>
-              <div class="energy-checks">
-                <label class="check"><input id="life" type="checkbox" checked /> Life</label>
-                <label class="check"><input id="fire-control" type="checkbox" checked /> FC</label>
+              <div class="energy-summary">
+                <span class="energy-stat">OTHER <strong id="energy-other" class="num">0</strong></span>
+                <span class="energy-stat">EXCESS <strong id="energy-excess" class="num">0</strong></span>
               </div>
-              <div class="energy-inputs">
-                <label class="step">Gen <input id="general" type="number" min="0" max="100" step="1" value="0" /></label>
-                <label class="step">Wpn <input id="weapon-energy" type="number" min="0" max="100" step="1" placeholder="auto" /></label>
+              <div class="energy-footer">
+                <button type="button" id="energy-battery-btn" class="energy-battery-btn" data-action="energy.battery" aria-pressed="true" title="Toggle battery discharge for power shortfall">Use Battery</button>
+                <span id="gen-battery" class="micro num">0 / 0</span>
+                <span id="energy-reason" class="reason energy-reason-inline"></span>
               </div>
-              <p id="energy-reason" class="reason"></p>
             </div>
             <div class="officer-page" data-officer-page="options">
               <h2>Options</h2>
-              <p class="empty-state">CHASE, TARGET, ENEMY, OVERHEAD, and FOLLOW camera presets will land on this page. Cycle the views that exist today with Camera on the Helm page (V).</p>
+              <section class="quick-plan-box" aria-label="Modern quick-plan presets and manual overrides">
+                <p class="micro quick-plan-label">Modern quick-plan (F1–F4)</p>
+                <div class="presets">
+                  <button type="button" data-action="power.attack">Attack</button>
+                  <button type="button" data-action="power.balanced">Balanced</button>
+                  <button type="button" data-action="power.run">Run</button>
+                  <button type="button" data-action="power.defense">Defense</button>
+                </div>
+                <div class="energy-checks">
+                  <label class="check"><input id="life" type="checkbox" checked /> Life</label>
+                  <label class="check"><input id="fire-control" type="checkbox" checked /> FC</label>
+                </div>
+                <div class="energy-inputs">
+                  <label class="step">Gen <input id="general" type="number" min="0" max="100" step="1" value="0" /></label>
+                  <label class="step">Wpn <input id="weapon-energy" type="number" min="0" max="100" step="1" placeholder="auto" /></label>
+                </div>
+                <div class="energy-reads">
+                  <p class="read"><span>Warp</span> <span id="gen-warp" class="num">0</span></p>
+                  <p class="read"><span>Imp</span> <span id="gen-impulse" class="num">0</span></p>
+                  <p class="read"><span>APR</span> <span id="gen-apr" class="num">0</span></p>
+                </div>
+              </section>
+              <p class="empty-state">CHASE, TARGET, ENEMY, OVERHEAD, and FOLLOW camera presets will land here. Cycle camera with V.</p>
             </div>
           </div>
         </div>

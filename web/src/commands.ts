@@ -9,6 +9,16 @@ import type { ViewModel } from '../../engine/view/view-model.ts';
 import type { DuelScene } from './scene.ts';
 import { clampReinforceAmount, selectFacing, toggleAllFacings } from './shield-select.ts';
 import { assignSlotsToGroup, selectAllSlots, supportsProximity } from './weapon-select.ts';
+import {
+  DEFAULT_ENERGY_PRIORITIES,
+  defaultRepairQueue,
+  isEnergyCategory,
+  isRepairSystemId,
+  nextEnergyPriorities,
+  prioritizeRepairSystem,
+  type EnergyCategory,
+  type EnergyPriorities,
+} from './energy-repair.ts';
 import { isOfficerPage, stepMapZoom, type OfficerPageId } from './officer-mfd.ts';
 
 export interface CommandHost {
@@ -38,6 +48,12 @@ export interface CommandHost {
   getReinforceAmount(): number;
   setReinforceAmount(points: number): void;
   view(): ViewModel | null;
+  getEnergyPriorities?(): EnergyPriorities;
+  setEnergyPriorities?(priorities: EnergyPriorities): void;
+  getBatteryDischarging?(): boolean;
+  setBatteryDischarging?(on: boolean): void;
+  getRepairQueue?(): readonly string[];
+  setRepairQueue?(order: readonly string[]): void;
 }
 
 const LATER: Record<string, string> = {
@@ -127,6 +143,18 @@ export function runAction(host: CommandHost, id: string): void {
   else if (id === 'craft.mine') host.match.layMine();
   else if (id === 'ops.board') host.match.orderRaid(1, 1);
   else if (id === 'ops.hitAndRun') host.match.orderRaid(0);
+  else if (id.startsWith('energy.priority.')) {
+    const category = id.slice('energy.priority.'.length);
+    if (isEnergyCategory(category)) cyclePriority(host, category);
+  } else if (id === 'energy.battery') toggleBattery(host);
+  else if (id.startsWith('repair.prioritize.')) {
+    const system = id.slice('repair.prioritize.'.length);
+    if (isRepairSystemId(system)) prioritizeRepair(host, system);
+  } else if (id === 'repair.reset') {
+    const next = defaultRepairQueue();
+    host.setRepairQueue?.(next);
+    host.match.setRepairPriority(next);
+  }
 }
 
 function fireGroup(host: CommandHost): void {
@@ -281,4 +309,34 @@ function nearestHostile(host: CommandHost): void {
     return;
   }
   host.match.setTarget(best.id);
+}
+
+function cyclePriority(host: CommandHost, category: EnergyCategory): void {
+  const current =
+    host.getEnergyPriorities?.()
+    ?? host.view()?.self?.energy.priorities
+    ?? DEFAULT_ENERGY_PRIORITIES;
+  const next = nextEnergyPriorities(current, category);
+  host.setEnergyPriorities?.(next);
+  host.match.setEnergyPriorities(next);
+}
+
+function toggleBattery(host: CommandHost): void {
+  const current =
+    host.getBatteryDischarging?.()
+    ?? host.view()?.self?.energy.batteryDischarging
+    ?? true;
+  const next = !current;
+  host.setBatteryDischarging?.(next);
+  host.match.setBattery(next);
+}
+
+function prioritizeRepair(host: CommandHost, system: string): void {
+  const current =
+    host.getRepairQueue?.()
+    ?? host.view()?.self?.damage.repairQueue
+    ?? [];
+  const next = prioritizeRepairSystem(current, system);
+  host.setRepairQueue?.(next);
+  host.match.setRepairPriority(next);
 }

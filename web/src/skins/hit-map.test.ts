@@ -79,6 +79,8 @@ describe('empire skin hit targets', () => {
       if (!first) throw new Error('no skin');
       expect(Number(first.rects['helm-camera']?.split(',')[2])).toBeGreaterThan(0);
       expect(Number(first.rects['space']?.split(',')[2])).toBeGreaterThan(0);
+      expect(Number(first.rects['energy']?.split(',')[2])).toBeGreaterThan(0);
+      expect(Number(first.rects['energy']?.split(',')[3])).toBeGreaterThan(0);
       expect(first.panels.length).toBeGreaterThan(5);
       for (const [index, measure] of measures.entries()) {
         expect(measure.empire).toBe(EMPIRE_SKINS[index]?.id);
