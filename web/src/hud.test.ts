@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatHetDelay, hudLogLine, latestAlert, TICKS_PER_SECOND } from './hud.ts';
+import { formatHetDelay, formatHetReadout, hudLogLine, latestAlert, TICKS_PER_SECOND } from './hud.ts';
 
 describe('HET helm panel', () => {
   it('shows hetDelayTicks as seconds at 30 Hz', () => {
@@ -10,6 +10,13 @@ describe('HET helm panel', () => {
     expect(formatHetDelay({ mode: 'het', hetDelayTicks: 30 })).toBe('1.0 s');
     expect(formatHetDelay({ mode: 'het', hetDelayTicks: 170 })).toBe('5.7 s');
     expect(formatHetDelay(null)).toBe('—');
+    expect(formatHetReadout({ mode: 'none', hetDelayTicks: 0, hetSuccessChance: 100, hetBreakdown: false })).toBe('100%');
+    expect(formatHetReadout({ mode: 'none', hetDelayTicks: 0, hetSuccessChance: 75, hetBreakdown: true })).toBe(
+      '75% breakdown',
+    );
+    expect(formatHetReadout({ mode: 'het', hetDelayTicks: 30, hetSuccessChance: 100, hetBreakdown: false })).toBe(
+      '1.0 s · 100%',
+    );
   });
 
   it('writes hetActive and hetInvalidDir rejections to the log', () => {

@@ -14,6 +14,7 @@ Clean-room. These docs describe mechanisms in our own words. Synthetic fixtures 
 | [smallcraft.md](smallcraft.md) | Fighters launched from a parsed ftrlist, PF launch, mines, and boarding / hit-and-run. Synthetic numbers. |
 | [turning.md](turning.md) | Normal turn curve: per-hull, speed-keyed integer table, fixed-point interpolation, audit expect for `turn.normal.<speed>`, and how `engine/sim` uses it with the letter cap. |
 | [het.md](het.md) | High-Energy Turn (HET): `orderHet` `{ entity, dir }` (verb 13, live in `engine/sim/het.ts`), delay/turn ticks in 16-bit angle units, no speed cutoff, `HelmView` contract. |
+| [needs-ce-reading.md](needs-ce-reading.md) | Placeholder numbers that still need a Community Edition 2.670 gameplay reading. |
 | [shiplist-mapping.md](shiplist-mapping.md) | Raw field → engine field, scale-factor table, weapon and arc table, ftrlist's 36-column header. |
 | [reason-codes.md](reason-codes.md) | `source: "rules"` reason codes. Copied later into `docs/engine/diagnostics.md`. |
 | [mission-entry-points.md](mission-entry-points.md) | `damageSystem`, `damageShield`, `repairSystem`, `setShields`, `setEnergy`, and `ruleResult`. |

@@ -36,6 +36,11 @@ describe('helm view', () => {
       mode: 'heading',
       remainingTurn16: -15536,
       hetDelayTicks: 0,
+      hetSuccessChance: 100,
+      hetBreakdown: false,
+      emerDecelActive: false,
+      emerDecelTicksLeft: 0,
+      erraticActive: false,
     });
     expect(readHelmView(snap(HEADING_STEER, 50000, 0), 0).remainingTurn16).toBe(arc(0, 50000));
     expect(readHelmView(snap(HEADING_STEER, 6000, 0), 0).remainingTurn16).toBe(6000);
@@ -44,6 +49,11 @@ describe('helm view', () => {
       mode: 'heading',
       remainingTurn16: 0,
       hetDelayTicks: 0,
+      hetSuccessChance: 100,
+      hetBreakdown: false,
+      emerDecelActive: false,
+      emerDecelTicksLeft: 0,
+      erraticActive: false,
     });
     expect(readHelmView(snap(HEADING_STEER, 0, 50000), 0).remainingTurn16).toBe(15536);
   });
@@ -53,6 +63,11 @@ describe('helm view', () => {
       mode: 'none',
       remainingTurn16: 0,
       hetDelayTicks: 0,
+      hetSuccessChance: 100,
+      hetBreakdown: false,
+      emerDecelActive: false,
+      emerDecelTicksLeft: 0,
+      erraticActive: false,
     });
     expect(readHelmView(snap(HEADING_STEER, 50000, 0, 0), 0).mode).toBe('none');
     expect(readHelmView(snap(HEADING_STEER, 50000, 0), 1).mode).toBe('none');
@@ -64,6 +79,15 @@ describe('helm view', () => {
       pendingDespawn: [],
       tables: [{ id: 'heading', fieldCount: 1, data: [0] }],
     };
-    expect(readHelmView(bare, 0)).toEqual({ mode: 'none', remainingTurn16: 0, hetDelayTicks: 0 });
+    expect(readHelmView(bare, 0)).toEqual({
+      mode: 'none',
+      remainingTurn16: 0,
+      hetDelayTicks: 0,
+      hetSuccessChance: 100,
+      hetBreakdown: false,
+      emerDecelActive: false,
+      emerDecelTicksLeft: 0,
+      erraticActive: false,
+    });
   });
 });

@@ -22,6 +22,7 @@ import { H, readHull } from './hull.ts';
 import { rulesDiv } from './rules-div.ts';
 import { CLASS_FIGHTER, turnHasRate, turnImmobile } from './rules-tables.ts';
 import { TC, curveRow, hetActive, normalDelayFor, setCurveDelay, turnRateFor, usesCurve } from './turn-curve.ts';
+import { breakdownLeft, erraticOn } from './duel-helm.ts';
 
 /** Free verbs. 1–11 and 20–27 are combat, allegiance, phase-3, and small craft. */
 export const VERB_ORDER_HEADING = 12;
@@ -57,6 +58,8 @@ export const HEADING_NOT_SHIP = 6;
 export const HEADING_DESTROYED = 7;
 /** A High-Energy Turn is pending or running (hetActive). */
 export const HEADING_HET_ACTIVE = 8;
+/** Helm is locked after a failed High-Energy Turn. */
+export const HEADING_BREAKDOWN = 9;
 
 export function headingPayload(entity: number, heading16: number): Uint8Array {
   const out = new Uint8Array(8);
@@ -105,6 +108,10 @@ function applyHeading(world: World, cmd: Command, ctx: TickContext): void {
   }
   if (hetActive(world, id) === 1) {
     reject(ctx, id as number, HEADING_HET_ACTIVE);
+    return;
+  }
+  if (breakdownLeft(world, id) > 0) {
+    reject(ctx, id as number, HEADING_BREAKDOWN);
     return;
   }
   const fields = readHull(world, id);
@@ -160,6 +167,7 @@ function steerOne(world: World, id: EntityId): void {
   }
   if (turnHasRate(fields[H.turnMode]!) === 0) return;
   if (hetActive(world, id) === 1) return;
+  if (breakdownLeft(world, id) > 0 || erraticOn(world, id)) return;
   const cap = turnRateFor(world, id, fields);
   if (cap < 0) return;
   const aim = (order[HORD.heading] ?? 0) & 0xffff;

@@ -160,3 +160,13 @@ Tests: `engine/sim/het.test.ts` runs both directions, the §5 timing, `K-D7` and
 - Wall-clock (`w`) HET rate cells (where `game_s_per_wall_s` was outside `0.5–1.5`) remain **TO VERIFY** against a game-clock read; they are listed on the hull rows above.
 - Energy cost, `hetChance` / `hetBreakdown` shiplist columns, breakdown effects, cooldowns, and whether `orderHeading` / `orderHelm` / a second `orderHet` can cancel an in-flight HET (the sim refuses all three for now).
 - Whether a crew-disabled or tractored ship finishes an HET already in flight (the sim lets it finish).
+
+## 6. Free-angle, 180°, and the success roll
+
+`orderHet` still takes `{ entity, dir }` with `dir` of −1 or +1, and the sweep stays the table angle. A 12-byte payload adds a signed BAM sweep (`hetAnglePayload`). The magnitude may be 0 through 32768. 0 holds the bow through the delay. 32768 is half a circle to starboard, which is what the aft helm button sends. Rate and delay still come from the table.
+
+The helm pad uses that free-angle verb for the arrows that are not port and starboard: 45° and 135° to either side, ahead (sweep 0), 180°, and the centre button, which sends the short-way arc still left on the ordered heading.
+
+Success is published on `HelmView.hetSuccessChance`. It is 100 until erratic maneuvers are on, and a 100 does not draw. Below 100 the combat stream rolls. A failure is `HET_BREAKDOWN`: one shield point off a random facing, and helm, heading, and further HET orders lock for `hetBreakdownTicks`. Those magnitudes are placeholders ([needs-ce-reading.md](needs-ce-reading.md)).
+
+Emergency deceleration and the capacitor recharge rate live in `engine/sim/duel-helm.ts`. They are the same placeholder list.

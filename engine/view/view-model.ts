@@ -31,6 +31,7 @@ import {
   EVENT_HELM,
   HELM_DESTROYED,
   HELM_DISABLED,
+  HELM_BREAKDOWN,
   HELM_HET_ACTIVE,
   HELM_IMMOBILE,
   HELM_NOT_SHIP,
@@ -71,11 +72,13 @@ import {
 } from '../sim/rules-tables.ts';
 import { curveRowOf, rateFromRow } from '../sim/turn-curve.ts';
 import { readPower, type PowerView } from '../sim/power.ts';
+import { CAPACITOR_RATE_SCALE, capacitorRateOf } from '../sim/duel-helm.ts';
 import {
   EVENT_HET,
   HET_ACTIVE,
   HET_DESTROYED,
   HET_DISABLED,
+  HET_BREAKDOWN,
   HET_DONE,
   HET_IMMOBILE,
   HET_INVALID_DIR,
@@ -233,6 +236,11 @@ export interface SelfView {
   readonly craft: CraftReadout;
   readonly shieldState: 'down' | 'minimal' | 'up';
   readonly damage: DamageView;
+  /** Phaser capacitor pool, in the same display energy units as `energy`. */
+  readonly capacitorCharge: number;
+  readonly capacitorCapacity: number;
+  /** Last ordered recharge rate, 0–1. 1 is the full rate. */
+  readonly capacitorRate: number;
 }
 
 export interface ContactView {
@@ -323,6 +331,16 @@ function rangeBandsOf(def: WeaponDef | undefined): number[] {
     if (reach > 0) bands.push(reach);
   }
   return bands;
+}
+
+function capacitorCapacityOf(mounts: readonly { weaponId: number }[]): number {
+  let sum = 0;
+  for (const mount of mounts) {
+    const def = weaponDef(mount.weaponId);
+    if (!def || def.internal !== INTERNAL_PHASER || def.chargeCost <= 0) continue;
+    sum += def.chargeCost;
+  }
+  return sum;
 }
 
 function rangeMaxOf(def: WeaponDef | undefined): number {
@@ -440,6 +458,7 @@ function helmId(code: number): string {
   if (code === HELM_NOT_SHIP) return 'notAShip';
   if (code === HELM_DESTROYED) return 'shipDestroyed';
   if (code === HELM_HET_ACTIVE) return 'hetActive';
+  if (code === HELM_BREAKDOWN) return 'hetBreakdown';
   return 'helm';
 }
 
@@ -453,6 +472,7 @@ function hetId(code: number): string {
   if (code === HET_NO_SHIP) return 'noSuchShip';
   if (code === HET_NOT_SHIP) return 'notAShip';
   if (code === HET_DESTROYED) return 'shipDestroyed';
+  if (code === HET_BREAKDOWN) return 'hetBreakdown';
   return 'het';
 }
 
@@ -787,6 +807,9 @@ export function buildViewModel(input: ViewBuildInput): ViewModel {
         craft: craftReadout(curr, input.selfIndex),
         shieldState: power?.shieldState ?? 'up',
         damage: damageView(ship, power),
+        capacitorCharge: toDisplayEnergy(ship.capacitor100),
+        capacitorCapacity: capacitorCapacityOf(ship.mounts),
+        capacitorRate: capacitorRateOf(curr, input.selfIndex) / CAPACITOR_RATE_SCALE,
       };
     }
   }

@@ -195,13 +195,27 @@ export function hitChance(shift: number): { num: number; den: number } {
   return { num: den - penalty, den };
 }
 
+export interface ErraticShot {
+  readonly targetEcm: number;
+  readonly shooterPenalty: number;
+}
+
+const NO_ERRATIC: ErraticShot = { targetEcm: 0, shooterPenalty: 0 };
+
 /** True when the combat stream says the shot missed. Certainty does not draw. */
-export function shotMisses(ctx: TickContext, attacker: readonly number[], target: readonly number[]): boolean {
-  const shift = ewShift(attacker[H.eccmPaid]!, target[H.ecmPaid]!, target[H.stealth]!);
+export function shotMisses(
+  ctx: TickContext,
+  attacker: readonly number[],
+  target: readonly number[],
+  erratic: ErraticShot = NO_ERRATIC,
+): boolean {
+  const shift = ewShift(attacker[H.eccmPaid]!, target[H.ecmPaid]! + erratic.targetEcm, target[H.stealth]!);
   const chance = hitChance(shift);
-  if (chance.num >= chance.den) return false;
-  if (chance.num <= 0) return true;
-  return !ctx.rng.stream('combat').chance(chance.num, chance.den);
+  let num = chance.num - erratic.shooterPenalty;
+  if (erratic.shooterPenalty > 0 && num < EW_HIT_FLOOR) num = EW_HIT_FLOOR;
+  if (num >= chance.den) return false;
+  if (num <= 0) return true;
+  return !ctx.rng.stream('combat').chance(num, chance.den);
 }
 
 function spotBit(index: number): number {
