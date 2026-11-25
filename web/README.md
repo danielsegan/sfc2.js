@@ -7,7 +7,7 @@ Browser application. Two pages, two Vite configs:
 | Tactical duel | `pnpm dev:web` | 5174 | Skirmish of up to six ships |
 | Ship viewer | `pnpm dev:viewer` | 4174 | Phase 1 catalog. Every shiplist row, spun with its texture |
 
-The install picker is `@sfc2js/platform`: `preferredDirectoryPicker()` uses the File System Access API when the browser has it, and a `webkitdirectory` input otherwise. `importZipArchive` reads a zip the player supplies. `pickAndImport` indexes the result. Textures are loaded with `@sfc2js/render`'s `loadShipTexture`. Nothing is uploaded. See [docs/formats/bmp.md](../docs/formats/bmp.md).
+The install picker is `@sfc2js/platform`: `preferredDirectoryPicker()` uses the File System Access API when the browser has it, and a `webkitdirectory` input otherwise. Inside the Tauri shell it uses the native folder dialog instead. Browser behavior is unchanged. `importZipArchive` reads a zip the player supplies. `pickAndImport` indexes the result. Textures are loaded with `@sfc2js/render`'s `loadShipTexture`. Nothing is uploaded. See [docs/formats/bmp.md](../docs/formats/bmp.md).
 
 ## Tests
 

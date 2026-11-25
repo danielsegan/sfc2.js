@@ -23,3 +23,9 @@ export {
   type BuildInfo,
   type ImportResult,
 } from './import-install.ts';
+export {
+  isTauriRuntime,
+  tauriDirectoryPicker,
+  type InstallFolderBridge,
+  type InstallFolderEntry,
+} from './tauri-install.ts';

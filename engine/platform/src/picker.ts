@@ -1,8 +1,11 @@
 /**
  * Directory pickers. Chromium uses the File System Access API.
  * Other browsers get a directory file input (`webkitdirectory`).
- * Tests pass an in-memory picker and never touch a real disk.
+ * The Tauri shell uses a native folder dialog. Tests pass an
+ * in-memory picker and never touch a real disk.
  */
+
+import { isTauriRuntime, tauriDirectoryPicker } from './tauri-install.ts';
 
 export interface PickedFile {
   /** Path relative to the picked directory, before install-root rebasing. */
@@ -17,7 +20,7 @@ export type PickResult =
   | { readonly status: 'unavailable' };
 
 export interface DirectoryPicker {
-  readonly kind: 'file-system-access' | 'input-directory' | 'memory';
+  readonly kind: 'file-system-access' | 'input-directory' | 'memory' | 'tauri';
   pick(): Promise<PickResult>;
 }
 
@@ -43,8 +46,12 @@ export function memoryDirectoryPicker(files: readonly PickedFile[]): DirectoryPi
 }
 
 export function directoryPickerKind(
-  scope: { showDirectoryPicker?: unknown } = globalThis as { showDirectoryPicker?: unknown },
-): 'file-system-access' | 'input-directory' {
+  scope: { showDirectoryPicker?: unknown; __TAURI_INTERNALS__?: unknown } = globalThis as {
+    showDirectoryPicker?: unknown;
+    __TAURI_INTERNALS__?: unknown;
+  },
+): 'tauri' | 'file-system-access' | 'input-directory' {
+  if (isTauriRuntime(scope)) return 'tauri';
   return typeof scope.showDirectoryPicker === 'function' ? 'file-system-access' : 'input-directory';
 }
 
@@ -113,10 +120,21 @@ export function inputDirectoryPicker(
   };
 }
 
-export function preferredDirectoryPicker(): DirectoryPicker {
-  return directoryPickerKind() === 'file-system-access'
-    ? fileSystemAccessPicker()
-    : inputDirectoryPicker();
+export function preferredDirectoryPicker(
+  scope: { showDirectoryPicker?: unknown; __TAURI_INTERNALS__?: unknown } = globalThis as {
+    showDirectoryPicker?: unknown;
+    __TAURI_INTERNALS__?: unknown;
+  },
+): DirectoryPicker {
+  const kind = directoryPickerKind(scope);
+  if (kind === 'tauri') return tauriDirectoryPicker();
+  if (kind === 'file-system-access') {
+    const show = scope.showDirectoryPicker;
+    return typeof show === 'function'
+      ? fileSystemAccessPicker(show as ShowDirectoryPicker)
+      : fileSystemAccessPicker();
+  }
+  return inputDirectoryPicker();
 }
 
 async function collectHandleFiles(

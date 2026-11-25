@@ -7,6 +7,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@sfc2js/formats": "workspace:*"
+    "@sfc2js/formats": "workspace:*",
+    "@tauri-apps/api": "^2.12.5"
   }
 }

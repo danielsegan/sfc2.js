@@ -6,7 +6,7 @@ const mathBanned = [
 ].map((property) => ({ object: 'Math', property, message: 'banned in sim packages' }));
 
 export default tseslint.config(
-  { ignores: ['node_modules/**', 'dist/**', '**/*.test.ts', 'tools/**'] },
+  { ignores: ['node_modules/**', 'dist/**', '**/target/**', '**/*.test.ts', 'tools/**'] },
   {
     files: ['engine/core/**/*.ts', 'engine/sim/**/*.ts'],
     languageOptions: {
