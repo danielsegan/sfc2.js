@@ -65,6 +65,33 @@ Weapons probes start from speed 0 (the wp4 setup), not leftover combat speed. La
 POWER / SYSTEMS / OTHER / EXCESS OCR uses a wider crop, 600% scale and a white border. Values outside 0–80 are stored as `null` rather than three-digit misreads (for example 15.0 read as 115 on a frigate).
 
 
+
+## Published ship-audit envelope
+
+`build_envelope.py` builds the combined harness file used by `tools/ship-audit`.
+Rules for every published audit:
+
+- Exclude `het_pad_deg=135` rows. Do not delete the source files.
+- Do not re-import extras that match a canonical hull-file skipped cell
+  (for example `s31-port:damaged`), by spawnKey+speed+button or by the
+  skipped token appearing in the run label.
+- Add an extra only when `(spawnKey, label)` is not already present.
+  Canonical rows may keep multiple samples per label.
+
+```sh
+python3 tools/ce-harness/build_envelope.py \
+  --canonical ~/harness/tier2/results \
+  --extra ~/harness/out/results-tagged-audit.json \
+  --extra ~/harness/out/results-normal-audit.json \
+  --extra ~/harness/out/results-ca-audit.json \
+  --extra ~/harness/out/results-tier2-stop.json \
+  --out ~/harness/out/results-tier2-excl135.json
+python3 -m unittest tools/ce-harness/test_build_envelope.py
+```
+
+Then score with `tools/ship-audit` from a full git archive of the intended
+main SHA (never copied-over ship-audit files on an older tree).
+
 ## Run on the VM by hand
 
 ```sh
