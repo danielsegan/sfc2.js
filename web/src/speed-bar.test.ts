@@ -1,16 +1,24 @@
 import { describe, expect, it } from 'vitest';
-import { barFractionFromClientX, speedBarGesture, speedFromBarFraction } from './speed-bar.ts';
+import { barFractionFromClientX, formatSpeed, SPEED_ORDER_STEP, speedBarGesture, speedFromBarFraction } from './speed-bar.ts';
 
 describe('speed bar mapping', () => {
-  it('rounds a click or drag position to a whole speed in 0..max', () => {
+  it('maps a click or drag position to 0..max at the verb\'s native integer step', () => {
+    expect(SPEED_ORDER_STEP).toBe(1);
     expect(speedFromBarFraction(0, 32)).toBe(0);
     expect(speedFromBarFraction(1, 32)).toBe(32);
     expect(speedFromBarFraction(0.5, 32)).toBe(16);
     expect(speedFromBarFraction(0.51, 32)).toBe(16);
+    expect(speedFromBarFraction(15.5 / 32, 32)).toBe(16);
+    expect(speedFromBarFraction(15.4 / 32, 32)).toBe(15);
     expect(speedFromBarFraction(-0.2, 32)).toBe(0);
     expect(speedFromBarFraction(1.4, 32)).toBe(32);
     expect(speedFromBarFraction(0.5, 0)).toBe(0);
     expect(speedFromBarFraction(Number.NaN, 32)).toBe(0);
+  });
+
+  it('would keep a tenth-unit value if the verb later accepted fractions', () => {
+    expect(speedFromBarFraction(0.51, 32, 0.1)).toBeCloseTo(16.3, 10);
+    expect(speedFromBarFraction(15.4 / 32, 32, 0.1)).toBeCloseTo(15.4, 10);
   });
 
   it('converts a client X into a 0–1 fraction of the bar', () => {
@@ -26,5 +34,12 @@ describe('speed bar mapping', () => {
     expect(speedBarGesture('pointerup', 0, true)).toBe('end');
     expect(speedBarGesture('pointercancel', 0, true)).toBe('end');
     expect(speedBarGesture('pointerup', 0, false)).toBe('ignore');
+  });
+
+  it('formats current and ordered speed with one decimal', () => {
+    expect(formatSpeed(0)).toBe('0.0');
+    expect(formatSpeed(4)).toBe('4.0');
+    expect(formatSpeed(15.4)).toBe('15.4');
+    expect(formatSpeed(Number.NaN)).toBe('0.0');
   });
 });

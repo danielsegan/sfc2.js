@@ -382,12 +382,14 @@
     </section>
     <div id="bottom-bar" class="hud-bar hud-bar-bottom" role="region" aria-label="Lower display">
       <div class="bar-cluster speed-block">
-        <span id="field-speed" class="num">0</span>
+        <span id="field-speed" class="num">0.0</span>
+        <button type="button" id="field-speed-dec" class="speed-step" data-action="helm.speedDown" aria-label="Decrease ordered speed by 1.0">&lt;</button>
         <div id="field-speed-bar" class="speed-bar" role="slider" aria-valuemin="0" aria-valuemax="32" aria-valuenow="0" aria-label="Desired speed" tabindex="0">
           <span id="field-speed-fill"></span>
           <span id="field-speed-marker"></span>
           <span id="field-speed-power" hidden></span>
         </div>
+        <button type="button" id="field-speed-inc" class="speed-step" data-action="helm.speedUp" aria-label="Increase ordered speed by 1.0">&gt;</button>
         <div class="turn-gauge" aria-label="Turn rate">
           <span id="field-turn-fill"></span>
         </div>

@@ -19,7 +19,7 @@ import { devInstallUrl } from '../dev-install-shared.ts';
 import { DuelScene } from './scene.ts';
 import { hudScaleFromLocation, paintFieldHud } from './field-hud.ts';
 import { speedScale } from './tactical/frame.ts';
-import { barFractionFromClientX, speedBarGesture, speedFromBarFraction } from './speed-bar.ts';
+import { barFractionFromClientX, formatSpeed, speedBarGesture, speedFromBarFraction } from './speed-bar.ts';
 import type { SchematicMode, SystemMfdPage } from './schematic.ts';
 import { clampReinforceAmount, REINFORCE_STEP, selectFacing, toggleAllFacings } from './shield-select.ts';
 import { selectWeaponClassSlots, toggleSlot } from './weapon-select.ts';
@@ -326,6 +326,7 @@ document.body.addEventListener('click', (event) => {
   audio.unlock();
   audio.play(['ui.click'], performance.now());
   runAction(host, action);
+  syncSpeedInput();
 });
 
 document.getElementById('shields')?.addEventListener('click', (event) => {
@@ -483,8 +484,6 @@ speedBar?.addEventListener('pointermove', (event) => {
 speedBar?.addEventListener('pointerup', (event) => releaseSpeedBar(speedBar, event));
 speedBar?.addEventListener('pointercancel', (event) => releaseSpeedBar(speedBar, event));
 speedBar?.addEventListener('wheel', (event) => {
-  match.bumpSpeed(event.deltaY > 0 ? -1 : 1);
-  syncSpeedInput();
   event.preventDefault();
 }, { passive: false });
 document.getElementById('field-cap')?.addEventListener('pointerdown', (event) => {
@@ -530,7 +529,9 @@ function setSpeedFromBar(clientX: number): void {
   const rect = bar.getBoundingClientRect();
   const fraction = barFractionFromClientX(clientX, rect.left, rect.width);
   const max = speedScale(latest?.self ?? null).max;
-  match.setSpeed(speedFromBarFraction(fraction, max));
+  const next = speedFromBarFraction(fraction, max);
+  if (next === match.plan.speed) return;
+  match.setSpeed(next);
   syncSpeedInput();
 }
 
@@ -635,7 +636,7 @@ function typing(event: KeyboardEvent): boolean {
 function syncSpeedInput(): void {
   const input = document.getElementById('ordered-speed');
   if (input instanceof HTMLInputElement && document.activeElement !== input) {
-    input.value = String(match.plan.speed);
+    input.value = formatSpeed(match.plan.speed);
   }
 }
 

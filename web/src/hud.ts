@@ -14,6 +14,7 @@ import {
   type SchematicMode,
 } from './schematic.ts';
 import { FACING_NAMES, formatFacingList, normalizeFacings } from './shield-select.ts';
+import { formatSpeed } from './speed-bar.ts';
 import { supportsProximity } from './weapon-select.ts';
 
 /** Sim ticks are 30 Hz. HET delay is shown in seconds. */
@@ -87,7 +88,7 @@ export function updateHud(vm: ViewModel, roster: readonly RosterEntry[], hud: Hu
   }
   const energy = document.getElementById('energy');
   energy?.classList.toggle('overdraw', self?.energy.lastReason === 'overDraw');
-  syncField('ordered-speed', String(plan.speed));
+  syncField('ordered-speed', formatSpeed(plan.speed));
   syncField('general', String(plan.general));
   syncCheck('life', plan.lifeSupport);
   syncCheck('fire-control', plan.fireControl);

@@ -596,6 +596,14 @@ section[aria-label="Helm"] .presets { margin: 2px 0; }
 #field-systems-fill { background: var(--state-warning); }
 #field-target-fill { background: var(--state-hostile); }
 .speed-bar { width: calc(140px * var(--hud-scale)); cursor: ew-resize; touch-action: none; }
+.speed-step {
+  width: calc(18px * var(--hud-scale));
+  min-width: calc(18px * var(--hud-scale));
+  height: calc(18px * var(--hud-scale));
+  padding: 0;
+  font-size: calc(12px * var(--hud-scale));
+  line-height: 1;
+}
 #field-speed-marker, #field-speed-power {
   position: absolute;
   top: -2px;
