@@ -78,6 +78,7 @@ Thumbs.db
 # are produced at run time and must stay out of git.
 tools/tutorial/.cache/
 tools/tutorial/out/
+tools/tutorial/out-v2/
 
 # Likely install / rip locations
 assets/original/

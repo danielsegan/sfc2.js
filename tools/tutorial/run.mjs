@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 /**
- * One-command tutorial capture.
+ * Tutorial capture.
  *
  * Builds the web app, serves the production build on port 1701, drives
- * it with Playwright at 1920x1080, speaks the script with Piper, and
- * muxes a captioned MP4. No game install is mounted.
+ * it with Playwright at 1920x1080, speaks the script, and muxes a
+ * captioned MP4. No game install is mounted.
  *
- *   pnpm tutorial
+ *   pnpm tutorial        v1, Piper
+ *   pnpm tutorial:v2     v2, Kokoro (pass --tts piper to fall back)
  */
 import { spawn } from 'node:child_process';
 import { copyFileSync, createWriteStream, existsSync, mkdirSync, rmSync } from 'node:fs';
@@ -14,16 +15,24 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { recordSession } from './capture.mjs';
 import { buildNarration, ffprobe, grabFrames, muxVideo, writeCaptions, writeScript } from './mux.mjs';
-import { OPEN_MS, PAD_MS, segments } from './segments.mjs';
-import { VOICE_ID, ensurePiper, probeDuration, synthesize } from './tts.mjs';
+import * as v1 from './segments.mjs';
+import * as v2 from './segments-v2.mjs';
+import { ensureKokoro, synthesizeKokoro, VOICE_ID as KOKORO_VOICE_ID } from './tts-kokoro.mjs';
+import { VOICE_ID as PIPER_VOICE_ID, ensurePiper, probeDuration, synthesize } from './tts.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const cacheDir = join(root, 'tools/tutorial/.cache');
-const outDir = join(root, 'tools/tutorial/out');
-const scriptPath = join(root, 'docs/tutorial/script.md');
 const TAIL_MS = 400;
-const MIN_MS = 120_000;
-const MAX_MS = 240_000;
+
+const v1Doc = {
+  title: 'SFC2.js control tutorial',
+  lede: 'Narration for the 1080p capture of the production web build. Vite preview serves it on port 1701. The page boots the synthetic skirmish and the banner names `engine/duel/fixture.ts`. No install is mounted and no game files are read.',
+  voiceNote: 'Piper sentence gap is 0.12 s. There is no music. Captions are burned in, and the key line names the control for that segment.',
+  notes: 'The capture selects UI scale 1× before the first paint so the field and the console both fit in 1920×1080. The page\'s own fit at this size is 1.25×. Time scale stays on the page default of 4× until the high-energy-turn segment sets it to 1×, then puts it back to 4×.',
+  skipped: v1.skipped,
+  notInCut: v1.notInCut,
+  sources: v1.sources,
+};
 
 function argValue(flag) {
   const index = process.argv.indexOf(flag);
@@ -103,8 +112,54 @@ function fontsDir() {
   throw new Error('DejaVu Sans is required for the burned-in captions.');
 }
 
-async function speak(piper, chosen, lengthScale) {
-  const voiceDir = join(outDir, 'voice');
+function lessonFromArgs() {
+  const name = argValue('--lesson') ?? process.env.TUTORIAL_LESSON ?? 'v1';
+  if (name === 'v1') {
+    return {
+      id: 'v1',
+      segments: v1.segments,
+      openMs: v1.OPEN_MS,
+      padMs: v1.PAD_MS,
+      minMs: 120_000,
+      maxMs: 240_000,
+      targetMs: 175_000,
+      outDir: join(root, 'tools/tutorial/out'),
+      scriptPath: join(root, 'docs/tutorial/script.md'),
+      mp4Name: 'sfc2js-tutorial-1080p.mp4',
+      artifactMp4: 'sfc2js-tutorial-1080p.mp4',
+      artifactScript: 'sfc2js-tutorial-script.md',
+      framePrefix: 'tutorial-',
+      frameNames: ['intro', 'weapons', 'shields', 'mouse', 'het', 'close'],
+      tts: 'piper',
+      doc: v1Doc,
+    };
+  }
+  if (name === 'v2') {
+    return {
+      id: 'v2',
+      segments: v2.segments,
+      openMs: v2.OPEN_MS,
+      padMs: v2.PAD_MS,
+      minMs: 240_000,
+      maxMs: 360_000,
+      targetMs: 300_000,
+      outDir: join(root, 'tools/tutorial/out-v2'),
+      scriptPath: join(root, 'docs/tutorial/script-v2.md'),
+      mp4Name: 'sfc2js-tutorial-v2.mp4',
+      artifactMp4: 'sfc2js-tutorial-v2.mp4',
+      artifactScript: 'script-v2.md',
+      framePrefix: 'tutorial-v2-',
+      frameNames: ['intro', 'presets', 'arming', 'shields', 'arcs', 'het', 'close'],
+      tts: argValue('--tts') ?? 'kokoro',
+      doc: v2.doc,
+    };
+  }
+  throw new Error(`unknown lesson ${name}`);
+}
+
+async function speakPiper(lesson, chosen, lengthScale) {
+  const piper = await ensurePiper(cacheDir);
+  const voiceDir = join(lesson.outDir, 'voice');
   mkdirSync(voiceDir, { recursive: true });
   let total = 0;
   for (const segment of chosen) {
@@ -120,11 +175,26 @@ async function speak(piper, chosen, lengthScale) {
     segment.audioMs = await probeDuration(dest);
     total += segment.audioMs;
   }
-  return total;
+  return { total, voiceId: PIPER_VOICE_ID };
 }
 
-function estimate(chosen) {
-  return OPEN_MS + TAIL_MS + chosen.reduce((sum, segment) => sum + segment.audioMs + PAD_MS, 0);
+async function speakKokoro(lesson, chosen, speed) {
+  const kokoro = await ensureKokoro(cacheDir);
+  const voiceDir = join(lesson.outDir, 'voice');
+  mkdirSync(voiceDir, { recursive: true });
+  let total = 0;
+  for (const segment of chosen) {
+    const dest = join(voiceDir, `${segment.id}.wav`);
+    await synthesizeKokoro({ ...kokoro, text: segment.narration, dest, speed });
+    segment.wav = dest;
+    segment.audioMs = await probeDuration(dest);
+    total += segment.audioMs;
+  }
+  return { total, voiceId: KOKORO_VOICE_ID };
+}
+
+function estimate(lesson, chosen) {
+  return lesson.openMs + TAIL_MS + chosen.reduce((sum, segment) => sum + segment.audioMs + lesson.padMs, 0);
 }
 
 async function main() {
@@ -132,10 +202,13 @@ async function main() {
   if (!Number.isInteger(port) || port < 1) throw new Error('bad port');
   const screenshot = hasFlag('--screenshot');
   const skipBuild = hasFlag('--skip-build');
+  const lesson = lessonFromArgs();
+  const outDir = lesson.outDir;
+  const scriptPath = lesson.scriptPath;
   const only = argValue('--only');
   const chosen = only
-    ? segments.filter((segment) => only.split(',').includes(segment.id))
-    : segments;
+    ? lesson.segments.filter((segment) => only.split(',').includes(segment.id))
+    : lesson.segments;
   if (chosen.length === 0) throw new Error('no segments selected');
   const env = cleanEnv();
   const origin = `http://127.0.0.1:${port}`;
@@ -159,30 +232,52 @@ async function main() {
     console.log(`Preview is up at ${origin}`);
     if (screenshot) {
       const shot = join(outDir, 'layout.png');
-      const result = await recordSession({ origin, segments: chosen, outDir, screenshot: shot });
+      const result = await recordSession({
+        origin,
+        segments: chosen,
+        outDir,
+        screenshot: shot,
+        openMs: lesson.openMs,
+        padMs: lesson.padMs,
+      });
       console.log(`layout ${JSON.stringify(result.layout)}`);
       console.log(`screenshot ${shot}`);
       return;
     }
 
-    const piper = await ensurePiper(cacheDir);
-    let lengthScale = Number(argValue('--length-scale') ?? '1');
-    console.log(`Synthesizing narration at length scale ${lengthScale}`);
-    let spoken = await speak(piper, chosen, lengthScale);
-    if (!only && !argValue('--length-scale') && spoken > 200_000) {
-      lengthScale = Math.max(0.86, 175_000 / spoken);
-      lengthScale = Math.round(lengthScale * 100) / 100;
-      console.log(`Speech is ${Math.round(spoken / 1000)}s. Resynthesizing at ${lengthScale}.`);
-      spoken = await speak(piper, chosen, lengthScale);
+    const engine = lesson.tts;
+    if (engine !== 'piper' && engine !== 'kokoro') throw new Error(`unknown tts ${engine}`);
+    let pace = Number(argValue('--length-scale') ?? (engine === 'kokoro' ? '1' : '1'));
+    console.log(`Lesson ${lesson.id}. Synthesizing with ${engine} at ${pace}`);
+    let spoken = engine === 'kokoro'
+      ? await speakKokoro(lesson, chosen, pace)
+      : await speakPiper(lesson, chosen, pace);
+    if (!only && !argValue('--length-scale')) {
+      const plannedNow = estimate(lesson, chosen);
+      if (plannedNow < lesson.minMs || plannedNow > lesson.maxMs) {
+        const ratio = engine === 'kokoro' ? spoken.total / lesson.targetMs : lesson.targetMs / spoken.total;
+        const next = Math.round(pace * ratio * 100) / 100;
+        pace = Math.min(1.15, Math.max(engine === 'kokoro' ? 0.75 : 0.86, next));
+        console.log(`Speech is ${Math.round(spoken.total / 1000)}s. Resynthesizing at ${pace}.`);
+        spoken = engine === 'kokoro'
+          ? await speakKokoro(lesson, chosen, pace)
+          : await speakPiper(lesson, chosen, pace);
+      }
     }
-    const planned = estimate(chosen);
-    console.log(`Planned duration ${Math.round(planned / 1000)}s (speech ${Math.round(spoken / 1000)}s)`);
-    if (!only && (planned < MIN_MS || planned > MAX_MS)) {
-      throw new Error(`Planned duration ${planned}ms is outside ${MIN_MS}-${MAX_MS}.`);
+    const planned = estimate(lesson, chosen);
+    console.log(`Planned duration ${Math.round(planned / 1000)}s (speech ${Math.round(spoken.total / 1000)}s)`);
+    if (!only && (planned < lesson.minMs || planned > lesson.maxMs)) {
+      throw new Error(`Planned duration ${planned}ms is outside ${lesson.minMs}-${lesson.maxMs}.`);
     }
 
     rmSync(join(outDir, 'capture.webm'), { force: true });
-    const recorded = await recordSession({ origin, segments: chosen, outDir });
+    const recorded = await recordSession({
+      origin,
+      segments: chosen,
+      outDir,
+      openMs: lesson.openMs,
+      padMs: lesson.padMs,
+    });
     const capturePath = join(outDir, 'capture.webm');
     copyFileSync(recorded.videoPath, capturePath);
     console.log(
@@ -195,18 +290,18 @@ async function main() {
       path: captions,
       segments: chosen,
       walls: recorded.walls,
-      openMs: OPEN_MS,
+      openMs: lesson.openMs,
       marginV,
     });
     const narration = join(outDir, 'narration.wav');
     await buildNarration({
       segments: chosen,
       walls: recorded.walls,
-      openMs: OPEN_MS,
+      openMs: lesson.openMs,
       tailMs: contentMs,
       dest: narration,
     });
-    const mp4 = argValue('--out') ?? process.env.TUTORIAL_OUT ?? join(outDir, 'sfc2js-tutorial-1080p.mp4');
+    const mp4 = argValue('--out') ?? process.env.TUTORIAL_OUT ?? join(outDir, lesson.mp4Name);
     console.log('Muxing');
     await muxVideo({
       videoPath: capturePath,
@@ -222,10 +317,11 @@ async function main() {
         path: scriptPath,
         segments: chosen,
         walls: recorded.walls,
-        openMs: OPEN_MS,
-        voice: VOICE_ID,
-        lengthScale,
+        openMs: lesson.openMs,
+        voice: spoken.voiceId,
+        lengthScale: pace,
         port,
+        doc: lesson.doc,
       });
     }
     const info = await ffprobe(mp4);
@@ -239,10 +335,10 @@ async function main() {
       throw new Error(`expected 1920x1080, got ${video?.width}x${video?.height}`);
     }
     if (!audio) throw new Error('mux produced no audio stream');
-    if (!only && (duration < MIN_MS / 1000 || duration > MAX_MS / 1000)) {
-      throw new Error(`duration ${duration}s is outside 120-240s`);
+    if (!only && (duration < lesson.minMs / 1000 || duration > lesson.maxMs / 1000)) {
+      throw new Error(`duration ${duration}s is outside ${lesson.minMs / 1000}-${lesson.maxMs / 1000}s`);
     }
-    let cursor = OPEN_MS;
+    let cursor = lesson.openMs;
     const frames = [['open', 300]];
     for (const [index, segment] of chosen.entries()) {
       frames.push([segment.id, cursor + Math.min(800, recorded.walls[index] / 3)]);
@@ -252,11 +348,11 @@ async function main() {
     await grabFrames(mp4, frames, frameDir);
     const artifactDir = '/opt/cursor/artifacts';
     if (existsSync(artifactDir)) {
-      copyFileSync(mp4, join(artifactDir, 'sfc2js-tutorial-1080p.mp4'));
-      if (existsSync(scriptPath)) copyFileSync(scriptPath, join(artifactDir, 'sfc2js-tutorial-script.md'));
-      for (const name of ['intro', 'weapons', 'shields', 'mouse', 'het', 'close']) {
+      copyFileSync(mp4, join(artifactDir, lesson.artifactMp4));
+      if (existsSync(scriptPath)) copyFileSync(scriptPath, join(artifactDir, lesson.artifactScript));
+      for (const name of lesson.frameNames) {
         const src = join(frameDir, `${name}.png`);
-        if (existsSync(src)) copyFileSync(src, join(artifactDir, `tutorial-${name}.png`));
+        if (existsSync(src)) copyFileSync(src, join(artifactDir, `${lesson.framePrefix}${name}.png`));
       }
     }
     console.log(`Wrote ${mp4}`);
