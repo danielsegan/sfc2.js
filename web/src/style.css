@@ -127,6 +127,18 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   max-height: calc(var(--chrome-console-max) / var(--ui-scale));
   overflow: auto;
 }
+body.console-collapsed #console {
+  display: none;
+}
+.console-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 8px;
+}
+.console-toolbar button,
+#bottom-bar [data-action="hud.toggleInterfaceBar"] {
+  font-size: 12px;
+}
 
 .top, .skirmish, #console, .float, .keys, #notice { zoom: var(--ui-scale); }
 

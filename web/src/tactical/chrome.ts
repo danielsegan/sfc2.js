@@ -12,13 +12,23 @@ export interface ChromeBudget {
   readonly topBar: number;
   readonly bottomBar: number;
   readonly fieldMin: number;
+  readonly consoleCollapsed: boolean;
+}
+
+export interface ChromeBudgetOptions {
+  /** When true, #console is hidden and its height is added to the field. */
+  readonly consoleCollapsed?: boolean;
 }
 
 /**
  * Split a viewport so the play field keeps a usable height at
  * 1.0–4.0× HUD scale. Values are CSS pixels after `--ui-scale` zoom.
  */
-export function fieldChromeBudget(viewportHeight: number, hudScale: number): ChromeBudget {
+export function fieldChromeBudget(
+  viewportHeight: number,
+  hudScale: number,
+  options: ChromeBudgetOptions = {},
+): ChromeBudget {
   const scale = hudScale > 0 ? hudScale : 1;
   const topBar = BAR_TOP_UNITS * scale;
   const bottomBar = BAR_BOTTOM_UNITS * scale;
@@ -30,7 +40,19 @@ export function fieldChromeBudget(viewportHeight: number, hudScale: number): Chr
   const headerMax = Math.round(chrome * 0.18);
   const skirmishMax = Math.round(chrome * 0.26);
   const consoleMax = Math.max(0, chrome - headerMax - skirmishMax);
-  return { headerMax, skirmishMax, consoleMax, topBar, bottomBar, fieldMin };
+  const collapsed = options.consoleCollapsed === true;
+  if (!collapsed) {
+    return { headerMax, skirmishMax, consoleMax, topBar, bottomBar, fieldMin, consoleCollapsed: false };
+  }
+  return {
+    headerMax,
+    skirmishMax,
+    consoleMax: 0,
+    topBar,
+    bottomBar,
+    fieldMin: fieldMin + consoleMax,
+    consoleCollapsed: true,
+  };
 }
 
 export function applyChromeBudget(budget: ChromeBudget): void {
@@ -38,4 +60,12 @@ export function applyChromeBudget(budget: ChromeBudget): void {
   root.style.setProperty('--chrome-header-max', `${String(budget.headerMax)}px`);
   root.style.setProperty('--chrome-skirmish-max', `${String(budget.skirmishMax)}px`);
   root.style.setProperty('--chrome-console-max', `${String(budget.consoleMax)}px`);
+  document.body.classList.toggle('console-collapsed', budget.consoleCollapsed);
+  document.body.dataset.console = budget.consoleCollapsed ? 'collapsed' : 'expanded';
+  for (const button of document.querySelectorAll<HTMLElement>('[data-action="hud.toggleInterfaceBar"]')) {
+    button.setAttribute('aria-expanded', budget.consoleCollapsed ? 'false' : 'true');
+    if (button.dataset.role === 'console-toggle') {
+      button.textContent = budget.consoleCollapsed ? 'Show console' : 'Hide console';
+    }
+  }
 }

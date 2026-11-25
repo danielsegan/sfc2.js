@@ -123,10 +123,13 @@
         <h2>Log</h2>
         <ol id="log"></ol>
       </section>
-      <p id="keys" class="keys">Left-click sets a heading · right-click targets · middle-drag or Alt-drag orbits · Shift+click multi-selects weapons · Q / F High-energy turn · Keys to rebind</p>
+      <p id="keys" class="keys">Left-click sets a heading · right-click targets · middle-drag or Alt-drag orbits · Shift+click multi-selects weapons · Q / F High-energy turn · ` hides the console · Keys to rebind</p>
       <p id="notice" class="keys" role="status"></p>
     </div>
     <section id="console" aria-label="Helm console">
+      <div class="console-toolbar">
+        <button type="button" data-action="hud.toggleInterfaceBar" data-role="console-toggle" aria-expanded="true" aria-controls="console">Hide console</button>
+      </div>
       <div class="console-row primary">
       <section class="plate" id="energy" aria-label="Energy allocation">
         <h2>Energy</h2>
@@ -265,6 +268,7 @@
         <span class="meter"><span id="field-power-fill"></span></span>
         <span class="meter"><span id="field-systems-fill"></span></span>
       </div>
+      <button type="button" data-action="hud.toggleInterfaceBar" data-role="console-toggle" aria-expanded="true" aria-controls="console">Hide console</button>
       <button type="button" id="field-fire" data-action="weapons.fire">Fire</button>
       <div class="alert-lamps" aria-label="Alert status">
         <span id="field-alert-state" class="micro">Green</span>

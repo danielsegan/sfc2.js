@@ -61,6 +61,7 @@ let selectedGroup = 0;
 let mapZoom = 8;
 let headingUp = false;
 let mapFull = false;
+let interfaceCollapsed = false;
 let paused = false;
 let latest: ViewModel | null = null;
 let installVfs: Vfs | null = null;
@@ -170,6 +171,13 @@ const host: CommandHost = {
   },
   setMapFull(on) {
     mapFull = on;
+  },
+  get interfaceCollapsed() {
+    return interfaceCollapsed;
+  },
+  setInterfaceCollapsed(on) {
+    interfaceCollapsed = on;
+    applyLayout();
   },
   view: () => latest,
 };
@@ -742,14 +750,14 @@ function frame(now: number): void {
 }
 
 window.addEventListener('resize', () => {
-  applyChromeBudget(fieldChromeBudget(window.innerHeight, hudScale));
+  applyLayout();
   scene.resize(canvas.clientWidth, canvas.clientHeight, window.devicePixelRatio || 1);
 });
 
 const pageInstall = new URLSearchParams(location.search).get('install');
 mountKeymapDialog(keys, (text) => host.note(text));
 bindVolume();
-applyChromeBudget(fieldChromeBudget(window.innerHeight, hudScale));
+applyLayout();
 bindUiScale();
 void paintSkin();
 void attachSounds((path) => readDevFile(pageInstall, path));
@@ -772,6 +780,13 @@ function paintSkin(): Promise<string> {
   });
 }
 
+function applyLayout(): void {
+  const consoleEl = document.getElementById('console');
+  if (consoleEl) consoleEl.hidden = interfaceCollapsed;
+  applyChromeBudget(fieldChromeBudget(window.innerHeight, hudScale, { consoleCollapsed: interfaceCollapsed }));
+  scene.resize(canvas.clientWidth, canvas.clientHeight, window.devicePixelRatio || 1);
+}
+
 function bindUiScale(): void {
   const select = document.getElementById('ui-scale');
   if (!(select instanceof HTMLSelectElement)) return;
@@ -782,7 +797,7 @@ function bindUiScale(): void {
   const apply = () => {
     document.documentElement.style.setProperty('--ui-scale', select.value);
     localStorage.setItem('sfc2js.uiScale.v1', select.value);
-    applyChromeBudget(fieldChromeBudget(window.innerHeight, hudScale));
+    applyLayout();
   };
   select.addEventListener('change', apply);
   apply();
