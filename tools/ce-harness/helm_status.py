@@ -65,10 +65,12 @@ for m in pat.finditer(blob_flat):
     if 0 <= v <= 100:
         vals.append(v)
 
-# 100.0 (including 1000→100) beats a collapsed 0; mid-range underway readings win if present.
+# 100.0 (including 1000→100) beats a collapsed 0 or a lone 1.0 (OCR crumb of 100.0).
+# Mid-range underway readings (typically ~20-90) win if present. Values under 5
+# next to a 100 reading are treated as crumbs, not a real mid-range chance.
 nonzero = [v for v in vals if v != 0.0]
-mid = [v for v in nonzero if 1 <= v < 100]
-hundred = [v for v in nonzero if v == 100.0]
+hundred = [v for v in nonzero if v >= 99.0]
+mid = [v for v in nonzero if 5 <= v < 99]
 if mid:
     chance = mid[0]
     confident = True
@@ -82,8 +84,14 @@ else:
 damaged = False
 raw_full = ""
 if full:
-    raw_full = ocr(full, "700x80+200+80", "6") + " " + ocr(full, "400x20+200+0", "6")
-    if re.search(r"BROKEN\s+DOWN|HULL\s+INTEGRITY\s+HAS\s+BROKEN", raw_full, re.I):
+    raw_full = " ".join([
+        ocr(full, "700x80+200+80", "6"),
+        ocr(full, "400x20+200+0", "6"),
+        # Wider/lower banner: the Broken Down warning sits below the 80px crop.
+        ocr(full, "900x140+100+0", "6"),
+        ocr(full, "1100x200+50+0", "6"),
+    ])
+    if re.search(r"BROKEN\s+DOWN|HULL\s+INTEGRITY\s+HAS\s+BROKEN|INTEGRITY\s+HAS\s+BROKEN", raw_full, re.I):
         damaged = True
 
 print(json.dumps({
