@@ -6,7 +6,7 @@ Bindings use `KeyboardEvent.code` (the physical key), so the same binding works 
 
 Held keys (turn) are sampled every frame. Speed up and speed down also accept key repeat. Everything else fires once per keydown.
 
-Mouse actions on the 3D view and the sensor map follow the original grammar, and a left-click does send an order: a plain left-click sends `orderHeading` toward the clicked point, including when a hostile is under the cursor, and the order holds until the next click replaces it (no target-follow). Alt+left-drag and middle-drag orbit and never steer. Right-click never steers. A right-click under 4 logical pixels targets. The gate grows with `--hud-scale`. Shield facing clicks still send reinforcement.
+Mouse actions on the 3D view and the sensor map follow the original grammar, and a left-click does send an order: a plain left-click sends `orderHeading` toward the clicked point, including when a hostile is under the cursor, and the order holds until the next click replaces it (no target-follow). Alt+left-drag and middle-drag orbit and never steer. Right-click never steers. A right-click under 4 logical pixels targets. The gate grows with `--hud-scale`. Shield facing clicks still send reinforcement. A plain click on a weapon mount selects only that mount; Shift+click adds or removes it from the selection, and Ctrl+`1`–`6` assigns the whole selection to that group.
 
 | Action | Default |
 | --- | --- |
@@ -15,11 +15,14 @@ Mouse actions on the 3D view and the sensor map follow the original grammar, and
 | All stop | `X` |
 | Reverse | `R` (not in this duel; the key explains that) |
 | Erratic maneuvers | `E` (not in this duel) |
+| High-energy turn port / starboard | `Q` / `F` |
 | Fire groups 1–6 | `1`–`6` |
-| Assign the selected mount to a group | Ctrl+`1`–`6` |
+| Assign the selected mount(s) to a group | Ctrl+`1`–`6` |
 | Fire the selected group | `Space` |
+| Select all weapons | unbound (Weapons panel button) |
+| Alpha strike (fire the selection) | unbound (Weapons panel button) |
 | Toggle overload on the selected photon | `O` |
-| Toggle proximity | unbound |
+| Toggle proximity | unbound; the Proximity button is shown when a selected mount is a photon |
 | Reinforce bow, forward starboard, aft starboard, stern, aft port, forward port | Numpad `8` `9` `3` `2` `1` `7` |
 | Clear that facing | Shift+the same numpad key |
 | Toggle general reinforcement | Numpad `5` |
@@ -45,7 +48,7 @@ Mouse actions on the 3D view and the sensor map follow the original grammar, and
 | Pause (single player) | `Esc` |
 | Zoom the camera | Wheel on the view |
 | Zoom the sensor map | Wheel on the map |
-| Change desired speed | Wheel or click the lower speed bar |
+| Change desired speed | Wheel (`±1`), or click / drag the lower speed bar. Click and drag map the bar position to a whole speed in `0..speedMax`. Whether CE 2.670 uses the same integer snap on drag is **TO VERIFY**. |
 | Add one point of reinforcement | Left-click a shield arc. Shift-click clears it. |
 
 EW, tractor, cloak, fighter, mine, and boarding keys send the same sim verbs the captain uses. Reverse, erratic maneuvers, and drones still only report that they are not in this duel.

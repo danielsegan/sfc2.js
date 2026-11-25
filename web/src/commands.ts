@@ -7,6 +7,7 @@ import type { DuelMatch } from '../../engine/duel/match.ts';
 import { MODE_NORMAL, MODE_OVERLOAD, MODE_PROXIMITY } from '../../engine/sim/rules-tables.ts';
 import type { ViewModel } from '../../engine/view/view-model.ts';
 import type { DuelScene } from './scene.ts';
+import { assignSlotsToGroup, selectAllSlots, supportsProximity } from './weapon-select.ts';
 
 export interface CommandHost {
   match: DuelMatch;
@@ -15,6 +16,8 @@ export interface CommandHost {
   togglePause(): void;
   getSlot(): number;
   setSlot(slot: number): void;
+  getSlots(): readonly number[];
+  setSlots(slots: readonly number[]): void;
   groups: number[][];
   group: number;
   setGroup(group: number): void;
@@ -57,6 +60,8 @@ export function runAction(host: CommandHost, id: string): void {
   else if (id === 'helm.hetPort') host.match.orderHet(-1);
   else if (id === 'helm.hetStarboard') host.match.orderHet(1);
   else if (id === 'weapons.fire') fireGroup(host);
+  else if (id === 'weapons.selectAll') selectAll(host);
+  else if (id === 'weapons.alphaStrike') fireSelected(host);
   else if (id === 'weapons.overload') toggleMode(host, MODE_OVERLOAD);
   else if (id === 'ops.tractor') host.match.setTractor(1, host.match.plan.tractorEnergy);
   else if (id === 'ops.repel') repelOrRelease(host);
@@ -98,19 +103,34 @@ function fireGroup(host: CommandHost): void {
 function selectGroup(host: CommandHost, group: number): void {
   if (group < 0 || group > 5) return;
   host.setGroup(group);
-  const first = host.groups[group]?.[0];
-  host.setSlot(first ?? group);
+  const members = host.groups[group] ?? [];
+  if (members.length > 0) host.setSlots(members);
+  else host.setSlot(group);
 }
 
 function assignGroup(host: CommandHost, group: number): void {
   if (group < 0 || group > 5) return;
-  const slot = host.getSlot();
-  for (const list of host.groups) {
-    const at = list.indexOf(slot);
-    if (at >= 0) list.splice(at, 1);
-  }
-  host.groups[group]?.push(slot);
+  const slots = selectedSlots(host);
+  assignSlotsToGroup(host.groups, group, slots);
   host.setGroup(group);
+}
+
+function selectAll(host: CommandHost): void {
+  const slots = selectAllSlots(host.view()?.self?.weapons ?? []);
+  if (slots.length === 0) {
+    host.note('No mounts.');
+    return;
+  }
+  host.setSlots(slots);
+}
+
+function fireSelected(host: CommandHost): void {
+  for (const slot of selectedSlots(host)) host.match.orderFire(slot);
+}
+
+function selectedSlots(host: CommandHost): number[] {
+  const slots = host.getSlots();
+  return slots.length > 0 ? [...slots] : [host.getSlot()];
 }
 
 function reinforce(host: CommandHost, facing: number): void {
@@ -147,14 +167,17 @@ function toggleCloak(host: CommandHost): void {
 }
 
 function toggleMode(host: CommandHost, mode: number): void {
-  const slot = host.getSlot();
-  const weapon = host.view()?.self?.weapons.find((item) => item.slotIndex === slot);
-  if (weapon && weapon.family !== 'photon') {
+  const slots = selectedSlots(host);
+  const weapons = host.view()?.self?.weapons ?? [];
+  const known = weapons.length > 0;
+  const supported = known ? slots.filter((slot) => supportsProximity(weapons.find((item) => item.slotIndex === slot))) : slots;
+  if (known && supported.length === 0) {
     host.note('Only a photon mount can change mode in this duel.');
     return;
   }
-  const current = host.match.plan.modes[slot] ?? MODE_NORMAL;
-  host.match.setWeaponMode(slot, current === mode ? MODE_NORMAL : mode);
+  const allOn = supported.every((slot) => (host.match.plan.modes[slot] ?? MODE_NORMAL) === mode);
+  const next = allOn ? MODE_NORMAL : mode;
+  for (const slot of supported) host.match.setWeaponMode(slot, next);
 }
 
 function cycleTarget(host: CommandHost, step: number, kind: 'hostile' | 'friendly'): void {

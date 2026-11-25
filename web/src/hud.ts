@@ -4,6 +4,7 @@ import { MODE_OVERLOAD, MODE_PROXIMITY } from '../../engine/sim/rules-tables.ts'
 import { toDisplayHeading } from '../../engine/view/units.ts';
 import type { HelmView, HudEvent, ViewModel, WeaponReadout } from '../../engine/view/view-model.ts';
 import { mapOffset } from './map-geom.ts';
+import { supportsProximity } from './weapon-select.ts';
 
 /** Sim ticks are 30 Hz. HET delay is shown in seconds. */
 export const TICKS_PER_SECOND = 30;
@@ -17,13 +18,14 @@ const FACING = ['Bow', 'Forward starboard', 'Aft starboard', 'Stern', 'Aft port'
 
 export interface HudHandles {
   selectedSlot: number;
+  selectedSlots: readonly number[];
   group: number;
   groups: readonly (readonly number[])[];
   mapZoom: number;
   headingUp: boolean;
   mapFull: boolean;
   targetId: number | null;
-  onSelect(slot: number): void;
+  onSelect(slot: number, additive?: boolean): void;
   onTarget?(id: number): void;
 }
 
@@ -97,6 +99,7 @@ export function updateHud(vm: ViewModel, roster: readonly RosterEntry[], hud: Hu
   drawShields(vm, plan, now);
   drawMap(vm, hud);
   renderWeapons(vm, hud, plan);
+  syncProximityButton(vm, hud, plan);
   renderContacts(vm, roster);
   renderShieldTable(vm, plan);
 }
@@ -270,7 +273,7 @@ function weaponButton(weapon: WeaponReadout, hud: HudHandles, plan: DuelPlan): H
   state.className = 'meta';
   state.dataset.role = 'state';
   button.append(icon, copy, state);
-  button.addEventListener('click', () => hud.onSelect(weapon.slotIndex));
+  button.addEventListener('click', (event) => hud.onSelect(weapon.slotIndex, event.shiftKey));
   paintWeapon(button, weapon, hud, plan);
   return button;
 }
@@ -283,7 +286,8 @@ function updateWeapon(weapon: WeaponReadout, hud: HudHandles, plan: DuelPlan): v
 
 function paintWeapon(button: HTMLButtonElement, weapon: WeaponReadout, hud: HudHandles, plan: DuelPlan): void {
   const grouped = hud.groups[hud.group]?.includes(weapon.slotIndex) === true;
-  button.classList.toggle('selected', weapon.slotIndex === hud.selectedSlot);
+  const picked = hud.selectedSlots.includes(weapon.slotIndex) || weapon.slotIndex === hud.selectedSlot;
+  button.classList.toggle('selected', picked);
   button.classList.toggle('ready', weapon.ready);
   const meta = button.querySelector('[data-role="meta"]');
   const state = button.querySelector('[data-role="state"]');
@@ -299,7 +303,29 @@ function paintWeapon(button: HTMLButtonElement, weapon: WeaponReadout, hud: HudH
   }
 }
 
+function selectionSlots(hud: HudHandles): number[] {
+  return hud.selectedSlots.length > 0 ? [...hud.selectedSlots] : [hud.selectedSlot];
+}
+
+/** Show the Proximity toggle only when a selected mount is a photon. */
+function syncProximityButton(vm: ViewModel, hud: HudHandles, plan: DuelPlan): void {
+  const button = document.getElementById('weapons-proximity');
+  if (!(button instanceof HTMLButtonElement)) return;
+  const weapons = vm.self?.weapons ?? [];
+  const slots = selectionSlots(hud);
+  const supported = slots.some((slot) => supportsProximity(weapons.find((item) => item.slotIndex === slot)));
+  button.hidden = !supported;
+  button.disabled = !supported;
+  const armed = slots.some((slot) => {
+    const weapon = weapons.find((item) => item.slotIndex === slot);
+    const mode = plan.modes[slot] ?? weapon?.mode;
+    return supportsProximity(weapon) && mode === MODE_PROXIMITY;
+  });
+  button.setAttribute('aria-pressed', armed ? 'true' : 'false');
+}
+
 function renderContacts(vm: ViewModel, roster: readonly RosterEntry[]): void {
+
   const body = document.querySelector('#contacts tbody');
   if (!body) return;
   body.replaceChildren();
