@@ -376,11 +376,14 @@ jobs:
         if: steps.tauri.outputs.present == 'true'
         run: pnpm install --frozen-lockfile
 
+      # `toolchain` is required. There is no rust-toolchain.toml; stable meets
+      # Cargo.toml rust-version 1.90. The macOS job still adds
+      # aarch64-apple-darwin and x86_64-apple-darwin below for the universal build.
       - name: Install Rust
         if: steps.tauri.outputs.present == 'true'
         uses: dtolnay/rust-toolchain@df2a88e9fe4098bad09cb42c3dec7187f15861fc # master 2026-11-15
-        # No toolchain pin here. A root rust-toolchain file wins; otherwise this
-        # installs stable. rustup applies a file inside src-tauri when cargo runs there.
+        with:
+          toolchain: stable
 
       - name: Cache Cargo
         if: steps.tauri.outputs.present == 'true'
@@ -444,6 +447,10 @@ jobs:
           else
             echo "This tauri CLI has no --no-sign flag. No signing secrets are set, so the bundle stays unsigned."
           fi
+          # linuxdeploy is an AppImage. GitHub-hosted runners cannot mount FUSE.
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            export APPIMAGE_EXTRACT_AND_RUN=1
+          fi
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             ver="${GITHUB_REF_NAME#v}"
             if [[ ! "$ver" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
@@ -461,7 +468,10 @@ jobs:
           SFC2_TAURI_DIR: ${{ steps.tauri.outputs.path }}
         run: |
           set -euo pipefail
-          mapfile -t roots < <(node --input-type=module <<'EOF'
+          # macOS runners ship Bash 3.2, which has no mapfile. Read the paths
+          # into an array and fail if the probe itself fails.
+          roots_file="$(mktemp)"
+          node --input-type=module >"$roots_file" <<'EOF'
           import { existsSync, lstatSync, readFileSync } from 'node:fs';
           import { resolve } from 'node:path';
           const roots = ['web/dist'];
@@ -489,7 +499,17 @@ jobs:
             console.log(root);
           }
           EOF
-          )
+          roots=()
+          while IFS= read -r line || [[ -n "$line" ]]; do
+            if [[ -n "$line" ]]; then
+              roots+=("$line")
+            fi
+          done <"$roots_file"
+          rm -f "$roots_file"
+          if [[ ${#roots[@]} -eq 0 ]]; then
+            echo "no frontend roots to scan"
+            exit 1
+          fi
           node --input-type=module - "${roots[@]}" <<'EOF'
           import { lstatSync, readdirSync, realpathSync } from 'node:fs';
           import { join, relative, sep } from 'node:path';
