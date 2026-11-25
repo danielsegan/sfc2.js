@@ -1,7 +1,8 @@
 /**
  * Metadata-only check of a local CE install's shiplist and ftrlist.
- * Prints counts, header names, hashes, and diagnostic tallies.
- * Never prints a data row, spawn key, class name, or geometry path.
+ * Stdout is counts, pass/fail, and diagnostic classes.
+ * The full report (paths, hashes, header names, weapon codes) is written
+ * only when --output is set. Never prints a data row.
  *
  *   node --experimental-strip-types tools/formats/verify-ce-metadata.ts \
  *     --extracted /srv/sfc2/extracted/2.670 \
@@ -11,6 +12,7 @@
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import type { Diagnostic } from "./diagnostics.ts";
 import { parseFtrlist } from "./ftrlist.ts";
@@ -156,36 +158,111 @@ function summarizeFighter(file: FoundFile, copies: FoundFile[]): Record<string, 
   };
 }
 
-const extracted = arg("--extracted");
-const output = arg("--output");
-if (!extracted) {
-  console.error("usage: verify-ce-metadata.ts --extracted <install-or-extracted-root> [--output <file>]");
-  process.exit(2);
+export interface ParserTableSummary {
+  rows: number;
+  columns: number;
+  copies: number;
+  copiesIdentical: boolean;
+  errors: Array<{ class: string; count: number }>;
 }
 
-const root = path.resolve(extracted);
-const found: FoundFile[] = [];
-walk(root, root, found);
-found.sort((left, right) => (left.relative < right.relative ? -1 : left.relative > right.relative ? 1 : 0));
-const ships = found.filter((file) => file.relative.toLowerCase().endsWith("shiplist.txt"));
-const fighters = found.filter((file) => file.relative.toLowerCase().endsWith("ftrlist.txt"));
-const ship = preferSpecs(ships);
-const fighter = preferSpecs(fighters);
-
-const report = {
-  schema: "parser-ce-metadata-1",
-  shiplist: ship ? summarizeShip(ship, ships) : null,
-  ftrlist: fighter ? summarizeFighter(fighter, fighters) : null,
-};
-
-if (!ship || !fighter) {
-  console.error(`missing table: shiplist=${ship ? "yes" : "no"} ftrlist=${fighter ? "yes" : "no"}`);
+export interface ParserPublicSummary {
+  result: "pass" | "fail";
+  shiplist: ParserTableSummary | null;
+  ftrlist: ParserTableSummary | null;
 }
 
-const text = `${JSON.stringify(report, null, 2)}\n`;
-if (output) {
-  fs.mkdirSync(path.dirname(path.resolve(output)), { recursive: true });
-  fs.writeFileSync(output, text);
+export function publicParserSummary(report: {
+  shiplist: Record<string, unknown> | null;
+  ftrlist: Record<string, unknown> | null;
+}): ParserPublicSummary {
+  const shiplist = tableSummary(report.shiplist);
+  const ftrlist = tableSummary(report.ftrlist);
+  const failed =
+    shiplist === null ||
+    ftrlist === null ||
+    shiplist.errors.some((item) => item.class.endsWith(":error")) ||
+    ftrlist.errors.some((item) => item.class.endsWith(":error"));
+  return { result: failed ? "fail" : "pass", shiplist, ftrlist };
 }
-process.stdout.write(text);
-if (!ship || !fighter) process.exit(1);
+
+function tableSummary(table: Record<string, unknown> | null): ParserTableSummary | null {
+  if (table === null) return null;
+  const counts = table.counts;
+  const errors: Array<{ class: string; count: number }> = [];
+  if (counts !== null && typeof counts === "object") {
+    const merged = new Map<string, number>();
+    for (const [key, count] of Object.entries(counts as Record<string, number>)) {
+      const parts = key.split(":");
+      const code = parts.length >= 2 ? parts[1] : key;
+      const severity = parts.length >= 3 ? parts[2] : "info";
+      const cls = `${code}:${severity}`;
+      merged.set(cls, (merged.get(cls) ?? 0) + count);
+    }
+    for (const [cls, count] of [...merged.entries()].sort(([left], [right]) => (left < right ? -1 : 1))) {
+      errors.push({ class: cls, count });
+    }
+  }
+  return {
+    rows: typeof table.rowCount === "number" ? table.rowCount : 0,
+    columns: typeof table.columnCount === "number" ? table.columnCount : 0,
+    copies: Array.isArray(table.copies) ? table.copies.length : 0,
+    copiesIdentical: table.copiesIdentical === true,
+    errors,
+  };
+}
+
+export function formatParserSummary(summary: ParserPublicSummary): string {
+  const ship = summary.shiplist;
+  const fighter = summary.ftrlist;
+  const lines = [
+    `parser result=${summary.result} shiplistRows=${ship?.rows ?? 0} shiplistColumns=${ship?.columns ?? 0} shiplistCopies=${ship?.copies ?? 0} ftrlistRows=${fighter?.rows ?? 0} ftrlistColumns=${fighter?.columns ?? 0} ftrlistCopies=${fighter?.copies ?? 0}`,
+  ];
+  const errors = [...(ship?.errors ?? []), ...(fighter?.errors ?? [])];
+  if (errors.length === 0) lines.push("parser errors=0");
+  for (const item of errors) lines.push(`parser class=${item.class} count=${item.count}`);
+  if (ship === null) lines.push("parser class=missing-shiplist count=1");
+  if (fighter === null) lines.push("parser class=missing-ftrlist count=1");
+  return lines.join("\n");
+}
+
+function run(): number {
+  const extracted = arg("--extracted");
+  const output = arg("--output");
+  const summaryOut = arg("--summary-out");
+  if (!extracted) {
+    process.stderr.write("parser result=fail class=usage count=1\n");
+    return 2;
+  }
+
+  const root = path.resolve(extracted);
+  const found: FoundFile[] = [];
+  walk(root, root, found);
+  found.sort((left, right) => (left.relative < right.relative ? -1 : left.relative > right.relative ? 1 : 0));
+  const ships = found.filter((file) => file.relative.toLowerCase().endsWith("shiplist.txt"));
+  const fighters = found.filter((file) => file.relative.toLowerCase().endsWith("ftrlist.txt"));
+  const ship = preferSpecs(ships);
+  const fighter = preferSpecs(fighters);
+
+  const report = {
+    schema: "parser-ce-metadata-1",
+    shiplist: ship ? summarizeShip(ship, ships) : null,
+    ftrlist: fighter ? summarizeFighter(fighter, fighters) : null,
+  };
+  const summary = publicParserSummary(report);
+  if (output) {
+    fs.mkdirSync(path.dirname(path.resolve(output)), { recursive: true });
+    fs.writeFileSync(output, `${JSON.stringify(report, null, 2)}\n`);
+  }
+  if (summaryOut) {
+    fs.mkdirSync(path.dirname(path.resolve(summaryOut)), { recursive: true });
+    fs.writeFileSync(summaryOut, `${JSON.stringify(summary, null, 2)}\n`);
+  }
+  process.stdout.write(`${formatParserSummary(summary)}\n`);
+  return ship && fighter ? 0 : 1;
+}
+
+const invoked = process.argv[1] !== undefined && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (invoked) {
+  process.exitCode = run();
+}

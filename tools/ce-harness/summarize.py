@@ -32,4 +32,18 @@ with open(prefix + ".csv", "w", newline="") as fh:
         e = r["energy_panel"] or {}
         w.writerow([json.dumps(r[k]) if isinstance(r[k], list) else r[k] for k in FIELDS] +
                    [e.get("power"), e.get("systems"), e.get("other"), e.get("excess")])
-print(f"{len(rows)} runs -> {prefix}.json, {prefix}.csv")
+by_kind, by_reason = {}, {}
+noop = 0
+for r in rows:
+    kind = str(r.get("kind") or "unknown")
+    by_kind[kind] = by_kind.get(kind, 0) + 1
+    if r.get("noop"):
+        noop += 1
+        reason = str(r.get("noop_reason") or "unspecified")
+        by_reason[reason] = by_reason.get(reason, 0) + 1
+summary = {"result": "pass", "runs": len(rows), "noop": noop, "measured": len(rows) - noop,
+           "byKind": by_kind, "byNoopReason": by_reason}
+json.dump(summary, open(prefix + "-summary.json", "w"), indent=1)
+print(f"summarize result=pass runs={summary['runs']} noop={noop} measured={summary['measured']}")
+for reason, count in sorted(by_reason.items()):
+    print(f"summarize class={reason} count={count}")

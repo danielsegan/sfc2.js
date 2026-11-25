@@ -9,13 +9,14 @@
 # ref that still contains tools/inventory/inventory.py. A ref without
 # that file stops the inventory and verify jobs after checkout.
 # The parse-shiplist-ftrlist job needs this repo's TypeScript parsers and
-# Node 22. It writes counts, header names, and hashes only.
+# Node 22. Its log is row counts and diagnostic classes. The full parser
+# JSON stays on the runner.
 #
-# This workflow never commits (and never writes to main). It prints a
-# metadata-only summary to the job log (paths, sizes, hashes, counts,
-# header names) and uploads JSON/MD artifacts. It must not echo game
-# file contents or table data rows. See tools/inventory/README.md for
-# how reviewed artifacts are copied into docs/formats/inventory.
+# This workflow never commits (and never writes to main). The job log
+# and the uploaded artifact are counts, pass/fail, and error classes.
+# Paths, sizes, hashes, header names, and the generated JSON/MD stay on
+# the runner under $HOME/sfc2-private/inventory/<run-id>/. See
+# tools/inventory/README.md.
 name: Private CE 2.670 inventory
 
 on:
@@ -53,38 +54,45 @@ jobs:
           fi
           echo "tools present: tools/inventory/inventory.py"
 
-      - name: Confirm private data is present (paths only)
+      - name: Confirm private data is present
         run: |
+          set +x
           set -euo pipefail
-          for p in "$SFC2_EXTRACTED" "$SFC2_REFERENCE" "$SFC2_README" "$SFC2_EXTRACTED/manifest.json"; do
-            if [[ -e "$p" ]]; then
-              echo "present: $p"
+          present() {
+            local label=$1 path=$2
+            if [[ -e "$path" ]]; then
+              echo "present: $label"
             else
-              echo "missing: $p"
+              echo "missing: $label"
               exit 1
             fi
-          done
+          }
+          present extracted "$SFC2_EXTRACTED"
+          present reference "$SFC2_REFERENCE"
+          present readme "$SFC2_README"
+          present manifest "$SFC2_EXTRACTED/manifest.json"
 
-      - name: Run inventory (metadata only; do not print outputs or source files)
+      - name: Run inventory (counts only on the log)
         run: |
+          set +x
           set -euo pipefail
           python3 --version
+          dest="${HOME}/sfc2-private/inventory/${GITHUB_RUN_ID}/inventory"
+          mkdir -p "$dest" verify-output
           python3 tools/inventory/inventory.py inventory \
             --extracted "$SFC2_EXTRACTED" \
             --reference "$SFC2_REFERENCE" \
             --manifest "$SFC2_EXTRACTED/manifest.json" \
             --readme "$SFC2_README" \
-            --output-dir docs/formats/inventory
+            --output-dir "$dest" \
+            --detail-log "$dest/detail.log" \
+            --summary-out verify-output/inventory-summary.json
 
-      - name: Upload inventory metadata artifacts
+      - name: Upload inventory summary
         uses: actions/upload-artifact@v4
         with:
-          name: ce-2.670-inventory-metadata
-          path: |
-            docs/formats/inventory/ce-2.670.json
-            docs/formats/inventory/ce-2.670.md
-            docs/formats/inventory/missions-ce-2.670.md
-            docs/formats/inventory/observations-ce-2.670.json
+          name: ce-2.670-inventory-summary
+          path: verify-output/inventory-summary.json
           if-no-files-found: error
           retention-days: 7
 
@@ -107,35 +115,43 @@ jobs:
           fi
           echo "tools present: tools/inventory/inventory.py"
 
-      - name: Confirm private data is present (paths only)
+      - name: Confirm private data is present
         run: |
+          set +x
           set -euo pipefail
-          for p in "$SFC2_EXTRACTED" "$SFC2_REFERENCE" "$SFC2_EXTRACTED/manifest.json"; do
-            if [[ -e "$p" ]]; then
-              echo "present: $p"
+          present() {
+            local label=$1 path=$2
+            if [[ -e "$path" ]]; then
+              echo "present: $label"
             else
-              echo "missing: $p"
+              echo "missing: $label"
               exit 1
             fi
-          done
+          }
+          present extracted "$SFC2_EXTRACTED"
+          present reference "$SFC2_REFERENCE"
+          present manifest "$SFC2_EXTRACTED/manifest.json"
 
-      - name: Verify shiplist and ftrlist (metadata only; do not print outputs or source files)
+      - name: Verify shiplist and ftrlist (counts only on the log)
         run: |
+          set +x
           set -euo pipefail
           python3 --version
+          dest="${HOME}/sfc2-private/inventory/${GITHUB_RUN_ID}/verify"
+          mkdir -p "$dest" verify-output
           python3 tools/inventory/inventory.py verify \
             --extracted "$SFC2_EXTRACTED" \
             --reference "$SFC2_REFERENCE" \
             --manifest "$SFC2_EXTRACTED/manifest.json" \
-            --output-dir docs/formats/inventory
+            --output-dir "$dest" \
+            --detail-log "$dest/detail.log" \
+            --summary-out verify-output/verify-summary.json
 
-      - name: Upload verification metadata artifacts
+      - name: Upload verification summary
         uses: actions/upload-artifact@v4
         with:
-          name: ce-2.670-shiplist-ftrlist-metadata
-          path: |
-            docs/formats/inventory/shiplist-ftrlist-ce-2.670.json
-            docs/formats/inventory/shiplist-ftrlist-ce-2.670.md
+          name: ce-2.670-shiplist-ftrlist-summary
+          path: verify-output/verify-summary.json
           if-no-files-found: error
           retention-days: 7
 
@@ -157,28 +173,32 @@ jobs:
           command -v node
           node --version
 
-      - name: Confirm private data is present (paths only)
+      - name: Confirm private data is present
         run: |
+          set +x
           set -euo pipefail
           if [[ -d "$SFC2_EXTRACTED" ]]; then
-            echo "present: $SFC2_EXTRACTED"
+            echo "present: extracted"
           else
-            echo "missing: $SFC2_EXTRACTED"
+            echo "missing: extracted"
             exit 1
           fi
 
       - name: Parse spec tables and write counts only
         run: |
+          set +x
           set -euo pipefail
-          mkdir -p docs/formats/inventory
+          dest="${HOME}/sfc2-private/inventory/${GITHUB_RUN_ID}/parser"
+          mkdir -p "$dest" verify-output
           node --experimental-strip-types tools/formats/verify-ce-metadata.ts \
             --extracted "$SFC2_EXTRACTED" \
-            --output docs/formats/inventory/parser-ce-2.670.json
+            --output "$dest/parser.json" \
+            --summary-out verify-output/parser-summary.json
 
-      - name: Upload parser metadata
+      - name: Upload parser summary
         uses: actions/upload-artifact@v4
         with:
-          name: ce-2.670-parser-metadata
-          path: docs/formats/inventory/parser-ce-2.670.json
+          name: ce-2.670-parser-summary
+          path: verify-output/parser-summary.json
           if-no-files-found: error
           retention-days: 7

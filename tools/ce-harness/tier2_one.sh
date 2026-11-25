@@ -10,8 +10,8 @@ pre="t2-$(echo "$spawn" | tr ': ' '__')"
 outdir=~/harness/tier2/results
 mkdir -p $outdir ~/harness/tier2/logs
 log=~/harness/tier2/logs/${seq}-${desig}.log
-exec > >(tee -a "$log") 2>&1
-echo "START $(date -u) copy=$n $spawn hud=$hud"
+exec >>"$log" 2>&1
+echo "tier2 class=start"
 fail_json() {
   local status="$1" reason="$2"
   python3 - "$outdir/${seq}-${desig}.json" "$seq" "$spawn" "$desig" "$status" "$reason" << 'PY'
@@ -28,7 +28,7 @@ if ! ~/harness/bin/pbattle_hull.sh $n $clicks $desig $hud; then
   status="select_failed"
   echo "$reason" | grep -q "BATTLE-CHECK-FAILED" && status="battle_check_failed"
   fail_json "$status" "${reason:-pbattle_hull failed}"
-  echo "FAIL $status $spawn"
+  echo "tier2 result=fail class=$status"
   exit 3
 fi
 
@@ -64,14 +64,14 @@ for spec in "${het_specs[@]}"; do
   docker cp $C:/tmp/helm-now.png /tmp/helm-now-$n.png 2>/dev/null || true
   docker cp $C:/tmp/full-now.png /tmp/full-now-$n.png 2>/dev/null || true
   st=$(docker exec $C python3 /h/helm_status.py /tmp/full-now.png 2>/dev/null || docker exec $C python3 /h/helm_status.py /tmp/helm-now.png 2>/dev/null || echo '{}')
-  echo "HET-PRE s$sp $st"
+  echo "het class=pre"
   skip=$(python3 -c "import json,sys
 d=json.loads(sys.argv[1] or '{}')
 ch=d.get('chance'); dmg=d.get('damaged'); conf=d.get('confident')
 if dmg:
     print('damaged')
 elif ch is not None and float(ch)<=1 and conf:
-    print('chance_for_het=%.1f'%ch)
+    print('low-chance')
 
 else:
     print('')
@@ -91,7 +91,7 @@ else:
   capture_one "$sp" "$b" "$secs"
   # After a HET, if helm_status now says damaged, stop later ones.
   post=$(docker exec $C python3 /h/helm_status.py /out/frames/${pre}-s${sp}-${b}/full-after.png 2>/dev/null || echo '{}')
-  echo "HET-POST s$sp $post"
+  echo "het class=post"
 done
 
 if [ "$do_wp" = "1" ]; then
@@ -108,7 +108,7 @@ time.sleep(8)
 print("speed-0 settle done")
 PY
   dmg=$(docker exec -e DISPLAY=:99 $C bash -c 'import -window root /tmp/wpre.png; python3 /h/helm_status.py /tmp/wpre.png' 2>/dev/null || echo '{}')
-  echo "WP-PRE $dmg"
+  echo "weapons class=pre"
   if python3 -c "import json,sys; d=json.loads(sys.argv[1] or '{}'); raise SystemExit(0 if d.get('damaged') else 1)" "$dmg"; then
     echo "SKIP weapons probe (damaged)"
     skip_reasons+=("weapons:damaged")
@@ -159,6 +159,6 @@ out={"seq":int(seq),"spawnKey":spawn,"designation":desig,"hud":hud,
      "status":"ok","runs":runs,"skipped":skips,
      "noops":[r.get("label") for r in runs if r.get("noop")]}
 json.dump(out, open(f"/home/dsegan/harness/tier2/results/{seq}-{desig}.json","w"), indent=1)
-print("WROTE", len(runs), "runs skipped", skips, "noops", out["noops"])
+print("tier2 result=pass runs", len(runs), "skipped", len(skips), "noops", len(out["noops"]))
 PY
-echo "DONE $(date -u) $spawn"
+echo "tier2 result=done"

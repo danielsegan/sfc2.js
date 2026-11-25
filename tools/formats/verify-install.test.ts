@@ -6,7 +6,7 @@ import { test } from 'node:test';
 
 import { encodeBmp } from './src/encode-bmp.ts';
 import { machinePathLeak } from './src/diagnostic.ts';
-import { verifyInstall } from './verify-install.ts';
+import { publicInstallSummary, verifyInstall } from './verify-install.ts';
 
 test('synthetic install reports pairs, bit depth, colour key and a short file', async () => {
   const root = await mkdtemp(path.join(tmpdir(), 'sfc2-verify-'));
@@ -95,6 +95,14 @@ test('synthetic install reports pairs, bit depth, colour key and a short file', 
     assert.equal(report.bmp.bitCounts['4'], 1);
     assert.ok((report.bmp.bitCounts['8'] ?? 0) >= 1);
     assert.ok((report.bmp.bitCounts['24'] ?? 0) >= 1);
+    const summary = publicInstallSummary(report);
+    const summaryText = JSON.stringify(summary);
+    assert.equal(machinePathLeak(summary), null);
+    assert.equal(summary.bmp.fourBit, 1);
+    assert.equal(summary.bmp.orphans, 1);
+    assert.equal(summary.shiplist.assets, true);
+    assert.equal(summaryText.includes('Assets/'), false);
+    assert.equal(summaryText.includes('paths'), false);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

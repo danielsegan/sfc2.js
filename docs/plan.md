@@ -77,7 +77,7 @@ sfc2.js/
 └── .gitignore     blocks *.mod, *.bmp, *.wav, *.scr, *.q3, game folders and installers
 ```
 
-> **Never commit original game files.** The `.gitignore` and a CI check both reject game assets. Tests use synthetic fixtures. Private game data stays only on the private CI VM `sfc2-ci` and is scanned by the dispatch-only workflow `.github/workflows/private-inventory.yml` (merged via #47). Only metadata (names, counts, hashes) leaves the VM. Real-data tests run only on that VM against the local install.
+> **Never commit original game files.** The `.gitignore` and a CI check both reject game assets. Tests use synthetic fixtures. Private game data stays only on the private CI VM `sfc2-ci` and is scanned by the dispatch-only workflow `.github/workflows/private-inventory.yml` (merged via #47). Only aggregate counts leave the VM through that workflow's log and artifact. Real-data tests run only on that VM against the local install.
 
 ### Process
 
@@ -123,7 +123,7 @@ Recorded items below are decided. Do not reopen one without Daniel. Only the sti
 - **Language.** TypeScript for all engine modules, including the three.js renderer. WASM hot paths (AssemblyScript or Rust) remain allowed.
 - **Game version.** *Star Fleet Command 2* Community Edition 2.670 (Daniel's legally owned installer) is the reference baseline. Players bring their own files; original assets are never committed.
 - **Pull requests and cloud agents.** Team members open PRs as needed without asking Daniel. The Producer merges a PR once its "Block original game files and large binaries" check is green and its author posts a final head SHA. Merges are squash merges. Cursor cloud agents are approved ([issue #11](https://github.com/danielsegan/sfc2.js/issues/11)).
-- **Private data.** Original game files stay only on the private CI VM `sfc2-ci`, scanned by the dispatch-only workflow `.github/workflows/private-inventory.yml` (merged via #47). Only metadata (names, counts, hashes) leaves the VM.
+- **Private data.** Original game files stay only on the private CI VM `sfc2-ci`, scanned by the dispatch-only workflow `.github/workflows/private-inventory.yml` (merged via #47). Only aggregate counts leave the VM through that workflow's log and artifact.
 - **Diagnostics.** Shared shape `{ code, source, severity, details?, location? }`; flat camelCase add-only codes; single registry at `docs/engine/diagnostics.md`, owned by the Engine Lead.
 
 ### Still open

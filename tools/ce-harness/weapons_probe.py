@@ -20,5 +20,6 @@ for i in range(shots):
     rec = {"shot": i, "t": time.time(), "volley_text": ocr(p, "300x70+203+560"),
            "range_text_right": ocr(p, "120x18+900+360", "7", "0123456789.k"),
            "target_tag_full": None}
-    out.append(rec); print(json.dumps(rec), flush=True)
+    out.append(rec)
 json.dump(out, open(f"/out/runs/{label}.json", "w"), indent=1)
+print(f"weapons result=pass shots={len(out)}", flush=True)

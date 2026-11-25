@@ -6,9 +6,10 @@
 # See tools/ce-harness/README.md.
 #
 # workflow_dispatch only: never on push, pull_request or schedule.
-# The uploaded artifact holds measured numbers only (results.json/results.csv).
-# Screenshots, frames, the Wine prefix and the game working copy never leave
-# the runner and are deleted at the end of the job.
+# The log and the uploaded artifact are run counts, pass/fail, and
+# noop classes. Per-run turn rates, speeds, and energy readings stay on
+# the runner under $HOME/sfc2-private/ce-harness/<run-id>/. Screenshots,
+# frames, the Wine prefix, and the game working copy are deleted.
 name: Private CE harness capture
 
 on:
@@ -66,39 +67,54 @@ jobs:
           SCENARIO: ${{ inputs.scenario }}
           SPEEDS: ${{ inputs.speeds }}
         run: |
+          set +x
           set -euo pipefail
           export CE_DOCKER_USER="$(id -u):$(id -g)"
+          dest="${HOME}/sfc2-private/ce-harness/${GITHUB_RUN_ID}"
+          mkdir -p "$dest"
           # shellcheck disable=SC2086
-          tools/ce-harness/run_scenario.sh "$SCENARIO" "$SCENARIO" $SPEEDS 2>&1 | grep -v '^selector:' || true
-          ls "$CE_OUT_DIR/runs" >/dev/null
+          if ! tools/ce-harness/run_scenario.sh "$SCENARIO" "$SCENARIO" $SPEEDS >"$dest/scenario.log" 2>&1; then
+            echo "scenario result=fail class=run-failed"
+            exit 1
+          fi
+          echo "scenario result=pass"
 
-      - name: Summarize to metadata-only JSON/CSV
+      - name: Summarize counts
         run: |
+          set +x
           set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/ce-results"
-          python3 tools/ce-harness/summarize.py "$RUNNER_TEMP/ce-out/runs" "$RUNNER_TEMP/ce-results/results" "${{ inputs.scenario }}-*"
+          dest="${HOME}/sfc2-private/ce-harness/${GITHUB_RUN_ID}"
+          mkdir -p "$dest" verify-output
+          python3 tools/ce-harness/summarize.py "$RUNNER_TEMP/ce-out/runs" "$dest/results" "${{ inputs.scenario }}-*"
+          cp "$dest/results-summary.json" verify-output/ce-harness-summary.json
 
-      - name: Guard artifact contents
+      - name: Guard summary contents
         run: |
+          set +x
           set -euo pipefail
-          cd "$RUNNER_TEMP/ce-results"
-          for f in *; do
-            case "$f" in results.json|results.csv) ;; *) echo "unexpected file in artifact dir: $f"; exit 1 ;; esac
-            [[ $(stat -c %s "$f") -lt 262144 ]] || { echo "$f is unexpectedly large"; exit 1; }
-          done
+          python3 - << 'PY'
+          import json, sys
+          path = "verify-output/ce-harness-summary.json"
+          data = json.load(open(path, encoding="utf-8"))
+          allowed = {"result", "runs", "noop", "measured", "byKind", "byNoopReason"}
+          extra = set(data) - allowed
+          if extra or not isinstance(data.get("runs"), int):
+              print("harness summary rejected class=shape")
+              sys.exit(1)
+          print(f"harness result={data['result']} runs={data['runs']} noop={data['noop']} measured={data['measured']}")
+          PY
 
-      - name: Upload measured numbers
+      - name: Upload summary
         uses: actions/upload-artifact@v4
         with:
-          name: ce-harness-${{ inputs.scenario }}-${{ github.run_id }}
-          path: |
-            ${{ runner.temp }}/ce-results/results.json
-            ${{ runner.temp }}/ce-results/results.csv
+          name: ce-harness-${{ inputs.scenario }}-${{ github.run_id }}-summary
+          path: verify-output/ce-harness-summary.json
           retention-days: 30
           if-no-files-found: error
 
       - name: Clean up runner-local game copy, frames and prefix
         if: always()
         run: |
+          set +x
           docker rm -f "ce-harness-${{ github.run_id }}" >/dev/null 2>&1 || true
-          rm -rf "$RUNNER_TEMP/ce-game" "$RUNNER_TEMP/ce-out" "$RUNNER_TEMP/ce-prefix" "$RUNNER_TEMP/ce-results"
+          rm -rf "$RUNNER_TEMP/ce-game" "$RUNNER_TEMP/ce-out" "$RUNNER_TEMP/ce-prefix"

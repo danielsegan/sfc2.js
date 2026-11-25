@@ -103,7 +103,7 @@ for ri in range(n_races):
             break
         class_seen.add(sig0)
         class_rows = [rec0]
-        print(json.dumps({"race_i": ri, "class_i": ci, "title": rec0.get("title"), "designation": rec0.get("designation"), "bpv": rec0.get("bpv")}), flush=True)
+        print(f"sweep class={ci} ships=1", flush=True)
         for si in range(1, 80):
             click(skin_clicks(ri)['ship_next'], 1.0)
             rec = read_ship(f"r{ri}-c{ci}-s{si:03d}")
@@ -111,7 +111,7 @@ for ri in range(n_races):
                 break
             class_rows.append(rec)
             if si % 5 == 0:
-                print(json.dumps({"race_i": ri, "class_i": ci, "ship_i": si, "designation": rec.get("designation"), "bpv": rec.get("bpv")}), flush=True)
+                print(f"sweep class={ci} ships={si + 1}", flush=True)
         all_rows.append({"race_i": ri, "class_i": ci, "n": len(class_rows), "ships": class_rows})
         click(skin_clicks(ri)['class_next'], 1.2)
     click(skin_clicks(ri)['done'], 1.5)
@@ -121,4 +121,4 @@ for ri in range(n_races):
     if ri + 1 < n_races:
         click(RACE, 1.0)
 json.dump(all_rows, open(f"{root}/library.json", "w"), indent=1)
-print("done", label, "classes", len(all_rows), "ships", sum(c["n"] for c in all_rows), flush=True)
+print(f"sweep result=pass classes={len(all_rows)} ships={sum(c['n'] for c in all_rows)}", flush=True)

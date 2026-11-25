@@ -80,4 +80,4 @@ json.dump({"label": label, "target_speed": target, "button": button, "hud": hud,
            "pad": pad_name, "pad_coords": pad_xy, "het_pad_deg": het_pad_deg,
            "speed_history": hist,
            "action_wall": acted, "frames": idx}, open(f"{fdir}/capture.json", "w"), indent=1)
-print(label, "settled", hist[-1], "frames", len(idx))
+print(f"capture result=pass frames={len(idx)}")

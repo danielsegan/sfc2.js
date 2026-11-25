@@ -147,6 +147,59 @@ export function inspectReport(value: unknown): { report: ViewerCheckReport | nul
   return { report, problem: null };
 }
 
+export interface ViewerPublicSummary {
+  result: 'pass' | 'fail';
+  totals: ViewerCheckTotals;
+  errors: Array<{ class: string; count: number }>;
+}
+
+/** Totals and error classes. Ship ids and empires stay out of logs and artifacts. */
+export function publicSummary(report: ViewerCheckReport): ViewerPublicSummary {
+  const counts = new Map<string, number>();
+  for (const ship of report.ships) {
+    if (ship.pass || ship.error === null) continue;
+    counts.set(ship.error, (counts.get(ship.error) ?? 0) + 1);
+  }
+  return {
+    result: report.totals.failed === 0 && report.totals.rows > 0 ? 'pass' : 'fail',
+    totals: report.totals,
+    errors: [...counts.entries()]
+      .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
+      .map(([cls, count]) => ({ class: cls, count })),
+  };
+}
+
+export function formatPublicSummary(summary: ViewerPublicSummary): string {
+  const totals = summary.totals;
+  const lines = [
+    `viewer result=${summary.result} rows=${totals.rows} passed=${totals.passed} failed=${totals.failed}`,
+  ];
+  if (summary.errors.length === 0) lines.push('viewer errors=0');
+  for (const item of summary.errors) lines.push(`viewer class=${item.class} count=${item.count}`);
+  return lines.join('\n');
+}
+
+export function inspectPublicSummary(value: unknown): { summary: ViewerPublicSummary | null; problem: string | null } {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return { summary: null, problem: 'shape' };
+  const record = value as Record<string, unknown>;
+  if ('ships' in record || 'id' in record || 'empire' in record) return { summary: null, problem: 'leak' };
+  if (machinePathLeak(value) !== null) return { summary: null, problem: 'leak' };
+  const totals = record.totals;
+  if (totals === null || typeof totals !== 'object') return { summary: null, problem: 'shape' };
+  const bag = totals as Record<string, unknown>;
+  if (typeof bag.rows !== 'number' || typeof bag.passed !== 'number' || typeof bag.failed !== 'number') {
+    return { summary: null, problem: 'shape' };
+  }
+  if (!Array.isArray(record.errors)) return { summary: null, problem: 'shape' };
+  for (const item of record.errors) {
+    if (item === null || typeof item !== 'object') return { summary: null, problem: 'shape' };
+    const error = item as Record<string, unknown>;
+    if (typeof error.class !== 'string' || typeof error.count !== 'number') return { summary: null, problem: 'shape' };
+    if ('id' in error || 'empire' in error) return { summary: null, problem: 'leak' };
+  }
+  return { summary: value as ViewerPublicSummary, problem: null };
+}
+
 function stageForCatalogFailure(reason: string): Stage {
   if (RESOLVE_REASONS.has(reason)) return 'resolve';
   if (reason.startsWith('bmp.')) return 'texture';

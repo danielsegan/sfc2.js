@@ -28,4 +28,4 @@ def axis(path):
 if __name__ == "__main__":
     for f in sys.argv[1:]:
         r = axis(f)
-        print(f, None if r is None else " ".join(f"{v:.2f}" if isinstance(v, float) else str(v) for v in r))
+        print("heading result=pass" if r else "heading result=fail class=untracked")

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Turn analysis v2: heading from rotation registration (heading2.track), no 180-degree ambiguity.
 Usage: analyze_turn2.py <label> ... -> /out/runs/<label>.r2.json (same summary fields as analyze_turn.py)"""
-import json, os, sys, statistics, traceback
+import json, os, sys, statistics
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from heading2 import track
 from analyze_turn import clock
@@ -19,7 +19,10 @@ def _clock_ratio(fr, a0):
 
 def _write(res, label):
     json.dump(res, open(f"/out/runs/{label}.r2.json", "w"), indent=1)
-    print(json.dumps({k: v for k, v in res.items() if k != "series"}), flush=True)
+    if res.get("noop"):
+        print(f"analyze result=noop class={res.get('noop_reason') or 'unspecified'}", flush=True)
+    else:
+        print("analyze result=pass class=measured", flush=True)
 
 os.makedirs("/out/runs", exist_ok=True)
 for label in sys.argv[1:]:
@@ -80,7 +83,6 @@ for label in sys.argv[1:]:
         })
         apply_noop(res)
         _write(res, label)
-    except Exception as e:
-        print(f"WARN analyze v2 failed {label}: {e}", flush=True)
-        traceback.print_exc()
+    except Exception:
+        print("analyze result=fail class=exception", flush=True)
         continue

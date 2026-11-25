@@ -12,9 +12,9 @@ licensed install lives at `/srv/sfc2/reference/2.670`.
   not disassemble or decompile anything, read process memory, or use
   SFC2-decomp.
 - **Nothing from the game leaves the VM.** That covers game files, bytes,
-  textures, models, audio, table rows and screenshots. The CI artifact holds
-  only `results.json` and `results.csv` with measured numbers. The workflow
-  checks the artifact folder before it uploads.
+  textures, models, audio, table rows, screenshots, and per-hull measurements.
+  The CI artifact is run counts, pass/fail, and noop classes. The measured
+  `results.json` and `results.csv` stay on the runner.
 - **The reference tree is read-only.** `prepare_workcopy.sh` copies it to a
   scratch folder and changes `sfc.ini` there. The changes are: windowed mode,
   Miles audio off, sound off, the heading overlay on, the grid on, and the space backdrop and space dust off. The bright nebula backdrop was confusing the pixel heading estimate.
@@ -78,8 +78,9 @@ python3 tools/ce-harness/summarize.py ~/harness/out/runs ~/harness/out/results-c
 
 The **Private CE harness capture** workflow (`private-ce-harness.yml`) runs
 only from `workflow_dispatch` on `[self-hosted, sfc2-ci, private-data]`. Its
-inputs are `scenario` (`fed` or `klingon`) and `speeds`. It uploads only the
-numbers, then deletes the runner-local game copy, frames and Wine prefix.
+inputs are `scenario` (`fed` or `klingon`) and `speeds`. It uploads only
+counts, then deletes the runner-local game copy, frames and Wine prefix.
+Measured numbers stay under `$HOME/sfc2-private/ce-harness/<run-id>/`.
 
 ```sh
 gh workflow run "Private CE harness capture" -f scenario=fed -f speeds="5 10 15 20"

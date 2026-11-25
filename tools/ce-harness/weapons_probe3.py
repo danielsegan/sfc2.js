@@ -62,6 +62,7 @@ while time.time() - t0 < secs:
         pl = [l for l in ocr(g, "330x100+203+555").splitlines() if l.strip()]
         a2, c2, o2, t2 = bars(g)
         rec["post"] = {"lines": pl, **parse(pl), "arm": a2, "cap": c2, "own_hull": o2, "tgt_hull": t2}
-    out.append(rec); print(json.dumps(rec), flush=True); i += 1
+    out.append(rec); i += 1
     time.sleep(max(0, 1.0 - (time.time() - ts)))
 json.dump(out, open(f"/out/runs/{label}.json", "w"), indent=1)
+print(f"weapons result=pass samples={len(out)}", flush=True)

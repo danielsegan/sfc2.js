@@ -37,6 +37,10 @@ On any such request we will promptly remove the two game-art README screenshots 
 
 The repository started private. On 2026-11-25 the owner decided to publish it. The takedown plan required before that release is done: it is the [Takedown policy](#takedown-policy) above.
 
+## Private workflow logs and artifacts
+
+The repository is public, so GitHub Actions logs are world-readable and workflow artifacts can be downloaded by any signed-in user. The `private-*.yml` jobs therefore print and upload only aggregate counts, pass/fail totals, and error classes. Per-file paths and hashes, table rows, hull stats, OCR text, file previews, and decoded pixels stay on the `sfc2-ci` runner (under that runner user's home) and are not uploaded.
+
 ## Questions
 
 If you are unsure whether a file, a reference, or a contribution is allowed, stop and ask the Producer before adding it.

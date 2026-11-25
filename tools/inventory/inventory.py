@@ -8,11 +8,14 @@ run against synthetic fixtures in ordinary CI.
 Clean-room output rules (enforced here, not just by convention):
 
 - Never print or write original game *data rows* or binary payloads.
-- Logs and generated files may contain only metadata: paths, sizes,
-  sha256, counts, header/column names, encoding, line endings,
-  booleans, format vocabulary (weapon/arc codes, race/hull tokens,
-  suffix patterns), diagnostic records, and aggregate numeric stats
-  (at most two coordinate figures, each with a source path).
+- Stdout is counts, pass/fail, and error classes. Paths, sizes, hashes,
+  header names, hull tokens, and numeric ranges go to the detail log
+  and the generated files, not to stdout.
+- Generated files may contain metadata: paths, sizes, sha256, counts,
+  header/column names, encoding, line endings, booleans, format
+  vocabulary (weapon/arc codes, race/hull tokens, suffix patterns),
+  diagnostic records, and aggregate numeric stats (at most two
+  coordinate figures, each with a source path).
 - Never write into the reference or extracted trees.
 
 Diagnostic records use a flat camelCase ``code`` plus a separate
@@ -28,6 +31,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import struct
 import sys
@@ -140,19 +144,37 @@ MAX_PROBE_BYTES = 1_048_576  # 1 MiB cap when sniffing a file's structure
 TEXT_PRINTABLE = set(range(32, 127)) | {9, 10, 13}
 
 class MetadataLog:
-    """Stdout logger that refuses to echo tab/comma data rows."""
+    """Logger that refuses to echo tab/comma data rows.
+
+    `info` is the detailed trace (paths, sizes, hashes, header names, hull
+    tokens, numeric ranges). When `detail` is set, that trace stays on the
+    detail stream and does not reach `stream`. `public` is the aggregate line
+    that may be printed: counts, pass/fail, and error classes.
+    """
 
     _ROW_LIKE = re.compile(r".*\t.*\t.*")
 
-    def __init__(self, stream=None) -> None:
+    def __init__(self, stream=None, detail=None) -> None:
         self.stream = stream or sys.stdout
+        self.detail = detail
         self.lines: list[str] = []
 
     def info(self, message: str) -> None:
+        message = self._store(message)
+        target = self.detail if self.detail is not None else self.stream
+        print(message, file=target, flush=True)
+
+    def public(self, message: str) -> None:
+        message = self._store(message)
+        print(message, file=self.stream, flush=True)
+        if self.detail is not None and self.detail is not self.stream:
+            print(message, file=self.detail, flush=True)
+
+    def _store(self, message: str) -> str:
         if self._looks_like_data_row(message):
             message = "[redacted: refused to log a line that looks like a data row]"
         self.lines.append(message)
-        print(message, file=self.stream, flush=True)
+        return message
 
     @classmethod
     def _looks_like_data_row(cls, message: str) -> bool:
@@ -3179,6 +3201,18 @@ def _common_option_parser() -> argparse.ArgumentParser:
         default=Path("docs/formats/inventory"),
         help="Where to write metadata files",
     )
+    p.add_argument(
+        "--detail-log",
+        type=Path,
+        default=None,
+        help="Write the path/hash/header trace here. It is not printed.",
+    )
+    p.add_argument(
+        "--summary-out",
+        type=Path,
+        default=None,
+        help="Write the aggregate summary JSON here (counts and error classes).",
+    )
     return p
 
 
@@ -3317,6 +3351,22 @@ def cmd_inventory(args: argparse.Namespace, log: MetadataLog) -> int:
     }
     write_json(out / "observations-ce-2.670.json", observations)
     log.info(f"wrote {(out / 'observations-ce-2.670.json').as_posix()}")
+    errors = _manifest_error_classes(cross)
+    payload = {
+        "command": "inventory",
+        "result": "pass",
+        "fileCount": summary["fileCount"],
+        "totalBytes": summary["totalBytes"],
+        "extensionCount": len(summary["byExtension"]),
+        "folderCount": len(summary["byTopLevelFolder"]),
+        "errors": errors,
+    }
+    log.public(
+        f"inventory result=pass files={payload['fileCount']} bytes={payload['totalBytes']} "
+        f"extensions={payload['extensionCount']} folders={payload['folderCount']}"
+    )
+    _emit_error_classes(log, "inventory", errors)
+    _write_public_summary(getattr(args, "summary_out", None), payload)
     return 0
 
 
@@ -3384,25 +3434,130 @@ def cmd_verify(args: argparse.Namespace, log: MetadataLog) -> int:
         extra,
     )
     log.info(f"wrote {(out / 'shiplist-ftrlist-ce-2.670.md').as_posix()}")
+    ship_rows, ship_cols = _table_counts(shiplist)
+    ftr_rows, ftr_cols = _table_counts(ftrlist)
+    ship_errors = _diagnostic_classes(shiplist.diagnostics)
+    ftr_errors = _diagnostic_classes(ftrlist.diagnostics)
+    ship_fail = any(item["severity"] == "error" and item["count"] for item in ship_errors)
+    ftr_fail = any(item["severity"] == "error" and item["count"] for item in ftr_errors)
+    payload = {
+        "command": "verify",
+        "result": "fail" if ship_fail or ftr_fail else "pass",
+        "shiplist": {
+            "copies": len(shiplist_copies),
+            "rows": ship_rows,
+            "columns": ship_cols,
+            "result": "fail" if ship_fail else "pass",
+            "errors": ship_errors,
+        },
+        "ftrlist": {
+            "copies": len(ftrlist_copies),
+            "rows": ftr_rows,
+            "columns": ftr_cols,
+            "result": "fail" if ftr_fail else "pass",
+            "errors": ftr_errors,
+        },
+    }
+    log.public(
+        "verify result={result} shiplistCopies={copies} shiplistRows={rows} shiplistColumns={columns} "
+        "ftrlistCopies={fcopies} ftrlistRows={frows} ftrlistColumns={fcolumns}".format(
+            result=payload["result"],
+            copies=len(shiplist_copies),
+            rows=ship_rows,
+            columns=ship_cols,
+            fcopies=len(ftrlist_copies),
+            frows=ftr_rows,
+            fcolumns=ftr_cols,
+        )
+    )
+    _emit_error_classes(log, "verify", ship_errors + ftr_errors)
+    _write_public_summary(getattr(args, "summary_out", None), payload)
     return 0
+
+
+def _open_detail(path: Path | None):
+    """Detail trace file. With no path, discard it so stdout stays aggregate."""
+    if path is None:
+        return open(os.devnull, "w", encoding="utf-8")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    return path.open("w", encoding="utf-8")
+
+
+def _diagnostic_classes(diagnostics: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
+    counts: dict[tuple[str, str], int] = {}
+    for item in diagnostics:
+        code = str(item.get("code") or "unknown")
+        severity = str(item.get("severity") or "info")
+        counts[(code, severity)] = counts.get((code, severity), 0) + 1
+    return [
+        {"class": code, "severity": severity, "count": count}
+        for (code, severity), count in sorted(counts.items())
+    ]
+
+
+def _manifest_error_classes(cross: dict[str, Any]) -> list[dict[str, Any]]:
+    errors: list[dict[str, Any]] = []
+    for key, code, severity in (
+        ("missingOnDisk", "manifest-missing", "error"),
+        ("sizeMismatches", "manifest-size-mismatch", "error"),
+        ("extraOnDisk", "manifest-extra", "warning"),
+    ):
+        count = int(cross.get(key) or 0)
+        if count:
+            errors.append({"class": code, "severity": severity, "count": count})
+    return errors
+
+
+def _table_counts(spec: SpecVerification) -> tuple[int, int]:
+    table = spec.table or {}
+    return int(table.get("rowCount") or 0), int(table.get("columnCount") or 0)
+
+
+def _emit_error_classes(log: MetadataLog, prefix: str, errors: Sequence[dict[str, Any]]) -> None:
+    if not errors:
+        log.public(f"{prefix} errors=0")
+        return
+    for item in errors:
+        log.public(
+            f"{prefix} class={item['class']} severity={item['severity']} count={item['count']}"
+        )
+
+
+def _write_public_summary(path: Path | None, payload: dict[str, Any]) -> None:
+    if path is None:
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    log = MetadataLog()
-    if not args.extracted.exists():
-        log.info(f"error: extracted tree not found: {args.extracted.as_posix()}")
+    detail_fh = _open_detail(getattr(args, "detail_log", None))
+    log = MetadataLog(stream=sys.stdout, detail=detail_fh)
+    try:
+        if not args.extracted.exists():
+            log.public(f"{args.command} result=fail class=extracted-missing count=1")
+            _write_public_summary(
+                getattr(args, "summary_out", None),
+                {
+                    "command": args.command,
+                    "result": "fail",
+                    "errors": [{"class": "extracted-missing", "severity": "error", "count": 1}],
+                },
+            )
+            return 2
+        if args.command == "inventory":
+            return cmd_inventory(args, log)
+        if args.command == "verify":
+            return cmd_verify(args, log)
+        if args.command == "all":
+            rc = cmd_inventory(args, log)
+            if rc != 0:
+                return rc
+            return cmd_verify(args, log)
         return 2
-    if args.command == "inventory":
-        return cmd_inventory(args, log)
-    if args.command == "verify":
-        return cmd_verify(args, log)
-    if args.command == "all":
-        rc = cmd_inventory(args, log)
-        if rc != 0:
-            return rc
-        return cmd_verify(args, log)
-    return 2
+    finally:
+        detail_fh.close()
 
 
 if __name__ == "__main__":
