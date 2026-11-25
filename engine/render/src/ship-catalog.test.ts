@@ -148,6 +148,20 @@ describe('loadShipCatalog', () => {
     expect(unrecognized.failures.map((failure) => failure.reason)).toEqual(['importer.installNotRecognized']);
     expect(machinePathLeak(unrecognized)).toBeNull();
   });
+
+  it('hands each mesh to onShip and does not keep it', async () => {
+    const seen: string[] = [];
+    const catalog = await loadShipCatalog(await importInstall(syntheticViewerFiles()), {
+      onShip(ship) {
+        seen.push(ship.spawnKey);
+        expect(ship.mesh.lods.length).toBeGreaterThan(0);
+      },
+    });
+    expect(seen).toEqual(['Federation:TEST-CA-01', 'Neutral:TEST-BS-05', 'Lyran:TEST-CA-07']);
+    expect(catalog.ships).toEqual([]);
+    expect(catalog.failures.map((failure) => failure.spawnKey)).toContain('Klingon:TEST-CL-02');
+    expect(catalog.failures.map((failure) => failure.spawnKey)).toContain('ISC:TEST-CA-08');
+  });
 });
 
 function withRead(imported: ImportResult, vfs: Vfs, read: Vfs['read']): ImportResult {

@@ -23,6 +23,7 @@
   "include": [
     "tools/formats/**/*.ts",
     "tools/ship-audit/**/*.ts",
+    "tools/viewer-check/**/*.ts",
     "tools/turn-curve.d.mts",
     "engine/**/*.ts",
     "web/**/*.ts",
