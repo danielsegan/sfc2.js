@@ -20,7 +20,7 @@ import { devInstallUrl } from '../dev-install-shared.ts';
 import { DuelScene } from './scene.ts';
 import { hudScaleFromLocation, paintFieldHud } from './field-hud.ts';
 import { speedScale } from './tactical/frame.ts';
-import { barFractionFromClientX, formatSpeed, speedBarGesture, speedFromBarFraction } from './speed-bar.ts';
+import { barFractionFromClientX, formatSpeed, orderedSpeedFromField, speedBarGesture, speedFromBarFraction } from './speed-bar.ts';
 import type { SchematicMode, SystemMfdPage } from './schematic.ts';
 import {
   DEFAULT_OFFICER_PAGE,
@@ -291,7 +291,9 @@ document.getElementById('weapon-energy')?.addEventListener('change', (event) => 
   match.setWeaponRequest(raw.length === 0 ? null : Number(raw));
 });
 document.getElementById('ordered-speed')?.addEventListener('change', (event) => {
-  match.setSpeed(Number((event.target as HTMLInputElement).value));
+  const speed = orderedSpeedFromField((event.target as HTMLInputElement).value);
+  if (speed === null) return;
+  match.setSpeed(speed);
 });
 
 document.getElementById('ew-ecm')?.addEventListener('change', (event) => {

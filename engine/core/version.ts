@@ -5,7 +5,9 @@ import { xxhash32 } from './xxhash32.ts';
  * Replay envelope version. Bump when the file layout in docs/engine/replay.md changes.
  * A change to canonical state bytes is caught by simSourceHash, so it does not need a bump.
  */
-export const REPLAY_FORMAT = 1;
+export const REPLAY_FORMAT = 2;
+/** Previous envelope. Still decoded and played. New files are written as format 2. */
+export const LEGACY_REPLAY_FORMAT = 1;
 
 export interface SourceFile {
   readonly path: string;

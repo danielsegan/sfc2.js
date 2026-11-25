@@ -139,6 +139,7 @@ export const SYNTHETIC_PLAN = {
   lifeSupport: true,
   fireControl: true,
   speed: 4,
+  speedClamped: false,
   general: 0,
   weaponRequest: null as number | null,
   specific: [0, 0, 0, 0, 0, 0],
