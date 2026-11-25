@@ -366,7 +366,7 @@ test("table expect scores F-CA and K-D7 normal turns when the run omits expect",
         spawnKey: "Klingon:K-D7",
         turn: "normal",
         target_speed: 7,
-        mean_rate_deg_per_game_s_10_90: 8.6,
+        mean_rate_deg_per_game_s_10_90: 7.24,
         order_delay_s: 1.45,
       },
       {
@@ -497,4 +497,45 @@ test("table expect scores signed HET sweeps by magnitude, skips noop runs, and c
   const printed = formatSummary(summary);
   assert.match(printed, /harness\.turnNoop 3/);
   assert.doesNotMatch(printed, /F-FF|F-CL|F-DD|90\.6|51\.5/);
+});
+
+test("table expect covers Tier-2 non-Fed hulls and skips omitted cells", () => {
+  const text = [
+    "Race\tHull Type\tClass\tTurn mode\tMove Cost\tAcceleration\tShield 1\tShield 2 _ 6\tShield 3 _ 5\tShield 4\tShield Total\tR_L_Warp\tC_Warp\tImpulse\tApr\tBattery",
+    "Klingon\tCA\tK-D7\tC\t1\t3\t10\t8\t6\t4\t42\t5\t3\t4\t2\t6",
+    "Romulan\tCA\tR-SNA\tC\t1\t3\t10\t8\t6\t4\t42\t5\t3\t4\t2\t6",
+    "Lyran\tCC\tL-CC\tC\t1\t3\t10\t8\t6\t4\t42\t5\t3\t4\t2\t6",
+    "Hydran\tFF\tH-HN\tA\t1\t3\t10\t8\t6\t4\t42\t5\t3\t4\t2\t6",
+    "Gorn\tCA\tG-CA\tC\t1\t3\t10\t8\t6\t4\t42\t5\t3\t4\t2\t6",
+    "ISC\tFF\tI-FF\tA\t1\t3\t10\t8\t6\t4\t42\t5\t3\t4\t2\t6",
+    "Mirak\tCA\tZ-CA\tC\t1\t3\t10\t8\t6\t4\t42\t5\t3\t4\t2\t6",
+    "Mirak\tDD\tZ-DD\tB\t1\t3\t10\t8\t6\t4\t42\t5\t3\t4\t2\t6",
+  ].join("\n");
+  const harness = {
+    source: "synthetic",
+    method: "test",
+    heading_convention: "degrees, negative = port",
+    runs: [
+      { label: "kd7-n10", spawnKey: "Klingon:K-D7", turn: "normal", target_speed: 10, mean_rate_deg_per_game_s_10_90: 10.1, order_delay_s: 0.9 },
+      { label: "kd7-h31", spawnKey: "Klingon:K-D7", turn: "het", target_speed: 31, total_turn_deg: -97.3, mean_rate_deg_per_game_s_10_90: 53.62, order_delay_s: 5.44 },
+      { label: "rsna-n5", spawnKey: "Romulan:R-SNA", turn: "normal", target_speed: 5, mean_rate_deg_per_game_s_10_90: 7.67 },
+      { label: "lcc-h15", spawnKey: "Lyran:L-CC", turn: "het", target_speed: 15, total_turn_deg: -137.6, mean_rate_deg_per_game_s_10_90: 52.02, order_delay_s: 5.84 },
+      { label: "hhn-h5", spawnKey: "Hydran:H-HN", turn: "het", target_speed: 5, total_turn_deg: -88.3, mean_rate_deg_per_game_s_10_90: 54.57, order_delay_s: 5.53 },
+      { label: "gca-h31", spawnKey: "Gorn:G-CA", turn: "het", target_speed: 31, total_turn_deg: -135.1, mean_rate_deg_per_game_s_10_90: 40.74, order_delay_s: 5.89 },
+      { label: "iff-n5", spawnKey: "ISC:I-FF", turn: "normal", target_speed: 5, mean_rate_deg_per_game_s_10_90: 5.37 },
+      { label: "zca-h5", spawnKey: "Mirak:Z-CA", turn: "het", target_speed: 5, total_turn_deg: -90.3, mean_rate_deg_per_game_s_10_90: 52.39, order_delay_s: 5.59 },
+      { label: "zdd-n10-noop", spawnKey: "Mirak:Z-DD", turn: "normal", noop: true, target_speed: 10, mean_rate_deg_per_game_s_10_90: 234.48 },
+    ],
+  };
+  const { summary } = auditText(text, { harness, tolerance: 0, turnTolerance: 1 });
+  assert.equal(summary.harness?.unmatched, 0);
+  assert.equal(summary.harness?.turnNoop, 1);
+  assert.equal(summary.harness?.fields["turn.normal.10.degPerSecond"]?.pass, 1);
+  assert.equal(summary.harness?.fields["turn.normal.5.degPerSecond"]?.pass, 2);
+  assert.equal(summary.harness?.fields["turn.het.31.deg"]?.pass, 2);
+  assert.equal(summary.harness?.fields["turn.het.31.delayS"]?.pass, 2);
+  assert.equal(summary.harness?.fields["turn.het.31.degPerSecond"]?.pass, 2);
+  assert.equal(summary.harness?.fields["turn.het.5.deg"]?.pass, 2);
+  assert.equal(summary.harness?.fields["turn.het.15.deg"]?.pass, 1);
+  assert.equal(summaryFailed(summary), false);
 });
