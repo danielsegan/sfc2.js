@@ -44,8 +44,12 @@ if [[ "$side" == klingon ]]; then
   click 306 242 1        # fleet race -> Klingon
   click 344 291 2        # SELECT ship
   for _ in $(seq 1 20); do
-    d=$(ocr 150x14+676+193); echo "selector: $d"
-    [[ "$d" == *"N: D7"* ]] && break
+    d=$(ocr 150x14+676+193)
+    if [[ "$d" == *"N: D7"* ]]; then
+      echo "selector result=match"
+      break
+    fi
+    echo "selector result=miss"
     click 448 480 1
   done
   click 797 582 2        # DONE
@@ -59,4 +63,4 @@ for s in "$@"; do dx python3 /h/capture_turn.py "$pre-s$s-port" "$s" port 12; do
 dx import -window root "/out/$pre-end.png"
 labels=(); for s in "$@"; do labels+=("$pre-s$s-port"); done
 dx python3 /h/analyze_turn.py "${labels[@]}"
-echo "scenario $pre done"
+echo "scenario result=pass"

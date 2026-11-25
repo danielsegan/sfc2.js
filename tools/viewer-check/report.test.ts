@@ -3,8 +3,10 @@ import { parseArgs } from './cli.ts';
 import {
   buildReport,
   failureResult,
+  inspectPublicSummary,
   inspectReport,
   loadedResult,
+  publicSummary,
   shipIdentity,
   totalsFor,
   withRenderError,
@@ -153,6 +155,16 @@ describe('viewer check summary', () => {
     };
     expect(inspectReport(mismatch).problem).toBe('mismatch');
     expect(inspectReport(buildReport([], 0)).problem).toBe('empty');
+
+    const summary = publicSummary(report);
+    const text = JSON.stringify(summary);
+    expect(text).not.toContain('TEST-CL-02');
+    expect(text).not.toContain('Klingon');
+    expect(text).not.toContain('Federation');
+    expect(summary.errors).toEqual([{ class: 'loader.missingModel', count: 1 }]);
+    expect(summary.result).toBe('fail');
+    expect(inspectPublicSummary(summary).problem).toBeNull();
+    expect(inspectPublicSummary({ ...summary, ships: report.ships }).problem).toBe('leak');
   });
 
   it('parses the cli flags', () => {

@@ -98,6 +98,4 @@ print(json.dumps({
     "chance": chance,
     "damaged": damaged,
     "confident": confident,
-    "raw": blob[:400],
-    "raw_full": raw_full[:200],
 }))

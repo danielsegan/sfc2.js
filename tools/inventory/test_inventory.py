@@ -343,7 +343,7 @@ class InventoryTests(unittest.TestCase):
     SENTINEL = "SENTINEL_NOLOG_ZX9Q4_TESTROW"
 
     def test_workflow_command_lines_parse(self) -> None:
-        """The exact flag sets and order from main's private-inventory.yml (03a4039)."""
+        """Flags from .github/workflows/private-inventory.yml. HOME is expanded by the shell."""
         inventory_argv = [
             "inventory",
             "--extracted",
@@ -355,7 +355,11 @@ class InventoryTests(unittest.TestCase):
             "--readme",
             "/srv/sfc2/README.md",
             "--output-dir",
-            "docs/formats/inventory",
+            "/home/runner/sfc2-private/inventory/run/full",
+            "--detail-log",
+            "/home/runner/sfc2-private/inventory/run/detail.log",
+            "--summary-out",
+            "verify-output/inventory-summary.json",
         ]
         verify_argv = [
             "verify",
@@ -366,7 +370,11 @@ class InventoryTests(unittest.TestCase):
             "--manifest",
             "/srv/sfc2/extracted/2.670/manifest.json",
             "--output-dir",
-            "docs/formats/inventory",
+            "/home/runner/sfc2-private/inventory/run/full",
+            "--detail-log",
+            "/home/runner/sfc2-private/inventory/run/detail.log",
+            "--summary-out",
+            "verify-output/verify-summary.json",
         ]
         inv_args = inv.build_parser().parse_args(inventory_argv)
         ver_args = inv.build_parser().parse_args(verify_argv)
@@ -376,10 +384,13 @@ class InventoryTests(unittest.TestCase):
         self.assertEqual(inv_args.reference, Path("/srv/sfc2/reference/2.670"))
         self.assertEqual(inv_args.manifest, Path("/srv/sfc2/extracted/2.670/manifest.json"))
         self.assertEqual(inv_args.readme, Path("/srv/sfc2/README.md"))
-        self.assertEqual(inv_args.output_dir, Path("docs/formats/inventory"))
+        self.assertEqual(inv_args.output_dir, Path("/home/runner/sfc2-private/inventory/run/full"))
+        self.assertEqual(inv_args.detail_log, Path("/home/runner/sfc2-private/inventory/run/detail.log"))
+        self.assertEqual(inv_args.summary_out, Path("verify-output/inventory-summary.json"))
         self.assertEqual(ver_args.extracted, Path("/srv/sfc2/extracted/2.670"))
         self.assertEqual(ver_args.manifest, Path("/srv/sfc2/extracted/2.670/manifest.json"))
-        self.assertEqual(ver_args.output_dir, Path("docs/formats/inventory"))
+        self.assertEqual(ver_args.output_dir, Path("/home/runner/sfc2-private/inventory/run/full"))
+        self.assertEqual(ver_args.summary_out, Path("verify-output/verify-summary.json"))
 
     def test_workflow_command_lines_end_to_end_no_data_rows_in_logs(self) -> None:
         """Run the exact workflow command lines against a synthetic tree.
@@ -484,6 +495,11 @@ class InventoryTests(unittest.TestCase):
             )
             self._assert_no_data_rows(proc.stdout or "")
             self._assert_no_data_rows(proc.stderr or "")
+            self.assertNotIn("sha256=", proc.stdout or "")
+            self.assertNotIn("Assets/", proc.stdout or "")
+            self.assertNotIn("header names", (proc.stdout or "").lower())
+            self.assertNotRegex(proc.stdout or "", r"\b[0-9a-f]{64}\b")
+            self.assertIn("result=", proc.stdout or "")
 
         self.assertTrue((out / "ce-2.670.json").is_file())
         self.assertTrue((out / "ce-2.670.md").is_file())

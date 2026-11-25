@@ -1,8 +1,9 @@
 /**
  * Metadata-only check of a local SFC2 install.
  *
- * Prints counts, bit depths, diagnostic codes and install-relative paths.
- * It does not print file bytes, table rows or pixel samples.
+ * Stdout is counts, pass/fail, and diagnostic classes. The full report,
+ * including install-relative paths, is written only when --output is set.
+ * It does not print file bytes, table rows, or pixel samples.
  *
  *   SFC2_REFERENCE=/path/to/install node --experimental-strip-types tools/formats/verify-install.ts
  *
@@ -10,7 +11,7 @@
  * It runs only when someone dispatches it on the sfc2-ci runner.
  */
 
-import { readdir, readFile, realpath, stat } from 'node:fs/promises';
+import { mkdir, readdir, readFile, realpath, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -51,6 +52,106 @@ export interface InstallVerifyReport {
     opaqueBlackPixels: number;
   };
   gpuUpload: 'not checked headless';
+}
+
+export interface InstallPublicSummary {
+  result: 'pass' | 'fail';
+  fileCount: number;
+  build: InstallVerifyReport['build'];
+  shiplist: { assets: boolean; metaassets: boolean };
+  errors: Array<{ class: string; severity: string; count: number }>;
+  bmp: {
+    count: number;
+    decoded: number;
+    errorFiles: number;
+    bitCounts: Record<string, number>;
+    compressions: Record<string, number>;
+    headerSizes: Record<string, number>;
+    codes: Record<string, number>;
+    nonPowerOfTwo: number;
+    shortByTwoBytes: number;
+    shortParsed: number;
+    fourBit: number;
+    pairs: number;
+    pairsWithGlow: number;
+    orphans: number;
+    sizeMismatches: number;
+    dashIllumNames: number;
+    glowGrayscale: number;
+    glowColored: number;
+    paletteZero: InstallVerifyReport['bmp']['paletteZero'];
+    magentaPixels: number;
+    magentaFiles: number;
+    opaqueBlackPixels: number;
+  };
+}
+
+/** Counts and error classes. Paths and per-file samples are omitted. */
+export function publicInstallSummary(report: InstallVerifyReport): InstallPublicSummary {
+  const errors = diagnosticClasses(report.importDiagnostics);
+  return {
+    result: report.ok ? 'pass' : 'fail',
+    fileCount: report.fileCount,
+    build: report.build,
+    shiplist: {
+      assets: report.shiplist.assets !== null,
+      metaassets: report.shiplist.metaassets !== null,
+    },
+    errors,
+    bmp: {
+      count: report.bmp.count,
+      decoded: report.bmp.decoded,
+      errorFiles: report.bmp.errorFiles,
+      bitCounts: report.bmp.bitCounts,
+      compressions: report.bmp.compressions,
+      headerSizes: report.bmp.headerSizes,
+      codes: report.bmp.codes,
+      nonPowerOfTwo: report.bmp.nonPowerOfTwo,
+      shortByTwoBytes: report.bmp.shortByTwoBytes.count,
+      shortParsed: report.bmp.shortByTwoBytes.parsed,
+      fourBit: report.bmp.fourBit.count,
+      pairs: report.bmp.pairs,
+      pairsWithGlow: report.bmp.pairsWithGlow,
+      orphans: report.bmp.orphans,
+      sizeMismatches: report.bmp.sizeMismatches,
+      dashIllumNames: report.bmp.dashIllumNames,
+      glowGrayscale: report.bmp.glowGrayscale,
+      glowColored: report.bmp.glowColored,
+      paletteZero: report.bmp.paletteZero,
+      magentaPixels: report.bmp.magentaPixels,
+      magentaFiles: report.bmp.magentaFiles,
+      opaqueBlackPixels: report.bmp.opaqueBlackPixels,
+    },
+  };
+}
+
+function diagnosticClasses(
+  diagnostics: InstallVerifyReport['importDiagnostics'],
+): InstallPublicSummary['errors'] {
+  const counts = new Map<string, { class: string; severity: string; count: number }>();
+  for (const item of diagnostics) {
+    const key = `${item.code}:${item.severity}`;
+    const existing = counts.get(key);
+    if (existing) existing.count += 1;
+    else counts.set(key, { class: item.code, severity: item.severity, count: 1 });
+  }
+  return [...counts.values()].sort((left, right) => (left.class < right.class ? -1 : left.class > right.class ? 1 : 0));
+}
+
+export function formatInstallSummary(summary: InstallPublicSummary): string {
+  const lines = [
+    `bmp result=${summary.result} files=${summary.fileCount} bmp=${summary.bmp.count} decoded=${summary.bmp.decoded} errorFiles=${summary.bmp.errorFiles}`,
+  ];
+  if (summary.errors.length === 0 && Object.keys(summary.bmp.codes).length === 0) {
+    lines.push('bmp errors=0');
+  }
+  for (const item of summary.errors) {
+    lines.push(`bmp class=${item.class} severity=${item.severity} count=${item.count}`);
+  }
+  for (const [code, count] of Object.entries(summary.bmp.codes).sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))) {
+    lines.push(`bmp class=${code} count=${count}`);
+  }
+  return lines.join('\n');
 }
 
 export async function verifyInstall(root: string): Promise<InstallVerifyReport> {
@@ -292,22 +393,40 @@ function pushCap(list: string[], value: string): void {
   if (list.length < PATH_CAP) list.push(value);
 }
 
+function flag(name: string): string | undefined {
+  const index = process.argv.indexOf(name);
+  if (index === -1) return undefined;
+  const value = process.argv[index + 1];
+  if (value === undefined || value.startsWith('--')) return undefined;
+  return value;
+}
+
+async function writeJson(file: string, value: unknown): Promise<void> {
+  const target = path.resolve(file);
+  await mkdir(path.dirname(target), { recursive: true });
+  await writeFile(target, `${JSON.stringify(value, null, 2)}\n`);
+}
+
 async function main(): Promise<void> {
   const root = process.env.SFC2_REFERENCE;
   if (root === undefined || root.length === 0) {
-    process.stderr.write('SFC2_REFERENCE is not set\n');
+    process.stderr.write('bmp result=fail class=reference-unset count=1\n');
     process.exitCode = 2;
     return;
   }
   const report = await verifyInstall(root);
-  process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+  const summary = publicInstallSummary(report);
+  const output = flag('--output');
+  const summaryOut = flag('--summary-out');
+  if (output !== undefined) await writeJson(output, report);
+  if (summaryOut !== undefined) await writeJson(summaryOut, summary);
+  process.stdout.write(`${formatInstallSummary(summary)}\n`);
 }
 
 const invoked = process.argv[1] !== undefined && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (invoked) {
-  main().catch((error: unknown) => {
-    const message = error instanceof Error ? error.message : 'verify failed';
-    process.stderr.write(`${message}\n`);
+  main().catch(() => {
+    process.stderr.write('bmp result=fail class=exception count=1\n');
     process.exitCode = 1;
   });
 }

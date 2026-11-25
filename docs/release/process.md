@@ -158,9 +158,10 @@ These workflows are **not** release gates. They are `workflow_dispatch` only, on
 
 | Workflow | What it does |
 | --- | --- |
-| `private-inventory.yml` | Metadata inventory of the extracted CE 2.670 tree. Counts, paths, hashes. It does not print file contents or table rows. |
-| `private-bmp-verify.yml` | BMP and install-index check against the reference install. Counts and diagnostic codes only. |
-| `private-ce-harness.yml` | Wine behaviour capture. Screenshots, frames, the Wine prefix, and the game working copy are deleted on the runner. The uploaded artifact is measured numbers only. |
+| `private-inventory.yml` | Metadata inventory of the extracted CE 2.670 tree. The log and artifact are counts and error classes. Paths and hashes stay on the runner. |
+| `private-bmp-verify.yml` | BMP and install-index check against the reference install. Counts and diagnostic codes only. Path lists stay on the runner. |
+| `private-ce-harness.yml` | Wine behaviour capture. Screenshots, frames, the Wine prefix, and the game working copy are deleted on the runner. The uploaded artifact is run counts. Measured numbers stay on the runner. |
+| `private-viewer-check.yml` | Headless check that every shiplist row loads. The log and artifact are pass/fail totals and error classes. Per-ship ids stay on the runner. |
 
 Nothing produced by those three workflows is attached to a GitHub Release. Dispatching them is not a step in cutting a tag.
 

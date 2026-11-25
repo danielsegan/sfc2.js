@@ -1,9 +1,11 @@
 # Metadata-only BMP and install-index check against the CE 2.670 Wine tree.
 #
 # workflow_dispatch only. Runs on the sfc2-ci runner, which can read
-# /srv/sfc2/reference/2.670/. It prints counts, bit depths, diagnostic
-# codes and install-relative paths. It does not print file bytes, table
-# rows or pixel samples, and it does not commit anything.
+# /srv/sfc2/reference/2.670/. The log and the uploaded artifact are
+# counts, pass/fail, and diagnostic classes. The full report, including
+# install-relative paths, stays on the runner under
+# $HOME/sfc2-private/bmp-verify/<run-id>/. It does not print file bytes,
+# table rows, or pixel samples, and it does not commit anything.
 name: Private BMP install check
 
 on:
@@ -50,24 +52,29 @@ jobs:
 
       - name: Confirm the reference install is present
         run: |
+          set +x
           set -euo pipefail
           if [[ -d "$SFC2_REFERENCE" ]]; then
-            echo "present: $SFC2_REFERENCE"
+            echo "present: reference"
           else
-            echo "missing: $SFC2_REFERENCE"
+            echo "missing: reference"
             exit 1
           fi
 
-      - name: Verify BMP pipeline (metadata only)
+      - name: Verify BMP pipeline (counts only)
         run: |
+          set +x
           set -euo pipefail
-          mkdir -p verify-output
-          node --experimental-strip-types tools/formats/verify-install.ts | tee verify-output/bmp-verify.json
+          dest="${HOME}/sfc2-private/bmp-verify/${GITHUB_RUN_ID}"
+          mkdir -p "$dest" verify-output
+          node --experimental-strip-types tools/formats/verify-install.ts \
+            --output "$dest/bmp-verify.json" \
+            --summary-out verify-output/bmp-summary.json
 
-      - name: Upload metadata report
+      - name: Upload summary
         uses: actions/upload-artifact@v4
         with:
-          name: ce-2.670-bmp-verify
-          path: verify-output/bmp-verify.json
+          name: ce-2.670-bmp-summary
+          path: verify-output/bmp-summary.json
           if-no-files-found: error
           retention-days: 7

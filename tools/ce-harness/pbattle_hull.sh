@@ -80,7 +80,7 @@ for ci in $(seq 0 15); do
       txt=$(ocr_desig_full)
     fi
     tok=$(desig_token "$txt")
-    echo "c$n page class=$ci ship=$si desig=${tok:-?}"
+    echo "c$n page class=$ci ship=$si result=page"
     if desig_match "$txt"; then
       found=1; break
     fi
@@ -91,7 +91,7 @@ for ci in $(seq 0 15); do
     fi
     if [ $si -eq 0 ]; then first="$tok"; fi
     if [ $si -gt 0 ] && [ -n "$first" ] && [ "$tok" = "$first" ]; then
-      echo "c$n class $ci wrapped after $si ships at $tok"
+      echo "c$n class $ci result=wrap ships=$si"
       break
     fi
     $D xdotool mousemove $SX $SY click 1 mousemove 900 700; sleep 0.55
@@ -101,14 +101,14 @@ for ci in $(seq 0 15); do
 done
 $D import -window root /out/setup-${want}.png
 if [ $found -ne 1 ]; then
-  echo "c$n HULL-SELECT-FAILED ($want) hud=$hud"
+  echo "c$n HULL-SELECT-FAILED class=select"
   docker rm -f $C >/dev/null 2>&1
   exit 3
 fi
 # Re-read designation immediately before DONE so we never confirm a stale page.
 txt=$(ocr_desig)
 if ! desig_match "$txt"; then
-  echo "c$n HULL-SELECT-FAILED ($want) designation lost before DONE"
+  echo "c$n HULL-SELECT-FAILED class=designation-lost"
   docker rm -f $C >/dev/null 2>&1
   exit 3
 fi
@@ -119,7 +119,7 @@ stay=$($D bash -c 'import -window root /tmp/f.png
   tesseract /tmp/v.png - --psm 6 2>/dev/null')
 if echo "$stay" | grep -Eiq "CHOOSE[[:space:]]+VESSEL"; then
   $D import -window root /out/setup-${want}-done-miss.png
-  echo "c$n HULL-SELECT-FAILED ($want) DONE did not leave CHOOSE VESSEL (hud=$hud)"
+  echo "c$n HULL-SELECT-FAILED class=done-missed"
   docker rm -f $C >/dev/null 2>&1
   exit 3
 fi
@@ -132,8 +132,8 @@ $D import -window root /out/setup-${want}-battle.png
 
 # Hard battle-UI check (must pass before any capture).
 if ! $D python3 /h/battle_check.py "$want" /out/setup-${want}-battle.png; then
-  echo "c$n BATTLE-CHECK-FAILED ($want) hud=$hud"
+  echo "c$n BATTLE-CHECK-FAILED class=battle-check"
   docker rm -f $C >/dev/null 2>&1
   exit 3
 fi
-echo "c$n battle-ready ($want)"
+echo "c$n result=pass"

@@ -16,4 +16,4 @@ ser = []
 for t, p in fr[::3]:
     a = axis(p); ser.append([round(t, 2), None if a is None else round(a[0], 1)])
 json.dump({"label": label, "click": [x, y, b], "axis_series": ser}, open(f"{d}/probe.json", "w"))
-print(label, ser)
+print(f"mouse-helm result=pass frames={len(ser)}")

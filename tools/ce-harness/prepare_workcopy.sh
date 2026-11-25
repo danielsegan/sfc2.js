@@ -5,7 +5,7 @@
 #   prepare_workcopy.sh <reference_dir> <work_dir>
 set -euo pipefail
 ref=$1; work=$2
-[[ -f "$ref/Starfleet2CE.exe" ]] || { echo "reference install not found at $ref" >&2; exit 1; }
+[[ -f "$ref/Starfleet2CE.exe" ]] || { echo "prepare result=fail class=reference-missing" >&2; exit 1; }
 if [[ ! -f "$work/Starfleet2CE.exe" ]]; then
   mkdir -p "$work"
   cp -a "$ref/." "$work/"
@@ -16,4 +16,4 @@ ini="$work/sfc.ini"
 # heading overlay and grid on (visual references for screen measurements)
 sed -i 's/^windowed=.*/windowed=1/; s/^UseMiles=.*/UseMiles=0/; s/^HeadingDisplay=.*/HeadingDisplay=1/; s/^Grid=.*/Grid=1/; s/^backdrop=.*/backdrop=0/; s/^spacedust=.*/spacedust=0/' "$ini"
 sed -i '/^\[Sound\]/,/^\[/ s/^disable=.*/disable=1/' "$ini"
-echo "work copy ready: $work"
+echo "prepare result=pass"

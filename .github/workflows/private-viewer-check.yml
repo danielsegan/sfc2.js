@@ -2,9 +2,10 @@
 #
 # workflow_dispatch only. Runs on the sfc2-ci runner, which can read
 # /srv/sfc2/reference/2.670 (the Wine install, not the extracted tree).
-# Stdout is a JSON summary: ship id, empire, pass/fail, the stage that
-# failed, and an error class, plus totals. The artifact is that JSON only.
-# The job does not upload screenshots, textures, models, or the install.
+# The log and the uploaded artifact are counts, pass/fail, and error
+# classes. The per-ship report (hull id and empire) stays on the runner
+# under $HOME/sfc2-private/viewer-check/<run-id>/. The job does not
+# upload screenshots, textures, models, or the install.
 # Chromium is installed into the runner user cache and is not uploaded.
 name: Private ship viewer check
 
@@ -55,11 +56,12 @@ jobs:
 
       - name: Confirm the reference install is present
         run: |
+          set +x
           set -euo pipefail
           if [[ -d "$SFC2_REFERENCE" ]]; then
-            echo "present: $SFC2_REFERENCE"
+            echo "present: reference"
           else
-            echo "missing: $SFC2_REFERENCE"
+            echo "missing: reference"
             exit 1
           fi
 
@@ -67,33 +69,39 @@ jobs:
         id: check
         continue-on-error: true
         run: |
+          set +x
           set -euo pipefail
-          mkdir -p verify-output
-          node --experimental-strip-types tools/viewer-check/cli.ts > verify-output/viewer-check.json
+          dest="${HOME}/sfc2-private/viewer-check/${GITHUB_RUN_ID}"
+          mkdir -p "$dest" verify-output
+          node --experimental-strip-types tools/viewer-check/cli.ts \
+            --output "$dest/report.json" \
+            --summary-out verify-output/viewer-summary.json
 
-      - name: Guard the JSON summary
+      - name: Guard the summary
         id: guard
         if: always() && steps.check.outcome != 'cancelled'
         run: |
+          set +x
           set -euo pipefail
-          cd verify-output
-          for f in *; do
-            case "$f" in viewer-check.json) ;; *) echo "unexpected file in artifact dir: $f"; exit 1 ;; esac
-          done
-          size=$(stat -c %s viewer-check.json)
-          test "$size" -gt 0
-          test "$size" -lt 2097152
-          node --experimental-strip-types ../tools/viewer-check/cli.ts --summary viewer-check.json --allow-failures
+          dest="${HOME}/sfc2-private/viewer-check/${GITHUB_RUN_ID}"
+          test -s verify-output/viewer-summary.json
+          test "$(stat -c %s verify-output/viewer-summary.json)" -lt 65536
+          node --experimental-strip-types tools/viewer-check/cli.ts --check-summary verify-output/viewer-summary.json
+          node --experimental-strip-types tools/viewer-check/cli.ts --summary "$dest/report.json" --allow-failures
 
-      - name: Upload JSON summary
+      - name: Upload summary
         if: steps.guard.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
-          name: ce-2.670-viewer-check
-          path: verify-output/viewer-check.json
+          name: ce-2.670-viewer-summary
+          path: verify-output/viewer-summary.json
           if-no-files-found: error
           retention-days: 7
 
       - name: Require every ship to pass
         if: steps.guard.outcome == 'success'
-        run: node --experimental-strip-types tools/viewer-check/cli.ts --summary verify-output/viewer-check.json
+        run: |
+          set +x
+          set -euo pipefail
+          dest="${HOME}/sfc2-private/viewer-check/${GITHUB_RUN_ID}"
+          node --experimental-strip-types tools/viewer-check/cli.ts --summary "$dest/report.json"

@@ -15,9 +15,16 @@ COPIES = [1, 2, 3]
 def log(msg):
     LOG.parent.mkdir(parents=True, exist_ok=True)
     line = time.strftime("%Y-%m-%d %H:%M:%S EST ") + msg
-    print(line, flush=True)
     with LOG.open("a") as f:
         f.write(line + "\n")
+    if msg.startswith("queue complete"):
+        print(f"dispatch result=pass {msg}", flush=True)
+    elif msg.startswith("launch"):
+        print("dispatch class=launch", flush=True)
+    elif msg.startswith("hold"):
+        print("dispatch class=hold", flush=True)
+    else:
+        print("dispatch class=event", flush=True)
 
 def sh(cmd):
     return subprocess.run(cmd, shell=True, capture_output=True, text=True)

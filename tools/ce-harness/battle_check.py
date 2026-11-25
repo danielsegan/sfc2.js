@@ -24,13 +24,12 @@ text_top = ocr(shot, "700x200+150+140")
 text_helm = ocr(shot, "200x232+0+0")
 text_bot = ocr(shot, "400x40+200+736")
 blob = " ".join((text_top, text_helm, text_bot, ocr(shot, "600x80+200+250"))).upper()
-print("OCR", " ".join(blob.split())[:240], flush=True)
 
 if re.search(r"CHOOSE\s+VESSEL", blob):
-    print("FAIL menu still showing CHOOSE VESSEL", flush=True)
+    print("battle result=fail class=menu", flush=True)
     sys.exit(1)
 if re.search(r"\b(CUSTOMIZE|SINGLE PLAYER|CHOOSE FLEET)\b", blob):
-    print("FAIL still on a setup menu", flush=True)
+    print("battle result=fail class=setup-menu", flush=True)
     sys.exit(1)
 
 # Helm / energy tab or the in-battle SPEED / CHANCE chrome.
@@ -42,7 +41,7 @@ im = Image.open(shot).convert("RGB")
 panel = [im.getpixel((x, y)) for y in range(0, 232) for x in range(0, 200)]
 bright = sum(1 for r, g, b in panel if r + g + b > 180)
 if not helm_ok and bright < 400:
-    print(f"FAIL no helm/energy tab (bright={bright})", flush=True)
+    print("battle result=fail class=no-helm", flush=True)
     sys.exit(1)
 if not helm_ok:
     # chrome is present but OCR missed the words — allow if the panel is clearly lit
@@ -50,7 +49,7 @@ if not helm_ok:
     cx = [im.getpixel((x, y)) for y in range(250, 500) for x in range(350, 750)]
     mid_bright = sum(1 for r, g, b in cx if r + g + b > 250)
     if mid_bright > 40000:
-        print(f"FAIL centre not a battle field (mid_bright={mid_bright})", flush=True)
+        print("battle result=fail class=not-field", flush=True)
         sys.exit(1)
-print(f"PASS battle UI up (helm_ocr={helm_ok} panel_bright={bright}) want={want}", flush=True)
+print("battle result=pass", flush=True)
 sys.exit(0)

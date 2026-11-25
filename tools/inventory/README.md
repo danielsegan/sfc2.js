@@ -16,9 +16,9 @@ Real install data is read **only** on the self-hosted runner (`runs-on: [self-ho
 - `verify` (Job B) locates every `shiplist.txt` and `ftrlist.txt` (for example `Assets/Specs` and `MetaAssets`), uses the `Assets/Specs` copy as the source when both exist, and writes:
   - `docs/formats/inventory/shiplist-ftrlist-ce-2.670.json` and `.md` — full header names in column order (leading comment/instruction lines and preamble markers such as `<0` are skipped so the real header is found), column count, row count, encoding, line endings, delimiter, hashes of every copy, `duplicateClassKey` / `duplicateClassName` (keys and row numbers only), fighter/PF presence counts, distinct weapon and arc codes with row counts split by slot range 1–10 vs 11–25, per-column sources for numeric arc codes `1`/`2`/`3`, and per-slot arc counts for weapon slots 1–10 after Num/Arc pairing (`Heavy Weapon N` included), and numeric-arc-to-weapon pairings (including whether numeric arcs appear with anything other than `Dro*` / `ADD6` / `ADD12`, plus the converse letter-vs-numeric counts for those weapon slots), distinct race values with row counts, `.bft` / `*.q3` locations (and a ZIP/PACK directory listing of entry names and sizes when identifiable), and BMP `_<n>i` header-only pair comparisons (bit depth, compression, width/height)
 
-Per-column numeric stats (`numericColumnStats`: min, max, max decimal places) are written to the private-run verify JSON/MD **artifacts only** and must not be committed to the repository. Distinct shiplist/ftrlist race values with row counts may be committed.
+Per-column numeric stats (`numericColumnStats`: min, max, max decimal places) are written to the verify JSON/MD on the runner and must not be committed or uploaded. Distinct shiplist/ftrlist race values with row counts may be committed.
 
-Logs and generated files contain **no data rows**. Allowed metadata: paths, sizes, sha256, counts, header/column names, encoding, line endings, booleans, format vocabulary (weapon/arc codes, race/hull tokens, suffix patterns), and aggregate numeric stats.
+Stdout is counts, pass/fail, and error classes. It does not include paths, sizes, hashes, header names, hull tokens, or numeric ranges. Generated files on the runner may contain that metadata (paths, sizes, sha256, header/column names, encoding, line endings, booleans, format vocabulary, and aggregate numeric stats) and contain **no data rows**.
 
 ## Diagnostics
 
@@ -59,15 +59,15 @@ python3 tools/inventory/inventory.py verify \
 
 ## Private workflow
 
-`.github/workflows/private-inventory.yml` is `workflow_dispatch` only, with `permissions: contents: read`. It does **not** commit, and it never pushes to `main`. Each job prints the metadata summary to the log and uploads only the generated JSON/MD files as artifacts.
+`.github/workflows/private-inventory.yml` is `workflow_dispatch` only, with `permissions: contents: read`. It does **not** commit, and it never pushes to `main`. Each job prints counts, pass/fail, and error classes. The full JSON/MD stays on the runner at `$HOME/sfc2-private/inventory/<run-id>/`. The uploaded artifact is the aggregate summary only, because artifacts on a public repository can be downloaded by any signed-in user.
 
 ### How to commit the generated metadata
 
 1. Dispatch the workflow against this branch (see below).
-2. Download the `ce-2.670-inventory-metadata` and `ce-2.670-shiplist-ftrlist-metadata` artifacts.
-3. Copy the JSON and Markdown files into `docs/formats/inventory/` on `formats/inventory-ce2670` (or a follow-up branch). Do not add any other files from the runner.
+2. On the `sfc2-ci` runner, copy the JSON and Markdown files from `$HOME/sfc2-private/inventory/<run-id>/` (not the summary artifact).
+3. Copy those files into `docs/formats/inventory/` on `formats/inventory-ce2670` (or a follow-up branch). Do not add any other files from the runner.
 4. Run `bash tools/check-no-game-files.sh`. The no-game-files rules are not loosened for this work.
-5. If `ce-2.670.json` is over 1 MiB, leave it as an artifact and do **not** add a blanket allowlist exception. Ask the Producer before adding a size-only allowlist entry for that one generated metadata file.
+5. If `ce-2.670.json` is over 1 MiB, do **not** add a blanket allowlist exception. Ask the Producer before adding a size-only allowlist entry for that one generated metadata file.
 6. Commit only the metadata files, with a message that they were observed on CE 2.670 / `sfc2-ci`.
 
 ### Dispatching the workflow
@@ -77,9 +77,9 @@ GitHub only offers `workflow_dispatch` for a workflow file that already exists o
 ```bash
 gh workflow run private-inventory.yml --ref formats/inventory-ce2670
 gh run watch
-gh run download --name ce-2.670-inventory-metadata
-gh run download --name ce-2.670-shiplist-ftrlist-metadata
 ```
+
+The downloadable artifacts are the count summaries. The files to commit are on the runner, as above.
 
 ## Legal
 

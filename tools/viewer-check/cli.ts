@@ -4,33 +4,38 @@
  *   node --experimental-strip-types tools/viewer-check/cli.ts --synthetic
  *   SFC2_REFERENCE=/path/to/install node --experimental-strip-types tools/viewer-check/cli.ts
  *
- * Stdout is one JSON summary: per ship {id, empire, pass, stage_failed, error}
- * plus totals. Paths, file bytes, and pixels are not printed.
- * `--summary FILE` checks a summary that was already written and prints totals only.
+ * Stdout is counts, pass/fail, and error classes. `--output` writes the
+ * per-ship report (ids and empires) for the runner only. `--summary-out`
+ * writes the aggregate summary that is safe to upload.
+ * `--summary FILE` checks a per-ship report and prints totals only.
  *
  * The private job is `.github/workflows/private-viewer-check.yml`.
  */
 
-import { readFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { inspectReport } from './report.ts';
+import { formatPublicSummary, inspectPublicSummary, inspectReport, publicSummary } from './report.ts';
 
 interface Args {
   synthetic: boolean;
   install?: string;
   frames?: number;
   summary?: string;
+  checkSummary?: string;
+  output?: string;
+  summaryOut?: string;
   allowFailures: boolean;
   help: boolean;
 }
 
 function usage(): string {
   return [
-    'usage: node --experimental-strip-types tools/viewer-check/cli.ts [--synthetic] [--install DIR] [--frames N]',
+    'usage: node --experimental-strip-types tools/viewer-check/cli.ts [--synthetic] [--install DIR] [--frames N] [--output FILE] [--summary-out FILE]',
     '       node --experimental-strip-types tools/viewer-check/cli.ts --summary FILE [--allow-failures]',
+    '       node --experimental-strip-types tools/viewer-check/cli.ts --check-summary FILE',
     'SFC2_REFERENCE, then SFC2_INSTALL, names the CE install when --synthetic and --install are omitted.',
-    'Stdout is the JSON summary. --summary prints totals only.',
+    'Stdout is counts, pass/fail, and error classes. --output keeps the per-ship report on the runner.',
   ].join('\n');
 }
 
@@ -50,8 +55,17 @@ export function parseArgs(argv: readonly string[]): Args {
     else if (flag === '--install') {
       args.install = take(argv, i, flag);
       i += 1;
-    } else if (flag === '--summary') {
+    }     else if (flag === '--summary') {
       args.summary = take(argv, i, flag);
+      i += 1;
+    } else if (flag === '--check-summary') {
+      args.checkSummary = take(argv, i, flag);
+      i += 1;
+    } else if (flag === '--output') {
+      args.output = take(argv, i, flag);
+      i += 1;
+    } else if (flag === '--summary-out') {
+      args.summaryOut = take(argv, i, flag);
       i += 1;
     } else if (flag === '--frames') {
       const raw = take(argv, i, flag);
@@ -87,9 +101,39 @@ async function summarize(file: string, allowFailures: boolean): Promise<number> 
     process.stderr.write('viewer summary rejected the report (empty)\n');
     return 2;
   }
-  process.stdout.write(`${JSON.stringify(inspected.report.totals)}\n`);
+  process.stdout.write(`${formatPublicSummary(publicSummary(inspected.report))}\n`);
   if (!allowFailures && inspected.report.totals.failed > 0) return 1;
   return 0;
+}
+
+async function checkSummary(file: string): Promise<number> {
+  let text: string;
+  try {
+    text = await readFile(file, 'utf8');
+  } catch {
+    process.stderr.write('viewer summary rejected the report (shape)\n');
+    return 2;
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text) as unknown;
+  } catch {
+    process.stderr.write('viewer summary rejected the report (shape)\n');
+    return 2;
+  }
+  const inspected = inspectPublicSummary(parsed);
+  if (inspected.summary === null || inspected.problem !== null) {
+    process.stderr.write(`viewer summary rejected the report (${inspected.problem ?? 'shape'})\n`);
+    return 2;
+  }
+  process.stdout.write(`${formatPublicSummary(inspected.summary)}\n`);
+  return 0;
+}
+
+async function writeJson(file: string, value: unknown): Promise<void> {
+  const target = path.resolve(file);
+  await mkdir(path.dirname(target), { recursive: true });
+  await writeFile(target, `${JSON.stringify(value, null, 2)}\n`);
 }
 
 async function main(): Promise<number> {
@@ -99,6 +143,7 @@ async function main(): Promise<number> {
     return 0;
   }
   if (args.summary !== undefined) return summarize(args.summary, args.allowFailures);
+  if (args.checkSummary !== undefined) return checkSummary(args.checkSummary);
 
   const { runViewerCheck } = await import('./run.ts');
   const install = args.install ?? process.env.SFC2_REFERENCE ?? process.env.SFC2_INSTALL;
@@ -107,12 +152,15 @@ async function main(): Promise<number> {
     ...(args.synthetic ? {} : { install }),
     ...(args.frames === undefined ? {} : { frames: args.frames }),
   });
-  if (run.pageError !== null) process.stderr.write(`viewer page error: ${run.pageError}\n`);
+  if (run.pageError !== null) process.stderr.write('viewer class=page-error count=1\n');
   if (run.report === null || run.status === 'withheld' || run.status === 'unsafe' || run.status === 'no-report') {
-    process.stderr.write(`viewer check withheld the report (${run.status})\n`);
+    process.stderr.write(`viewer result=fail class=${run.status} count=1\n`);
     return 2;
   }
-  process.stdout.write(`${JSON.stringify(run.report, null, 2)}\n`);
+  const summary = publicSummary(run.report);
+  if (args.output !== undefined) await writeJson(args.output, run.report);
+  if (args.summaryOut !== undefined) await writeJson(args.summaryOut, summary);
+  process.stdout.write(`${formatPublicSummary(summary)}\n`);
   if (run.status === 'no-install' || run.status === 'no-webgl') return 2;
   return run.report.totals.failed === 0 ? 0 : 1;
 }
@@ -123,10 +171,8 @@ if (invoked) {
     .then((code) => {
       process.exitCode = code;
     })
-    .catch((error: unknown) => {
-      const message = error instanceof Error ? error.message : 'viewer check failed';
-      const safe = message.includes('\\') || message.includes('/srv/') ? 'viewer check failed' : message;
-      process.stderr.write(`${safe}\n`);
+    .catch(() => {
+      process.stderr.write('viewer result=fail class=exception count=1\n');
       process.exitCode = 2;
     });
 }

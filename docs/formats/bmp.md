@@ -123,7 +123,7 @@ Codes are registered in [docs/engine/diagnostics.md](../engine/diagnostics.md). 
 
 ## 6. To verify on sfc2-ci
 
-Dispatch **Private BMP install check** (`.github/workflows/private-bmp-verify.yml`) on the `sfc2-ci` runner. It reads `/srv/sfc2/reference/2.670` (the Wine install, not the extracted category tree) and writes counts only. The questions it answers:
+Dispatch **Private BMP install check** (`.github/workflows/private-bmp-verify.yml`) on the `sfc2-ci` runner. It reads `/srv/sfc2/reference/2.670` (the Wine install, not the extracted category tree). The log and artifact are counts and diagnostic classes. The full report, including paths, stays on the runner. The questions it answers:
 
 1. Root detection finds `Starfleet2CE.exe` and `Assets/Specs/shiplist.txt`, and `location.file` values stay install-relative.
 2. Bit depth and compression across all BMPs, not only the glow histogram. Some inventory file sizes sit 2 bytes under a standard 8-bit square (66,612 vs 66,614). Confirm the header and that `parseBmp` accepts those files.

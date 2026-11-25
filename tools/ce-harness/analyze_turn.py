@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Analysis phase: heading per frame (screen pixels), game clock / speed OCR, turn timing.
 Usage: analyze_turn.py <label> ...  -> /out/runs/<label>.json"""
-import json, os, subprocess, sys, statistics, traceback
+import json, os, subprocess, sys, statistics
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from heading import axis
 from turn_tags import apply_noop, sane_clock_ratio, turn_kind
@@ -52,6 +52,12 @@ def energy(path):
         except ValueError: v = None
         out[k] = _sane_energy(k, v)
     return out
+def _announce(res):
+    if res.get("noop"):
+        print(f"analyze result=noop class={res.get('noop_reason') or 'unspecified'}", flush=True)
+    else:
+        print("analyze result=pass class=measured", flush=True)
+
 HET_BUTTONS = {"port", "stbd", "hard_port", "hard_stbd", "u_turn"}
 def turn_kind(button):
     return "het" if button in HET_BUTTONS else "normal"
@@ -90,7 +96,7 @@ if __name__ == "__main__":
                 res["spawnKey"] = os.environ["SPAWN_KEY"]
             res.update(pad_meta)
             json.dump(res, open(f"/out/runs/{label}.json", "w"), indent=1)
-            print(json.dumps({k: v for k, v in res.items() if k != "series"}))
+            _announce(res)
             continue
         total = statistics.median(tail)
         def first(frac): return next((t for t, v in sm if t > 0 and abs(v) >= frac * abs(total)), None)
@@ -122,8 +128,7 @@ if __name__ == "__main__":
         res.update(pad_meta)
         apply_noop(res)
         json.dump(res, open(f"/out/runs/{label}.json", "w"), indent=1)
-        print(json.dumps({k: v for k, v in res.items() if k != "series"}))
-      except Exception as e:
-        print(f"WARN analyze v1 failed {label}: {e}")
-        traceback.print_exc()
+        _announce(res)
+      except Exception:
+        print("analyze result=fail class=exception", flush=True)
         continue
