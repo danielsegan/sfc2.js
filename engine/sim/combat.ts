@@ -20,6 +20,13 @@ import { ENTITY_KIND, type TableSpec, type World } from './world.ts';
 import { facingForRelative, relativeBearing, shotInArc, withinRange } from './arcs.ts';
 import { disruptorShot } from './disruptor.ts';
 import { rulesDiv } from './rules-div.ts';
+import {
+  allocationOrder,
+  batteryForPool,
+  captureSystems,
+  reinforcementBlocked,
+  rememberSettlement,
+} from './power.ts';
 import { createAccelRamp, stampAccel } from './accel.ts';
 import { stampCurve, usesCurve } from './turn-curve.ts';
 import type { ShipSetup } from './bind-shiplist.ts';
@@ -77,6 +84,7 @@ import {
   ROW_SENSORS,
   MODE_KEEP,
   MODE_NORMAL,
+  MODE_OFFLINE,
   MODE_OVERLOAD,
   MODE_PROXIMITY,
   TURN_UNVERIFIED,
@@ -556,6 +564,7 @@ function pullCapacitor(mounts: readonly MountMem[], capacitor100: number): numbe
 }
 
 function acceptedEnergy(mount: MountMem, def: WeaponDef, mode: number, request100: number, capacitor100: number, mounts: readonly MountMem[]): number {
+  if (mode === MODE_OFFLINE) return 0;
   if (def.internal === INTERNAL_PHASER) {
     if (def.chargeCost <= 0) return 0;
     const need = scale(def.chargeCost) - mount.charge100;
@@ -637,6 +646,7 @@ export function placeSetup(world: World, setup: ShipSetup, x: number, y: number,
   world.setHeading(id, angle16(heading));
   writeHull(world, id, fields);
   writeMounts(world, id, mounts);
+  captureSystems(world, id, fields);
   stampCurve(world, id, setup.classCode === CLASS_FIGHTER ? undefined : setup.turnHull);
   stampAccel(world, id, setup.classCode === CLASS_FIGHTER ? undefined : setup.turnHull, setup.speed);
   return id;
@@ -870,6 +880,9 @@ function applySetEnergy(world: World, cmd: Command, ctx: TickContext, options: R
     if (capped < facing[i]!) reinforceCapped = true;
     facing[i] = capped;
   }
+  if (reinforcementBlocked(world, id)) {
+    for (let i = 0; i < 6; i++) facing[i] = 0;
+  }
   let shieldPoints = 0;
   for (const points of facing) shieldPoints += points;
 
@@ -887,9 +900,11 @@ function applySetEnergy(world: World, cmd: Command, ctx: TickContext, options: R
     weaponDesired,
   ];
   const gen = fields[H.warp100]! + fields[H.impulse100]! + fields[H.apr100]!;
-  let pool = gen + fields[H.battery100]!;
+  let pool = gen + batteryForPool(world, id, fields[H.battery100]!);
   const paid = [0, 0, 0, 0, 0];
-  for (let k = 0; k < 5; k++) {
+  const order = allocationOrder(world, id);
+  for (let n = 0; n < order.length; n++) {
+    const k = order[n]!;
     const give = desired[k]! < pool ? desired[k]! : pool;
     paid[k] = give;
     pool -= give;
@@ -959,6 +974,20 @@ function applySetEnergy(world: World, cmd: Command, ctx: TickContext, options: R
   else if (reinforceCapped && uncapped > shieldPoints) reason = R.reinforceCapped;
   else if (chargeCapped) reason = R.chargeCapped;
 
+  rememberSettlement(
+    world,
+    id,
+    gen,
+    desired[0]! + desired[1]! + desired[2]! + desired[3]! + desired[4]!,
+    paid[PAY_MOVE]!,
+    paid[PAY_WEAPON]!,
+    paid[PAY_SHIELD]!,
+    paid[PAY_LIFE]! + paid[PAY_FC]!,
+    desired[PAY_MOVE]!,
+    desired[PAY_WEAPON]!,
+    desired[PAY_SHIELD]!,
+    desired[PAY_LIFE]! + desired[PAY_FC]!,
+  );
   fields[H.speed] = speed;
   fields[H.speedFrac100] = speedFrac;
   fields[H.fcPaid] = fcOn && paid[PAY_FC]! >= desired[PAY_FC]! ? 1 : 0;
@@ -978,6 +1007,7 @@ function applySetEnergy(world: World, cmd: Command, ctx: TickContext, options: R
 }
 
 function mountReady(mount: MountMem, def: WeaponDef): boolean {
+  if (mount.mode === MODE_OFFLINE) return false;
   if (def.internal === INTERNAL_PHASER) {
     if (def.chargeCost <= 0) return false;
     return mount.charge100 >= scale(def.chargeCost);
@@ -1064,6 +1094,10 @@ function applyFire(world: World, cmd: Command, ctx: TickContext): void {
   }
   if (mount.boxes <= 0) {
     emitRule(ctx, id as number, R.weaponDestroyed, -1);
+    return;
+  }
+  if (mount.mode === MODE_OFFLINE) {
+    emitRule(ctx, id as number, R.notCharged, -1);
     return;
   }
   if (!mountReady(mount, def)) {

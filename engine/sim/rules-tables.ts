@@ -70,6 +70,8 @@ export const INTERNAL_DISRUPTOR = 5;
 export const MODE_NORMAL = 0;
 export const MODE_OVERLOAD = 1;
 export const MODE_PROXIMITY = 2;
+/** Mount is powered down. It does not charge or fire. */
+export const MODE_OFFLINE = 3;
 /** Payload sentinel: keep the mount's current mode. */
 export const MODE_KEEP = -1;
 

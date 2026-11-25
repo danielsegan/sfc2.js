@@ -63,12 +63,14 @@ import {
   INTERNAL_DRONE,
   INTERNAL_PHASER,
   INTERNAL_PHOTON,
+  DEFAULT_RULES_TURN_TICKS,
   MODE_OVERLOAD,
   arcDef,
   weaponDef,
   type WeaponDef,
 } from '../sim/rules-tables.ts';
 import { curveRowOf, rateFromRow } from '../sim/turn-curve.ts';
+import { readPower, type PowerView } from '../sim/power.ts';
 import {
   EVENT_HET,
   HET_ACTIVE,
@@ -146,6 +148,54 @@ export interface EnergyReadout {
   readonly planTicksLeft: number;
   readonly lastReason: string;
   readonly lastVerb: number;
+  readonly generation: number;
+  readonly demand: number;
+  /** Generation minus demand. Negative means the plan asked for more than the plant makes. */
+  readonly surplus: number;
+  readonly draws: {
+    readonly movement: number;
+    readonly weapons: number;
+    readonly shields: number;
+    readonly tractors: number;
+    readonly ecm: number;
+    readonly other: number;
+    readonly cloak: number;
+  };
+  /** Requested power before an overdraw cut. Same shape and units as `draws`. */
+  readonly desired: {
+    readonly movement: number;
+    readonly weapons: number;
+    readonly shields: number;
+    readonly tractors: number;
+    readonly ecm: number;
+    readonly other: number;
+    readonly cloak: number;
+  };
+  readonly priorities: {
+    readonly movement: number;
+    readonly weapons: number;
+    readonly shields: number;
+    readonly tractors: number;
+    readonly ecm: number;
+  };
+  readonly batteryDischarging: boolean;
+  readonly energyPeriodTicks: number;
+}
+
+export interface DamageSystem {
+  readonly id: string;
+  readonly label: string;
+  readonly boxesTotal: number;
+  readonly boxesLeft: number;
+  readonly repairing: boolean;
+}
+
+export interface DamageView {
+  readonly systems: readonly DamageSystem[];
+  readonly hull: { readonly boxesTotal: number; readonly boxesLeft: number };
+  readonly crew: { readonly current: number; readonly max: number; readonly marines: number };
+  readonly repairQueue: readonly string[];
+  readonly repairPoints: number;
 }
 
 export interface SelfView {
@@ -181,6 +231,8 @@ export interface SelfView {
   readonly tractorLink: boolean;
   readonly netShift: number | null;
   readonly craft: CraftReadout;
+  readonly shieldState: 'down' | 'minimal' | 'up';
+  readonly damage: DamageView;
 }
 
 export interface ContactView {
@@ -506,6 +558,43 @@ function shiftAgainst(
   return null;
 }
 
+function damageView(ship: ReturnType<typeof shipView>, power: PowerView | null): DamageView {
+  const left = [
+    ship.systems.bridge,
+    ship.systems.hullForward,
+    ship.systems.hullCenter,
+    ship.systems.hullAft,
+    ship.systems.sensors,
+    ship.systems.armor,
+    ship.systems.extraDamage,
+  ];
+  const ids = ['bridge', 'hullForward', 'hullCenter', 'hullAft', 'sensors', 'armor', 'extra'];
+  const systems: DamageSystem[] = [];
+  for (let i = 0; i < ids.length; i++) {
+    const id = ids[i]!;
+    const boxesLeft = left[i] ?? 0;
+    const boxesTotal = power?.systemMax[i] ?? boxesLeft;
+    systems.push({
+      id,
+      label: id,
+      boxesTotal,
+      boxesLeft,
+      repairing: power?.repairQueue[0] === id && boxesLeft < boxesTotal,
+    });
+  }
+  const hullLeft = ship.systems.hullForward + ship.systems.hullCenter + ship.systems.hullAft;
+  const hullTotal = power
+    ? (power.systemMax[1] ?? 0) + (power.systemMax[2] ?? 0) + (power.systemMax[3] ?? 0)
+    : hullLeft;
+  return {
+    systems,
+    hull: { boxesTotal: hullTotal, boxesLeft: hullLeft },
+    crew: { current: ship.crew, max: power && power.crewMax > 0 ? power.crewMax : ship.crew, marines: 0 },
+    repairQueue: power?.repairQueue ?? [],
+    repairPoints: 0,
+  };
+}
+
 export function buildViewModel(input: ViewBuildInput): ViewModel {
   const alpha = input.alpha < 0 ? 0 : input.alpha > 1 ? 1 : input.alpha;
   const curr = input.curr.world;
@@ -634,6 +723,8 @@ export function buildViewModel(input: ViewBuildInput): ViewModel {
       const reason = ship.lastVerb === 0 ? '' : (REASON_NAME[ship.lastReason] ?? '');
       const helm = helmReadout(input.curr.world, input.selfIndex);
       const helmView = readHelmView(input.curr.world, input.selfIndex);
+      const power = readPower(curr, input.selfIndex);
+      const period = fieldAt(input.curr.world, input.selfIndex, H.planPeriod);
       self = {
         id: entityId(curr, input.selfIndex),
         index: input.selfIndex,
@@ -648,6 +739,30 @@ export function buildViewModel(input: ViewBuildInput): ViewModel {
           planTicksLeft: fieldAt(input.curr.world, input.selfIndex, H.planTicksLeft),
           lastReason: reason,
           lastVerb: ship.lastVerb,
+          generation: toDisplayEnergy(power ? power.generation : ship.warp100 + ship.impulse100 + ship.apr100),
+          demand: toDisplayEnergy(power?.demand ?? 0),
+          surplus: toDisplayEnergy(power?.surplus ?? 0),
+          draws: {
+            movement: toDisplayEnergy(power?.draws.movement ?? 0),
+            weapons: toDisplayEnergy(power?.draws.weapons ?? 0),
+            shields: toDisplayEnergy(power?.draws.shields ?? 0),
+            tractors: ship.tractorPaid,
+            ecm: ship.ecmPaid + ship.eccmPaid,
+            other: toDisplayEnergy(power?.draws.other ?? 0),
+            cloak: 0,
+          },
+          desired: {
+            movement: toDisplayEnergy(power?.desired.movement ?? 0),
+            weapons: toDisplayEnergy(power?.desired.weapons ?? 0),
+            shields: toDisplayEnergy(power?.desired.shields ?? 0),
+            tractors: ship.tractorPaid,
+            ecm: ship.ecmPaid + ship.eccmPaid,
+            other: toDisplayEnergy(power?.desired.other ?? 0),
+            cloak: 0,
+          },
+          priorities: power?.priorities ?? { movement: 3, weapons: 3, shields: 3, tractors: 3, ecm: 3 },
+          batteryDischarging: power?.batteryDischarging ?? true,
+          energyPeriodTicks: period > 0 ? period : DEFAULT_RULES_TURN_TICKS,
         },
         shields: shieldsOf(ship),
         hull: hullOf(ship),
@@ -670,6 +785,8 @@ export function buildViewModel(input: ViewBuildInput): ViewModel {
         tractorLink: ship.tractorLink === 1,
         netShift: shiftAgainst(curr, ship, contacts),
         craft: craftReadout(curr, input.selfIndex),
+        shieldState: power?.shieldState ?? 'up',
+        damage: damageView(ship, power),
       };
     }
   }

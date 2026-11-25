@@ -340,7 +340,7 @@
             </div>
             <div class="wpn-controls-row">
               <div class="presets wpn-modes">
-                <button type="button" id="weapons-offline" disabled title="Offline weapon mode has no DuelMatch verb yet. Tracked on issue #145.">Offline</button>
+                <button type="button" id="weapons-offline" data-action="weapons.offline" title="Power down the selected mounts">Offline</button>
                 <button type="button" id="weapons-normal" data-action="weapons.normal" aria-pressed="true">Normal</button>
                 <button type="button" id="weapons-overload" data-action="weapons.overload" aria-pressed="false">Overload</button>
                 <button type="button" id="weapons-proximity" data-action="weapons.proximity" hidden aria-pressed="false">Proximity</button>
@@ -361,10 +361,10 @@
           <div class="mfd-page" data-mfd-page="shields" hidden>
             <div class="plate-head">
               <h2>Shields</h2>
-              <div class="presets" role="group" aria-label="Shield state">
-                <button type="button" disabled title="Down, Minimal, and Up have no DuelMatch verb yet. Tracked on issue #145.">Down</button>
-                <button type="button" disabled title="Down, Minimal, and Up have no DuelMatch verb yet. Tracked on issue #145.">Minimal</button>
-                <button type="button" disabled title="Down, Minimal, and Up have no DuelMatch verb yet. Tracked on issue #145.">Up</button>
+              <div class="presets shield-state" role="group" aria-label="Shield state">
+                <button type="button" id="shields-down" data-action="shields.down" title="Drop shields" aria-pressed="false">Down</button>
+                <button type="button" id="shields-minimal" data-action="shields.minimal" title="Raise basic shields" aria-pressed="false">Minimal</button>
+                <button type="button" id="shields-up" data-action="shields.up" title="Shields up" aria-pressed="true">Up</button>
               </div>
             </div>
             <div class="shield-layout">
@@ -379,8 +379,8 @@
                   <input id="reinforce-amount" type="number" min="0" max="100" step="1" value="1" aria-label="Reinforcement points" />
                 </div>
                 <div class="presets">
-                  <button type="button" data-action="shields.reinforce">Reinforce</button>
-                  <button type="button" data-action="shields.reinforceAll">Reinforce all</button>
+                  <button type="button" id="shields-reinforce" data-action="shields.reinforce">Reinforce</button>
+                  <button type="button" id="shields-reinforce-all" data-action="shields.reinforceAll">Reinforce all</button>
                 </div>
               </div>
             </div>
