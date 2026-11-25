@@ -5,8 +5,9 @@
 # run it from the Actions tab: Tutorial capture -> Run workflow.
 #
 # The job builds the web app, serves the production build on port 1701,
-# and records the synthetic fixture. It does not read an SFC2 install.
-# The MP4 is an Actions artifact. It is not committed.
+# and records the synthetic fixture twice: the v1 key lesson and the v2
+# concept lesson. It does not read an SFC2 install. The MP4s are Actions
+# artifacts. They are not committed.
 
 name: Tutorial capture
 
@@ -24,7 +25,7 @@ jobs:
   capture:
     name: Record tutorial
     runs-on: ubuntu-22.04
-    timeout-minutes: 45
+    timeout-minutes: 70
     steps:
       - name: Check out repository
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -46,7 +47,7 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update
-          sudo apt-get install -y ffmpeg fonts-dejavu-core
+          sudo apt-get install -y ffmpeg fonts-dejavu-core espeak-ng python3-venv
 
       - name: Set up pnpm
         uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
@@ -86,10 +87,25 @@ jobs:
           unset SFC2_INSTALL SFC2_REFERENCE SFC2_EXTRACTED
           pnpm tutorial
 
-      - name: Upload the tutorial MP4
+      - name: Upload the v1 tutorial MP4
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: sfc2js-tutorial-1080p
           path: tools/tutorial/out/sfc2js-tutorial-1080p.mp4
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Record the v2 tutorial
+        shell: bash
+        run: |
+          set -euo pipefail
+          unset SFC2_INSTALL SFC2_REFERENCE SFC2_EXTRACTED
+          pnpm tutorial:v2
+
+      - name: Upload the v2 tutorial MP4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: sfc2js-tutorial-v2
+          path: tools/tutorial/out-v2/sfc2js-tutorial-v2.mp4
           if-no-files-found: error
           retention-days: 14

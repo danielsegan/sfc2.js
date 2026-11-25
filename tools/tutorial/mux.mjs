@@ -5,7 +5,6 @@
 import { spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
-import { notInCut, skipped, sources } from './segments.mjs';
 
 function ffmpeg(args, cwd) {
   return new Promise((resolve, reject) => {
@@ -68,7 +67,7 @@ function escapeAss(text) {
 
 export function writeCaptions({ path, segments, walls, openMs, marginV }) {
   const speechMargin = Math.max(36, Math.round(marginV));
-  const keyMargin = speechMargin + 128;
+  const keyMargin = speechMargin + 210;
   const lines = [
     '[Script Info]',
     'ScriptType: v4.00+',
@@ -79,8 +78,8 @@ export function writeCaptions({ path, segments, walls, openMs, marginV }) {
     '',
     '[V4+ Styles]',
     'Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding',
-    `Style: Keys,DejaVu Sans,42,&H00FFFFFF,&H000000FF,&H00000000,&HC0101820,-1,0,0,0,100,100,1,0,3,14,0,2,80,80,${keyMargin},1`,
-    `Style: Speech,DejaVu Sans,32,&H00F2E8D8,&H000000FF,&H00000000,&HC0101820,0,0,0,0,100,100,0,0,3,12,0,2,100,100,${speechMargin},1`,
+    `Style: Keys,DejaVu Sans,40,&H00FFFFFF,&H000000FF,&H00000000,&HC0101820,-1,0,0,0,100,100,1,0,3,14,0,2,80,80,${keyMargin},1`,
+    `Style: Speech,DejaVu Sans,30,&H00F2E8D8,&H000000FF,&H00000000,&HC0101820,0,0,0,0,100,100,0,0,3,12,0,2,100,100,${speechMargin},1`,
     '',
     '[Events]',
     'Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text',
@@ -158,7 +157,7 @@ export async function muxVideo({ videoPath, leadMs, durationMs, narration, capti
   ], dir);
 }
 
-export function writeScript({ path, segments, walls, openMs, voice, lengthScale, port }) {
+export function writeScript({ path, segments, walls, openMs, voice, lengthScale, port, doc }) {
   let cursor = openMs;
   const rows = segments.map((segment, index) => {
     const start = cursor;
@@ -166,16 +165,16 @@ export function writeScript({ path, segments, walls, openMs, voice, lengthScale,
     cursor = end;
     return `| ${clock(start)} | ${clock(end)} | ${segment.action} | ${segment.keys} | ${segment.narration} |`;
   });
-  const skipRows = skipped.map((item) => `| ${item.item} | ${item.why} |`);
-  const sourceRows = sources.map(([control, where, note]) => `| ${control} | \`${where}\` | ${note} |`);
-  const cut = notInCut.map((line) => `- ${line}`).join('\n');
-  const body = `# SFC2.js control tutorial
+  const skipRows = doc.skipped.map((item) => `| ${item.item} | ${item.why} |`);
+  const sourceRows = doc.sources.map(([control, where, note]) => `| ${control} | \`${where}\` | ${note} |`);
+  const cut = doc.notInCut.map((line) => `- ${line}`).join('\n');
+  const body = `# ${doc.title}
 
-Narration for the 1080p capture of the production web build. Vite preview serves it on port ${port}. The page boots the synthetic skirmish and the banner names \`engine/duel/fixture.ts\`. No install is mounted and no game files are read.
+${doc.lede}
 
-Voice: Piper ${voice}. Length scale ${lengthScale}. Sentence gap 0.12 s. There is no music. Captions are burned in, and the key line names the control for that segment.
+Voice: ${voice}. Speed or length scale ${lengthScale}. ${doc.voiceNote}
 
-The capture selects UI scale 1× before the first paint so the field and the console both fit in 1920×1080. The page's own fit at this size is 1.25×. Time scale stays on the page default of 4× until the high-energy-turn segment sets it to 1×, then puts it back to 4×.
+${doc.notes}
 
 Timestamps are the burned-in captions from this recording.
 

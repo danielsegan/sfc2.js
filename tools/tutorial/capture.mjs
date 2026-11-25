@@ -5,7 +5,6 @@
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { chromium } from '@playwright/test';
-import { OPEN_MS, PAD_MS } from './segments.mjs';
 
 const VIEW = { width: 1920, height: 1080 };
 
@@ -236,7 +235,7 @@ function cursorScript() {
   document.documentElement.append(dot);
 }
 
-export async function recordSession({ origin, segments, outDir, screenshot }) {
+export async function recordSession({ origin, segments, outDir, screenshot, openMs = 700, padMs = 280 }) {
   mkdirSync(outDir, { recursive: true });
   const browser = await chromium.launch({
     headless: true,
@@ -291,20 +290,20 @@ export async function recordSession({ origin, segments, outDir, screenshot }) {
       const shield = await page.locator('#shield-table').innerText();
       console.log(`probe ordered speed ${ordered}`);
       console.log(`probe shields ${shield.replaceAll('\n', ' | ')}`);
-      return { layout, videoPath: null, walls: [], leadMs: 0, openMs: OPEN_MS, probePath };
+      return { layout, videoPath: null, walls: [], leadMs: 0, openMs, probePath };
     }
     await page.waitForFunction(() => {
       const button = document.querySelector('button[data-slot="0"]');
       return button instanceof HTMLElement && button.classList.contains('ready');
     }, null, { timeout: 15000 });
     const timeline = performance.now();
-    await sleep(OPEN_MS);
+    await sleep(openMs);
     console.log('Weapons are charged. Starting the timed capture.');
     const ctx = bind(page);
     const walls = [];
     for (const segment of segments) {
       console.log(`segment ${segment.id}`);
-      const budget = segment.audioMs + PAD_MS;
+      const budget = segment.audioMs + padMs;
       const started = performance.now();
       try {
         await segment.play(ctx, budget);
@@ -328,7 +327,7 @@ export async function recordSession({ origin, segments, outDir, screenshot }) {
       leadMs: Math.max(0, timeline - pageReady - 120),
       pageSkewMs: pageReady - beforePage,
       tailMs: closed - timeline,
-      openMs: OPEN_MS,
+      openMs,
     };
   } catch (error) {
     await page.screenshot({ path: join(outDir, 'failure.png'), type: 'png' }).catch(() => {});
