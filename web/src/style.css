@@ -717,11 +717,26 @@ section[aria-label="Helm"] .step { margin: 2px 0; font-size: 11px; }
   font-size: calc(11px / var(--ui-scale));
 }
 .helm-page .read { font-size: calc(11px / var(--ui-scale)); line-height: 1.05; margin: 0; }
-.helm-page .step { margin: 0; font-size: calc(10px / var(--ui-scale)); line-height: 1; }
+.helm-page .step {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(2px / var(--ui-scale));
+  margin: 0;
+  font-size: calc(10px / var(--ui-scale));
+  line-height: 1;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
 .helm-page .step input {
-  width: calc(40px / var(--ui-scale));
+  width: calc(32px / var(--ui-scale));
+  max-width: 100%;
+  flex: 0 0 auto;
+  box-sizing: border-box;
   height: calc(14px / var(--ui-scale));
   min-height: 0;
+  min-width: 0;
   padding: 0;
   font-size: calc(10px / var(--ui-scale));
 }

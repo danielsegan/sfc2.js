@@ -109,13 +109,15 @@ export function energyScaleMax(energy: Pick<EnergyReadout, 'generation' | 'deman
 
 export function energyRowValues(energy: EnergyMeterInput, category: EnergyCategory): EnergyRowValues {
   const allocated = Math.max(0, energy.draws[category]);
-  const explicit = energy.desired?.[category];
+  const published = energy.desired;
+  const explicit = published?.[category];
   let desired: number | null = null;
   if (typeof explicit === 'number' && Number.isFinite(explicit)) {
+    // #156 publishes SelfView.energy.desired for every priority system.
     desired = Math.max(0, explicit);
-  } else if (energy.lastReason !== 'overDraw' && energy.surplus >= 0) {
-    // When not in overdraw, paid draws equal what the system asked for.
-    desired = allocated;
+  } else if (published === undefined) {
+    // Field absent: during overdraw hide the asked amount; otherwise paid equals asked.
+    if (energy.lastReason !== 'overDraw' && energy.surplus >= 0) desired = allocated;
   }
   const scale = energyScaleMax(energy);
   const barPct = Math.round(Math.max(0, Math.min(1, allocated / scale)) * 100);

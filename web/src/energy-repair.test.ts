@@ -40,8 +40,58 @@ describe('energy priority cycle', () => {
     expect(step3.weapons).toBe(5);
   });
 
-  it('computes read-only meter values and hides desired during overdraw unless explicitly published', () => {
+  it('shows allocated against published desired and only dashes when that field is absent in overdraw', () => {
+    const draws = { movement: 4, weapons: 0, shields: 10, tractors: 1, ecm: 1, other: 0, cloak: 0 };
+    const published = energyRowValues(
+      {
+        generation: 20,
+        demand: 30,
+        surplus: -10,
+        lastReason: 'overDraw',
+        draws,
+        desired: { movement: 6, weapons: 8, shields: 10, tractors: 1, ecm: 1 },
+      },
+      'movement',
+    );
+    expect(published).toEqual({ allocated: 4, desired: 6, barPct: 13 });
+    expect(energyRowValues(
+      {
+        generation: 20,
+        demand: 30,
+        surplus: -10,
+        lastReason: 'overDraw',
+        draws,
+        desired: { movement: 6, weapons: 8, shields: 10, tractors: 1, ecm: 1 },
+      },
+      'weapons',
+    )).toEqual({ allocated: 0, desired: 8, barPct: 0 });
+
     const ok = energyRowValues(
+      {
+        generation: 30,
+        demand: 20,
+        surplus: 10,
+        lastReason: 'ok',
+        draws: { movement: 10, weapons: 5, shields: 5, tractors: 0, ecm: 0, other: 0, cloak: 0 },
+        desired: { movement: 10, weapons: 5, shields: 5, tractors: 0, ecm: 0 },
+      },
+      'movement',
+    );
+    expect(ok).toEqual({ allocated: 10, desired: 10, barPct: 33 });
+
+    const absentOverdraw = energyRowValues(
+      {
+        generation: 20,
+        demand: 30,
+        surplus: -10,
+        lastReason: 'overDraw',
+        draws,
+      },
+      'weapons',
+    );
+    expect(absentOverdraw).toEqual({ allocated: 0, desired: null, barPct: 0 });
+
+    const absentOk = energyRowValues(
       {
         generation: 30,
         demand: 20,
@@ -51,19 +101,7 @@ describe('energy priority cycle', () => {
       },
       'movement',
     );
-    expect(ok).toEqual({ allocated: 10, desired: 10, barPct: 33 });
-
-    const overdraw = energyRowValues(
-      {
-        generation: 20,
-        demand: 30,
-        surplus: -10,
-        lastReason: 'overDraw',
-        draws: { movement: 10, weapons: 0, shields: 10, tractors: 0, ecm: 0, other: 0, cloak: 0 },
-      },
-      'weapons',
-    );
-    expect(overdraw).toEqual({ allocated: 0, desired: null, barPct: 0 });
+    expect(absentOk).toEqual({ allocated: 10, desired: 10, barPct: 33 });
   });
 });
 
