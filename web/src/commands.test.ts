@@ -7,6 +7,9 @@ import { runAction, type CommandHost } from './commands.ts';
 interface Recording {
   host: CommandHost;
   dirs: Array<-1 | 1>;
+  angles: number[];
+  emer: number[];
+  erratic: boolean[];
   fired: number[];
   modes: Array<{ slot: number; mode: number }>;
   notes: string[];
@@ -20,6 +23,9 @@ interface Recording {
 
 function hostRecording(opts?: { weapons?: Array<{ slotIndex: number; family: string }> }): Recording {
   const dirs: Array<-1 | 1> = [];
+  const angles: number[] = [];
+  const erratic: boolean[] = [];
+  const emer: number[] = [];
   const fired: number[] = [];
   const modes: Array<{ slot: number; mode: number }> = [];
   const notes: string[] = [];
@@ -33,6 +39,18 @@ function hostRecording(opts?: { weapons?: Array<{ slotIndex: number; family: str
     plan,
     orderHet(dir: -1 | 1) {
       dirs.push(dir);
+    },
+    orderHetAngle(delta: number) {
+      angles.push(delta);
+    },
+    orderHet180() {
+      angles.push(32768);
+    },
+    orderEmerDecel() {
+      emer.push(1);
+    },
+    setErratic(on: boolean) {
+      erratic.push(on);
     },
     orderFire(slot: number) {
       fired.push(slot);
@@ -97,7 +115,7 @@ function hostRecording(opts?: { weapons?: Array<{ slotIndex: number; family: str
         ? null
         : ({ self: { weapons } } as unknown as ViewModel),
   };
-  return { host, dirs, fired, modes, notes, slots, groups, group: 0, plan, facings, amount };
+  return { host, dirs, angles, emer, erratic, fired, modes, notes, slots, groups, group: 0, plan, facings, amount };
 }
 
 describe('HET command path', () => {
@@ -109,10 +127,23 @@ describe('HET command path', () => {
   });
 
   it('ignores unknown helm actions rather than inventing a HET dir', () => {
-    const { host, dirs } = hostRecording();
+    const { host, dirs, angles } = hostRecording();
     runAction(host, 'helm.het');
     runAction(host, 'helm.hetForward');
     expect(dirs).toEqual([]);
+    expect(angles).toEqual([]);
+  });
+
+  it('sends free-angle sweeps, a 180, an emergency stop, and an erratic toggle', () => {
+    const rec = hostRecording();
+    runAction(rec.host, 'helm.het.-8192');
+    runAction(rec.host, 'helm.het.32768');
+    runAction(rec.host, 'helm.het180');
+    runAction(rec.host, 'helm.emerDecel');
+    runAction(rec.host, 'helm.erratic');
+    expect(rec.angles).toEqual([-8192, 32768, 32768]);
+    expect(rec.emer).toEqual([1]);
+    expect(rec.erratic).toEqual([true]);
   });
 });
 

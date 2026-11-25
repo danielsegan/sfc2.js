@@ -32,6 +32,7 @@ import {
   setCurveDelay,
   speedKey,
 } from './turn-curve.ts';
+import { breakdownLeft, hetChance, markBreakdown } from './duel-helm.ts';
 
 export const EVENT_HET = 20;
 
@@ -45,11 +46,22 @@ export const HET_INVALID_DIR = 8;
 export const HET_ACTIVE = 9;
 /** Not a refusal: the sweep finished this tick. `b` is the heading reached. */
 export const HET_DONE = 10;
+/** The success roll failed, or helm is still locked from an earlier failure. */
+export const HET_BREAKDOWN = 11;
 
 export function hetPayload(entity: number, dir: number): Uint8Array {
   const out = new Uint8Array(8);
   writeU32(out, 0, entity | 0);
   writeU32(out, 4, dir | 0);
+  return out;
+}
+
+/** Free-angle HET. `delta16` is a signed BAM sweep, from −32768 through 32768. 0 holds the bow through the delay. */
+export function hetAnglePayload(entity: number, delta16: number): Uint8Array {
+  const out = new Uint8Array(12);
+  writeU32(out, 0, entity | 0);
+  writeU32(out, 4, 0);
+  writeU32(out, 8, delta16 | 0);
   return out;
 }
 
@@ -86,8 +98,12 @@ function applyHet(world: World, cmd: Command, ctx: TickContext): void {
     emit(ctx, id as number, problem, 0);
     return;
   }
-  if (dir !== -1 && dir !== 1) {
-    emit(ctx, id as number, HET_INVALID_DIR, dir);
+  const free = cmd.payload.length >= 12;
+  const delta = free ? readI32(cmd.payload, 8) : 0;
+  const deltaMag = delta < 0 ? -delta : delta;
+  const badSweep = free ? deltaMag > 32768 : dir !== -1 && dir !== 1;
+  if (badSweep) {
+    emit(ctx, id as number, HET_INVALID_DIR, free ? delta : dir);
     return;
   }
   const fields = readHull(world, id);
@@ -100,8 +116,18 @@ function applyHet(world: World, cmd: Command, ctx: TickContext): void {
     emit(ctx, id as number, HET_ACTIVE, state[HS.remaining]!);
     return;
   }
+  const locked = breakdownLeft(world, id);
+  if (locked > 0) {
+    emit(ctx, id as number, HET_BREAKDOWN, locked);
+    return;
+  }
+  const chance = hetChance(world, id);
+  if (chance < 100 && !ctx.rng.stream('combat').chance(chance, 100)) {
+    emit(ctx, id as number, HET_BREAKDOWN, markBreakdown(world, id, ctx));
+    return;
+  }
   const point = curvePoint(HET_CURVE, hetIdFor(world, id), speedKey(fields));
-  const sweep = dir * point.angle;
+  const sweep = free ? delta : dir * point.angle;
   world.setFields(id, HET_STATE, [1, sweep, point.delay, point.rate]);
   // The HET supersedes any heading order. A pending normal-turn delay is dropped.
   if (world.hasTable(HEADING_ORDER)) world.setFields(id, HEADING_ORDER, [HEADING_OFF, 0, 0, 0]);

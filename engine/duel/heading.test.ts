@@ -119,7 +119,16 @@ describe('heading order', () => {
   it('fills the helm view from the tick the order was steered', () => {
     const match = boot();
     step(match);
-    expect(match.view().self?.helm).toEqual({ mode: 'none', remainingTurn16: 0, hetDelayTicks: 0 });
+    expect(match.view().self?.helm).toEqual({
+      mode: 'none',
+      remainingTurn16: 0,
+      hetDelayTicks: 0,
+      hetSuccessChance: 100,
+      hetBreakdown: false,
+      emerDecelActive: false,
+      emerDecelTicksLeft: 0,
+      erraticActive: false,
+    });
     match.orderHeading(50000);
     step(match);
     const self = match.view().self;

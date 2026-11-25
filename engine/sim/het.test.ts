@@ -114,7 +114,16 @@ describe('orderHet (verb 13)', () => {
     const { sim, events } = run([setup('F-CA', 20)], 2, { 2: [[VERB_ORDER_HET, hetPayload(SHIP, 1)]] });
     expect(hetEvents(events)).toEqual([{ tick: 2, kind: EVENT_HET, entity: SHIP, a: HET_ORDERED, b: 16384 }].map((e) => expect.objectContaining(e)));
     // Order tick: one delay tick already spent.
-    expect(helm(sim, 0)).toEqual({ mode: 'het', remainingTurn16: 16384, hetDelayTicks: 170 });
+    expect(helm(sim, 0)).toEqual({
+      mode: 'het',
+      remainingTurn16: 16384,
+      hetDelayTicks: 170,
+      hetSuccessChance: 100,
+      hetBreakdown: false,
+      emerDecelActive: false,
+      emerDecelTicksLeft: 0,
+      erraticActive: false,
+    });
     expect(heading(sim, 0)).toBe(0);
   });
 
@@ -129,10 +138,28 @@ describe('orderHet (verb 13)', () => {
     expect(done?.b).toBe(16384);
     const order2 = run([setup('F-CA', 20)], order + 171, { [order]: [[VERB_ORDER_HET, hetPayload(SHIP, 1)]] });
     expect(heading(order2.sim, 0)).toBe(285);
-    expect(helm(order2.sim, 0)).toEqual({ mode: 'het', remainingTurn16: 16384 - 285, hetDelayTicks: 0 });
+    expect(helm(order2.sim, 0)).toEqual({
+      mode: 'het',
+      remainingTurn16: 16384 - 285,
+      hetDelayTicks: 0,
+      hetSuccessChance: 100,
+      hetBreakdown: false,
+      emerDecelActive: false,
+      emerDecelTicksLeft: 0,
+      erraticActive: false,
+    });
     const delay = run([setup('F-CA', 20)], order + 170, { [order]: [[VERB_ORDER_HET, hetPayload(SHIP, 1)]] });
     expect(heading(delay.sim, 0)).toBe(0);
-    expect(helm(delay.sim, 0)).toEqual({ mode: 'het', remainingTurn16: 16384, hetDelayTicks: 0 });
+    expect(helm(delay.sim, 0)).toEqual({
+      mode: 'het',
+      remainingTurn16: 16384,
+      hetDelayTicks: 0,
+      hetSuccessChance: 100,
+      hetBreakdown: false,
+      emerDecelActive: false,
+      emerDecelTicksLeft: 0,
+      erraticActive: false,
+    });
     const last = run([setup('F-CA', 20)], order + 227, { [order]: [[VERB_ORDER_HET, hetPayload(SHIP, 1)]] });
     expect(helm(last.sim, 0).remainingTurn16).toBe(139);
   });
@@ -237,7 +264,16 @@ describe('orderHet (verb 13)', () => {
     ]);
     expect(events.find((e) => e.kind === EVENT_HEADING)?.a).toBe(HEADING_HET_ACTIVE);
     expect(events.find((e) => e.kind === EVENT_HELM)?.a).toBe(HELM_HET_ACTIVE);
-    expect(helm(sim, 0)).toEqual({ mode: 'het', remainingTurn16: 16384, hetDelayTicks: 171 - 11 });
+    expect(helm(sim, 0)).toEqual({
+      mode: 'het',
+      remainingTurn16: 16384,
+      hetDelayTicks: 171 - 11,
+      hetSuccessChance: 100,
+      hetBreakdown: false,
+      emerDecelActive: false,
+      emerDecelTicksLeft: 0,
+      erraticActive: false,
+    });
     expect(heading(sim, 0)).toBe(0);
   });
 

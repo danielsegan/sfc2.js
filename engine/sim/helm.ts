@@ -30,6 +30,7 @@ import {
   HORD,
   holdHeading,
 } from './heading.ts';
+import { breakdownLeft, helmExtras } from './duel-helm.ts';
 
 /** Duel yaw order. Combat's verbs stay 1–5 and 7–10; this match registers 6 beside them. */
 export const VERB_ORDER_HELM = 6;
@@ -46,6 +47,8 @@ export const HELM_NOT_SHIP = 6;
 export const HELM_DESTROYED = 7;
 /** A High-Energy Turn is pending or running (hetActive). */
 export const HELM_HET_ACTIVE = 8;
+/** Helm is locked after a failed High-Energy Turn. */
+export const HELM_BREAKDOWN = 9;
 
 export function helmPayload(entity: number, yaw16: number): Uint8Array {
   const out = new Uint8Array(8);
@@ -93,6 +96,10 @@ function apply(world: World, cmd: Command, ctx: TickContext): void {
   }
   if (hetActive(world, id) === 1) {
     reject(ctx, id as number, HELM_HET_ACTIVE);
+    return;
+  }
+  if (breakdownLeft(world, id) > 0) {
+    reject(ctx, id as number, HELM_BREAKDOWN);
     return;
   }
   if (yaw !== 0 && turnImmobile(fields[H.turnMode]!) === 1) {
@@ -147,6 +154,14 @@ export interface HelmView {
   readonly remainingTurn16: number;
   /** Ticks left before a pending High-Energy Turn starts rotating. 0 outside `het` and once rotation starts. */
   readonly hetDelayTicks: number;
+  /** 0–100. 100 until erratic maneuvers are on. Damage does not reduce it yet. */
+  readonly hetSuccessChance: number;
+  /** True while a failed HET still has the helm locked. */
+  readonly hetBreakdown: boolean;
+  /** True while the ship cannot get underway after an emergency stop. */
+  readonly emerDecelActive: boolean;
+  readonly emerDecelTicksLeft: number;
+  readonly erraticActive: boolean;
 }
 
 function tableOf(snap: WorldSnap, id: string): { readonly data: readonly number[]; readonly fieldCount: number } | undefined {
@@ -158,7 +173,7 @@ function tableOf(snap: WorldSnap, id: string): { readonly data: readonly number[
 
 /** Current tick only. Positions are not blended here. */
 export function readHelmView(snap: WorldSnap, index: number): HelmView {
-  const idle: HelmView = { mode: 'none', remainingTurn16: 0, hetDelayTicks: 0 };
+  const idle: HelmView = { mode: 'none', remainingTurn16: 0, hetDelayTicks: 0, ...helmExtras(snap, index) };
   if (index < 0 || snap.live[index] !== 1) return idle;
   const het = tableOf(snap, HET_STATE);
   if (het && het.fieldCount >= HET_FIELDS) {
@@ -168,6 +183,7 @@ export function readHelmView(snap: WorldSnap, index: number): HelmView {
         mode: 'het',
         remainingTurn16: (het.data[at + HS.remaining] ?? 0) | 0,
         hetDelayTicks: (het.data[at + HS.delayLeft] ?? 0) | 0,
+        ...helmExtras(snap, index),
       };
     }
   }
@@ -184,5 +200,6 @@ export function readHelmView(snap: WorldSnap, index: number): HelmView {
     mode: 'heading',
     remainingTurn16: shortestArc(angle16(current), angle16(aim)) | 0,
     hetDelayTicks: 0,
+    ...helmExtras(snap, index),
   };
 }

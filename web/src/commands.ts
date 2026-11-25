@@ -1,6 +1,6 @@
 /**
  * Turn a keymap action into a session order or a note.
- * Reverse, erratic maneuvers, and drones stay on the console.
+ * Reverse and drones stay on the console. Erratic maneuvers and emergency stop are live.
  */
 import type { DuelPlan } from '../../engine/duel/match.ts';
 import type { DuelMatch } from '../../engine/duel/match.ts';
@@ -42,7 +42,6 @@ export interface CommandHost {
 
 const LATER: Record<string, string> = {
   'helm.reverse': 'Reverse is not in this duel.',
-  'helm.erratic': 'Erratic maneuvers are not in this duel.',
   'craft.drone': 'Drones are not in this duel.',
 };
 
@@ -69,6 +68,15 @@ export function runAction(host: CommandHost, id: string): void {
   else if (id === 'helm.stop') host.match.setSpeed(0);
   else if (id === 'helm.hetPort') host.match.orderHet(-1);
   else if (id === 'helm.hetStarboard') host.match.orderHet(1);
+  else if (id === 'helm.het180') host.match.orderHet180();
+  else if (id === 'helm.hetOrdered') host.match.orderHetAngle(host.view()?.self?.helm.remainingTurn16 ?? 0);
+  else if (id.startsWith('helm.het.')) {
+    const sweep = Number(id.slice('helm.het.'.length));
+    if (Number.isInteger(sweep)) host.match.orderHetAngle(sweep);
+  } else if (id === 'helm.emerDecel') host.match.orderEmerDecel();
+  else if (id === 'helm.erratic') {
+    host.match.setErratic(!(host.view()?.self?.helm.erraticActive ?? false));
+  }
   else if (id === 'weapons.fire') fireGroup(host);
   else if (id === 'weapons.selectAll') selectAll(host);
   else if (id === 'weapons.alphaStrike') fireSelected(host);

@@ -27,6 +27,7 @@ import {
   reinforcementBlocked,
   rememberSettlement,
 } from './power.ts';
+import { capacitorRate, erraticShot, limitOrderedSpeed, scaleByCapacitorRate } from './duel-helm.ts';
 import { createAccelRamp, stampAccel } from './accel.ts';
 import { stampCurve, usesCurve } from './turn-curve.ts';
 import type { ShipSetup } from './bind-shiplist.ts';
@@ -563,13 +564,23 @@ function pullCapacitor(mounts: readonly MountMem[], capacitor100: number): numbe
   return left;
 }
 
-function acceptedEnergy(mount: MountMem, def: WeaponDef, mode: number, request100: number, capacitor100: number, mounts: readonly MountMem[]): number {
+function acceptedEnergy(
+  mount: MountMem,
+  def: WeaponDef,
+  mode: number,
+  request100: number,
+  capacitor100: number,
+  mounts: readonly MountMem[],
+  rate: number,
+): number {
   if (mode === MODE_OFFLINE) return 0;
   if (def.internal === INTERNAL_PHASER) {
     if (def.chargeCost <= 0) return 0;
-    const need = scale(def.chargeCost) - mount.charge100;
-    const capRoom = capacitorMax(mounts) - capacitor100;
-    const room = (need > 0 ? need : 0) + (capRoom > 0 ? capRoom : 0);
+    const needRaw = scale(def.chargeCost) - mount.charge100;
+    const need = needRaw > 0 ? needRaw : 0;
+    const capRaw = capacitorMax(mounts) - capacitor100;
+    const capRoom = capRaw > 0 ? capRaw : 0;
+    const room = need + scaleByCapacitorRate(capRoom, rate);
     return request100 < room ? request100 : room;
   }
   if (heavyFamily(def.internal)) {
@@ -841,6 +852,12 @@ function applySetEnergy(world: World, cmd: Command, ctx: TickContext, options: R
       accelClamp = true;
     }
   }
+  const limited = limitOrderedSpeed(world, id, speed, speedFrac);
+  if (limited.clamped) {
+    speed = limited.speed;
+    speedFrac = limited.frac;
+    accelClamp = true;
+  }
 
   for (const ask of asks) {
     const mount = mounts[ask.slot]!;
@@ -860,7 +877,7 @@ function applySetEnergy(world: World, cmd: Command, ctx: TickContext, options: R
     const def = weaponDef(mount.weaponId)!;
     const mode = mount.mode;
     const request100 = scale(ask.request);
-    const accepted = acceptedEnergy(mount, def, mode, request100, capacitor, mounts);
+    const accepted = acceptedEnergy(mount, def, mode, request100, capacitor, mounts, capacitorRate(world, id));
     if (accepted < request100) chargeCapped = true;
     paidAsks.push({ slot: ask.slot, mode, accepted, paid: 0 });
     weaponDesired += accepted;
@@ -1176,7 +1193,7 @@ function applyFire(world: World, cmd: Command, ctx: TickContext): void {
   const facing = facingForRelative(incoming);
   const same = (id as number) === (targetId as number);
   const victim = same ? fields : target;
-  if (shotMisses(ctx, fields, victim)) {
+  if (shotMisses(ctx, fields, victim, erraticShot(world, id, targetId))) {
     remember(fields, VERB_FIRE, R.ewMiss, 0);
     writeMounts(world, id, mounts);
     writeHull(world, id, fields);
@@ -1230,7 +1247,7 @@ function impactShot(world: World, shot: ShotMem, ctx: TickContext): void {
     delta(from.y, to.y),
   );
   const ownerFields = readHull(world, owner);
-  if (shotMisses(ctx, ownerFields, target)) {
+  if (shotMisses(ctx, ownerFields, target, erraticShot(world, owner, targetId))) {
     ctx.emit({ kind: EVENT_MISS, entity: targetId as number, a: 0, b: shot.damage });
     return;
   }

@@ -60,7 +60,7 @@ import {
   headingHandler,
   headingPayload,
 } from '../sim/heading.ts';
-import { createHetTurn, hetHandler, hetPayload } from '../sim/het.ts';
+import { createHetTurn, hetAnglePayload, hetHandler, hetPayload } from '../sim/het.ts';
 import {
   POWER_TABLE,
   SHIELD_DOWN,
@@ -78,6 +78,17 @@ import {
   shieldStatePayload,
   systemCode,
 } from '../sim/power.ts';
+import {
+  DUEL_HELM_TABLE,
+  VERB_ORDER_EMER_DECEL,
+  VERB_SET_CAPACITOR_RATE,
+  VERB_SET_ERRATIC,
+  capacitorRatePayload,
+  createDuelHelm,
+  duelHelmHandlers,
+  emerPayload,
+  erraticPayload,
+} from '../sim/duel-helm.ts';
 import { HET_TABLE, TURN_CURVE_TABLE } from '../sim/turn-curve.ts';
 import { VERB_ORDER_HET } from '../sim/heading.ts';
 import { buildViewModel, type ViewModel } from '../view/view-model.ts';
@@ -201,6 +212,16 @@ export interface DuelMatch {
   orderHeading(heading16: number): void;
   /** High-Energy Turn. -1 port, +1 starboard. Sweep, rate, and delay come from the HET table. */
   orderHet(dir: -1 | 1): void;
+  /** Free-angle High-Energy Turn. Signed BAM sweep, −32768 through 32768. 0 holds the bow through the delay. */
+  orderHetAngle(delta16: number): void;
+  /** High-Energy Turn of half a circle, starboard. */
+  orderHet180(): void;
+  /** Cut ordered speed to 0 and hold it for the recovery window. */
+  orderEmerDecel(): void;
+  /** Turn erratic maneuvers on or off. */
+  setErratic(on: boolean): void;
+  /** Phaser capacitor recharge, 0–1000 permille of the full rate. */
+  setCapacitorRate(permille: number): void;
   orderFire(slotIndex: number): void;
   setTarget(id: number): void;
   /** Step through hostile contacts. Negative steps go backwards. */
@@ -280,9 +301,9 @@ class Match implements DuelMatch {
       fighters: options.fighters ?? [],
       setups: options.setups,
     });
-    const tables = [...combat.tables, CRUISE_TABLE, HEADING_ORDER_TABLE, TURN_CURVE_TABLE, HET_TABLE, POWER_TABLE, ...craft.tables];
-    const systems = [...combat.systems, createHetTurn(), createHeadingSteer(), createCruise(period), createPowerRepair(), ...craft.systems];
-    const handlers = [...withHeading(withHelm(combat.handlers)), ...powerHandlers, ...craft.handlers];
+    const tables = [...combat.tables, CRUISE_TABLE, HEADING_ORDER_TABLE, TURN_CURVE_TABLE, HET_TABLE, POWER_TABLE, DUEL_HELM_TABLE, ...craft.tables];
+    const systems = [...combat.systems, createHetTurn(), createHeadingSteer(), createCruise(period), createPowerRepair(), createDuelHelm(), ...craft.systems];
+    const handlers = [...withHeading(withHelm(combat.handlers)), ...powerHandlers, ...duelHelmHandlers, ...craft.handlers];
     if (fleet) {
       tables.push(ALLEGIANCE_TABLE);
       systems.push(createCaptain());
@@ -568,6 +589,35 @@ class Match implements DuelMatch {
     if (this.helmStamp === target) return;
     this.helmStamp = target;
     this.session.issue(VERB_ORDER_HET, hetPayload(this.selfEntity, dir));
+  }
+
+  orderHetAngle(delta16: number): void {
+    if (this.selfEntity === null || !Number.isInteger(delta16)) return;
+    const mag = delta16 < 0 ? -delta16 : delta16;
+    if (mag > 32768) return;
+    const target = this.tick + 1;
+    if (this.helmStamp === target) return;
+    this.helmStamp = target;
+    this.session.issue(VERB_ORDER_HET, hetAnglePayload(this.selfEntity, delta16));
+  }
+
+  orderHet180(): void {
+    this.orderHetAngle(32768);
+  }
+
+  orderEmerDecel(): void {
+    if (this.selfEntity === null) return;
+    this.session.issue(VERB_ORDER_EMER_DECEL, emerPayload(this.selfEntity));
+  }
+
+  setErratic(on: boolean): void {
+    if (this.selfEntity === null) return;
+    this.session.issue(VERB_SET_ERRATIC, erraticPayload(this.selfEntity, on ? 1 : 0));
+  }
+
+  setCapacitorRate(permille: number): void {
+    if (this.selfEntity === null || !Number.isInteger(permille)) return;
+    this.session.issue(VERB_SET_CAPACITOR_RATE, capacitorRatePayload(this.selfEntity, permille));
   }
 
   orderFire(slotIndex: number): void {

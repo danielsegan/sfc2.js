@@ -112,16 +112,16 @@
             <div class="officer-page active" data-officer-page="helm">
               <h2>Helm</h2>
               <div class="helm-compact">
-                <div class="helm-grid" role="group" aria-label="High-energy turn buttons. Port and starboard are live.">
-                  <button type="button" id="helm-nw" disabled title="This High-energy turn heading is not in this duel.">↖</button>
-                  <button type="button" id="helm-n" disabled title="This High-energy turn heading is not in this duel.">↑</button>
-                  <button type="button" id="helm-ne" disabled title="This High-energy turn heading is not in this duel.">↗</button>
+                <div class="helm-grid" role="group" aria-label="High-energy turn buttons.">
+                  <button type="button" id="helm-nw" data-action="helm.het.-8192" title="High-energy turn 45° to port">↖</button>
+                  <button type="button" id="helm-n" data-action="helm.het.0" title="High-energy turn ahead">↑</button>
+                  <button type="button" id="helm-ne" data-action="helm.het.8192" title="High-energy turn 45° to starboard">↗</button>
                   <button type="button" id="helm-w" data-action="helm.hetPort" title="High-energy turn to port">←</button>
-                  <button type="button" id="helm-hold" disabled title="This High-energy turn heading is not in this duel.">·</button>
+                  <button type="button" id="helm-hold" data-action="helm.hetOrdered" title="High-energy turn onto the ordered heading">·</button>
                   <button type="button" id="helm-e" data-action="helm.hetStarboard" title="High-energy turn to starboard">→</button>
-                  <button type="button" id="helm-sw" disabled title="This High-energy turn heading is not in this duel.">↙</button>
-                  <button type="button" id="helm-s" disabled title="This High-energy turn heading is not in this duel.">↓</button>
-                  <button type="button" id="helm-se" disabled title="This High-energy turn heading is not in this duel.">↘</button>
+                  <button type="button" id="helm-sw" data-action="helm.het.-24576" title="High-energy turn 135° to port">↙</button>
+                  <button type="button" id="helm-s" data-action="helm.het.32768" title="High-energy turn 180°">↓</button>
+                  <button type="button" id="helm-se" data-action="helm.het.24576" title="High-energy turn 135° to starboard">↘</button>
                 </div>
                 <div class="helm-reads">
                   <p class="read"><span>Spd</span> <span id="speed" class="num">0.0</span></p>
@@ -141,8 +141,10 @@
                 <button type="button" id="helm-camera" data-action="view.camera" title="Cycle the camera (V)">Camera</button>
                 <button type="button" id="helm-go" disabled title="Go waits for a later helm change. Speed stays on the ordered-speed control.">Go</button>
                 <button type="button" data-action="helm.stop">Stop</button>
+                <button type="button" data-action="helm.emerDecel" title="Emergency stop. Ordered speed goes to 0.">Emergency stop</button>
+                <button type="button" data-action="helm.erratic" title="Toggle erratic maneuvers.">Erratic</button>
               </div>
-              <p class="empty-state">Emergency Stop, Erratic, Orbit, Follow, Steady, and Chance for HET await sim verbs (issue #144).</p>
+              <p class="empty-state">Orbit, Follow, and Steady still have no verb. Chance for HET is the HET readout.</p>
             </div>
             <div class="officer-page" data-officer-page="repair">
               <h2>Repair</h2>

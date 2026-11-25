@@ -33,6 +33,15 @@ export function formatHetDelay(helm: Pick<HelmView, 'mode' | 'hetDelayTicks'> | 
   return `${(helm.hetDelayTicks / TICKS_PER_SECOND).toFixed(1)} s`;
 }
 
+/** Chance while idle, and chance beside the delay while a HET is running. */
+export function formatHetReadout(helm: Pick<HelmView, 'mode' | 'hetDelayTicks' | 'hetSuccessChance' | 'hetBreakdown'> | null | undefined): string {
+  if (!helm) return '—';
+  const chance = `${helm.hetSuccessChance ?? 100}%`;
+  if (helm.hetBreakdown) return `${chance} breakdown`;
+  if (helm.mode === 'het') return `${formatHetDelay(helm)} · ${chance}`;
+  return chance;
+}
+
 export interface HudHandles {
   selectedSlot: number;
   selectedSlots: readonly number[];
@@ -77,7 +86,7 @@ export function updateHud(vm: ViewModel, roster: readonly RosterEntry[], hud: Hu
   text('heading', self ? formatDeg(self.heading16) : '—');
   text('heading-ordered', self && self.orderedHeading16 !== null ? formatDeg(self.orderedHeading16) : '—');
   text('turn-ticks', self && self.turnTicksRemaining !== null ? String(self.turnTicksRemaining) : '—');
-  text('het-delay', formatHetDelay(self?.helm));
+  text('het-delay', formatHetReadout(self?.helm));
   text('plan', self ? String(self.energy.planTicksLeft) : '0');
   text('gen-warp', fmt(self?.energy.warp ?? 0));
   text('gen-impulse', fmt(self?.energy.impulse ?? 0));

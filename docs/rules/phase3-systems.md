@@ -26,7 +26,7 @@ Hit chance, out of `ewHitDenom` (placeholder 100):
 - Shift ≥ 0: certainty. The combat stream is not drawn.
 - Each point of negative shift subtracts `ewPenaltyPerPoint` (placeholder 20), and the chance does not fall below `ewHitFloor` (placeholder 5).
 
-A phaser rolls on the fire tick, after arc and range succeed. A miss spends the charge, returns `ewMiss`, and does not strike. A photon still launches. The same roll is made when the seeker detonates, against the ECM and ECCM paid at that tick. A miss emits an `ewMiss` alert and does not strike. It is not a second `ruleResult` for that shot. The launch result stays `ok`.
+A phaser rolls on the fire tick, after arc and range succeed. Erratic maneuvers, when on, add the placeholder ECM bonus to the defender and take the placeholder penalty off the shooter's own hit chance ([needs-ce-reading.md](needs-ce-reading.md)). A miss spends the charge, returns `ewMiss`, and does not strike. A photon still launches. The same roll is made when the seeker detonates, against the ECM and ECCM paid at that tick. A miss emits an `ewMiss` alert and does not strike. It is not a second `ruleResult` for that shot. The launch result stays `ok`.
 
 A duel that never buys ECM, and whose stealth is not positive, still hits exactly as the Phase 2 slice did.
 
