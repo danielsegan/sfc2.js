@@ -58,7 +58,8 @@
     "I-CC",
     "Z-CA",
     "G-FF",
-    "I-DN"
+    "I-DN",
+    "R-KR"
   ],
   "hullOrderNote": "Stable sim ids: engine/sim numbers hull rows by their position in this list, so append new hull keys at the end. Every key under hulls must be listed. default is the row for hulls with no entry of their own. Editing a row's speedPoints needs no code change.",
   "hulls": {
@@ -636,11 +637,11 @@
     },
     "R-SNA": {
       "status": "partial",
-      "note": "CE Tier-2 90-pad HET rerun 2026-11-24 11:47 PM EST (Wintermute, Romulan): usable 90-pad HET data at speed(s) 5, 15. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; measured sweep at speed(s) 5, 15 is 90.1\u00b0, 88.6\u00b0, treated as 90\u00b0 preset overshoot/undershoot; sim uses 16384 and audit keeps the measured `deg` (TO VERIFY). Wall-clock rate fallback at speed(s) 5, 15 (TO VERIFY game-clock). Omitted (TO VERIFY): speed 31: suspect 178 deg / 4.19 s (90-pad, excluded). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "note": "CE Tier-2 90-pad HET rerun 2026-11-24 11:47 PM EST (Wintermute, Romulan), plus confirmed 90-pad rerun of speed 31: usable 90-pad HET data at speed(s) 5, 15, 31. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; measured sweep at speed(s) 5, 15, 31 is 90.1\u00b0, 88.6\u00b0, 91.5\u00b0, treated as 90\u00b0 preset overshoot/undershoot; sim uses 16384 and audit keeps the measured `deg` (TO VERIFY). Wall-clock rate fallback at speed(s) 5, 15 (TO VERIFY game-clock). Speed 31 delay is 6.11 s / 183 ticks (outside the 5.4-6.0 s / 171-tick band); rate is 48.76 deg/s game-clock (gc 0.963). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
       "verification": {
-        "delayTicks": "measured 90-pad HET rerun 2026-11-24 11:47 PM EST (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
+        "delayTicks": "measured 90-pad HET rerun 2026-11-24 11:47 PM EST (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded: 31=183 ticks / 6.11 s); multi-run confirmation TO VERIFY",
         "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg keeps measured overshoot/undershoot of the 90\u00b0 preset from the 90-pad rerun",
-        "turnRate16PerTick": "measured 90-pad at speed(s) 5, 15; omitted/missing speeds TO VERIFY"
+        "turnRate16PerTick": "measured 90-pad at speed(s) 5, 15, 31; omitted/missing speeds TO VERIFY"
       },
       "speedPoints": [
         {
@@ -654,18 +655,27 @@
           "delayTicks": 171,
           "turnAngle16": 16384,
           "turnRate16PerTick": 253
+        },
+        {
+          "speed": 31,
+          "delayTicks": 183,
+          "turnAngle16": 16384,
+          "turnRate16PerTick": 296
         }
       ],
       "audit": {
-        "source": "CE Tier-2 90-pad HET rerun (Wintermute, 2026-11-24 11:47 PM EST)",
-        "verification": "turn.het.{5,15} measured 90-pad; omitted/missing speeds TO VERIFY",
+        "source": "CE Tier-2 90-pad HET rerun (Wintermute, 2026-11-24 11:47 PM EST) and confirmed speed-31 90-pad rerun",
+        "verification": "turn.het.{5,15,31} measured 90-pad; omitted/missing speeds TO VERIFY",
         "expect": {
           "turn.het.5.deg": 90.1,
           "turn.het.5.delayS": 5.7,
           "turn.het.5.degPerSecond": 40.93,
           "turn.het.15.deg": 88.6,
           "turn.het.15.delayS": 5.7,
-          "turn.het.15.degPerSecond": 41.67
+          "turn.het.15.degPerSecond": 41.67,
+          "turn.het.31.deg": 91.5,
+          "turn.het.31.delayS": 6.11,
+          "turn.het.31.degPerSecond": 48.76
         },
         "tolerances": {
           "turn.het.5.deg": 6,
@@ -673,7 +683,10 @@
           "turn.het.5.degPerSecond": 6,
           "turn.het.15.deg": 6,
           "turn.het.15.delayS": 0.3,
-          "turn.het.15.degPerSecond": 6
+          "turn.het.15.degPerSecond": 6,
+          "turn.het.31.deg": 6,
+          "turn.het.31.delayS": 0.3,
+          "turn.het.31.degPerSecond": 6
         }
       }
     },
@@ -1735,6 +1748,37 @@
           "turn.het.31.deg": 6,
           "turn.het.31.delayS": 0.3,
           "turn.het.31.degPerSecond": 6
+        }
+      }
+    },
+    "R-KR": {
+      "status": "partial",
+      "note": "CE Tier-2 confirmed 90-pad HET rerun (Wintermute, Romulan): usable 90-pad HET data at speed(s) 5. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; measured sweep at speed(s) 5 is 82.5\u00b0, treated as 90\u00b0 preset overshoot/undershoot; sim uses 16384 and audit keeps the measured `deg` (TO VERIFY). Wall-clock rate fallback at speed(s) 5 (57.76 deg/s; no usable game clock) (TO VERIFY game-clock). Omitted (TO VERIFY): speed 15: null, -0.0, null (het_not_executed); speed 31: null, -0.0, null (het_not_executed) 135-only excluded. Newly added to hullOrder (was on default). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "verification": {
+        "delayTicks": "measured 90-pad HET rerun (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
+        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg keeps measured overshoot/undershoot of the 90\u00b0 preset from the 90-pad rerun",
+        "turnRate16PerTick": "measured 90-pad at speed(s) 5 (wall-clock, TO VERIFY game-clock); omitted/missing speeds TO VERIFY"
+      },
+      "speedPoints": [
+        {
+          "speed": 5,
+          "delayTicks": 171,
+          "turnAngle16": 16384,
+          "turnRate16PerTick": 350
+        }
+      ],
+      "audit": {
+        "source": "CE Tier-2 confirmed 90-pad HET rerun (Wintermute)",
+        "verification": "turn.het.{5} measured 90-pad wall-clock (TO VERIFY game-clock); omitted/missing speeds TO VERIFY",
+        "expect": {
+          "turn.het.5.deg": 82.5,
+          "turn.het.5.delayS": 5.7,
+          "turn.het.5.degPerSecond": 57.76
+        },
+        "tolerances": {
+          "turn.het.5.deg": 6,
+          "turn.het.5.delayS": 0.3,
+          "turn.het.5.degPerSecond": 6
         }
       }
     }

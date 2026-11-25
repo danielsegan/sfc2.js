@@ -193,7 +193,7 @@ describe('orderHet (verb 13)', () => {
       setup('L-CC', 5),
       setup('G-CA', 31),
       setup('I-FF', 5),
-      setup('R-KR', 10),
+      setup('G-DD', 10),
     ], 2 + 171, {
       2: [
         [VERB_ORDER_HET, hetPayload(SHIP, 1)],
