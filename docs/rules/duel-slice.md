@@ -53,7 +53,7 @@ Draws, per rules-turn, placeholder costs in [`data/constants.json`](data/constan
 | Shields | general + specific, after caps | Reinforcement is the reduced plan. |
 | Weapons | sum of requests, after charge caps | Mounts charge only from what was paid. |
 
-Pay order, highest priority first: life support, fire control, movement, shields, weapons. This order is unverified. The HUD asks which system is starved first; under this order weapons drop first and life support last.
+Pay order, when the ship has not set priorities: life support, fire control, movement, shields, weapons. Life support and fire control stay first. Movement, shields, and weapons then follow the 1–5 priorities (`setEnergyPriorities`, 1 paid first). An unset priority is 3. The battery covers a shortfall until `setBattery(false)`. Surplus still charges it. Shield Down clears the facings, Minimal restores the basic maximum and blocks reinforcement, and Up allows reinforcement. A mount set Offline stores no charge and cannot fire. These control magnitudes are placeholders ([needs-ce-reading.md](needs-ce-reading.md)).
 
 Each tick of the plan receives a Bresenham share so the shares sum to the committed total:
 

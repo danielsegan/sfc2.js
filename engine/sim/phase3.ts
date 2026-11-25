@@ -32,6 +32,7 @@ import {
   INTERNAL_PHASER,
   INTERNAL_PHOTON,
   MODE_NORMAL,
+  MODE_OFFLINE,
   MODE_OVERLOAD,
   MODE_PROXIMITY,
   SPECIAL_SENSOR_CHANCE_PER_BOX,
@@ -368,7 +369,7 @@ function applySetWeaponMode(world: World, cmd: Command, ctx: TickContext): void 
     finish(world, id, fields, ctx, VERB_SET_WEAPON_MODE, UNKNOWN_SLOT, -1);
     return;
   }
-  if (mode !== MODE_NORMAL && mode !== MODE_OVERLOAD && mode !== MODE_PROXIMITY) {
+  if (mode !== MODE_NORMAL && mode !== MODE_OVERLOAD && mode !== MODE_PROXIMITY && mode !== MODE_OFFLINE) {
     finish(world, id, fields, ctx, VERB_SET_WEAPON_MODE, NOT_SLICE, -1);
     return;
   }
@@ -378,11 +379,19 @@ function applySetWeaponMode(world: World, cmd: Command, ctx: TickContext): void 
     finish(world, id, fields, ctx, VERB_SET_WEAPON_MODE, NOT_SLICE, -1);
     return;
   }
+  if (mode === MODE_OFFLINE) {
+    mount.charge100 = 0;
+    mount.ticksCharging = 0;
+    mount.mode = MODE_OFFLINE;
+    writeMounts(world, id, mounts);
+    finish(world, id, fields, ctx, VERB_SET_WEAPON_MODE, OK, mode);
+    return;
+  }
   if (def.internal === INTERNAL_PHASER && mode !== MODE_NORMAL) {
     finish(world, id, fields, ctx, VERB_SET_WEAPON_MODE, NOT_SLICE, -1);
     return;
   }
-  if (def.internal === INTERNAL_DISRUPTOR && mode === MODE_PROXIMITY) {
+  if (def.internal === INTERNAL_DISRUPTOR && mode !== MODE_NORMAL && mode !== MODE_OVERLOAD) {
     finish(world, id, fields, ctx, VERB_SET_WEAPON_MODE, NOT_SLICE, -1);
     return;
   }

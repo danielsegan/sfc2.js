@@ -340,7 +340,7 @@
             </div>
             <div class="wpn-controls-row">
               <div class="presets wpn-modes">
-                <button type="button" id="weapons-offline" disabled title="Offline weapon mode has no DuelMatch verb yet. Tracked on issue #145.">Offline</button>
+                <button type="button" id="weapons-offline" data-action="weapons.offline" title="Power down the selected mounts">Offline</button>
                 <button type="button" id="weapons-normal" data-action="weapons.normal" aria-pressed="true">Normal</button>
                 <button type="button" id="weapons-overload" data-action="weapons.overload" aria-pressed="false">Overload</button>
                 <button type="button" id="weapons-proximity" data-action="weapons.proximity" hidden aria-pressed="false">Proximity</button>
@@ -362,9 +362,9 @@
             <div class="plate-head">
               <h2>Shields</h2>
               <div class="presets" role="group" aria-label="Shield state">
-                <button type="button" disabled title="Down, Minimal, and Up have no DuelMatch verb yet. Tracked on issue #145.">Down</button>
-                <button type="button" disabled title="Down, Minimal, and Up have no DuelMatch verb yet. Tracked on issue #145.">Minimal</button>
-                <button type="button" disabled title="Down, Minimal, and Up have no DuelMatch verb yet. Tracked on issue #145.">Up</button>
+                <button type="button" data-action="shields.down" title="Drop shields">Down</button>
+                <button type="button" data-action="shields.minimal" title="Raise basic shields">Minimal</button>
+                <button type="button" data-action="shields.up" title="Shields up">Up</button>
               </div>
             </div>
             <div class="shield-layout">

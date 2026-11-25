@@ -34,6 +34,7 @@ import {
   INTERNAL_PHOTON,
   MODE_KEEP,
   MODE_NORMAL,
+  MODE_OFFLINE,
   MODE_OVERLOAD,
   MODE_PROXIMITY,
   weaponDef,
@@ -60,6 +61,23 @@ import {
   headingPayload,
 } from '../sim/heading.ts';
 import { createHetTurn, hetHandler, hetPayload } from '../sim/het.ts';
+import {
+  POWER_TABLE,
+  SHIELD_DOWN,
+  SHIELD_MINIMAL,
+  SHIELD_UP,
+  VERB_SET_BATTERY,
+  VERB_SET_PRIORITIES,
+  VERB_SET_REPAIR,
+  VERB_SET_SHIELD_STATE,
+  batteryPayload,
+  createPowerRepair,
+  powerHandlers,
+  priorityPayload,
+  repairPayload,
+  shieldStatePayload,
+  systemCode,
+} from '../sim/power.ts';
 import { HET_TABLE, TURN_CURVE_TABLE } from '../sim/turn-curve.ts';
 import { VERB_ORDER_HET } from '../sim/heading.ts';
 import { buildViewModel, type ViewModel } from '../view/view-model.ts';
@@ -160,6 +178,19 @@ export interface DuelMatch {
   setWeaponRequest(points: number | null): void;
   setFacing(facing: number, points: number): void;
   setWeaponMode(slot: number, mode: number): void;
+  /** 1 is highest. Life support and fire control stay ahead of these five. */
+  setEnergyPriorities(priorities: {
+    movement: number;
+    weapons: number;
+    shields: number;
+    tractors: number;
+    ecm: number;
+  }): void;
+  /** When false, the battery is not spent to cover a shortfall. Surplus still charges it. */
+  setBattery(discharge: boolean): void;
+  /** Front of the list is repaired first. Unknown names are ignored. */
+  setRepairPriority(order: readonly string[]): void;
+  setShieldState(state: 'down' | 'minimal' | 'up'): void;
   setAllocation(next: Partial<DuelPlan>): void;
   setEw(ecm: number, eccm: number): void;
   toggleOverload(slotIndex: number): void;
@@ -212,7 +243,7 @@ function clampPoints(points: number): number {
 }
 
 function clampMode(mode: number): number {
-  if (mode === MODE_KEEP || mode === MODE_NORMAL || mode === MODE_OVERLOAD || mode === MODE_PROXIMITY) return mode;
+  if (mode === MODE_KEEP || mode === MODE_NORMAL || mode === MODE_OVERLOAD || mode === MODE_PROXIMITY || mode === MODE_OFFLINE) return mode;
   return MODE_KEEP;
 }
 
@@ -249,9 +280,9 @@ class Match implements DuelMatch {
       fighters: options.fighters ?? [],
       setups: options.setups,
     });
-    const tables = [...combat.tables, CRUISE_TABLE, HEADING_ORDER_TABLE, TURN_CURVE_TABLE, HET_TABLE, ...craft.tables];
-    const systems = [...combat.systems, createHetTurn(), createHeadingSteer(), createCruise(period), ...craft.systems];
-    const handlers = [...withHeading(withHelm(combat.handlers)), ...craft.handlers];
+    const tables = [...combat.tables, CRUISE_TABLE, HEADING_ORDER_TABLE, TURN_CURVE_TABLE, HET_TABLE, POWER_TABLE, ...craft.tables];
+    const systems = [...combat.systems, createHetTurn(), createHeadingSteer(), createCruise(period), createPowerRepair(), ...craft.systems];
+    const handlers = [...withHeading(withHelm(combat.handlers)), ...powerHandlers, ...craft.handlers];
     if (fleet) {
       tables.push(ALLEGIANCE_TABLE);
       systems.push(createCaptain());
@@ -416,6 +447,48 @@ class Match implements DuelMatch {
     const specific = this.plan.specific.slice();
     specific[facing] = clampPoints(points);
     this.setAllocation({ specific });
+  }
+
+  setEnergyPriorities(priorities: {
+    movement: number;
+    weapons: number;
+    shields: number;
+    tractors: number;
+    ecm: number;
+  }): void {
+    if (this.selfEntity === null) return;
+    this.session.issue(
+      VERB_SET_PRIORITIES,
+      priorityPayload(
+        this.selfEntity,
+        priorities.movement,
+        priorities.weapons,
+        priorities.shields,
+        priorities.tractors,
+        priorities.ecm,
+      ),
+    );
+  }
+
+  setBattery(discharge: boolean): void {
+    if (this.selfEntity === null) return;
+    this.session.issue(VERB_SET_BATTERY, batteryPayload(this.selfEntity, discharge ? 1 : 0));
+  }
+
+  setRepairPriority(order: readonly string[]): void {
+    if (this.selfEntity === null) return;
+    const codes: number[] = [];
+    for (const name of order) {
+      const code = systemCode(name);
+      if (code !== 0) codes.push(code);
+    }
+    this.session.issue(VERB_SET_REPAIR, repairPayload(this.selfEntity, codes));
+  }
+
+  setShieldState(state: 'down' | 'minimal' | 'up'): void {
+    if (this.selfEntity === null) return;
+    const code = state === 'down' ? SHIELD_DOWN : state === 'minimal' ? SHIELD_MINIMAL : SHIELD_UP;
+    this.session.issue(VERB_SET_SHIELD_STATE, shieldStatePayload(this.selfEntity, code));
   }
 
   setWeaponMode(slot: number, mode: number): void {

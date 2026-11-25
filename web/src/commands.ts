@@ -4,7 +4,7 @@
  */
 import type { DuelPlan } from '../../engine/duel/match.ts';
 import type { DuelMatch } from '../../engine/duel/match.ts';
-import { MODE_NORMAL, MODE_OVERLOAD, MODE_PROXIMITY } from '../../engine/sim/rules-tables.ts';
+import { MODE_NORMAL, MODE_OFFLINE, MODE_OVERLOAD, MODE_PROXIMITY } from '../../engine/sim/rules-tables.ts';
 import type { ViewModel } from '../../engine/view/view-model.ts';
 import type { DuelScene } from './scene.ts';
 import { clampReinforceAmount, selectFacing, toggleAllFacings } from './shield-select.ts';
@@ -81,6 +81,10 @@ export function runAction(host: CommandHost, id: string): void {
   else if (id === 'ew.totalDown') changeEw(host, -1, 0);
   else if (id === 'ew.totalUp') changeEw(host, 0, 1);
   else if (id === 'weapons.normal') setNormalMode(host);
+  else if (id === 'weapons.offline') setOffline(host);
+  else if (id === 'shields.down') host.match.setShieldState('down');
+  else if (id === 'shields.minimal') host.match.setShieldState('minimal');
+  else if (id === 'shields.up') host.match.setShieldState('up');
   else if (id === 'weapons.proximity') toggleMode(host, MODE_PROXIMITY);
   else if (id.startsWith('weapons.assign')) assignGroup(host, Number(id.slice('weapons.assign'.length)) - 1);
   else if (id.startsWith('weapons.group')) selectGroup(host, Number(id.slice('weapons.group'.length)) - 1);
@@ -200,6 +204,10 @@ function toggleCloak(host: CommandHost): void {
     return;
   }
   host.match.setCloak(self.cloakState === 0);
+}
+
+function setOffline(host: CommandHost): void {
+  for (const slot of selectedSlots(host)) host.match.setWeaponMode(slot, MODE_OFFLINE);
 }
 
 function setNormalMode(host: CommandHost): void {
