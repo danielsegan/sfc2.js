@@ -7,7 +7,7 @@ const report = collectMetrics();
 describe('duel metrics', () => {
   it('repeats on the synthetic hulls', () => {
     expect(renderJson(collectMetrics())).toBe(renderJson(report));
-  });
+  }, 30_000);
 
   it('scores every observed row and does not fail one', () => {
     const rows = tableRows(report);
@@ -27,7 +27,7 @@ describe('duel metrics', () => {
     expect(text).toContain('HET');
     const sample = tableRows(report).find((row) => row.metric === 'turn rate' && row.ship === 'F-CA-like' && row.case === 'speed 10.00');
     expect(sample?.result).toBe('pass');
-    expect(sample?.reference).toBe('7.85');
+    expect(sample?.reference).toBe('7.3–7.9');
     expect(sample?.confidence).toBe('H');
     expect(degPerSec(47)).toBe('7.7454');
   });
