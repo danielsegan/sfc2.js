@@ -35,6 +35,7 @@ import { selectWeaponClassSlots, toggleSlot } from './weapon-select.ts';
 import { fieldRelease, orbitOnPress } from './tactical/pointer.ts';
 import { pickContact } from './tactical/tags.ts';
 import { createKeyTracker } from './input/keymap.ts';
+import { DEFAULT_ENERGY_PRIORITIES, type EnergyPriorities } from './energy-repair.ts';
 import { runAction, type CommandHost } from './commands.ts';
 import { mountKeymapDialog } from './keymap-dialog.ts';
 import { createGameAudio } from './audio-out.ts';
@@ -87,6 +88,10 @@ let paused = false;
 let latest: ViewModel | null = null;
 let installVfs: Vfs | null = null;
 let pendingHeading: number | null = null;
+let pendingEnergyTick: number | null = null;
+let pendingPriorities: EnergyPriorities | null = null;
+let pendingBattery: boolean | null = null;
+let pendingRepairQueue: readonly string[] | null = null;
 let audioMemory: AudioMemory = emptyAudioMemory();
 const groups: number[][] = [[0], [1], [2], [3], [4], [5]];
 const keys = createKeyTracker();
@@ -144,6 +149,15 @@ const hud = {
     return officerPage;
   },
   logFilters,
+  get energyPriorities() {
+    return pendingPriorities ?? undefined;
+  },
+  get batteryDischarging() {
+    return pendingBattery ?? undefined;
+  },
+  get repairQueue() {
+    return pendingRepairQueue ?? undefined;
+  },
   onSelect(slot: number, additive = false) {
     selectedSlots = additive ? toggleSlot(selectedSlots, slot) : [slot];
     selectedSlot = slot;
@@ -235,6 +249,21 @@ const host: CommandHost = {
     setPendingReinforce(points);
   },
   view: () => latest,
+  getEnergyPriorities: () => pendingPriorities ?? latest?.self?.energy.priorities ?? DEFAULT_ENERGY_PRIORITIES,
+  setEnergyPriorities(priorities) {
+    pendingEnergyTick = latest?.tick ?? null;
+    pendingPriorities = priorities;
+  },
+  getBatteryDischarging: () => pendingBattery ?? latest?.self?.energy.batteryDischarging ?? true,
+  setBatteryDischarging(on) {
+    pendingEnergyTick = latest?.tick ?? null;
+    pendingBattery = on;
+  },
+  getRepairQueue: () => pendingRepairQueue ?? latest?.self?.damage.repairQueue ?? [],
+  setRepairQueue(order) {
+    pendingEnergyTick = latest?.tick ?? null;
+    pendingRepairQueue = [...order];
+  },
 };
 
 document.getElementById('scale')?.addEventListener('change', (event) => {
@@ -342,6 +371,14 @@ window.addEventListener('keyup', (event) => {
   keys.release(event);
 });
 window.addEventListener('blur', () => keys.blur());
+
+const energyPageEl = document.getElementById('energy');
+energyPageEl?.addEventListener('contextmenu', (event) => {
+  event.preventDefault();
+});
+energyPageEl?.addEventListener('auxclick', (event) => {
+  event.preventDefault();
+});
 
 document.body.addEventListener('click', (event) => {
   const node = event.target;
@@ -828,6 +865,10 @@ function adopt(next: DuelMatch, groups: readonly Group[], nextRoster: readonly R
   selectedSlot = 0;
   selectedSlots = [0];
   audioMemory = emptyAudioMemory();
+  pendingEnergyTick = null;
+  pendingPriorities = null;
+  pendingBattery = null;
+  pendingRepairQueue = null;
   scene.setHulls(groups);
   match.setTimeScale(paused ? 0 : scale);
   if (source) source.textContent = note;
@@ -851,6 +892,12 @@ function frame(now: number): void {
   if (keys.held('view.orbitRight')) scene.orbitBy(16, 0);
   match.frame(dt);
   const vm = match.view();
+  if (pendingEnergyTick !== null && vm.tick !== pendingEnergyTick) {
+    pendingEnergyTick = null;
+    pendingPriorities = null;
+    pendingBattery = null;
+    pendingRepairQueue = null;
+  }
   latest = vm;
   if (vm.contacts.some((contact) => contact.kind === 'ship')) {
     const wasReady = document.body.dataset.ready === '1';

@@ -29,7 +29,9 @@ Mouse actions on the 3D view follow the original grammar, and a left-click there
 | Reinforce the selected facings | `N` |
 | Reinforce all (general) | Shift+`N` |
 | Toggle general reinforcement | unbound |
-| Attack / Balanced / Run / Defense presets | `F1`–`F4` |
+| Attack / Balanced / Run / Defense presets (Options page, Modern quick-plan) | `F1`–`F4` |
+| Cycle Energy priorities (`energy.priority.*`) & toggle Use Battery (`energy.battery`) | unbound (rebindable; Energy page buttons) |
+| Prioritize Repair queue (`repair.prioritize.*`) & Reset (`repair.reset`) | unbound (rebindable; Repair page rows) |
 | Next / previous hostile | `Tab` / Shift+`Tab` |
 | Nearest hostile | `T` |
 | Cycle friendlies | `Y` |

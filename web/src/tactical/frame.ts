@@ -123,14 +123,15 @@ export interface PowerBars {
 }
 
 /**
- * Optional EnergyView demand fields. `SelfView.energy` does not publish
- * these yet; once Engine does, `powerBars` will use them automatically.
- * See https://github.com/danielsegan/sfc2.js/issues/145 (plan item 8).
+ * Lower-display EnergyView demand fields (`SelfView.energy` publishes
+ * `generation`, `demand`, and `surplus`). Falls back to warp+impulse+apr
+ * and weapon cost stand-in when tests pass minimal fixtures.
  */
 export interface EnergyViewDemand {
   readonly warp: number;
   readonly impulse: number;
   readonly apr: number;
+  readonly generation?: number;
   readonly lastReason: string;
   /** Total energy demanded by systems this period. */
   readonly demand?: number;
@@ -140,14 +141,18 @@ export interface EnergyViewDemand {
 
 /**
  * Lower-display Power / Systems bars. Prefers a published EnergyView
- * `demand` (and `surplus` when present). Otherwise falls back to
+ * `generation`, `demand`, and `surplus`. Otherwise falls back to
  * {@link weaponCostDemandStandIn}.
  */
 export function powerBars(
   energy: EnergyViewDemand,
   weapons: readonly { cost: number }[],
 ): PowerBars {
-  const power = Math.max(0, energy.warp + energy.impulse + energy.apr);
+  const rawPower =
+    typeof energy.generation === 'number' && Number.isFinite(energy.generation)
+      ? energy.generation
+      : energy.warp + energy.impulse + energy.apr;
+  const power = Math.max(0, rawPower);
   if (hasPublishedDemand(energy)) return liveEnergyDemand(power, energy);
   return weaponCostDemandStandIn(power, energy.lastReason, weapons);
 }
