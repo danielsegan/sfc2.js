@@ -33,6 +33,7 @@ jobs:
       - name: Build the web app
         run: pnpm build:web
 
+      # `toolchain` is required by this action. There is no rust-toolchain.toml.
       - name: Install Rust
         uses: dtolnay/rust-toolchain@df2a88e9fe4098bad09cb42c3dec7187f15861fc # master 2026-11-15
         with:
