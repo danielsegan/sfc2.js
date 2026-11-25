@@ -100,6 +100,7 @@ export const ACTIONS: readonly ActionDef[] = [
   { id: 'view.mapOrientation', label: 'Toggle map orientation', group: 'View', binding: chord('KeyH') },
   { id: 'view.reset', label: 'Reset camera', group: 'View', binding: chord('Home') },
   { id: 'view.pause', label: 'Pause', group: 'View', binding: chord('Escape') },
+  { id: 'hud.toggleInterfaceBar', label: 'Toggle interface bar', group: 'View', binding: chord('Backquote') },
 ];
 
 const RESERVED: readonly Chord[] = [

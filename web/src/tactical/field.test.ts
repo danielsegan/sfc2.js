@@ -88,6 +88,18 @@ describe('tactical field', () => {
     expect(tight.fieldMin).toBeGreaterThanOrEqual(200);
   });
 
+  it('gives the console height back to the field when the interface bar is collapsed', () => {
+    for (const [height, scale] of [[1080, 1], [720, 1], [720, 4]] as const) {
+      const open = fieldChromeBudget(height, scale);
+      const shut = fieldChromeBudget(height, scale, { consoleCollapsed: true });
+      expect(shut.consoleMax).toBe(0);
+      expect(shut.consoleCollapsed).toBe(true);
+      expect(shut.fieldMin).toBe(open.fieldMin + open.consoleMax);
+      expect(shut.fieldMin).toBeGreaterThan(open.fieldMin);
+      expect(shut.headerMax + shut.skirmishMax + shut.consoleMax + shut.topBar + shut.bottomBar + shut.fieldMin).toBe(height);
+    }
+  });
+
   it('keeps grid lines on the world lattice and fades minors when they crowd', () => {
     const wide = gridLevel(40);
     expect(wide.minorStep).toBe(1);
@@ -239,7 +251,22 @@ describe('tactical field', () => {
     expect(missionClock(0)).toBe('00:00');
     expect(missionClock(1800)).toBe('01:00');
     expect(powerBars({ warp: 10, impulse: 0, apr: 0, lastReason: '' }, [{ cost: 4 }]).overdraw).toBe(false);
-    expect(powerBars({ warp: 2, impulse: 0, apr: 0, lastReason: 'ok' }, [{ cost: 8 }]).overdraw).toBe(true);
+    expect(powerBars({ warp: 2, impulse: 0, apr: 0, lastReason: 'ok' }, [{ cost: 8 }])).toEqual({ power: 2, systems: 8, overdraw: true });
+    expect(powerBars({ warp: 10, impulse: 2, apr: 0, lastReason: 'ok', demand: 7, surplus: 5 }, [{ cost: 40 }])).toEqual({
+      power: 12,
+      systems: 7,
+      overdraw: false,
+    });
+    expect(powerBars({ warp: 4, impulse: 0, apr: 0, lastReason: 'ok', demand: 9 }, [{ cost: 1 }])).toEqual({
+      power: 4,
+      systems: 9,
+      overdraw: true,
+    });
+    expect(powerBars({ warp: 8, impulse: 0, apr: 0, lastReason: 'overDraw', demand: 8, surplus: 0 }, [])).toEqual({
+      power: 8,
+      systems: 8,
+      overdraw: true,
+    });
     expect(alertLamp([{ kind: 'hit' }])).toBe('red');
     expect(alertLamp([])).toBe('green');
     expect(markerHeading({ heading16: 10 })).toBe(10);

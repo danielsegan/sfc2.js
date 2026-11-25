@@ -114,18 +114,60 @@ export interface PowerBars {
 }
 
 /**
- * Generators against weapon costs on the view model.
- * TODO(engine): replace `systems` with the ViewModel's total draw and surplus
- * (EnergyView) once those fields exist. Weapon costs are only a stand-in.
+ * Optional EnergyView demand fields. `SelfView.energy` does not publish
+ * these yet; once Engine does, `powerBars` will use them automatically.
+ * See https://github.com/danielsegan/sfc2.js/issues/145 (plan item 8).
+ */
+export interface EnergyViewDemand {
+  readonly warp: number;
+  readonly impulse: number;
+  readonly apr: number;
+  readonly lastReason: string;
+  /** Total energy demanded by systems this period. */
+  readonly demand?: number;
+  /** Generation minus demand. Negative means overdraw. */
+  readonly surplus?: number;
+}
+
+/**
+ * Lower-display Power / Systems bars. Prefers a published EnergyView
+ * `demand` (and `surplus` when present). Otherwise falls back to
+ * {@link weaponCostDemandStandIn}.
  */
 export function powerBars(
-  energy: { warp: number; impulse: number; apr: number; lastReason: string },
+  energy: EnergyViewDemand,
   weapons: readonly { cost: number }[],
 ): PowerBars {
   const power = Math.max(0, energy.warp + energy.impulse + energy.apr);
+  if (hasPublishedDemand(energy)) return liveEnergyDemand(power, energy);
+  return weaponCostDemandStandIn(power, energy.lastReason, weapons);
+}
+
+export function hasPublishedDemand(energy: EnergyViewDemand): boolean {
+  return typeof energy.demand === 'number' && Number.isFinite(energy.demand);
+}
+
+function liveEnergyDemand(power: number, energy: EnergyViewDemand): PowerBars {
+  const systems = Math.max(0, energy.demand ?? 0);
+  const overdraw =
+    energy.lastReason === 'overDraw'
+    || (typeof energy.surplus === 'number' ? energy.surplus < 0 : systems > power);
+  return { power, systems, overdraw };
+}
+
+/**
+ * Stand-in Systems total used until EnergyView.demand is published
+ * (https://github.com/danielsegan/sfc2.js/issues/145). Sums weapon
+ * arming costs only; it is not the ship's true draw.
+ */
+export function weaponCostDemandStandIn(
+  power: number,
+  lastReason: string,
+  weapons: readonly { cost: number }[],
+): PowerBars {
   let systems = 0;
   for (const weapon of weapons) systems += Math.max(0, weapon.cost);
-  return { power, systems, overdraw: energy.lastReason === 'overDraw' || systems > power };
+  return { power, systems, overdraw: lastReason === 'overDraw' || systems > power };
 }
 
 export type AlertLamp = 'green' | 'yellow' | 'red';

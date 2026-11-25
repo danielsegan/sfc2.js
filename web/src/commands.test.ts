@@ -64,6 +64,10 @@ function hostRecording(opts?: { weapons?: Array<{ slotIndex: number; family: str
     setHeadingUp() {},
     mapFull: false,
     setMapFull() {},
+    interfaceCollapsed: false,
+    setInterfaceCollapsed(on) {
+      host.interfaceCollapsed = on;
+    },
     view: () =>
       weapons.length === 0
         ? null
@@ -142,5 +146,16 @@ describe('weapon selection and firing', () => {
     runAction(rec.host, 'weapons.selectAll');
     expect(rec.notes).toEqual(['No mounts.']);
     expect(rec.slots).toEqual([0]);
+  });
+});
+
+describe('interface bar toggle', () => {
+  it('flips interfaceCollapsed through the command path and does not invent a sim verb', () => {
+    const rec = hostRecording();
+    expect(rec.host.interfaceCollapsed).toBe(false);
+    runAction(rec.host, 'hud.toggleInterfaceBar');
+    expect(rec.host.interfaceCollapsed).toBe(true);
+    runAction(rec.host, 'hud.toggleInterfaceBar');
+    expect(rec.host.interfaceCollapsed).toBe(false);
   });
 });

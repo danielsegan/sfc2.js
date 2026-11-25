@@ -46,6 +46,7 @@ Mouse actions on the 3D view and the sensor map follow the original grammar, and
 | Toggle north-up / heading-up | `H` |
 | Reset the camera | `Home` |
 | Pause (single player) | `Esc` |
+| Toggle the interface bar | `` ` `` (Backquote). The console hides and the field takes back that height. The lower display keeps a Show/Hide console button so it can be opened again. |
 | Zoom the camera | Wheel on the view |
 | Zoom the sensor map | Wheel on the map |
 | Change desired speed | Wheel (`±1`), or click / drag the lower speed bar. Click and drag map the bar position to a whole speed in `0..speedMax`. Whether CE 2.670 uses the same integer snap on drag is **TO VERIFY**. |

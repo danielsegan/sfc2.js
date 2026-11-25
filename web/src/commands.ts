@@ -27,6 +27,8 @@ export interface CommandHost {
   setHeadingUp(on: boolean): void;
   mapFull: boolean;
   setMapFull(on: boolean): void;
+  interfaceCollapsed: boolean;
+  setInterfaceCollapsed(on: boolean): void;
   view(): ViewModel | null;
 }
 
@@ -86,6 +88,7 @@ export function runAction(host: CommandHost, id: string): void {
   else if (id === 'view.mapOrientation') host.setHeadingUp(!host.headingUp);
   else if (id === 'view.reset') host.scene.resetView();
   else if (id === 'view.pause') host.togglePause();
+  else if (id === 'hud.toggleInterfaceBar') host.setInterfaceCollapsed(!host.interfaceCollapsed);
   else if (id === 'craft.launch') host.match.launchFighter();
   else if (id === 'craft.launchPf') host.match.launchPf();
   else if (id === 'craft.recall') host.match.recallCraft();
