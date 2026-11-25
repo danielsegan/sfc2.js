@@ -130,8 +130,11 @@ describe('viewer check summary', () => {
         diagnostics: [],
       }),
     ];
-    const report = buildReport(ships, 12.4);
+    const report = buildReport(ships, 12.4, 'load');
     expect(inspectReport(report).problem).toBeNull();
+    expect(report.stagesRun).toBe('load');
+    expect(inspectReport({ ships: report.ships, totals: report.totals }).problem).toBe('shape');
+    expect(inspectReport({ ...report, stagesRun: 'gpu' }).problem).toBe('shape');
     expect(report.totals).toEqual({
       rows: 2,
       passed: 1,
@@ -152,11 +155,16 @@ describe('viewer check summary', () => {
       totals: { ...report.totals, byStage: { ...report.totals.byStage, resolve: 0 } },
     };
     expect(inspectReport(mismatch).problem).toBe('mismatch');
-    expect(inspectReport(buildReport([], 0)).problem).toBe('empty');
+    expect(inspectReport(buildReport([], 0, 'full')).problem).toBe('empty');
   });
 
   it('parses the cli flags', () => {
-    expect(parseArgs(['--synthetic', '--frames', '4'])).toMatchObject({ synthetic: true, frames: 4, allowFailures: false });
+    expect(parseArgs(['--synthetic', '--frames', '4'])).toMatchObject({ synthetic: true, frames: 4, stages: 'full', allowFailures: false });
+    expect(parseArgs(['--stages=load', '--synthetic'])).toMatchObject({ stages: 'load', synthetic: true });
+    expect(parseArgs(['--stages', 'full'])).toEqual({ synthetic: false, stages: 'full', allowFailures: false, help: false });
+    expect(() => parseArgs(['--stages=gpu'])).toThrow(/--stages/);
+    expect(() => parseArgs(['--stages='])).toThrow(/--stages/);
+    expect(() => parseArgs(['--stages'])).toThrow(/needs a value/);
     expect(parseArgs(['--summary', 'verify-output/viewer-check.json', '--allow-failures'])).toMatchObject({
       summary: 'verify-output/viewer-check.json',
       allowFailures: true,

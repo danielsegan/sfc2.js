@@ -34,6 +34,7 @@ describe('viewer check against the synthetic install', () => {
         failed: 5,
         byStage: { resolve: 3, geometry: 2, texture: 0, selfIllum: 0, render: 0 },
       });
+      expect(run.report?.stagesRun).toBe('full');
       expect(summary.totals?.elapsedMs).toBeGreaterThan(0);
       const text = JSON.stringify(run.report);
       expect(text).not.toMatch(/\.mod\b|\.bmp\b|Assets\/|C:|data:image|\/srv\/|\\/);
@@ -53,6 +54,7 @@ describe('viewer check against the synthetic install', () => {
         }
         const run = await runViewerCheck({ install: root, frames: 3, timeoutMs: 90_000 });
         expect(run.status, JSON.stringify({ status: run.status, pageError: run.pageError })).toBe('ok');
+        expect(run.report?.stagesRun).toBe('full');
         expect(run.report?.totals).toMatchObject({ rows: 8, passed: 3, failed: 5 });
         expect(JSON.stringify(run.report)).not.toContain(root);
       } finally {

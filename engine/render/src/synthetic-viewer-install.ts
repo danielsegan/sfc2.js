@@ -49,6 +49,43 @@ export function syntheticViewerFiles(): PickedFile[] {
   ];
 }
 
+/** Invented hulls whose geometry is a point, a line, or contains a non-finite position. */
+export function syntheticLoadFaultFiles(): PickedFile[] {
+  const shiplist = new TextEncoder().encode(
+    [
+      'Race\tHull Type\tClass\tGeometry',
+      'Federation\tCA\tTEST-PT-01\tAssets/Models/test/Point.mod',
+      'Klingon\tCA\tTEST-LN-02\tAssets/Models/test/Line.mod',
+      'Romulan\tCA\tTEST-NF-03\tAssets/Models/test/Nan.mod',
+    ].join('\n'),
+  );
+  return [
+    picked('Starfleet2CE.exe', Uint8Array.of(0)),
+    picked('Assets/Specs/shiplist.txt', shiplist),
+    picked('Assets/Models/test/Point.mod', triangleModel([0, 0, 0, 0, 0, 0, 0, 0, 0])),
+    picked('Assets/Models/test/Line.mod', triangleModel([0, 0, 0, 1, 0, 0, 2, 0, 0])),
+    picked('Assets/Models/test/Nan.mod', triangleModel([0, 0, 0, 1, 0, 0, 0, 1, Number.NaN])),
+  ];
+}
+
+function triangleModel(positions: number[]): Uint8Array {
+  const material = new Uint8Array(28);
+  const view = new DataView(material.buffer);
+  view.setUint32(0, 0x0002, true);
+  material[4] = 180;
+  material[5] = 180;
+  material[6] = 190;
+  return chunk(
+    'MDLS',
+    concat([
+      header(1, 2),
+      chunk('STRS', Uint8Array.of(0)),
+      chunk('MATS', material),
+      mesh(positions, [triangle([0, 1, 2], [[0, 0], [1, 0], [0, 1]])]),
+    ]),
+  );
+}
+
 function picked(path: string, bytes: Uint8Array): PickedFile {
   return { path, size: bytes.length, read: () => Promise.resolve(bytes) };
 }

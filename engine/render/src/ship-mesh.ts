@@ -22,6 +22,7 @@ import {
 import type { Vfs } from '@sfc2js/platform';
 import {
   AdditiveBlending,
+  BufferAttribute,
   BufferGeometry,
   Color,
   Float32BufferAttribute,
@@ -270,17 +271,20 @@ function geometryFor(faces: readonly ModFace[], vertices: Float32Array): BufferG
   const positions = new Float32Array(triangles.length * 9);
   const normals = new Float32Array(triangles.length * 9);
   const uvs = new Float32Array(triangles.length * 6);
+  const indexCount = triangles.length * 3;
+  const indices = indexCount > 0xffff ? new Uint32Array(indexCount) : new Uint16Array(indexCount);
   let position = 0;
   let normal = 0;
   let uv = 0;
+  const nonFinite = { count: 0 };
   for (const face of triangles) {
     for (const cornerIndex of [2, 1, 0]) {
       const corner = face.vertices[cornerIndex];
       if (corner === undefined) continue;
       const base = corner.vertexIndex * 3;
-      positions[position++] = finite(vertices[base]);
-      positions[position++] = finite(vertices[base + 1]);
-      positions[position++] = finite(vertices[base + 2]);
+      positions[position++] = placed(vertices[base], nonFinite);
+      positions[position++] = placed(vertices[base + 1], nonFinite);
+      positions[position++] = placed(vertices[base + 2], nonFinite);
       normals[normal++] = finite(corner.normal[0]);
       normals[normal++] = finite(corner.normal[1]);
       normals[normal++] = finite(corner.normal[2]);
@@ -288,10 +292,15 @@ function geometryFor(faces: readonly ModFace[], vertices: Float32Array): BufferG
       uvs[uv++] = finite(corner.v);
     }
   }
+  for (let i = 0; i < indices.length; i++) indices[i] = i;
   const geometry = new BufferGeometry();
   geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
   geometry.setAttribute('normal', new Float32BufferAttribute(normals, 3));
   geometry.setAttribute('uv', new Float32BufferAttribute(uvs, 2));
+  geometry.setIndex(new BufferAttribute(indices, 1));
+  // Count of source positions that were not finite. Stored vertices are finite
+  // so a draw does not upload NaN. The load check reads this count.
+  geometry.userData = { sfc2NonFinitePositions: nonFinite.count };
   return geometry;
 }
 
@@ -345,4 +354,10 @@ function isSafeToken(name: string): boolean {
 
 function finite(value: number | undefined): number {
   return value !== undefined && Number.isFinite(value) ? value : 0;
+}
+
+function placed(value: number | undefined, nonFinite: { count: number }): number {
+  if (value !== undefined && Number.isFinite(value)) return value;
+  nonFinite.count += 1;
+  return 0;
 }

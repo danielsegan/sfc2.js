@@ -2,13 +2,22 @@
  * JSON summary for the headless ship viewer check.
  *
  * The report is ship ids, empires, pass/fail, the stage that failed, and
- * an error class. It does not carry paths, file bytes, or pixels.
+ * an error class, plus which stage set ran. It does not carry paths, file
+ * bytes, or pixels.
  */
 
 import { machinePathLeak } from '../formats/src/diagnostic.ts';
 
 export const STAGES = ['resolve', 'geometry', 'texture', 'selfIllum', 'render'] as const;
 export type Stage = (typeof STAGES)[number];
+
+/** `load` stops before the GPU. `full` also renders in headless Chromium. */
+export const STAGE_RUNS = ['load', 'full'] as const;
+export type StagesRun = (typeof STAGE_RUNS)[number];
+
+export function isStagesRun(value: string): value is StagesRun {
+  return (STAGE_RUNS as readonly string[]).includes(value);
+}
 
 export const RENDER_ERRORS = [
   'render.emptyFrame',
@@ -36,6 +45,7 @@ export interface ViewerCheckTotals {
 }
 
 export interface ViewerCheckReport {
+  stagesRun: StagesRun;
   ships: ShipResult[];
   totals: ViewerCheckTotals;
 }
@@ -130,8 +140,8 @@ export function totalsFor(ships: readonly ShipResult[], elapsedMs: number): View
   };
 }
 
-export function buildReport(ships: readonly ShipResult[], elapsedMs: number): ViewerCheckReport {
-  return { ships: ships.map((ship) => ({ ...ship })), totals: totalsFor(ships, elapsedMs) };
+export function buildReport(ships: readonly ShipResult[], elapsedMs: number, stagesRun: StagesRun): ViewerCheckReport {
+  return { stagesRun, ships: ships.map((ship) => ({ ...ship })), totals: totalsFor(ships, elapsedMs) };
 }
 
 /**
@@ -201,7 +211,8 @@ function totalsMatch(report: ViewerCheckReport): boolean {
 
 function asReport(value: unknown): ViewerCheckReport | null {
   if (!isRecord(value)) return null;
-  if (!exactKeys(value, ['ships', 'totals'])) return null;
+  if (!exactKeys(value, ['stagesRun', 'ships', 'totals'])) return null;
+  if (typeof value.stagesRun !== 'string' || !isStagesRun(value.stagesRun)) return null;
   if (!Array.isArray(value.ships)) return null;
   const ships: ShipResult[] = [];
   for (const item of value.ships) {
@@ -211,7 +222,7 @@ function asReport(value: unknown): ViewerCheckReport | null {
   }
   const totals = asTotals(value.totals, ships.length);
   if (totals === null) return null;
-  return { ships, totals };
+  return { stagesRun: value.stagesRun, ships, totals };
 }
 
 function asShip(value: unknown): ShipResult | null {

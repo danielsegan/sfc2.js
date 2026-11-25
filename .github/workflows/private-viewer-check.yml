@@ -1,15 +1,26 @@
-# Headless check that every shiplist row loads and spins.
+# Headless check that every shiplist row loads, and optionally spins.
 #
 # workflow_dispatch only. Runs on the sfc2-ci runner, which can read
 # /srv/sfc2/reference/2.670 (the Wine install, not the extracted tree).
+# `stages` defaults to `load`: model, geometry, textures, and materials in
+# Node, with no Playwright install and no Chromium. `full` also renders.
 # Stdout is a JSON summary: ship id, empire, pass/fail, the stage that
-# failed, and an error class, plus totals. The artifact is that JSON only.
-# The job does not upload screenshots, textures, models, or the install.
-# Chromium is installed into the runner user cache and is not uploaded.
+# failed, an error class, totals, and stagesRun. The artifact is that JSON
+# only. The job does not upload screenshots, textures, models, or the install.
+# Chromium, when `full` installs it, stays in the runner user cache.
 name: Private ship viewer check
 
 on:
   workflow_dispatch:
+    inputs:
+      stages:
+        description: load stops before the GPU. full also renders in headless Chromium.
+        required: true
+        type: choice
+        default: load
+        options:
+          - load
+          - full
 
 permissions:
   contents: read
@@ -51,6 +62,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install Chromium for the headless viewer
+        if: inputs.stages == 'full'
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Confirm the reference install is present
@@ -66,10 +78,16 @@ jobs:
       - name: Check every shiplist ship
         id: check
         continue-on-error: true
+        env:
+          VIEWER_STAGES: ${{ inputs.stages }}
         run: |
           set -euo pipefail
+          case "$VIEWER_STAGES" in
+            load|full) ;;
+            *) echo "stages must be load or full"; exit 1 ;;
+          esac
           mkdir -p verify-output
-          node --experimental-strip-types tools/viewer-check/cli.ts > verify-output/viewer-check.json
+          node --experimental-strip-types tools/viewer-check/cli.ts --stages="$VIEWER_STAGES" > verify-output/viewer-check.json
 
       - name: Guard the JSON summary
         id: guard

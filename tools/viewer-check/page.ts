@@ -15,15 +15,13 @@ import {
   type LoadedShip,
   type ShipStage,
 } from '../../engine/render/src/index.ts';
-import { pairSelfIllumination } from '../formats/src/self-illum.ts';
 import { filesFromDevInstall } from '../../web/src/dev-install-client.ts';
+import { assessLoaded } from './assess.ts';
 import {
   buildReport,
   failureResult,
   inspectReport,
-  loadedResult,
   withRenderError,
-  type DiagnosticSnap,
   type RenderError,
   type ShipResult,
   type ViewerCheckReport,
@@ -46,7 +44,7 @@ async function main(): Promise<void> {
     publish(report);
   } catch {
     document.body.dataset.fail = 'check-failed';
-    publish(buildReport([], performance.now() - started));
+    publish(buildReport([], performance.now() - started, 'full'));
   }
 }
 
@@ -56,7 +54,7 @@ async function runCheck(started: number): Promise<ViewerCheckReport> {
   const files = params.get('synthetic') === '1' ? syntheticViewerFiles() : await filesFromDevInstall(null);
   if (files === null) {
     document.body.dataset.fail = 'no-install';
-    return buildReport([], performance.now() - started);
+    return buildReport([], performance.now() - started, 'full');
   }
 
   const canvas = document.querySelector('#view');
@@ -94,6 +92,7 @@ async function runCheck(started: number): Promise<ViewerCheckReport> {
     return buildReport(
       ordered.map((item) => item.result),
       performance.now() - started,
+      'full',
     );
   } finally {
     stage?.dispose();
@@ -107,14 +106,7 @@ function assessShip(
   webgl: boolean,
   frames: number,
 ): ShipResult {
-  const loaded = loadedResult({
-    spawnKey: ship.spawnKey,
-    placeholder: ship.placeholder,
-    textured: ship.textured,
-    selfIlluminated: ship.selfIlluminated,
-    unboundSelfIllum: vfs !== null && unboundSelfIllum(ship, vfs),
-    diagnostics: ship.diagnostics.map(snapDiagnostic),
-  });
+  const loaded = assessLoaded(ship, vfs);
   if (!loaded.pass) return loaded;
   if (!webgl || stage === null) return withRenderError(loaded, 'render.noWebGL');
   const rendered = renderFrames(stage, ship, frames);
@@ -159,46 +151,6 @@ function renderFrames(stage: ShipStage, ship: LoadedShip, frames: number): Rende
   }
 }
 
-function unboundSelfIllum(ship: LoadedShip, vfs: Vfs): boolean {
-  if (ship.placeholder || ship.geometry.length === 0) return false;
-  const slash = ship.geometry.lastIndexOf('/');
-  const dir = slash >= 0 ? ship.geometry.slice(0, slash) : '';
-  const prefix = dir.length > 0 ? `${dir}/` : '';
-  const local = vfs
-    .list()
-    .map((entry) => entry.path)
-    .filter((path) => {
-      if (!path.toLowerCase().endsWith('.bmp')) return false;
-      if (dir.length === 0) return !path.includes('/');
-      if (!path.toLowerCase().startsWith(prefix.toLowerCase())) return false;
-      return !path.slice(prefix.length).includes('/');
-    });
-  const pairs = pairSelfIllumination(local).pairs;
-  for (const material of ship.mesh.materials) {
-    const mapped = material as {
-      map?: { userData?: { installPath?: unknown } } | null;
-      emissiveMap?: { image?: { width?: number } } | null;
-    };
-    const emissive = mapped.emissiveMap;
-    if (emissive && !(typeof emissive.image?.width === 'number' && emissive.image.width > 0)) return true;
-    const basePath = mapped.map?.userData?.installPath;
-    if (typeof basePath !== 'string') continue;
-    const pair = pairs.find((item) => item.basePath.toLowerCase() === basePath.toLowerCase());
-    if (pair?.selfIllumPath !== undefined && !emissive) return true;
-  }
-  return false;
-}
-
-function snapDiagnostic(item: { source: string; code: string; severity: string; details?: Record<string, unknown> }): DiagnosticSnap {
-  const which = item.details?.which;
-  return {
-    source: item.source,
-    code: item.code,
-    severity: item.severity,
-    ...(which === 'diffuse' || which === 'luminance' ? { which } : {}),
-  };
-}
-
 function framesDiffer(left: Uint8Array, right: Uint8Array): boolean {
   if (left.length !== right.length) return true;
   let changed = 0;
@@ -223,7 +175,7 @@ function clampFrames(raw: string | null): number {
 function publish(report: ViewerCheckReport): void {
   if (inspectReport(report).problem === 'leak') {
     document.body.dataset.fail = 'unsafe';
-    (window as CheckWindow).__viewerCheck = buildReport([], 0);
+    (window as CheckWindow).__viewerCheck = buildReport([], 0, 'full');
   } else {
     (window as CheckWindow).__viewerCheck = report;
   }
