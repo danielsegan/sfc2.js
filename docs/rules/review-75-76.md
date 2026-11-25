@@ -36,7 +36,7 @@ Please confirm or replace:
 9. Fire uses the cross/dot wedge of the arc. The bearing table is the half-open uint16 span. On the four axes the two agree.
 10. An unknown id is `noSuchShip`. A fighter is `notAShip`.
 11. Ordered speed is stored and paid. #75 did not integrate position from speed.
-12. The default rules-turn is 30 seconds × 30 Hz = 900 ticks.
+12. The default rules-turn in #75 and #76 was 30 seconds × 30 Hz = 900 ticks. It is now `RULES_TURN_SECONDS` (33 seconds, 990 ticks) so a photon is ready after two turns and a disruptor after one.
 13. A shiplist bind starts shields full, battery full, and charge at 0. Boxes are the hardpoint count, or 1 when the count cell is empty. An unknown weapon code is not mounted.
 14. Phaser damage is applied on the fire tick, before that tick's energy drip. The struck facing absorbs `min(shield, damage)`. The remainder walks armor, then the placeholder chart, on the `combat` xoshiro128** stream.
 15. The placeholder chart is bridge, the hull section, sensors, and excess. A penetrating hit stops on those rows, so it does not reach a mount and does not roll the overload warhead check. That roll stays specified for a point that removes a box from a charged overload mount.

@@ -15,6 +15,8 @@ import {
   DEFAULT_REINFORCE_CAP,
   DEFAULT_REINFORCE_PER_ENERGY,
   DEFAULT_RULES_TURN_TICKS,
+  RULES_TURN_SECONDS,
+  TICK_HZ,
   ENERGY_SCALE,
   MODE_NORMAL,
   MODE_OVERLOAD,
@@ -244,7 +246,14 @@ describe('facing, range, and arcs', () => {
     expect(DEFAULT_LIFE_HUNDREDTHS + DEFAULT_FC_HUNDREDTHS).toBe(250);
     expect(DEFAULT_REINFORCE_PER_ENERGY).toBe(constants.reinforcePerEnergy);
     expect(DEFAULT_REINFORCE_CAP).toBe(constants.reinforceCapPerTurn);
-    expect(DEFAULT_RULES_TURN_TICKS).toBe(constants.rulesTurnSeconds * constants.tickHz);
+    expect(RULES_TURN_SECONDS).toBe(33);
+    expect(RULES_TURN_SECONDS).toBe(constants.rulesTurnSeconds);
+    expect(TICK_HZ).toBe(constants.tickHz);
+    expect(DEFAULT_RULES_TURN_TICKS).toBe(RULES_TURN_SECONDS * TICK_HZ);
+    expect(DEFAULT_RULES_TURN_TICKS).toBe(990);
+    expect(weaponDef(weaponId('Phot'))?.armTicks).toBe(2 * DEFAULT_RULES_TURN_TICKS);
+    expect(weaponDef(weaponId('Phot'))?.overloadArmTicks).toBe(2 * DEFAULT_RULES_TURN_TICKS);
+    expect(weaponDef(weaponId('Dis1'))?.armTicks).toBe(DEFAULT_RULES_TURN_TICKS);
     expect(REASON_NAME).toHaveLength(35);
     expect(REASON_NAME[R.outOfArc]).toBe('outOfArc');
     expect(parseHundredths('0.75')).toBe(75);

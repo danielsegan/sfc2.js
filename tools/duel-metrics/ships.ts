@@ -5,11 +5,20 @@
  * A real install still supplies power and the turn-curve key from its own files.
  */
 import type { MountSetup, ShipSetup } from '../../engine/sim/bind-shiplist.ts';
-import { CLASS_SHIP, ENERGY_SCALE, MODE_NORMAL, turnModeId } from '../../engine/sim/rules-tables.ts';
+import {
+  CLASS_SHIP,
+  DEFAULT_RULES_TURN_TICKS,
+  ENERGY_SCALE,
+  MODE_NORMAL,
+  TICK_HZ,
+  turnModeId,
+  weaponDef,
+  weaponId,
+} from '../../engine/sim/rules-tables.ts';
 
-export const TICK_HZ = 30;
-/** Placeholder rules-turn from docs/rules/data/constants.json (30 s × 30 Hz). */
-export const RULES_TURN_TICKS = 900;
+export { TICK_HZ };
+/** The sim's named rules-turn (`RULES_TURN_SECONDS` × 30 Hz). */
+export const RULES_TURN_TICKS = DEFAULT_RULES_TURN_TICKS;
 export const SEED = 0x0d0e1;
 export const INPUT_DELAY = 0;
 
@@ -123,7 +132,8 @@ export function weaponSetup(turnHull: string): ShipSetup {
 
 /** A photon that is already armed, so a damage probe does not wait out arming. */
 export function armedPhotonSetup(turnHull: string): ShipSetup {
-  const ship = base(turnHull, [mount(0, PHOTON_CODE, 4, 1800)], 0);
+  const armTicks = weaponDef(weaponId(PHOTON_CODE))?.armTicks ?? 0;
+  const ship = base(turnHull, [mount(0, PHOTON_CODE, 4, armTicks)], 0);
   return { ...ship, fcPaid: 1 };
 }
 

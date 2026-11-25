@@ -4,7 +4,7 @@ Status: **spec, synthetic numbers, pending playtest.** Baseline: Community Editi
 
 Clean-room. The mechanisms are described in our own words. Every balance number lives in [`data/constants.json`](data/constants.json) and is a placeholder, not a copied chart. Shiplist columns supply the ship's ratings. Empty cells stay "not fitted."
 
-A rules-turn is still the sim-core length, 30 seconds until playtest says otherwise, dripped at 30 ticks per second. Fixed point stays 16.16. The only random draws are the `combat` xoshiro128** stream.
+A rules-turn is `RULES_TURN_SECONDS` (33 seconds, 990 ticks at 30 Hz), dripped across that many ticks. Fixed point stays 16.16. The only random draws are the `combat` xoshiro128** stream.
 
 ## 1. Electronic warfare
 

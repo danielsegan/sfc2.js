@@ -47,13 +47,13 @@ Nothing past about 30. The long-run mean of a uniform roll is the middle of the 
 
 ## Photon
 
-Cost confidence H, time confidence M. Arming draws 2 per tube per rules-turn until 4 is stored, and the tube is not ready before two placeholder rules-turns (60 seconds). The observed arming time is about 66 seconds, two turns of about 33 seconds. 60 seconds is inside 10% of 66. After that, holding the tube costs 1 per rules-turn. Dropping the hold clears the charge at the end of the plan.
+Cost confidence H, time confidence M. Arming draws 2 per tube per rules-turn until 4 is stored, and the tube is not ready before two rules-turns. One rules-turn is `RULES_TURN_SECONDS` (33 seconds, the whole-second fit of the about-33-second reading), so the tube is ready at 66 seconds. After that, holding the tube costs 1 per rules-turn. Dropping the hold clears the charge at the end of the plan.
 
 Expected damage per tube: 8 inside range 2, 6.5 at 3, 5 at 4–5, 4 at 6–10, 2.5 at 11–12, and 1 at 13–30. A shared edge stays on the inner band. The sim stores those as hundredths of a point. Overload numbers are still the old placeholder.
 
 ## Disruptor
 
-Cost confidence M, time confidence L. It draws 2 per rules-turn, spread across the turn, and is ready after one placeholder turn (30 seconds, inside 10% of about 33 seconds). The same 2 keeps it armed. Damage was not part of the reading, so a shot in range applies 0.
+Cost confidence M, time confidence L. It draws 2 per rules-turn, spread across the turn, and is ready after one rules-turn (33 seconds). The same 2 keeps it armed. Damage was not part of the reading, so a shot in range applies 0.
 
 ## Shields
 

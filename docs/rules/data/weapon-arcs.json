@@ -38,18 +38,18 @@
         "verification": "observed-reference",
         "armCost": 4,
         "armPerTurn": 2,
-        "armTicks": 1800,
+        "armTurns": 2,
         "holdCost": 1,
         "directDamage": 8,
         "overloadArmCost": 8,
         "overloadArmPerTurn": 4,
-        "overloadArmTicks": 1800,
+        "overloadArmTurns": 2,
         "overloadDamage": 12,
         "proxRadius": 2,
         "proxDamage": 4,
         "projectileSpeed": 2,
         "maxRange": 30,
-        "note": "Normal arming accepts 2 per rules-turn until 4 is stored, and the mount is not ready before 1800 ticks (two 30 s placeholder turns, inside 10% of the observed 66 s). Hold is 1 per rules-turn after that. Overload numbers are still unverified. Normal damage is hundredths of a point by range; a shared edge stays on the inner band.",
+        "note": "Normal arming accepts 2 per rules-turn until 4 is stored. The mount is not ready before armTurns (2) times RULES_TURN_SECONDS, which is 66 s. Hold is 1 per rules-turn after that. Overload armTurns is the same two turns; the overload energy and damage numbers are still unverified. Normal damage is hundredths of a point by range; a shared edge stays on the inner band.",
         "rangeBands": [
           { "maxRange": 2, "damageHundredths": 800 },
           { "maxRange": 3, "damageHundredths": 650 },
@@ -311,12 +311,12 @@
     "disruptor": {
       "armCost": 2,
       "armPerTurn": 2,
-      "armTicks": 900,
+      "armTurns": 1,
       "holdCost": 2,
       "directDamage": 0,
       "maxRange": 30,
       "projectileSpeed": 0,
-      "note": "2 energy per rules-turn, drawn across the turn by the drip. Ready after one 30 s placeholder turn (inside 10% of about 33 s). The same 2 keeps it armed. Damage was not in the observation, so a shot in range applies 0."
+      "note": "2 energy per rules-turn, drawn across the turn by the drip. Ready after armTurns (1) times RULES_TURN_SECONDS, which is 33 s. The same 2 keeps it armed. Damage was not in the observation, so a shot in range applies 0."
     }
   },
   "reloadCountTokens": ["1", "2", "3"],

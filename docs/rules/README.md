@@ -28,7 +28,7 @@ Machine tables live in [`data/`](data/). The checker loads those files, so the J
 - `damageSystem` applies armor, then forced hits on the named system, then the damage chart.
 - Diagnostics stay `{ code, source, severity, details?, location? }`.
 - The lab system key is `lab`.
-- A rules-turn is a number of seconds. [`docs/engine/sim-core.md`](../engine/sim-core.md) converts it at 30 ticks per second and requires a whole number of ticks. That file is not on `main` yet.
+- A rules-turn is `RULES_TURN_SECONDS` in [`data/constants.json`](data/constants.json): 33 seconds. The sim multiplies by 30 ticks per second (990 ticks). A photon arms over two turns (66 s) and a disruptor over one (33 s).
 - Fixed point is 16.16, `FX_SHIFT = 16`, one unit = one range unit. The `combat` stream is registered in sim-core.
 - A phaser is a phaser by code. Every phaser feeds the capacitor, including a phaser in a heavy slot.
 - The CE 2.670 shiplist and ftrlist code lists in the mapping are the inventory names. Match is case-sensitive. Any other spelling is `unknownWeapon`.
@@ -36,12 +36,11 @@ Machine tables live in [`data/`](data/). The checker loads those files, so the J
 
 ## Open questions
 
-1. How many seconds long is a CE rules-turn? The unit is settled; the duration is not. The placeholder is 30.
-2. Is the pay order (life support, fire control, movement, shields, weapons) what CE starves first?
-3. Does CE have per-facing reinforcement, or only a general pool?
-4. Do shield edges, and each arc's facing set, match the ship model? Every arc set is TO VERIFY.
-5. Does the numeric Arc on `Dro*` and `ADD6`/`ADD12` mean reloads or rack capacity? The pairing itself is confirmed. ADD only ever shows 1.
-6. Does ftrlist `Shots` mean rounds loaded or reloads? Is fighter `ADD_6` live?
-7. Are phaser hits instantaneous in CE, or do they have travel time?
-8. Do plain player commands share `ruleResult` with mission commands? This spec says yes for every command the rules module resolves.
-9. Whether the fixture checker should switch off mulberry32 onto the sim's xoshiro128** stream. The sim already uses the named stream.
+1. Is the pay order (life support, fire control, movement, shields, weapons) what CE starves first?
+2. Does CE have per-facing reinforcement, or only a general pool?
+3. Do shield edges, and each arc's facing set, match the ship model? Every arc set is TO VERIFY.
+4. Does the numeric Arc on `Dro*` and `ADD6`/`ADD12` mean reloads or rack capacity? The pairing itself is confirmed. ADD only ever shows 1.
+5. Does ftrlist `Shots` mean rounds loaded or reloads? Is fighter `ADD_6` live?
+6. Are phaser hits instantaneous in CE, or do they have travel time?
+7. Do plain player commands share `ruleResult` with mission commands? This spec says yes for every command the rules module resolves.
+8. Whether the fixture checker should switch off mulberry32 onto the sim's xoshiro128** stream. The sim already uses the named stream.
