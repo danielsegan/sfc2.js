@@ -6,7 +6,7 @@ Bindings use `KeyboardEvent.code` (the physical key), so the same binding works 
 
 Held keys (turn) are sampled every frame. Speed up and speed down also accept key repeat. Everything else fires once per keydown.
 
-Mouse actions on the 3D view and the sensor map follow the original grammar, and a left-click does send an order: a plain left-click sends `orderHeading` toward the clicked point, including when a hostile is under the cursor, and the order holds until the next click replaces it (no target-follow). Alt+left-drag and middle-drag orbit and never steer. Right-click never steers. A right-click under 4 logical pixels targets. The gate grows with `--hud-scale`. Shield facing clicks still send reinforcement. A plain click on a weapon mount selects only that mount; Shift+click adds or removes it from the selection, and Ctrl+`1`–`6` assigns the whole selection to that group.
+Mouse actions on the 3D view follow the original grammar, and a left-click there does send an order: a plain left-click sends `orderHeading` toward the clicked point, including when a hostile is under the cursor, and the order holds until the next click replaces it (no target-follow). Alt+left-drag and middle-drag orbit and never steer. Right-click never steers. A right-click under 4 logical pixels targets. The gate grows with `--hud-scale`. Clicks on the Officer MFD Tactical Map are display-only (CE 2.670; Daniel D2) and neither steer nor target. Shield facing clicks still send reinforcement. A plain click on a weapon mount selects only that mount; Shift+click adds or removes it from the selection, and Ctrl+`1`–`6` assigns the whole selection to that group.
 
 | Action | Default |
 | --- | --- |
@@ -42,16 +42,17 @@ Mouse actions on the 3D view and the sensor map follow the original grammar, and
 | EW toward ECM / ECCM | `[` / `]` |
 | EW power down / up | Ctrl+`[` / Ctrl+`]` |
 | Cycle camera | `V` |
+| Officer MFD pages (Helm, Repair, Science, Marines, Shuttles, Comms, Map, Fleet, Energy, Options) | unbound (`mfd.page.*`, rebindable) |
 | Orbit the camera | Middle-drag or Alt+left-drag, or Alt+Left / Alt+Right. A plain left-press does not orbit. |
-| Order a heading | Left-click in the 3D view or on the sensor map. A ship under the cursor is only the bearing. |
-| Target a contact | Right-click under 4 logical px in the 3D view or on the sensor map, or click an off-screen tag. |
-| Toggle the sensor map size | `M` |
+| Order a heading | Left-click in the 3D view. A ship under the cursor is only the bearing. The Officer MFD map does not steer. |
+| Target a contact | Right-click under 4 logical px in the 3D view, or click an off-screen tag. The Officer MFD map does not target. |
+| Open the Tactical Map officer page | `M` |
 | Toggle north-up / heading-up | `H` |
 | Reset the camera | `Home` |
 | Pause (single player) | `Esc` |
 | Toggle the interface bar | `` ` `` (Backquote). The console hides and the field takes back that height. The lower display keeps a Show/Hide console button so it can be opened again. |
 | Zoom the camera | Wheel on the view |
-| Zoom the sensor map | Wheel on the map |
+| Zoom the tactical map in / out | Shift+`=` / Shift+`-` (three discrete ~2× tiers). Viewport `-`/`=` zoom is reserved and not bound in this profile. Wheel over the Officer MFD does not dolly the 3D camera. |
 | Change desired speed | Wheel (`±1`), or click / drag the lower speed bar. Click and drag map the bar position to a whole speed in `0..speedMax`. Whether CE 2.670 uses the same integer snap on drag is **TO VERIFY**. |
 | Select a shield facing | Left-click an arc. Shift-click adds or removes that facing. Click the centre ship to select all, then none. Set the Reinforcement amount (integer energy points, step 1; the CE 2.670 slider detent is **TO VERIFY**) and click Reinforce or Reinforce all, or use `N` / Shift+`N`. Down / Minimal / Up are disabled until a shield-state verb exists (issue #145). |
 

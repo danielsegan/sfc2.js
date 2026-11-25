@@ -12,7 +12,7 @@ import { FIXTURE_MODEL_DIR, placeholderHullMod, type PlaceholderShape } from '..
 import { cuesForFrame, emptyAudioMemory, type AudioMemory } from '../../engine/audio/cues.ts';
 import { readSoundIndex } from '../../engine/audio/load-index.ts';
 import type { ViewModel } from '../../engine/view/view-model.ts';
-import { updateHud, mapFrame } from './hud.ts';
+import { updateHud } from './hud.ts';
 import { assembleDuel, duelFromFiles, duelFromZip, type LoadedDuel } from './install.ts';
 import { filesFromDevInstall } from './dev-install-client.ts';
 import { devInstallUrl } from '../dev-install-shared.ts';
@@ -21,6 +21,14 @@ import { hudScaleFromLocation, paintFieldHud } from './field-hud.ts';
 import { speedScale } from './tactical/frame.ts';
 import { barFractionFromClientX, formatSpeed, speedBarGesture, speedFromBarFraction } from './speed-bar.ts';
 import type { SchematicMode, SystemMfdPage } from './schematic.ts';
+import {
+  DEFAULT_OFFICER_PAGE,
+  isOfficerPage,
+  LOG_CHANNELS,
+  nearestMapZoom,
+  type LogChannel,
+  type OfficerPageId,
+} from './officer-mfd.ts';
 import { clampReinforceAmount, REINFORCE_STEP, selectFacing, toggleAllFacings } from './shield-select.ts';
 import { selectWeaponClassSlots, toggleSlot } from './weapon-select.ts';
 import { fieldRelease, orbitOnPress } from './tactical/pointer.ts';
@@ -29,7 +37,6 @@ import { createKeyTracker } from './input/keymap.ts';
 import { runAction, type CommandHost } from './commands.ts';
 import { mountKeymapDialog } from './keymap-dialog.ts';
 import { createGameAudio } from './audio-out.ts';
-import { nearestContact, mapWorldAt } from './map-geom.ts';
 import { headingToward } from './helm-aim.ts';
 import { applyEmpireSkin } from './skins/apply.ts';
 import { fitUiScale, formatUiScale } from './skins/scale.ts';
@@ -64,9 +71,16 @@ let selectedFacings: number[] = [];
 let reinforceAmount = 1;
 let systemMfd: SystemMfdPage = 'weapons';
 let schematicMode: SchematicMode = 'mounts';
-let mapZoom = 8;
+let mapZoom = nearestMapZoom(8);
 let headingUp = false;
 let mapFull = false;
+let officerPage: OfficerPageId = DEFAULT_OFFICER_PAGE;
+const logFilters: Record<LogChannel, boolean> = {
+  engineering: true,
+  mission: true,
+  science: true,
+  fleet: true,
+};
 let interfaceCollapsed = false;
 let paused = false;
 let latest: ViewModel | null = null;
@@ -125,6 +139,10 @@ const hud = {
   get schematicMode() {
     return schematicMode;
   },
+  get officerPage() {
+    return officerPage;
+  },
+  logFilters,
   onSelect(slot: number, additive = false) {
     selectedSlots = additive ? toggleSlot(selectedSlots, slot) : [slot];
     selectedSlot = slot;
@@ -180,7 +198,7 @@ const host: CommandHost = {
     return mapZoom;
   },
   setMapZoom(zoom) {
-    mapZoom = zoom;
+    mapZoom = nearestMapZoom(zoom);
   },
   get headingUp() {
     return headingUp;
@@ -193,6 +211,12 @@ const host: CommandHost = {
   },
   setMapFull(on) {
     mapFull = on;
+  },
+  get officerPage() {
+    return officerPage;
+  },
+  setOfficerPage(page) {
+    setOfficerPage(page);
   },
   get interfaceCollapsed() {
     return interfaceCollapsed;
@@ -391,6 +415,43 @@ function setSchematicMode(mode: SchematicMode): void {
   }
 }
 
+function setOfficerPage(page: OfficerPageId): void {
+  if (!isOfficerPage(page)) return;
+  officerPage = page;
+  for (const node of document.querySelectorAll<HTMLElement>('[data-officer-page]')) {
+    node.classList.toggle('active', node.dataset.officerPage === page);
+  }
+  for (const button of document.querySelectorAll<HTMLElement>('[data-officer]')) {
+    const on = button.dataset.officer === page;
+    button.classList.toggle('active', on);
+    button.setAttribute('aria-pressed', on ? 'true' : 'false');
+  }
+}
+
+function applyLogFilters(): void {
+  for (const item of document.querySelectorAll<HTMLElement>('#log li')) {
+    const channel = item.dataset.channel;
+    const visible = channel === undefined || (isLogChannel(channel) && logFilters[channel]);
+    item.dataset.filtered = visible ? '0' : '1';
+  }
+}
+
+function isLogChannel(value: string): value is LogChannel {
+  return (LOG_CHANNELS as readonly string[]).includes(value);
+}
+
+for (const button of document.querySelectorAll<HTMLElement>('[data-log-filter]')) {
+  button.addEventListener('click', (event) => {
+    event.stopPropagation();
+    const channel = button.dataset.logFilter;
+    if (!channel || !isLogChannel(channel)) return;
+    logFilters[channel] = !logFilters[channel];
+    button.classList.toggle('active', logFilters[channel]);
+    button.setAttribute('aria-pressed', logFilters[channel] ? 'true' : 'false');
+    applyLogFilters();
+  });
+}
+
 for (const button of document.querySelectorAll<HTMLElement>('[data-mfd]')) {
   button.addEventListener('click', () => {
     const page = button.dataset.mfd as SystemMfdPage | undefined;
@@ -497,18 +558,7 @@ document.getElementById('field-cap')?.addEventListener('pointerdown', (event) =>
   bar.setAttribute('aria-valuenow', String(request));
 });
 stage?.addEventListener('wheel', (event) => {
-  const frame = mapFrame;
-  const overlay = document.getElementById('overlay');
-  if (frame && overlay) {
-    const rect = overlay.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-    if (x >= frame.left && y >= frame.top && x <= frame.left + frame.size && y <= frame.top + frame.size) {
-      mapZoom = clampZoom(mapZoom + (event.deltaY > 0 ? -1 : 1));
-      event.preventDefault();
-      return;
-    }
-  }
+  if (chromePointer(event.target)) return;
   scene.dolly(event.deltaY > 0 ? 1.2 : -1.2);
   event.preventDefault();
 }, { passive: false });
@@ -536,12 +586,6 @@ function setSpeedFromBar(clientX: number): void {
 }
 
 function targetAt(clientX: number, clientY: number): void {
-  const local = mapLocal(clientX, clientY);
-  if (local && mapFrame?.self && latest) {
-    const id = nearestContact(latest.contacts, mapFrame.self, mapFrame.headingUp, mapFrame.scale, local.x, local.y);
-    if (id !== null) match.setTarget(id);
-    return;
-  }
   if (!latest || !stage) return;
   const rect = stage.getBoundingClientRect();
   const points = [];
@@ -560,29 +604,11 @@ function targetAt(clientX: number, clientY: number): void {
   if (id !== null) match.setTarget(id);
 }
 
-function mapLocal(clientX: number, clientY: number): { x: number; y: number } | null {
-  const frame = mapFrame;
-  const overlay = document.getElementById('overlay');
-  if (!frame || !overlay) return null;
-  const rect = overlay.getBoundingClientRect();
-  const x = clientX - rect.left;
-  const y = clientY - rect.top;
-  if (x < frame.left || y < frame.top || x > frame.left + frame.size || y > frame.top + frame.size) return null;
-  return { x: x - frame.cx, y: y - frame.cy };
-}
-
 function ownShip(): { x: number; y: number } | null {
   return latest?.contacts.find((contact) => contact.kind === 'ship' && contact.hostility === 'self') ?? null;
 }
 
 function bearingPoint(clientX: number, clientY: number): { x: number; y: number } | null {
-  const local = mapLocal(clientX, clientY);
-  if (local && mapFrame?.self && latest) {
-    const id = nearestContact(latest.contacts, mapFrame.self, mapFrame.headingUp, mapFrame.scale, local.x, local.y);
-    const contact = id === null ? null : latest.contacts.find((item) => item.id === id && item.kind !== 'shot');
-    if (contact) return { x: contact.x, y: contact.y };
-    return mapWorldAt(mapFrame.self, mapFrame.headingUp, mapFrame.scale, local.x, local.y);
-  }
   if (latest && stage) {
     const rect = stage.getBoundingClientRect();
     const points = [];
@@ -622,10 +648,16 @@ function uniqueSlots(slots: readonly number[]): number[] {
   return list;
 }
 
-function clampZoom(value: number): number {
-  if (value < 3) return 3;
-  if (value > 18) return 18;
-  return value;
+function officerMfdObstacle(stageRect: DOMRect | undefined): { left: number; top: number; right: number; bottom: number }[] {
+  const mfd = document.getElementById('officer-mfd');
+  if (!mfd || !stageRect) return [];
+  const rect = mfd.getBoundingClientRect();
+  return [{
+    left: rect.left - stageRect.left,
+    top: rect.top - stageRect.top,
+    right: rect.right - stageRect.left,
+    bottom: rect.bottom - stageRect.top,
+  }];
 }
 
 function typing(event: KeyboardEvent): boolean {
@@ -834,9 +866,7 @@ function frame(now: number): void {
   scene.render(vm, now, selection);
   updateHud(vm, roster, hud, match.plan, now);
   const stageRect = stage?.getBoundingClientRect();
-  const obstacles = mapFrame
-    ? [{ left: mapFrame.left, top: mapFrame.top, right: mapFrame.left + mapFrame.size, bottom: mapFrame.top + mapFrame.size }]
-    : [];
+  const obstacles = officerMfdObstacle(stageRect);
   paintFieldHud({
     vm,
     roster,
