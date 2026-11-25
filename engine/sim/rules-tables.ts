@@ -280,6 +280,12 @@ export const DISRUPTOR_MAX_RANGE = 31000;
 /** Overload disruptor cutoff. Past this the overload shot does nothing. */
 export const DISRUPTOR_OVERLOAD_MAX_RANGE = 9000;
 
+/** Photon and Phaser-1 cutoff. The reading puts it somewhere in 26–30k. */
+export const PHOTON_MAX_RANGE = 30000;
+export const PHASER1_MAX_RANGE = 30000;
+/** Phaser-3 cutoff from the F-FF reading. */
+export const PHASER3_MAX_RANGE = 10300;
+
 export interface ArcDef {
   readonly code: string;
   readonly full: number;
@@ -394,6 +400,12 @@ function buildWeapons(): readonly WeaponDef[] {
       const last = overloadBands[overloadBands.length - 1]!;
       if (last.maxRange !== DISRUPTOR_OVERLOAD_MAX_RANGE) throw new Error(`disruptor ${code} overload range`);
     }
+    const lastBand = bands.length > 0 ? bands[bands.length - 1] : undefined;
+    if (code === 'Phot' && (num(row.maxRange) !== PHOTON_MAX_RANGE || lastBand?.maxRange !== PHOTON_MAX_RANGE)) {
+      throw new Error('photon range');
+    }
+    if (code === 'Ph1' && lastBand?.maxRange !== PHASER1_MAX_RANGE) throw new Error('phaser-1 range');
+    if (code === 'Ph3' && lastBand?.maxRange !== PHASER3_MAX_RANGE) throw new Error('phaser-3 range');
     out.push({
       code,
       internal,

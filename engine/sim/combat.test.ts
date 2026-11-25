@@ -1230,8 +1230,8 @@ describe('CE weapon codes', () => {
     const phaser = play(sim, [{ kind: VERB_FIRE, payload: firePayload(ids[0]!, 10, ids[1]!) }]);
     const phaserRule = phaser.events.find((event) => event.kind === EVENT_RULE);
     expect(phaserRule?.a).toBe(R.ok);
-    expect(phaserRule?.b).toBeGreaterThanOrEqual(0);
-    expect(phaserRule?.b).toBeLessThanOrEqual(4);
+    expect(phaserRule?.b).toBeGreaterThanOrEqual(6);
+    expect(phaserRule?.b).toBeLessThanOrEqual(7);
     expect(phaser.events.find((event) => event.kind === EVENT_HIT)).toMatchObject({ entity: ids[1], a: 0, b: phaserRule?.b });
     expect(viewAt(sim, 1).shields[0]).toBe(20 - (phaserRule?.b ?? 0));
     expect(viewAt(sim, 0).mounts[10]?.charge100).toBe(0);

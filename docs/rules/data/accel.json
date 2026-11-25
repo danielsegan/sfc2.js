@@ -1,31 +1,68 @@
 {
   "status": "observed",
-  "note": "Actual speed moves toward the ordered speed. Ordered speed is what movement energy pays for (1 per speed point, including a half point). These bands are a clean-room fit to observed spool-up times. Each band adds gainHundredths once per overTicks, and the fraction divides the band width exactly, so the boundary is reached on a tick with a zero remainder. Deceleration is 110 hundredths per 30 ticks (1.1 speed per second) for both hulls. A hull that is not listed keeps the per-order acceleration clamp and has no separate actual speed.",
+  "note": "Actual speed moves toward the ordered speed. Ordered speed is what movement energy pays for (1 per speed point, including a half point). These bands are a clean-room fit to observed spool-up times. Each band adds gainHundredths once per overTicks, and the fraction divides the band width exactly, so the boundary is reached on a tick with a zero remainder. Deceleration is 110 hundredths per 30 ticks (1.1 speed per second) for every listed hull. A hull that is not listed keeps the per-order acceleration clamp and has no separate actual speed.",
   "decelHundredths": 110,
   "decelTicks": 30,
-  "hullOrder": ["F-CA", "K-D7"],
+  "hullOrder": [
+    "F-CA",
+    "K-D7",
+    "F-FF",
+    "F-DN"
+  ],
   "hulls": {
     "F-CA": {
-      "note": "From rest, about 11 / 19 / 30 / 43 / 61 / 77 s to speeds 5 / 10 / 15 / 20 / 25 / 30.",
+      "note": "Wintermute aggregate 2026-11-25 [M]. Low speed is 0.30 speed/s (inside 0.285-0.31): 10 hundredths every 10 ticks through speed 5. Then 10 hundredths every 9 ticks through speed 20, about 61.7 s from rest. Then 2 hundredths per tick, so speed 30 is about 78.3 s and 30.5 about 79.2 s (reading: 30.5 in about 78.7 s, and 0-20 in about 61 s). The quoted 0.356 average from 3.5 to 30.5 does not also fit those two clocks and the low-speed rate, so the clocks and the low rate are the fit.",
       "bands": [
-        { "upToHundredths": 500, "gainHundredths": 50, "overTicks": 33 },
-        { "upToHundredths": 1000, "gainHundredths": 25, "overTicks": 12 },
-        { "upToHundredths": 1500, "gainHundredths": 50, "overTicks": 33 },
-        { "upToHundredths": 2000, "gainHundredths": 50, "overTicks": 39 },
-        { "upToHundredths": 2500, "gainHundredths": 25, "overTicks": 27 },
-        { "upToHundredths": 3000, "gainHundredths": 25, "overTicks": 24 }
+        {
+          "upToHundredths": 500,
+          "gainHundredths": 10,
+          "overTicks": 10
+        },
+        {
+          "upToHundredths": 2000,
+          "gainHundredths": 10,
+          "overTicks": 9
+        },
+        {
+          "upToHundredths": 3050,
+          "gainHundredths": 2,
+          "overTicks": 1
+        }
       ]
     },
     "K-D7": {
-      "note": "From rest, about 10 / 18.5 / 28 / 41 / 57 / 76 s to speeds 5 / 10 / 15 / 20 / 25 / 30, and 31 at 79 s.",
+      "note": "Wintermute aggregate 2026-11-25 [M]. Low speed is 0.28 speed/s (inside 0.27-0.29): 14 hundredths every 15 ticks through speed 5, about 18 s from rest. Then 7 hundredths every 5 ticks so speed 31 is about 79.8 s (reading: 31.09 in about 79.6 s). The quoted 0.344 average is the same kind of mid-band reading as the F-CA 0.356, and the top clock wins where they disagree.",
       "bands": [
-        { "upToHundredths": 500, "gainHundredths": 5, "overTicks": 3 },
-        { "upToHundredths": 1000, "gainHundredths": 100, "overTicks": 51 },
-        { "upToHundredths": 1500, "gainHundredths": 100, "overTicks": 57 },
-        { "upToHundredths": 2000, "gainHundredths": 50, "overTicks": 39 },
-        { "upToHundredths": 2500, "gainHundredths": 25, "overTicks": 24 },
-        { "upToHundredths": 3000, "gainHundredths": 50, "overTicks": 57 },
-        { "upToHundredths": 3100, "gainHundredths": 10, "overTicks": 9 }
+        {
+          "upToHundredths": 500,
+          "gainHundredths": 14,
+          "overTicks": 15
+        },
+        {
+          "upToHundredths": 3109,
+          "gainHundredths": 7,
+          "overTicks": 5
+        }
+      ]
+    },
+    "F-FF": {
+      "note": "Wintermute aggregate 2026-11-25 [H]. About 0.82 speed/s: 41 hundredths every 15 ticks, so speed 31 is about 38 s from rest. The sample window that started at 6.6 is recorded in needs-ce-reading.md.",
+      "bands": [
+        {
+          "upToHundredths": 3100,
+          "gainHundredths": 41,
+          "overTicks": 15
+        }
+      ]
+    },
+    "F-DN": {
+      "note": "Wintermute aggregate 2026-11-25 [H]. About 0.31 speed/s: 31 hundredths every 30 ticks. The 64 s window that started at 7.8 is recorded in needs-ce-reading.md.",
+      "bands": [
+        {
+          "upToHundredths": 3046,
+          "gainHundredths": 31,
+          "overTicks": 30
+        }
       ]
     }
   }

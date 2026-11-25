@@ -1060,7 +1060,11 @@ function shotDamage(
   if (def.internal === INTERNAL_PHOTON && mode === MODE_NORMAL && def.bands.length > 0) {
     for (const band of def.bands) {
       if (!withinRange(dx, dy, band.maxRange)) continue;
-      return { amount: band.damage, unit: band.hundredths === 1 ? ENERGY_SCALE : 1 };
+      const unit = band.hundredths === 1 ? ENERGY_SCALE : 1;
+      if (band.hitNum < band.hitDen && !ctx.rng.stream('combat').chance(band.hitNum, band.hitDen)) {
+        return { amount: 0, unit };
+      }
+      return { amount: band.damage, unit };
     }
     return undefined;
   }

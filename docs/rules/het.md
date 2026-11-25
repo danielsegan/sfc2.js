@@ -60,10 +60,11 @@ Current CE 2.670 summary (`CE in-battle audit`, Wintermute, 2026-11-24, includin
 
 | Hull key | Speeds | `delayTicks` | `turnAngle16` (16-bit) | `turnRate16PerTick` (30 Hz) | Status |
 | --- | --- | --- | --- | --- | --- |
-| `F-CA` | `5, 10, 15, 20, 31` | `171` (≈`5.7 s`) | `16384` (≈`90°`) | `283, 285, 255, 285, 291` (`46.7, 47, 42.0, 47, 48.0°/s`) | Speed 15 sits in the observed 42–52 deg/s band. See [observed-reference.md](observed-reference.md). |
+| `F-CA` | `5, 10, 15, 20, 31` | `171` (≈`5.7 s`) | `16384` (≈`90°`; reading ≈`89°`) | `279, 270, 256, 276, 315` (`45.9, 44.4, 42.1, 45.4, 51.8°/s`) | 42–46°/s, with speed 31 the ~52°/s outlier [M]. See [observed-reference.md](observed-reference.md). |
+| `F-FF` | `5` (clamped) | `161` (≈`5.37 s`) | `16384` | `297` (`49°/s`) | Checkpoint 1 [H]. Slope 55.5 is not stored. |
 | `F-CL` | `5, 15` (clamped outside) | `171` | `16384` | `313, 296` (`51.5, 48.7°/s`) | Tier-2 rates **measured** at `5, 15`; speed `31` omitted from audit expect (unmeasured) and is **TO VERIFY** |
 | `F-CC` | `5` (clamped) | `171` | `16384` | `283` (`46.6°/s`) | Tier-2 rate **measured** at `5`; speeds `15, 31` omitted from audit expect (noops) and are **TO VERIFY** |
-| `F-DN` | `5` (clamped) | `171` | `16384` | `253` (`41.7°/s`) | Tier-2 rate **measured** at `5`; speeds `15, 31` omitted from audit expect (noops) and are **TO VERIFY** |
+| `F-DN` | `5` (clamped) | `168` (≈`5.6 s`) | `16384` | `253` (`41.7°/s`) | Checkpoint 1 [M]. Other speeds clamp to this point. |
 | `F-DD` | `31` (clamped) | `171` | `16384` | `335` (`55.2°/s`) | Tier-2 rate **measured** at `31`; audit `delayS` is the measured `6.02 s` (just outside the `5.4–6.0 s` band); sim `delayTicks` stays `171`. Speeds `5, 15` omitted from audit expect (noops) and are **TO VERIFY** |
 | `K-D7` | `5, 15, 31` | `171` | `16384` (90° baseline) | `280, 374, 325` (`46.14, 61.57, 53.62°/s`) | Speed 5 sits in the observed 46–65 deg/s band. Sweep stays the 90° baseline, inside 82–98°. See [observed-reference.md](observed-reference.md). |
 | `K-E4` | `5, 15, 31` | `171` | `16384` (90° baseline) | `249, 268, 418` (`41.05, 44.12, 68.92°/s`) | Tier-2 rates **measured**; sim sweep is the 90° preset baseline (`16384`); measured `73.8°, 105.8°, 100.4°` at `5, 15, 31` kept in audit as 90° overshoot/undershoot (**TO VERIFY**); wall-clock rate at `5` (**TO VERIFY** game-clock). |

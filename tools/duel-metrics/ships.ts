@@ -44,32 +44,41 @@ export const BEARINGS = [0, 10923, 21845, 32768, 43691, 54613] as const;
 export const SHIELD_RANGE = 8;
 
 export const PHASER_CODE = 'Ph1';
+export const PHASER2_CODE = 'Ph2';
+export const PHASER3_CODE = 'Ph3';
 export const PHOTON_CODE = 'Phot';
 export const DISRUPTOR_CODE = 'Dis1';
 export const ARC_CODE = 'ALL';
 /** How many phasers the firepower probe mounts, so the weapon budget can absorb the leftover. */
 export const PHASER_COUNT = 10;
 
-/** One range in each observed phaser group, plus one step past the reach. */
-export const PHASER_RANGES = [0, 1, 3, 4, 5, 8, 12, 20, 28, 31] as const;
+/** Thousands of range units. 31k is past the 30k photon and Phaser-1 cutoff. */
+export const PHASER_RANGES = [0, 1, 2, 4, 8, 12, 16, 20, 26, 31] as const;
+export const PHASER3_RANGES = [0, 2, 4, 8, 11] as const;
 
-/** One range in each observed photon group, plus one step past the reach. */
-export const PHOTON_RANGES = [1, 2, 3, 4, 8, 11, 20, 31] as const;
+/** Thousands of range units. 31k is past the photon cutoff. */
+export const PHOTON_RANGES = [0, 1, 2, 4, 8, 12, 20, 26, 31] as const;
 /** Thousands of range units. 1 here is 1000 range units. */
 export const DISRUPTOR_RANGES = [0, 1, 2, 3, 4, 8, 11, 15, 20, 25, 31, 32] as const;
 export const DISRUPTOR_OVERLOAD_RANGES = [0, 2, 4, 9, 10] as const;
 
 export interface ProbeShip {
-  readonly id: 'F-CA-like' | 'K-D7-like';
-  readonly turnHull: 'F-CA' | 'K-D7';
+  readonly id: 'F-CA-like' | 'F-FF-like' | 'F-DN-like' | 'K-D7-like';
+  readonly turnHull: 'F-CA' | 'F-FF' | 'F-DN' | 'K-D7';
   readonly warp: number;
   readonly heavy: typeof PHOTON_CODE | typeof DISRUPTOR_CODE;
 }
 
 export const PROBE_SHIPS: readonly ProbeShip[] = [
   { id: 'F-CA-like', turnHull: 'F-CA', warp: 34, heavy: PHOTON_CODE },
+  { id: 'F-FF-like', turnHull: 'F-FF', warp: 34, heavy: PHOTON_CODE },
+  { id: 'F-DN-like', turnHull: 'F-DN', warp: 53, heavy: PHOTON_CODE },
   { id: 'K-D7-like', turnHull: 'K-D7', warp: 39, heavy: DISRUPTOR_CODE },
 ];
+
+export function phaserCode(turnHull: string): string {
+  return turnHull === 'K-D7' ? PHASER2_CODE : PHASER_CODE;
+}
 
 export function plantOf(turnHull: string): number {
   for (const ship of PROBE_SHIPS) {
@@ -130,7 +139,7 @@ export function motionSetup(turnHull: string): ShipSetup {
  */
 export function weaponSetup(turnHull: string): ShipSetup {
   const heavy = turnHull === 'K-D7' ? DISRUPTOR_CODE : PHOTON_CODE;
-  const ship = base(turnHull, [mount(0, PHASER_CODE, 4), mount(1, heavy, 0)], 0);
+  const ship = base(turnHull, [mount(0, phaserCode(turnHull), 4), mount(1, heavy, 0)], 0);
   return { ...ship, fcPaid: 1 };
 }
 
@@ -140,6 +149,12 @@ export function armedDisruptorSetup(mode: number): ShipSetup {
   const charge = mode === MODE_OVERLOAD ? 4 : 2;
   const heavy = mount(0, DISRUPTOR_CODE, charge, armTicks);
   const ship = base('K-D7', [{ ...heavy, mode }], 0);
+  return { ...ship, fcPaid: 1 };
+}
+
+/** A charged Phaser-3, so a damage probe does not wait on the energy plan. */
+export function armedPhaser3Setup(): ShipSetup {
+  const ship = base('F-FF', [mount(0, PHASER3_CODE, 4)], 0);
   return { ...ship, fcPaid: 1 };
 }
 

@@ -11,6 +11,7 @@ import { arcDef, type ArcDef } from './rules-tables.ts';
 const FULL = 65536;
 const HALF = 32768;
 
+/** Equal 60° bins, bow centred. A boundary belongs to the clockwise-next facing. */
 export function facingForRelative(rel: number): number {
   const r = rel & 0xffff;
   return rulesDiv(r * 6 + HALF, FULL) % 6;

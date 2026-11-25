@@ -194,7 +194,7 @@
       "hull": "F-CA",
       "speedHundredths": 4000,
       "expect": {
-        "turnRate16PerTick": 44,
+        "turnRate16PerTick": 45,
         "delayTicks": 44
       }
     },
@@ -212,7 +212,7 @@
       "hull": "K-D7",
       "speedHundredths": 700,
       "expect": {
-        "turnRate16PerTick": 39,
+        "turnRate16PerTick": 42,
         "delayTicks": 42
       }
     },
@@ -230,7 +230,7 @@
       "hull": "K-D7",
       "speedHundredths": 1500,
       "expect": {
-        "turnRate16PerTick": 51,
+        "turnRate16PerTick": 56,
         "delayTicks": 42
       }
     },
@@ -239,7 +239,7 @@
       "hull": "K-D7",
       "speedHundredths": 0,
       "expect": {
-        "turnRate16PerTick": 30,
+        "turnRate16PerTick": 33,
         "delayTicks": 42
       }
     },
@@ -347,7 +347,7 @@
       "speedHundredths": 0,
       "expect": {
         "turnRate16PerTick": 31,
-        "delayTicks": 44
+        "delayTicks": 33
       }
     },
     {
@@ -356,7 +356,7 @@
       "speedHundredths": 500,
       "expect": {
         "turnRate16PerTick": 31,
-        "delayTicks": 44
+        "delayTicks": 33
       }
     },
     {
@@ -365,7 +365,7 @@
       "speedHundredths": 1000,
       "expect": {
         "turnRate16PerTick": 57,
-        "delayTicks": 44
+        "delayTicks": 33
       }
     },
     {
@@ -374,7 +374,7 @@
       "speedHundredths": 2000,
       "expect": {
         "turnRate16PerTick": 60,
-        "delayTicks": 44
+        "delayTicks": 33
       }
     },
     {
@@ -383,7 +383,7 @@
       "speedHundredths": 3100,
       "expect": {
         "turnRate16PerTick": 60,
-        "delayTicks": 44
+        "delayTicks": 33
       }
     },
     {
@@ -473,7 +473,7 @@
       "speedHundredths": 500,
       "expect": {
         "turnRate16PerTick": 26,
-        "delayTicks": 44
+        "delayTicks": 36
       }
     },
     {
@@ -482,7 +482,7 @@
       "speedHundredths": 1000,
       "expect": {
         "turnRate16PerTick": 38,
-        "delayTicks": 44
+        "delayTicks": 36
       }
     },
     {
@@ -491,7 +491,7 @@
       "speedHundredths": 2000,
       "expect": {
         "turnRate16PerTick": 45,
-        "delayTicks": 44
+        "delayTicks": 36
       }
     },
     {
@@ -499,7 +499,7 @@
       "hull": "K-D7",
       "speedHundredths": 500,
       "expect": {
-        "turnRate16PerTick": 30,
+        "turnRate16PerTick": 33,
         "delayTicks": 42
       }
     },
@@ -508,7 +508,7 @@
       "hull": "K-D7",
       "speedHundredths": 1000,
       "expect": {
-        "turnRate16PerTick": 52,
+        "turnRate16PerTick": 56,
         "delayTicks": 42
       }
     },

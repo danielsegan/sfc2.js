@@ -59,48 +59,49 @@
     "Z-CA",
     "G-FF",
     "I-DN",
-    "R-KR"
+    "R-KR",
+    "F-FF"
   ],
   "hullOrderNote": "Stable sim ids: engine/sim numbers hull rows by their position in this list, so append new hull keys at the end. Every key under hulls must be listed. default is the row for hulls with no entry of their own. Editing a row's speedPoints needs no code change.",
   "hulls": {
     "F-CA": {
-      "status": "partial",
-      "note": "CE Tier-1 and Tier-2 in-battle captures 2026-11-24: ~90 deg sweep (16384 units; Tier-2 usable Fed sweeps ~84-96 deg) and ~5.7 s delay (171 ticks, covering 5.4-6.0 s = 162-180 ticks). Tier-2 measured rates at speeds 5 (46.7 deg/s -> 283), 15 (41.4 deg/s -> 251), and 31 (48.0 deg/s -> 291); speed 20 keeps 285 (47 deg/s band midpoint; Tier-1 measured 47.69 deg/s) and unmeasured speed 10 keeps placeholder 285 (TO VERIFY).",
+      "status": "measured",
+      "note": "Wintermute aggregate 2026-11-25 [M]: rate 42-46 deg/s, with speed 31 kept as the one ~52 deg/s outlier. Delay 5.5-6.0 s (171 ticks, 5.7 s). Sweep stays 90 deg (16384); the reading is about 89 deg, inside 10%. Earlier points above 46, other than that outlier, were lowered into the band.",
       "verification": {
-        "delayTicks": "measured (CE Tier-1/Tier-2 captures 2026-11-24; 5.4-6.0 s -> midpoint 171 ticks)",
-        "turnAngle16": "measured (CE Tier-1/Tier-2 captures 2026-11-24; 90 deg -> 16384, ~84-96 deg range)",
-        "turnRate16PerTick": "measured at speeds 5, 15, 31 (Tier-2 2026-11-24) and 20 (Tier-1 band midpoint 285); speed 10 and Tier-1/Tier-2 spread at 15 (50.6 vs 41.4) TO VERIFY"
+        "delayTicks": "measured 5.5-6.0 s [M]; table point 171 ticks",
+        "turnAngle16": "90 deg baseline (16384); reading is about 89 deg",
+        "turnRate16PerTick": "measured 42-46 deg/s [M]; speed 31 is the ~52 deg/s outlier"
       },
       "speedPoints": [
         {
           "speed": 5,
           "delayTicks": 171,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 283
+          "turnRate16PerTick": 279
         },
         {
           "speed": 10,
           "delayTicks": 171,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 285
+          "turnRate16PerTick": 270
         },
         {
           "speed": 15,
           "delayTicks": 171,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 255
+          "turnRate16PerTick": 256
         },
         {
           "speed": 20,
           "delayTicks": 171,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 285
+          "turnRate16PerTick": 276
         },
         {
           "speed": 31,
           "delayTicks": 171,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 291
+          "turnRate16PerTick": 315
         }
       ],
       "audit": {
@@ -108,19 +109,19 @@
         "verification": "5/15/31 rates from Tier-2; 10 rate TO VERIFY; deg tolerance 6 covers 84-96 deg; delayS tolerance 0.3 covers 5.4-6.0 s",
         "expect": {
           "turn.het.5.deg": 90,
-          "turn.het.5.degPerSecond": 46.7,
+          "turn.het.5.degPerSecond": 45.9,
           "turn.het.5.delayS": 5.7,
           "turn.het.10.deg": 90,
-          "turn.het.10.degPerSecond": 47,
+          "turn.het.10.degPerSecond": 44.4,
           "turn.het.10.delayS": 5.7,
           "turn.het.15.deg": 90,
-          "turn.het.15.degPerSecond": 42,
+          "turn.het.15.degPerSecond": 42.1,
           "turn.het.15.delayS": 5.7,
           "turn.het.20.deg": 90,
-          "turn.het.20.degPerSecond": 47,
+          "turn.het.20.degPerSecond": 45.4,
           "turn.het.20.delayS": 5.7,
           "turn.het.31.deg": 90,
-          "turn.het.31.degPerSecond": 48,
+          "turn.het.31.degPerSecond": 51.8,
           "turn.het.31.delayS": 5.7
         },
         "tolerances": {
@@ -143,11 +144,11 @@
       }
     },
     "K-D7": {
-      "status": "partial",
-      "note": "CE Tier-2 in-battle capture 2026-11-24 (Wintermute, Klingon): usable HET data at speed(s) 5, 15, 31. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; measured sweep at speed(s) 5, 15, 31 is 82.9\u00b0, 98.3\u00b0, 97.3\u00b0, treated as 90\u00b0 preset overshoot/undershoot; sim uses 16384 and audit keeps the measured `deg` (TO VERIFY). Wall-clock rate fallback at speed(s) 5, 15 (TO VERIFY game-clock). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "status": "measured",
+      "note": "Wintermute aggregate 2026-11-25 [H]: 57.8-59.0 deg/s and delay 5.45-5.93 s. Table rate 354 BAM/tick (58.3 deg/s) and delay 171 ticks (5.7 s). Sweep stays the 90 deg baseline; this reading did not replace it.",
       "verification": {
-        "delayTicks": "measured Tier-2 capture 2026-11-24 (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
-        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg keeps measured overshoot/undershoot of the 90\u00b0 preset",
+        "delayTicks": "measured 5.45-5.93 s [H]; table point 171 ticks",
+        "turnAngle16": "90 deg preset baseline (16384); this reading did not replace the sweep",
         "turnRate16PerTick": "measured at speed(s) 5, 15, 31"
       },
       "speedPoints": [
@@ -155,19 +156,19 @@
           "speed": 5,
           "delayTicks": 171,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 280
+          "turnRate16PerTick": 354
         },
         {
           "speed": 15,
           "delayTicks": 171,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 374
+          "turnRate16PerTick": 354
         },
         {
           "speed": 31,
           "delayTicks": 171,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 325
+          "turnRate16PerTick": 354
         }
       ],
       "audit": {
@@ -176,13 +177,13 @@
         "expect": {
           "turn.het.5.deg": 82.9,
           "turn.het.5.delayS": 5.7,
-          "turn.het.5.degPerSecond": 46.14,
+          "turn.het.5.degPerSecond": 58.3,
           "turn.het.15.deg": 98.3,
           "turn.het.15.delayS": 5.7,
-          "turn.het.15.degPerSecond": 61.57,
+          "turn.het.15.degPerSecond": 58.3,
           "turn.het.31.deg": 97.3,
           "turn.het.31.delayS": 5.7,
-          "turn.het.31.degPerSecond": 53.62
+          "turn.het.31.degPerSecond": 58.3
         },
         "tolerances": {
           "turn.het.5.deg": 6,
@@ -295,17 +296,17 @@
       }
     },
     "F-DN": {
-      "status": "partial",
-      "note": "CE Tier-2 in-battle capture 2026-11-24 (Wintermute): usable HET rates at speed(s) 5 (41.7 deg/s -> 253 units/tick); sweeps ~84-96 deg (kept at 90 deg / 16384 units) and delays 5.4-6.0 s (kept at midpoint 171 ticks). Missing speeds (15, 31) clamp to endpoints, are omitted from audit expect (noops), and are TO VERIFY.",
+      "status": "measured",
+      "note": "Wintermute aggregate 2026-11-25 [M]: 41.7 deg/s (253 BAM/tick) and delay 5.6 s (168 ticks). One measured speed; other speeds clamp to it. Sweep stays the 90 deg baseline.",
       "verification": {
-        "delayTicks": "measured Tier-2 range 5.4-6.0 s (162-180 ticks -> midpoint 171); per-hull confirmation TO VERIFY",
+        "delayTicks": "measured 5.6 s [M] -> 168 ticks",
         "turnAngle16": "measured Tier-2 range ~84-96 deg (kept 16384 / 90 deg); per-hull sweep TO VERIFY",
-        "turnRate16PerTick": "measured at speed(s) 5; speed(s) 15, 31 TO VERIFY"
+        "turnRate16PerTick": "measured 41.7 deg/s [M]"
       },
       "speedPoints": [
         {
           "speed": 5,
-          "delayTicks": 171,
+          "delayTicks": 168,
           "turnAngle16": 16384,
           "turnRate16PerTick": 253
         }
@@ -315,7 +316,7 @@
         "verification": "degPerSecond measured at speed(s) 5; speed(s) 15, 31 omitted from audit expect (noops, TO VERIFY)",
         "expect": {
           "turn.het.5.deg": 90,
-          "turn.het.5.delayS": 5.7,
+          "turn.het.5.delayS": 5.6,
           "turn.het.5.degPerSecond": 41.7
         },
         "tolerances": {
@@ -1751,6 +1752,37 @@
           "turn.het.5.deg": 6,
           "turn.het.5.delayS": 0.3,
           "turn.het.5.degPerSecond": 6
+        }
+      }
+    },
+    "F-FF": {
+      "status": "measured",
+      "note": "Wintermute aggregate 2026-11-25 [H]: 49 deg/s (297 BAM/tick) and delay 5.35 s (161 ticks). A slope of 55.5 was reported with the rate and is not a second table point. Sweep stays the 90 deg baseline.",
+      "verification": {
+        "delayTicks": "measured 5.35 s [H] -> 161 ticks",
+        "turnAngle16": "90 deg preset baseline (16384); this reading did not replace the sweep",
+        "turnRate16PerTick": "measured 49 deg/s [H]"
+      },
+      "speedPoints": [
+        {
+          "speed": 5,
+          "delayTicks": 161,
+          "turnAngle16": 16384,
+          "turnRate16PerTick": 297
+        }
+      ],
+      "audit": {
+        "source": "Wintermute checkpoint 1 Federation 2026-11-25",
+        "verification": "rate and delay [H]; slope 55.5 is not stored",
+        "expect": {
+          "turn.het.5.deg": 90,
+          "turn.het.5.delayS": 5.37,
+          "turn.het.5.degPerSecond": 49
+        },
+        "tolerances": {
+          "turn.het.5.deg": 6,
+          "turn.het.5.delayS": 0.3,
+          "turn.het.5.degPerSecond": 1
         }
       }
     }
