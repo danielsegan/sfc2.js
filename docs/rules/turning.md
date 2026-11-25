@@ -47,15 +47,15 @@ A start-of-turn delay of `delayTicks` applies before the ship begins rotating on
 | `F-CL` | `5, 10, 20` | `32, 51, 58` (`5.35, 8.36, 9.51°/s`) | `44` (**TO VERIFY**) | Tier-2 rates **measured** at `5, 10, 20`; speeds `<5` / `>20` clamp to endpoints (**TO VERIFY**); delay reuses `F-CA` (**TO VERIFY**). |
 | `F-CC` | `5, 10, 20` | `28, 44, 48` (`4.65, 7.24, 7.92°/s`) | `44` (**TO VERIFY**) | Tier-2 rates **measured** at `5, 10, 20`; speeds `<5` / `>20` clamp to endpoints (**TO VERIFY**); delay reuses `F-CA` (**TO VERIFY**). |
 | `F-DN` | `5, 10, 20` | `26, 38, 45` (`4.26, 6.19, 7.42°/s`) | `44` (**TO VERIFY**) | Tier-2 rates **measured** at `5, 10, 20`; speeds `<5` / `>20` clamp to endpoints (**TO VERIFY**); delay reuses `F-CA` (**TO VERIFY**). |
-| `K-D7` | `5, 10, 20` | `32, 61, 57` (`5.34, 10.1, 9.44°/s`) | `69, 27, 54` | Tier-2 measured; wall-clock at 5, 20. |
+| `K-D7` | `5, 10, 20` | `32, 61, 57` (`5.34, 10.1, 9.44°/s`) | `69, 27, 54` | Tier-2 measured; wall-clock at 5, 20 (**TO VERIFY** game-clock). |
 | `K-E4` | `5, 20` | `29, 65` (`4.76, 10.74°/s`) | `141, 15` | Tier-2 measured; omitted (speed 10: null, null). |
-| `K-F5` | `5, 10, 20` | `34, 70, 59` (`5.63, 11.47, 9.7°/s`) | `108, 24, 21` | Tier-2 measured; wall-clock at 10. |
-| `K-D5` | `5, 10, 20` | `33, 60, 52` (`5.36, 9.87, 8.5°/s`) | `75, 36, 37` | Tier-2 measured; wall-clock at 10, 20. |
-| `K-C7` | `5, 10, 20` | `29, 54, 52` (`4.82, 8.83, 8.54°/s`) | `63, 31, 53` | Tier-2 measured; wall-clock at 10, 20. |
-| `K-C8` | `5, 10, 20` | `22, 69, 47` (`3.65, 11.38, 7.73°/s`) | `88, 35, 35` | Tier-2 measured; wall-clock at 20. |
+| `K-F5` | `5, 10, 20` | `34, 70, 59` (`5.63, 11.47, 9.7°/s`) | `108, 24, 21` | Tier-2 measured; wall-clock at 10 (**TO VERIFY** game-clock). |
+| `K-D5` | `5, 10, 20` | `33, 60, 52` (`5.36, 9.87, 8.5°/s`) | `75, 36, 37` | Tier-2 measured; wall-clock at 10, 20 (**TO VERIFY** game-clock). |
+| `K-C7` | `5, 10, 20` | `29, 54, 52` (`4.82, 8.83, 8.54°/s`) | `63, 31, 53` | Tier-2 measured; wall-clock at 10, 20 (**TO VERIFY** game-clock). |
+| `K-C8` | `5, 10, 20` | `22, 69, 47` (`3.65, 11.38, 7.73°/s`) | `88, 35, 35` | Tier-2 measured; wall-clock at 20 (**TO VERIFY** game-clock). |
 | `R-SNA` | `5, 10, 20` | `47, 44, 46` (`7.67, 7.32, 7.66°/s`) | `81, 31, 36` | Tier-2 measured. |
 | `R-BH` | `10, 20` | `56, 59` (`9.28, 9.69°/s`) | `34, 54` | Tier-2 measured; omitted (speed 5: null, null). |
-| `R-SPA` | `5, 10, 20` | `54, 58, 58` (`8.88, 9.55, 9.5°/s`) | `73, 37, 38` | Tier-2 measured; wall-clock at 20. |
+| `R-SPA` | `5, 10, 20` | `54, 58, 58` (`8.88, 9.55, 9.5°/s`) | `73, 37, 38` | Tier-2 measured; wall-clock at 20 (**TO VERIFY** game-clock). |
 | `R-KR` | `5` | `54` (`8.82°/s`) | `68` | Tier-2 measured; omitted (speed 10: null, null (already_facing); speed 20: null, null (already_facing)). |
 | `R-KRC` | `5, 10, 20` | `54, 73, 63` (`8.84, 12.07, 10.33°/s`) | `64, 66, 71` | Tier-2 measured. |
 | `R-CON` | `5, 10, 20` | `36, 57, 45` (`5.87, 9.34, 7.34°/s`) | `66, 43, 13` | Tier-2 measured. |
@@ -69,22 +69,22 @@ A start-of-turn delay of `delayTicks` applies before the ship begins rotating on
 | `H-RN` | `5, 20` | `11, 55` (`1.81, 9.06°/s`) | `99, 38` | Tier-2 measured; omitted (speed 10: null, null (already_facing)). |
 | `H-DG` | `5, 20` | `11, 49` (`1.8, 8.03°/s`) | `109, 38` | Tier-2 measured; omitted (speed 10: null, null (already_facing)). |
 | `H-PAL` | `5, 20` | `11, 49` (`1.88, 8.07°/s`) | `89, 50` | Tier-2 measured; omitted (speed 10: null, null (already_facing)). |
-| `G-FF` | `10, 20` | `83, 57` (`13.72, 9.37°/s`) | `105, 40` | Tier-2 measured; wall-clock at 20; omitted (speed 5: suspect ~7 s delay and wall-clock rate (14.43w deg/s, 7.3 s)). |
-| `G-DD` | `10, 20` | `52, 63` (`8.54, 10.36°/s`) | `48, 49` | Tier-2 measured; wall-clock at 10, 20; omitted (speed 5: suspect ~7 s delay and wall-clock rate (10.92w deg/s, 7.28 s)). |
-| `G-CL` | `5, 20` | `23, 50` (`3.77, 8.17°/s`) | `57, 65` | Tier-2 measured; wall-clock at 5, 20; omitted (speed 10: null, null (already_facing)). |
-| `G-CA` | `5, 20` | `22, 56` (`3.63, 9.27°/s`) | `51, 76` | Tier-2 measured; wall-clock at 5, 20; omitted (speed 10: null, null (already_facing)). |
-| `G-CC` | `5, 10, 20` | `28, 46, 44` (`4.58, 7.63, 7.24°/s`) | `68, 47, 15` | Tier-2 measured; wall-clock at 5, 10, 20. |
-| `G-DN` | `5, 10, 20` | `26, 45, 44` (`4.32, 7.38, 7.23°/s`) | `67, 47, 36` | Tier-2 measured; wall-clock at 5, 10, 20. |
+| `G-FF` | `10, 20` | `83, 57` (`13.72, 9.37°/s`) | `105, 40` | Tier-2 measured; wall-clock at 20 (**TO VERIFY** game-clock); omitted (speed 5: suspect ~7 s delay and wall-clock rate (14.43w deg/s, 7.3 s)). |
+| `G-DD` | `10, 20` | `52, 63` (`8.54, 10.36°/s`) | `48, 49` | Tier-2 measured; wall-clock at 10, 20 (**TO VERIFY** game-clock); omitted (speed 5: suspect ~7 s delay and wall-clock rate (10.92w deg/s, 7.28 s)). |
+| `G-CL` | `5, 20` | `23, 50` (`3.77, 8.17°/s`) | `57, 65` | Tier-2 measured; wall-clock at 5, 20 (**TO VERIFY** game-clock); omitted (speed 10: null, null (already_facing)). |
+| `G-CA` | `5, 20` | `22, 56` (`3.63, 9.27°/s`) | `51, 76` | Tier-2 measured; wall-clock at 5, 20 (**TO VERIFY** game-clock); omitted (speed 10: null, null (already_facing)). |
+| `G-CC` | `5, 10, 20` | `28, 46, 44` (`4.58, 7.63, 7.24°/s`) | `68, 47, 15` | Tier-2 measured; wall-clock at 5, 10, 20 (**TO VERIFY** game-clock). |
+| `G-DN` | `5, 10, 20` | `26, 45, 44` (`4.32, 7.38, 7.23°/s`) | `67, 47, 36` | Tier-2 measured; wall-clock at 5, 10, 20 (**TO VERIFY** game-clock). |
 | `I-FF` | `5, 10` | `33, 92` (`5.37, 15.15°/s`) | `92, 74` | Tier-2 measured; omitted (speed 20: null, null (already_facing)). |
 | `I-DD` | `5, 10` | `32, 56` (`5.25, 9.27°/s`) | `81, 26` | Tier-2 measured; omitted (speed 20: null, null (already_facing)). |
 | `I-CL` | `5, 10, 20` | `30, 50, 18` (`5.0, 8.18, 3.02°/s`) | `71, 32, 357` | Tier-2 measured. |
 | `I-CA` | `5, 10, 20` | `42, 45, 9` (`6.91, 7.39, 1.46°/s`) | `70, 49, 88` | Tier-2 measured. |
 | `I-CC` | `5, 10, 20` | `26, 47, 49` (`4.23, 7.8, 8.01°/s`) | `70, 50, 39` | Tier-2 measured. |
 | `I-DN` | `5, 10, 20` | `23, 43, 40` (`3.87, 7.16, 6.57°/s`) | `70, 42, 36` | Tier-2 measured. |
-| `Z-FF` | `5, 10, 20` | `41, 94, 113` (`6.81, 15.5, 18.69°/s`) | `108, 52, 53` | Tier-2 measured; wall-clock at 5, 10, 20. |
+| `Z-FF` | `5, 10, 20` | `41, 94, 113` (`6.81, 15.5, 18.69°/s`) | `108, 52, 53` | Tier-2 measured; wall-clock at 5, 10, 20 (**TO VERIFY** game-clock). |
 | `Z-DD` | `5` | `87` (`14.3°/s`) | `139` | Tier-2 measured; omitted (speed 10: bad wall-clock read (234.48w deg/s); speed 20: null, null (already_facing)). |
 | `Z-CL` | `5` | `35` (`5.77°/s`) | `88` | Tier-2 measured; omitted (speed 10: bad wall-clock read (193.37w deg/s, 9.35 s delay); speed 20: null, null (already_facing)). |
-| `Z-CA` | `5, 10, 20` | `31, 51, 50` (`5.16, 8.35, 8.18°/s`) | `83, 45, 43` | Tier-2 measured; wall-clock at 20. |
+| `Z-CA` | `5, 10, 20` | `31, 51, 50` (`5.16, 8.35, 8.18°/s`) | `83, 45, 43` | Tier-2 measured; wall-clock at 20 (**TO VERIFY** game-clock). |
 | `Z-BC` | `5` | `32` (`5.23°/s`) | `80` | Tier-2 measured; omitted (speed 10: null, null (already_facing); speed 20: null, null (already_facing)). |
 | `Z-DN` | `5` | `24` (`4.0°/s`) | `99` | Tier-2 measured; omitted (speed 10: null, null (already_facing); speed 20: null, null (already_facing)). |
 | `L-FF`, `H-LN` | — | Uses `default` | Uses `default` | No usable Tier-2 normal points (`L-FF`: `n5`/`n10` `already_facing`, `n20` suspect; `H-LN`: all `already_facing`); stays on `default` (**TO VERIFY**). |
