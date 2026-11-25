@@ -113,15 +113,45 @@ describe('loadShipCatalog', () => {
       ['Klingon:TEST-CY-05', 'shiplist.missingGeometry'],
     ]);
     const noted = catalog.diagnostics.filter((item) => item.code === 'noHullModel');
+    expect(catalog.ships.every((ship) => ship.expectedNoModel)).toBe(true);
     expect(noted.map((item) => item.details)).toEqual([
-      { spawnKey: 'Neutral:TEST-CY-01', hullType: 'CY', race: 'Neutral' },
-      { spawnKey: 'Neutral:TEST-CR-02', hullType: 'CR', race: 'Neutral' },
-      { spawnKey: 'neutral:TEST-CW-03', hullType: 'cw', race: 'neutral' },
+      { spawnKey: 'Neutral:TEST-CY-01', hullType: 'CY', race: 'Neutral', className: 'TEST-CY-01' },
+      { spawnKey: 'Neutral:TEST-CR-02', hullType: 'CR', race: 'Neutral', className: 'TEST-CR-02' },
+      { spawnKey: 'neutral:TEST-CW-03', hullType: 'cw', race: 'neutral', className: 'TEST-CW-03' },
     ]);
     expect(noted.every((item) => item.source === 'loader' && item.severity === 'warning')).toBe(true);
     expect(noted.every((item) => item.location?.file === 'Assets/Specs/shiplist.txt')).toBe(true);
     expect(machinePathLeak(catalog.diagnostics)).toBeNull();
     expect(machinePathLeak(catalog.ships.map((ship) => ship.geometry))).toBeNull();
+    disposeShipCatalog(catalog);
+  });
+
+  it('skips neutral CY, CR, and CW class names even when the hull token is something else', async () => {
+    const table = new TextEncoder().encode(
+      [
+        'Race\tHull Type\tClass\tGeometry',
+        'Neutral\tPlanet\tCY\t',
+        'Neutral\tUNKNOWN\tCR\tAssets/Models/test/Missing.mod',
+        'neutral\tBS\tcw\t',
+        'Federation\tPlanet\tCY\t',
+        'Klingon\tCA\tTEST-CA-09\tAssets/Models/test/Missing.mod',
+      ].join('\n'),
+    );
+    const catalog = await loadShipCatalog(
+      await importInstall([
+        picked('Starfleet2CE.exe', Uint8Array.of(0)),
+        picked('Assets/Specs/shiplist.txt', table),
+      ]),
+    );
+    expect(catalog.ships.map((ship) => [ship.spawnKey, ship.expectedNoModel, ship.placeholder])).toEqual([
+      ['Neutral:CY', true, true],
+      ['Neutral:CR', true, true],
+      ['neutral:cw', true, true],
+    ]);
+    expect(catalog.failures.map((failure) => [failure.spawnKey, failure.reason])).toEqual([
+      ['Federation:CY', 'shiplist.missingGeometry'],
+      ['Klingon:TEST-CA-09', 'loader.missingModel'],
+    ]);
     disposeShipCatalog(catalog);
   });
 

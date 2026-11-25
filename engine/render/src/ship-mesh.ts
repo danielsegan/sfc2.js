@@ -17,7 +17,6 @@ import {
   type ModMaterial,
   type ModModel,
   type ParseResult,
-  type TexturePairRef,
 } from '@sfc2js/formats';
 import type { Vfs } from '@sfc2js/platform';
 import {
@@ -32,7 +31,11 @@ import {
   Object3D,
   type Material,
 } from 'three';
+import { resolveShipTexture } from './texture-resolve.ts';
 import { loadShipTexture, type LoadShipTextureOptions, type RenderTier } from './ship-texture.ts';
+
+/** Neutral stand-in used when a named texture is not in the install. */
+const PLACEHOLDER_COLOR = 0x9aa3ad;
 
 export interface BuildShipMeshOptions extends LoadShipTextureOptions {
   vfs: Vfs;
@@ -101,9 +104,6 @@ export async function buildShipMesh(
     diagnostics.push(diagnostic('modelPathRejected', 'mod', 'warning', { details: { reason: 'not-install-relative' } }));
   }
 
-  const pairs = texturePairs(options.vfs, modelPath);
-  diagnostics.push(...pairs.diagnostics);
-
   const root = new Group();
   root.name = 'ship';
   root.userData = {
@@ -139,7 +139,6 @@ export async function buildShipMesh(
         modelPath,
         tier,
         colorKey: options.colorKey,
-        pairs: pairs.pairs,
         diagnostics,
       });
       const mesh = new Mesh(geometry, material);
@@ -174,29 +173,11 @@ export function showShipLod(built: BuiltShipMesh, index: number): boolean {
   return true;
 }
 
-function texturePairs(vfs: Vfs, modelPath: string | undefined): { pairs: TexturePairRef[]; diagnostics: Diagnostic[] } {
-  if (modelPath === undefined) return { pairs: [], diagnostics: [] };
-  const slash = modelPath.lastIndexOf('/');
-  const dir = slash >= 0 ? modelPath.slice(0, slash) : '';
-  const prefix = dir.length > 0 ? `${dir}/` : '';
-  const local = vfs
-    .list()
-    .map((entry) => entry.path)
-    .filter((path) => {
-      if (!path.toLowerCase().endsWith('.bmp')) return false;
-      if (dir.length === 0) return !path.includes('/');
-      if (!path.toLowerCase().startsWith(prefix.toLowerCase())) return false;
-      return !path.slice(prefix.length).includes('/');
-    });
-  return pairSelfIllumination(local);
-}
-
 interface MaterialContext {
   vfs: Vfs;
   modelPath: string | undefined;
   tier: RenderTier;
   colorKey: LoadShipTextureOptions['colorKey'];
-  pairs: TexturePairRef[];
   diagnostics: Diagnostic[];
 }
 
@@ -223,42 +204,69 @@ async function createMaterial(modMaterial: ModMaterial | undefined, ctx: Materia
     return plain;
   }
 
-  const diffuse = modMaterial.textured ? resolveTexture(ctx.modelPath, modMaterial.diffuseTexture.name) : undefined;
-  if (diffuse?.reason === 'texture-name') {
-    ctx.diagnostics.push(diagnostic('textureNameRejected', 'mod', 'warning', { details: { reason: 'texture-name' }, location: { file: ctx.modelPath } }));
+  const glow = namedGlow(modMaterial, ctx);
+  if (!modMaterial.textured) {
+    const plain = plainMaterial(ctx.tier, modMaterial.color);
+    applyFlags(plain, modMaterial);
+    return plain;
   }
 
-  let glow: string | undefined;
-  if (modMaterial.luminance && modMaterial.luminanceTexture !== null) {
-    const resolved = resolveTexture(ctx.modelPath, modMaterial.luminanceTexture.name);
-    if (resolved.reason === 'texture-name') {
-      ctx.diagnostics.push(diagnostic('textureNameRejected', 'mod', 'warning', { details: { reason: 'texture-name' }, location: { file: ctx.modelPath } }));
+  const diffuse = resolveShipTexture(ctx.vfs, ctx.modelPath, modMaterial.diffuseTexture.name);
+  if ('reason' in diffuse) {
+    if (diffuse.reason === 'texture-name') {
+      rejectTextureName(ctx);
+      const plain = plainMaterial(ctx.tier, modMaterial.color);
+      applyFlags(plain, modMaterial);
+      return plain;
     }
-    glow = resolved.path;
+    if (diffuse.reason === 'absent') notePlaceholder(ctx, 'diffuse');
+    if (glow.named && !glow.rejected && glow.path === undefined) notePlaceholder(ctx, 'luminance');
+    const standIn = placeholderMaterial(ctx.tier);
+    applyFlags(standIn, modMaterial, { keepColor: true });
+    return standIn;
   }
 
-  if (diffuse?.path !== undefined) {
-    const indexedBase = ctx.vfs.resolve(diffuse.path) ?? diffuse.path;
-    if (glow === undefined) {
-      const pair = ctx.pairs.find((item) => item.basePath.toLowerCase() === indexedBase.toLowerCase());
-      glow = pair?.selfIllumPath;
-    } else {
-      glow = ctx.vfs.resolve(glow) ?? glow;
-    }
-    const loaded = await loadShipTexture(ctx.vfs, { basePath: indexedBase, ...(glow === undefined ? {} : { selfIllumPath: glow }) }, {
-      tier: ctx.tier,
-      colorKey: ctx.colorKey,
-    });
-    ctx.diagnostics.push(...loaded.diagnostics);
-    if (loaded.data.material !== null) {
-      applyFlags(loaded.data.material, modMaterial);
-      return loaded.data.material;
-    }
+  let glowPath = glow.path;
+  if (glowPath === undefined && !glow.rejected) {
+    const beside = glowBeside(ctx.vfs, diffuse.path);
+    if (beside !== undefined) glowPath = beside;
+    else if (glow.named) notePlaceholder(ctx, 'luminance');
+  }
+
+  const loaded = await loadShipTexture(
+    ctx.vfs,
+    { basePath: diffuse.path, ...(glowPath === undefined ? {} : { selfIllumPath: glowPath }) },
+    { tier: ctx.tier, colorKey: ctx.colorKey },
+  );
+  ctx.diagnostics.push(...loaded.diagnostics);
+  if (loaded.data.material !== null) {
+    applyFlags(loaded.data.material, modMaterial);
+    return loaded.data.material;
   }
 
   const plain = plainMaterial(ctx.tier, modMaterial.color);
   applyFlags(plain, modMaterial);
   return plain;
+}
+
+function namedGlow(
+  modMaterial: ModMaterial,
+  ctx: MaterialContext,
+): { path?: string; named: boolean; rejected: boolean } {
+  if (!modMaterial.luminance || modMaterial.luminanceTexture === null || ctx.modelPath === undefined) {
+    return { named: false, rejected: false };
+  }
+  const name = modMaterial.luminanceTexture.name;
+  if (name.trim().length === 0) return { named: false, rejected: false };
+  const resolved = resolveShipTexture(ctx.vfs, ctx.modelPath, name);
+  if ('reason' in resolved) {
+    if (resolved.reason === 'texture-name') {
+      rejectTextureName(ctx);
+      return { named: true, rejected: true };
+    }
+    return { named: true, rejected: false };
+  }
+  return { path: resolved.path, named: true, rejected: false };
 }
 
 function geometryFor(faces: readonly ModFace[], vertices: Float32Array): BufferGeometry | null {
@@ -295,6 +303,20 @@ function geometryFor(faces: readonly ModFace[], vertices: Float32Array): BufferG
   return geometry;
 }
 
+function placeholderMaterial(tier: RenderTier): Material {
+  const material =
+    tier === 'hd'
+      ? new MeshStandardMaterial({ color: PLACEHOLDER_COLOR, roughness: 0.6, metalness: 0 })
+      : new MeshLambertMaterial({ color: PLACEHOLDER_COLOR });
+  material.userData = {
+    sfc2Role: 'ship-surface',
+    tier,
+    selfIllumBloomThreshold: 0,
+    texturePlaceholder: true,
+  };
+  return material;
+}
+
 function plainMaterial(tier: RenderTier, color: { r: number; g: number; b: number }): Material {
   const tint = new Color(color.r / 255, color.g / 255, color.b / 255);
   const material =
@@ -309,9 +331,11 @@ function plainMaterial(tier: RenderTier, color: { r: number; g: number; b: numbe
   return material;
 }
 
-function applyFlags(material: Material, modMaterial: ModMaterial): void {
+function applyFlags(material: Material, modMaterial: ModMaterial, options?: { keepColor?: boolean }): void {
   const shaded = material as Material & Shadeable;
-  shaded.color.setRGB(modMaterial.color.r / 255, modMaterial.color.g / 255, modMaterial.color.b / 255);
+  if (options?.keepColor !== true) {
+    shaded.color.setRGB(modMaterial.color.r / 255, modMaterial.color.g / 255, modMaterial.color.b / 255);
+  }
   if (modMaterial.wire) shaded.wireframe = true;
   if (modMaterial.flat && !modMaterial.gouraud) shaded.flatShading = true;
   if (modMaterial.additive) {
@@ -320,18 +344,39 @@ function applyFlags(material: Material, modMaterial: ModMaterial): void {
   }
 }
 
-function resolveTexture(modelPath: string, rawName: string): { path?: string; reason?: string } {
-  const name = rawName.trim();
-  if (name.length === 0) return { reason: 'empty-name' };
-  if (name.includes('/') || name.includes('\\') || name.includes(':') || name.includes('..')) {
-    return { reason: 'texture-name' };
-  }
-  const fileName = /\.bmp$/i.test(name) ? name : `${name}.bmp`;
-  const slash = modelPath.lastIndexOf('/');
-  const dir = slash >= 0 ? modelPath.slice(0, slash) : '';
-  const path = dir.length > 0 ? `${dir}/${fileName}` : fileName;
-  if (installRelativeFile(path) === undefined) return { reason: 'texture-name' };
-  return { path };
+function glowBeside(vfs: Vfs, basePath: string): string | undefined {
+  const slash = basePath.lastIndexOf('/');
+  const dir = slash >= 0 ? basePath.slice(0, slash) : '';
+  const prefix = dir.length > 0 ? `${dir}/` : '';
+  const local = vfs
+    .list()
+    .map((entry) => entry.path)
+    .filter((path) => {
+      if (!path.toLowerCase().endsWith('.bmp')) return false;
+      if (dir.length === 0) return !path.includes('/');
+      if (!path.toLowerCase().startsWith(prefix.toLowerCase())) return false;
+      return !path.slice(prefix.length).includes('/');
+    });
+  const pair = pairSelfIllumination(local).pairs.find((item) => item.basePath.toLowerCase() === basePath.toLowerCase());
+  return pair?.selfIllumPath;
+}
+
+function rejectTextureName(ctx: MaterialContext): void {
+  ctx.diagnostics.push(
+    diagnostic('textureNameRejected', 'mod', 'warning', {
+      details: { reason: 'texture-name' },
+      ...(ctx.modelPath === undefined ? {} : { location: { file: ctx.modelPath } }),
+    }),
+  );
+}
+
+function notePlaceholder(ctx: MaterialContext, which: 'diffuse' | 'luminance'): void {
+  ctx.diagnostics.push(
+    diagnostic('texturePlaceholder', 'bmp', 'warning', {
+      details: { which },
+      ...(ctx.modelPath === undefined ? {} : { location: { file: ctx.modelPath } }),
+    }),
+  );
 }
 
 function safeFile(path: string | undefined): string | undefined {

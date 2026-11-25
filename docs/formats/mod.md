@@ -94,19 +94,26 @@ Flag bits (M1):
 
 Unknown flag bits stay in `flags` and do not raise a diagnostic. A payload that does not end on a material boundary is `raggedChunk`. More than 256 materials is `badCount`.
 
-A textured or luminance material whose resolved name is empty is `missingTextureName`.
+A textured material whose resolved diffuse name is empty is `missingTextureName`. An empty luminance name is not a diagnostic. No luminance name means no self-illum layer, unless a `_<token>i` file sits beside the base.
 
 ### Texture filenames
 
-Confirmed by M2 for the strings sfc2gl loads:
+M2 loads a basename as `<basename>.bmp` in the model directory, case-insensitively. The builder also accepts a name that already ends in `.bmp`, and a relative path.
 
-- The pool holds a basename, not a path.
-- The file is `<basename>.bmp` in the `.mod` directory.
-- Lookup is case-insensitive.
+The pool string is normalized before lookup. `\` and `|` become `/`. Repeated separators collapse. Each segment is trimmed, and one pair of matching quotes is removed. A `.tga`, `.dib`, `.png`, `.jpg`, or `.jpeg` suffix is tried, then the same stem with `.bmp`. A name with no extension is tried as written and with `.bmp`. Lookup is case-insensitive, and the indexed spelling is kept.
 
-The builder also accepts a name that already ends in `.bmp` (**hypothesised** tolerance). A name that contains `/`, `\`, `:`, or `..` is `textureNameRejected` and is not opened. The rejected text is not copied into the diagnostic.
+Search order, first hit wins:
 
-When the luminance flag is set and the luminance name resolves, that path is the glow map. Otherwise the builder uses [bmp.md](bmp.md) pairing (`_<token>i` in the same directory). The explicit name wins when both exist. Glow maps are decoded with `colorKey: 'none'`, by `loadShipTexture`.
+1. The relative directory in the name, joined to the model directory. `..` is allowed while it stays inside the install.
+2. That same relative directory from the install root, when the name has a directory and the model is not already at the root.
+3. The model directory, then `common`, `shared`, and `textures` inside it.
+4. Each parent directory, then those three folder names inside that parent, up to the install root.
+
+If the relative directory misses, the basename is tried through steps 3 and 4. A drive letter, a leading slash, a NUL, or a `..` that leaves the install is `textureNameRejected`. The rejected text is not copied into the diagnostic.
+
+When every candidate misses, the mesh is kept and the material is a neutral placeholder (`texturePlaceholder`, warning). That is not `missingTexture`. `loadShipTexture` still reports `missingTexture` when it is asked to read a path that is not in the index.
+
+When the luminance flag is set and the luminance name resolves, that path is the glow map. An empty luminance name skips that lookup. Otherwise the builder pairs [bmp.md](bmp.md) `_<token>i` in the directory of the resolved base. The explicit name wins when both exist. Glow maps are decoded with `colorKey: 'none'`, by `loadShipTexture`.
 
 ## 7. `PNTS` named points
 
@@ -178,11 +185,11 @@ Period and HD materials match the BMP loader: Lambert versus standard (`roughnes
 | `vertexIndexOutOfRange` | warning | `{ count }` |
 | `materialIndexOutOfRange` | warning | `{ count }` |
 | `badStringOffset` | warning | `{ count }` |
-| `missingTextureName` | warning | `{ which }`. `diffuse` or `luminance` |
+| `missingTextureName` | warning | `{ which: 'diffuse' }`. Textured flag set and the resolved diffuse name is empty. An empty luminance name is omitted on purpose |
 | `badNumber` | warning | `{ count }`. Non-finite floats |
 | `orphanChunk` | warning | `{ type }` |
 | `modelPathRejected` | warning | The `.mod` path is not install-relative. The path is omitted |
-| `textureNameRejected` | warning | `{ reason: 'texture-name' }`. The pool string is not a single basename. The name is omitted. An empty name is `missingTextureName` on the parser |
+| `textureNameRejected` | warning | `{ reason: 'texture-name' }`. The pool string is not a relative path inside the install. The name is omitted. An empty diffuse name is `missingTextureName` on the parser |
 | `lodOutOfRange` | warning | `{ requested, lods }` |
 
 ## 11. Not parsed, on purpose

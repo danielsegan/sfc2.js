@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { encodeBmp, machinePathLeak, parseMod } from '@sfc2js/formats';
 import { createVfs } from '@sfc2js/platform';
-import { Mesh, MeshLambertMaterial, MeshStandardMaterial } from 'three';
+import { Color, Mesh, MeshLambertMaterial, MeshStandardMaterial } from 'three';
 import { HD_SELF_ILLUM_BLOOM_THRESHOLD } from './ship-texture.ts';
 import { buildShipMesh, showShipLod } from './ship-mesh.ts';
 
@@ -89,7 +89,7 @@ describe('buildShipMesh', () => {
   });
 
   it('still returns a mesh when the texture name is unsafe or the file is missing', async () => {
-    const parsed = parseMod(texturedMod({ diffuse: '../secret' }));
+    const parsed = parseMod(texturedMod({ diffuse: '../../../../secret' }));
     const vfs = createVfs([]);
     const built = await buildShipMesh(parsed.data, { vfs, modelPath: MODEL });
     expect(built.diagnostics.map((item) => item.code)).toContain('textureNameRejected');
@@ -107,6 +107,62 @@ describe('buildShipMesh', () => {
     expect(missing.data.root.userData.modelPath).toBeUndefined();
     expect(machinePathLeak(missing.diagnostics)).toBeNull();
     expect(machinePathLeak(missing.data.root.userData)).toBeNull();
+  });
+
+  it('binds a texture found by case, extension, parent folder, or an odd path separator', async () => {
+    const parsed = parseMod(texturedMod({ diffuse: 'hull_1.tga', luminance: 'shared|glow' }));
+    const base = encodeBmp({ width: 1, height: 1, bitCount: 24, pixels: rgb([11, 22, 33]) });
+    const glow = encodeBmp({ width: 1, height: 1, bitCount: 24, pixels: rgb([44, 55, 66]) });
+    const vfs = createVfs([
+      { path: 'Assets/MODELS/HULL_1.BMP', size: base.length, read: async () => base },
+      { path: 'Assets/MODELS/test/shared/glow.bmp', size: glow.length, read: async () => glow },
+    ]);
+    const built = await buildShipMesh(parsed.data, { vfs, modelPath: MODEL });
+    const material = built.data.materials[0] as MeshLambertMaterial;
+    expect(pixel(material.map, 0)).toEqual([11, 22, 33, 255]);
+    expect(pixel(material.emissiveMap, 0)).toEqual([44, 55, 66, 255]);
+    expect(built.diagnostics.map((item) => item.code)).not.toContain('missingTexture');
+    expect(built.diagnostics.map((item) => item.code)).not.toContain('texturePlaceholder');
+  });
+
+  it('uses a neutral placeholder when the texture is absent after the full search', async () => {
+    const parsed = parseMod(texturedMod({ luminance: null }));
+    const built = await buildShipMesh(parsed.data, { vfs: createVfs([]), modelPath: MODEL });
+    expect(built.diagnostics.map((item) => item.code)).toEqual(['texturePlaceholder']);
+    expect(built.diagnostics[0]?.details).toEqual({ which: 'diffuse' });
+    expect(built.diagnostics.map((item) => item.code)).not.toContain('missingTexture');
+    const material = built.data.materials[0] as MeshLambertMaterial;
+    expect(material.map).toBeNull();
+    expect(material.userData.texturePlaceholder).toBe(true);
+    expect(material.color.getHex()).toBe(new Color(0x9aa3ad).getHex());
+    expect(machinePathLeak(built.diagnostics)).toBeNull();
+  });
+
+  it('treats an empty luminance name as no self-illum layer', async () => {
+    const parsed = parseMod(texturedMod({ luminance: '' }));
+    expect(parsed.diagnostics.map((item) => item.code)).not.toContain('missingTextureName');
+    expect(parsed.data.materials[0]?.luminanceTexture?.name).toBe('');
+    const base = encodeBmp({ width: 1, height: 1, bitCount: 24, pixels: rgb([4, 5, 6]) });
+    const glow = encodeBmp({ width: 1, height: 1, bitCount: 24, pixels: rgb([8, 0, 0]) });
+    const withSuffix = await buildShipMesh(parsed.data, {
+      vfs: createVfs([
+        { path: 'Assets/MODELS/test/Hull_1.bmp', size: base.length, read: async () => base },
+        { path: 'Assets/MODELS/test/Hull_1i.bmp', size: glow.length, read: async () => glow },
+      ]),
+      modelPath: MODEL,
+    });
+    expect((withSuffix.data.materials[0] as MeshLambertMaterial).emissive.getHex()).toBe(0xffffff);
+    expect(withSuffix.diagnostics.map((item) => item.code)).not.toContain('missingTextureName');
+
+    const bare = await buildShipMesh(parsed.data, {
+      vfs: createVfs([{ path: 'Assets/MODELS/test/Hull_1.bmp', size: base.length, read: async () => base }]),
+      modelPath: MODEL,
+    });
+    const material = bare.data.materials[0] as MeshLambertMaterial;
+    expect(material.emissive.getHex()).toBe(0x000000);
+    expect(material.emissiveMap).toBeNull();
+    expect(bare.diagnostics.map((item) => item.code)).not.toContain('texturePlaceholder');
+    expect(bare.diagnostics.map((item) => item.code)).not.toContain('missingTextureName');
   });
 
   it('skips a non-triangle and warns when the requested LOD is absent', async () => {

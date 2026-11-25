@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { syntheticViewerFiles } from '../../engine/render/src/synthetic-viewer-install.ts';
+import { viewerFailureFiles } from '../../engine/render/src/viewer-failure-fixtures.ts';
 import { runViewerCheck } from './run.ts';
 
 describe('viewer check against the synthetic install', () => {
@@ -32,6 +33,8 @@ describe('viewer check against the synthetic install', () => {
         rows: 8,
         passed: 3,
         failed: 5,
+        skipped: 0,
+        warnings: 0,
         byStage: { resolve: 3, geometry: 2, texture: 0, selfIllum: 0, render: 0 },
       });
       expect(summary.totals?.elapsedMs).toBeGreaterThan(0);
@@ -53,7 +56,47 @@ describe('viewer check against the synthetic install', () => {
         }
         const run = await runViewerCheck({ install: root, frames: 3, timeoutMs: 90_000 });
         expect(run.status, JSON.stringify({ status: run.status, pageError: run.pageError })).toBe('ok');
-        expect(run.report?.totals).toMatchObject({ rows: 8, passed: 3, failed: 5 });
+        expect(run.report?.totals).toMatchObject({ rows: 8, passed: 3, failed: 5, skipped: 0, warnings: 0 });
+        expect(JSON.stringify(run.report)).not.toContain(root);
+      } finally {
+        await rm(root, { recursive: true, force: true });
+      }
+    },
+    120_000,
+  );
+
+  it(
+    'skips empty rows, frames a tiny hull, and warns on a texture that is really absent',
+    async () => {
+      const root = await mkdtemp(path.join(tmpdir(), 'sfc2-viewer-fail-'));
+      try {
+        for (const file of viewerFailureFiles()) {
+          const absolute = path.join(root, ...file.path.split('/'));
+          await mkdir(path.dirname(absolute), { recursive: true });
+          await writeFile(absolute, await file.read());
+        }
+        const run = await runViewerCheck({ install: root, frames: 3, timeoutMs: 90_000 });
+        expect(run.status, JSON.stringify({ status: run.status, pageError: run.pageError, ships: run.report?.ships })).toBe('ok');
+        expect(run.report?.ships).toEqual([
+          { id: 'CY', empire: 'Neutral', pass: true, stage_failed: null, error: null, skip: true },
+          { id: 'CR', empire: 'Neutral', pass: true, stage_failed: null, error: null, skip: true },
+          { id: 'cw', empire: 'neutral', pass: true, stage_failed: null, error: null, skip: true },
+          { id: 'TEST-CASE', empire: 'Federation', pass: true, stage_failed: null, error: null },
+          { id: 'TEST-PATH', empire: 'Klingon', pass: true, stage_failed: null, error: null },
+          { id: 'TEST-MISS', empire: 'Lyran', pass: true, stage_failed: null, error: null, warnings: 1 },
+          { id: 'TEST-GLOW', empire: 'Hydran', pass: true, stage_failed: null, error: null },
+          { id: 'TEST-TINY', empire: 'Neutral', pass: true, stage_failed: null, error: null },
+          { id: 'TEST-DUMMY', empire: 'Neutral', pass: true, stage_failed: null, error: null, skip: true },
+          { id: 'TEST-STILL', empire: 'Orion', pass: false, stage_failed: 'resolve', error: 'loader.missingModel' },
+        ]);
+        expect(run.report?.totals).toMatchObject({
+          rows: 10,
+          passed: 5,
+          failed: 1,
+          skipped: 4,
+          warnings: 1,
+          byStage: { resolve: 1, geometry: 0, texture: 0, selfIllum: 0, render: 0 },
+        });
         expect(JSON.stringify(run.report)).not.toContain(root);
       } finally {
         await rm(root, { recursive: true, force: true });
