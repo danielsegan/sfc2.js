@@ -1,0 +1,699 @@
+# Unsigned release artifacts for SFC2.js.
+#
+# Triggers on a pushed tag v* (v1.2.3 and pre-releases such as v1.2.3-rc.1)
+# and on workflow_dispatch. It does not run on pull_request, so it adds no
+# PR checks. After this file is on the default branch, test it from the
+# Actions tab: Release -> Run workflow. Pick the branch. The run uploads a
+# zip of web/dist plus SHA-256 sums. It does not create a GitHub Release.
+#
+# Desktop jobs are ready for a future Tauri shell. They look for a Tauri
+# config in src-tauri/ and desktop/src-tauri/. Until one exists they emit a
+# notice and skip. There is no WASM toolchain in this repo yet, so this
+# workflow does not build or fetch one.
+#
+# Bundles are unsigned: no signing secrets, no notarization, no tauri-action.
+# Artifacts go to actions/upload-artifact only. Runners are GitHub-hosted.
+# The token can read the repo and cannot publish. Nothing here reads or
+# packages an SFC2 install; players bring their own game files.
+
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  web:
+    name: Web build
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Refuse an SFC2 install path
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -n "${SFC2_INSTALL:-}" || -n "${SFC2_REFERENCE:-}" || -n "${SFC2_EXTRACTED:-}" ]]; then
+            echo "Refusing to build: SFC2_INSTALL, SFC2_REFERENCE, or SFC2_EXTRACTED is set."
+            echo "This workflow must not read or package Starfleet Command 2 game files."
+            exit 1
+          fi
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: 10.33.4
+
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Check Node and pnpm
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module -e '
+            const [major, minor] = process.versions.node.split(".").map(Number);
+            if (major < 22 || (major === 22 && minor < 18)) {
+              console.error(`Node ${process.versions.node} is older than the engines field (>=22.18).`);
+              process.exit(1);
+            }
+            console.log(`Node ${process.versions.node}`);
+          '
+          test "$(pnpm -v)" = "10.33.4"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build the web app
+        run: pnpm build:web
+
+      - name: Reject game files in web/dist
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f web/dist/index.html
+          node --input-type=module - web/dist <<'EOF'
+          import { lstatSync, readdirSync, realpathSync } from 'node:fs';
+          import { join, relative, sep } from 'node:path';
+
+          const repo = realpathSync(process.cwd());
+          const roots = process.argv.slice(2);
+          const forbiddenExt = new Set(
+            'exe,dll,mod,sprite,mvm,wav,mp3,bik,mpg,mpeg,tga,bmp,gf,scs,dat,sav,scr,q3,msi,iso'.split(','),
+          );
+          const forbiddenBits = [
+            'assets/original/',
+            'starfleet command ii',
+            'starfleet command 2',
+            'sfc2ce/',
+            'sfc2/',
+            'empires at war',
+          ];
+          let bad = 0;
+          const fail = (msg) => {
+            console.error(msg);
+            bad += 1;
+          };
+          const inside = (real) => real === repo || real.startsWith(repo + sep);
+
+          function walk(dir) {
+            let realDir;
+            try {
+              realDir = realpathSync(dir);
+            } catch (error) {
+              fail(`cannot read ${dir}: ${error.message}`);
+              return;
+            }
+            if (!inside(realDir)) {
+              fail(`refusing path outside the repository: ${dir} -> ${realDir}`);
+              return;
+            }
+            let entries;
+            try {
+              entries = readdirSync(dir, { withFileTypes: true });
+            } catch (error) {
+              fail(`cannot list ${dir}: ${error.message}`);
+              return;
+            }
+            for (const entry of entries) {
+              const path = join(dir, entry.name);
+              let lst;
+              try {
+                lst = lstatSync(path);
+              } catch (error) {
+                fail(`cannot stat ${path}: ${error.message}`);
+                continue;
+              }
+              let fileStat = lst;
+              if (lst.isSymbolicLink()) {
+                let real;
+                try {
+                  real = realpathSync(path);
+                } catch (error) {
+                  fail(`broken symlink ${path}: ${error.message}`);
+                  continue;
+                }
+                if (!inside(real)) {
+                  fail(`symlink leaves the repository: ${path} -> ${real}`);
+                  continue;
+                }
+                fileStat = lstatSync(real);
+              }
+              if (fileStat.isDirectory()) {
+                walk(path);
+                continue;
+              }
+              if (!fileStat.isFile()) continue;
+              const rel = relative(repo, realpathSync(path)).split(sep).join('/');
+              const lc = rel.toLowerCase();
+              const base = rel.slice(rel.lastIndexOf('/') + 1);
+              for (const name of new Set([entry.name, base])) {
+                const dot = name.lastIndexOf('.');
+                const ext = dot >= 0 ? name.slice(dot + 1).toLowerCase() : '';
+                if (forbiddenExt.has(ext)) fail(`FORBIDDEN EXTENSION: ${rel} (.${ext})`);
+              }
+              for (const bit of forbiddenBits) {
+                if (lc.startsWith(bit) || lc.includes(`/${bit}`)) {
+                  fail(`FORBIDDEN PATH: ${rel}`);
+                  break;
+                }
+              }
+            }
+          }
+
+          for (const root of roots) {
+            try {
+              lstatSync(root);
+            } catch {
+              fail(`missing build output: ${root}`);
+              continue;
+            }
+            walk(root);
+          }
+          if (bad > 0) {
+            console.error(`error: ${bad} release output path(s) look like original game assets or leave the repo.`);
+            process.exit(1);
+          }
+          console.log(`OK: scanned ${roots.join(', ')}`);
+          EOF
+
+      - name: Zip web/dist and write SHA-256
+        shell: bash
+        env:
+          SFC2_STAGE: ${{ runner.temp }}/sfc2-web
+        run: |
+          set -euo pipefail
+          rm -rf "$SFC2_STAGE"
+          mkdir -p "$SFC2_STAGE"
+          python3 - "$SFC2_STAGE/sfc2js-web.zip" <<'PY'
+          import sys
+          import zipfile
+          from pathlib import Path
+          root = Path("web/dist")
+          out = Path(sys.argv[1])
+          files = sorted(p for p in root.rglob("*") if p.is_file())
+          if not files:
+              sys.exit("web/dist is empty")
+          with zipfile.ZipFile(out, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+              for path in files:
+                  archive.write(path, path.as_posix())
+          print(f"zipped {len(files)} files into {out}")
+          PY
+          node --input-type=module - "$SFC2_STAGE" <<'EOF'
+          import { createHash } from 'node:crypto';
+          import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+          import { join } from 'node:path';
+          const dir = process.argv[2];
+          const names = readdirSync(dir).filter((name) => name !== 'SHA256SUMS.txt').sort();
+          if (names.length === 0) {
+            console.error('no artifacts to hash');
+            process.exit(1);
+          }
+          const lines = names.map((name) => {
+            const hash = createHash('sha256').update(readFileSync(join(dir, name))).digest('hex');
+            return `${hash}  ${name}`;
+          });
+          writeFileSync(join(dir, 'SHA256SUMS.txt'), `${lines.join('\n')}\n`);
+          for (const line of lines) {
+            const [hash, name] = line.split(/ {2}/);
+            const again = createHash('sha256').update(readFileSync(join(dir, name))).digest('hex');
+            if (again !== hash) {
+              console.error(`checksum mismatch for ${name}`);
+              process.exit(1);
+            }
+            console.log(line);
+          }
+          EOF
+          {
+            echo "### Web artifact"
+            echo
+            echo '```'
+            cat "$SFC2_STAGE/SHA256SUMS.txt"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload web artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: sfc2js-web
+          path: ${{ runner.temp }}/sfc2-web/
+          if-no-files-found: error
+
+  desktop:
+    name: Desktop (${{ matrix.artifact }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            artifact: macos
+            target: universal-apple-darwin
+            rust-targets: aarch64-apple-darwin,x86_64-apple-darwin
+            bundles: app,dmg
+          - os: windows-latest
+            artifact: windows
+            target: ""
+            rust-targets: ""
+            bundles: msi,nsis
+          - os: ubuntu-22.04
+            artifact: linux
+            target: ""
+            rust-targets: ""
+            bundles: appimage,deb,rpm
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Detect Tauri project
+        id: tauri
+        shell: bash
+        run: |
+          set -euo pipefail
+          present=false
+          path=""
+          absolute=""
+          incomplete=""
+          for dir in src-tauri desktop/src-tauri; do
+            if [[ ! -d "$dir" ]]; then
+              continue
+            fi
+            if [[ -f "$dir/tauri.conf.json" || -f "$dir/tauri.conf.json5" || -f "$dir/Tauri.toml" ]]; then
+              present=true
+              path="$dir"
+              break
+            fi
+            incomplete="$dir"
+          done
+          if [[ "$present" == "true" ]]; then
+            if command -v cygpath >/dev/null 2>&1; then
+              absolute="$(cygpath -m "$PWD/$path")"
+            else
+              absolute="$PWD/$path"
+            fi
+            echo "Tauri project: $absolute"
+          else
+            if [[ -n "$incomplete" ]]; then
+              note="Desktop bundles skipped: ${incomplete}/ is present but has no Tauri config (tauri.conf.json, tauri.conf.json5, or Tauri.toml)."
+            else
+              note="Desktop bundles skipped: no Tauri project yet. Looked for tauri.conf.json, tauri.conf.json5, or Tauri.toml in src-tauri/ and desktop/src-tauri/. The web job still uploads the site zip. This job does not download Starfleet Command 2 files and does not create a GitHub Release."
+            fi
+            echo "::notice title=Desktop bundles skipped::${note}"
+            {
+              echo "### Desktop bundles skipped"
+              echo
+              echo "$note"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+          {
+            echo "present=$present"
+            echo "path=$path"
+            echo "absolute=$absolute"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Refuse an SFC2 install path
+        if: steps.tauri.outputs.present == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -n "${SFC2_INSTALL:-}" || -n "${SFC2_REFERENCE:-}" || -n "${SFC2_EXTRACTED:-}" ]]; then
+            echo "Refusing to build: SFC2_INSTALL, SFC2_REFERENCE, or SFC2_EXTRACTED is set."
+            echo "This workflow must not read or package Starfleet Command 2 game files."
+            exit 1
+          fi
+
+      - name: Set up pnpm
+        if: steps.tauri.outputs.present == 'true'
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: 10.33.4
+
+      - name: Set up Node
+        if: steps.tauri.outputs.present == 'true'
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Check Node and pnpm
+        if: steps.tauri.outputs.present == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module -e '
+            const [major, minor] = process.versions.node.split(".").map(Number);
+            if (major < 22 || (major === 22 && minor < 18)) {
+              console.error(`Node ${process.versions.node} is older than the engines field (>=22.18).`);
+              process.exit(1);
+            }
+            console.log(`Node ${process.versions.node}`);
+          '
+          test "$(pnpm -v)" = "10.33.4"
+
+      - name: Install dependencies
+        if: steps.tauri.outputs.present == 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Rust
+        if: steps.tauri.outputs.present == 'true'
+        uses: dtolnay/rust-toolchain@df2a88e9fe4098bad09cb42c3dec7187f15861fc # master 2026-11-15
+        # No toolchain pin here. A root rust-toolchain file wins; otherwise this
+        # installs stable. rustup applies a file inside src-tauri when cargo runs there.
+
+      - name: Cache Cargo
+        if: steps.tauri.outputs.present == 'true'
+        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          workspaces: ${{ steps.tauri.outputs.path || 'src-tauri' }}
+
+      - name: Add macOS universal targets
+        if: steps.tauri.outputs.present == 'true' && matrix.rust-targets != ''
+        working-directory: ${{ steps.tauri.outputs.path || '.' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          IFS=',' read -r -a targets <<< "${{ matrix.rust-targets }}"
+          rustup target add "${targets[@]}"
+
+      - name: Install Linux webkit and bundler packages
+        if: steps.tauri.outputs.present == 'true' && matrix.os == 'ubuntu-22.04'
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            curl \
+            file \
+            libayatana-appindicator3-dev \
+            libfuse2 \
+            librsvg2-dev \
+            libssl-dev \
+            libwebkit2gtk-4.1-dev \
+            libxdo-dev \
+            patchelf \
+            rpm \
+            wget
+
+      - name: Build the web app
+        if: steps.tauri.outputs.present == 'true'
+        run: pnpm build:web
+
+      - name: Build unsigned desktop bundles
+        if: steps.tauri.outputs.present == 'true'
+        shell: bash
+        env:
+          TAURI_APP_PATH: ${{ steps.tauri.outputs.absolute }}
+          SFC2_BUNDLE_TARGET: ${{ matrix.target }}
+          SFC2_BUNDLES: ${{ matrix.bundles }}
+        run: |
+          set -euo pipefail
+          if ! pnpm exec tauri --version; then
+            echo "A Tauri config is at ${TAURI_APP_PATH} but 'pnpm exec tauri' failed."
+            echo "Add @tauri-apps/cli as a devDependency. This workflow does not install a CLI and does not publish a release."
+            exit 1
+          fi
+          args=(build --bundles "$SFC2_BUNDLES")
+          if [[ -n "$SFC2_BUNDLE_TARGET" ]]; then
+            args+=(--target "$SFC2_BUNDLE_TARGET")
+          fi
+          if pnpm exec tauri build --help 2>&1 | grep -q -- '--no-sign'; then
+            args+=(--no-sign)
+          else
+            echo "This tauri CLI has no --no-sign flag. No signing secrets are set, so the bundle stays unsigned."
+          fi
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            ver="${GITHUB_REF_NAME#v}"
+            if [[ ! "$ver" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
+              echo "Tag ${GITHUB_REF_NAME} is not vMAJOR.MINOR.PATCH or vMAJOR.MINOR.PATCH-rc.N."
+              exit 1
+            fi
+            args+=(--config "{\"version\":\"${ver}\"}")
+          fi
+          pnpm exec tauri "${args[@]}"
+
+      - name: Reject game files in the packaged frontend
+        if: steps.tauri.outputs.present == 'true'
+        shell: bash
+        env:
+          SFC2_TAURI_DIR: ${{ steps.tauri.outputs.path }}
+        run: |
+          set -euo pipefail
+          mapfile -t roots < <(node --input-type=module <<'EOF'
+          import { existsSync, lstatSync, readFileSync } from 'node:fs';
+          import { resolve } from 'node:path';
+          const roots = ['web/dist'];
+          const dir = process.env.SFC2_TAURI_DIR;
+          for (const name of ['tauri.conf.json', 'tauri.conf.json5', 'Tauri.toml']) {
+            const conf = resolve(dir, name);
+            if (!existsSync(conf)) continue;
+            const text = readFileSync(conf, 'utf8');
+            for (const match of text.matchAll(/frontendDist["']?\s*[:=]\s*["']([^"']+)["']/g)) {
+              const value = match[1];
+              if (value.includes('://')) continue;
+              roots.push(resolve(dir, value));
+            }
+          }
+          const seen = new Set();
+          for (const root of roots) {
+            if (seen.has(root)) continue;
+            seen.add(root);
+            try {
+              if (!lstatSync(root).isDirectory()) continue;
+            } catch {
+              console.error(`frontend output is missing: ${root}`);
+              process.exit(1);
+            }
+            console.log(root);
+          }
+          EOF
+          )
+          node --input-type=module - "${roots[@]}" <<'EOF'
+          import { lstatSync, readdirSync, realpathSync } from 'node:fs';
+          import { join, relative, sep } from 'node:path';
+
+          const repo = realpathSync(process.cwd());
+          const roots = process.argv.slice(2);
+          const forbiddenExt = new Set(
+            'exe,dll,mod,sprite,mvm,wav,mp3,bik,mpg,mpeg,tga,bmp,gf,scs,dat,sav,scr,q3,msi,iso'.split(','),
+          );
+          const forbiddenBits = [
+            'assets/original/',
+            'starfleet command ii',
+            'starfleet command 2',
+            'sfc2ce/',
+            'sfc2/',
+            'empires at war',
+          ];
+          let bad = 0;
+          const fail = (msg) => {
+            console.error(msg);
+            bad += 1;
+          };
+          const inside = (real) => real === repo || real.startsWith(repo + sep);
+
+          function walk(dir) {
+            let realDir;
+            try {
+              realDir = realpathSync(dir);
+            } catch (error) {
+              fail(`cannot read ${dir}: ${error.message}`);
+              return;
+            }
+            if (!inside(realDir)) {
+              fail(`refusing path outside the repository: ${dir} -> ${realDir}`);
+              return;
+            }
+            let entries;
+            try {
+              entries = readdirSync(dir, { withFileTypes: true });
+            } catch (error) {
+              fail(`cannot list ${dir}: ${error.message}`);
+              return;
+            }
+            for (const entry of entries) {
+              const path = join(dir, entry.name);
+              let lst;
+              try {
+                lst = lstatSync(path);
+              } catch (error) {
+                fail(`cannot stat ${path}: ${error.message}`);
+                continue;
+              }
+              let fileStat = lst;
+              if (lst.isSymbolicLink()) {
+                let real;
+                try {
+                  real = realpathSync(path);
+                } catch (error) {
+                  fail(`broken symlink ${path}: ${error.message}`);
+                  continue;
+                }
+                if (!inside(real)) {
+                  fail(`symlink leaves the repository: ${path} -> ${real}`);
+                  continue;
+                }
+                fileStat = lstatSync(real);
+              }
+              if (fileStat.isDirectory()) {
+                walk(path);
+                continue;
+              }
+              if (!fileStat.isFile()) continue;
+              const rel = relative(repo, realpathSync(path)).split(sep).join('/');
+              const lc = rel.toLowerCase();
+              const base = rel.slice(rel.lastIndexOf('/') + 1);
+              for (const name of new Set([entry.name, base])) {
+                const dot = name.lastIndexOf('.');
+                const ext = dot >= 0 ? name.slice(dot + 1).toLowerCase() : '';
+                if (forbiddenExt.has(ext)) fail(`FORBIDDEN EXTENSION: ${rel} (.${ext})`);
+              }
+              for (const bit of forbiddenBits) {
+                if (lc.startsWith(bit) || lc.includes(`/${bit}`)) {
+                  fail(`FORBIDDEN PATH: ${rel}`);
+                  break;
+                }
+              }
+            }
+          }
+
+          for (const root of roots) {
+            walk(root);
+          }
+          if (bad > 0) {
+            console.error(`error: ${bad} release output path(s) look like original game assets or leave the repo.`);
+            process.exit(1);
+          }
+          console.log(`OK: scanned ${roots.join(', ')}`);
+          EOF
+
+      - name: Collect bundles and write SHA-256
+        if: steps.tauri.outputs.present == 'true'
+        shell: bash
+        env:
+          SFC2_TAURI_DIR: ${{ steps.tauri.outputs.path }}
+          SFC2_BUNDLE_TARGET: ${{ matrix.target }}
+          SFC2_STAGE: ${{ runner.temp }}/sfc2-desktop
+        run: |
+          set -euo pipefail
+          rm -rf "$SFC2_STAGE"
+          mkdir -p "$SFC2_STAGE"
+          if [[ -n "$SFC2_BUNDLE_TARGET" ]]; then
+            bundle="$SFC2_TAURI_DIR/target/$SFC2_BUNDLE_TARGET/release/bundle"
+          else
+            bundle="$SFC2_TAURI_DIR/target/release/bundle"
+          fi
+          if [[ ! -d "$bundle" ]]; then
+            echo "Bundle directory not found: $bundle"
+            exit 1
+          fi
+          if [[ -x /usr/bin/find ]]; then
+            FIND=/usr/bin/find
+          else
+            FIND=find
+          fi
+          collect_dir() {
+            local dir="$1"
+            local pattern="$2"
+            local found=0
+            if [[ ! -d "$dir" ]]; then
+              echo "missing bundle directory $dir"
+              exit 1
+            fi
+            while IFS= read -r -d '' file; do
+              cp -a "$file" "$SFC2_STAGE/"
+              found=1
+            done < <("$FIND" "$dir" -maxdepth 1 -type f -name "$pattern" -print0)
+            if [[ "$found" -ne 1 ]]; then
+              echo "missing ${pattern} in ${dir}"
+              "$FIND" "$dir" -maxdepth 1 -type f -print
+              exit 1
+            fi
+          }
+          case "$RUNNER_OS" in
+            macOS)
+              while IFS= read -r -d '' app; do
+                ditto -c -k --keepParent "$app" "$SFC2_STAGE/$(basename "$app").zip"
+              done < <("$FIND" "$bundle/macos" -maxdepth 1 -type d -name '*.app' -print0)
+              if ! "$FIND" "$SFC2_STAGE" -maxdepth 1 -name '*.app.zip' | grep -q .; then
+                echo "missing .app under $bundle/macos"
+                exit 1
+              fi
+              collect_dir "$bundle/dmg" '*.dmg'
+              ;;
+            Windows)
+              collect_dir "$bundle/msi" '*.msi'
+              collect_dir "$bundle/nsis" '*.exe'
+              ;;
+            Linux)
+              collect_dir "$bundle/appimage" '*.AppImage'
+              collect_dir "$bundle/deb" '*.deb'
+              collect_dir "$bundle/rpm" '*.rpm'
+              ;;
+            *)
+              echo "unexpected runner $RUNNER_OS"
+              exit 1
+              ;;
+          esac
+          node --input-type=module - "$SFC2_STAGE" <<'EOF'
+          import { createHash } from 'node:crypto';
+          import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+          import { join } from 'node:path';
+          const dir = process.argv[2];
+          const names = readdirSync(dir).filter((name) => name !== 'SHA256SUMS.txt').sort();
+          if (names.length === 0) {
+            console.error('no artifacts to hash');
+            process.exit(1);
+          }
+          const lines = names.map((name) => {
+            const hash = createHash('sha256').update(readFileSync(join(dir, name))).digest('hex');
+            return `${hash}  ${name}`;
+          });
+          writeFileSync(join(dir, 'SHA256SUMS.txt'), `${lines.join('\n')}\n`);
+          for (const line of lines) {
+            const [hash, name] = line.split(/ {2}/);
+            const again = createHash('sha256').update(readFileSync(join(dir, name))).digest('hex');
+            if (again !== hash) {
+              console.error(`checksum mismatch for ${name}`);
+              process.exit(1);
+            }
+            console.log(line);
+          }
+          EOF
+          {
+            echo "### Desktop artifacts (${RUNNER_OS})"
+            echo
+            echo '```'
+            cat "$SFC2_STAGE/SHA256SUMS.txt"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload desktop artifacts
+        if: steps.tauri.outputs.present == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: sfc2js-${{ matrix.artifact }}
+          path: ${{ runner.temp }}/sfc2-desktop/
+          if-no-files-found: error
