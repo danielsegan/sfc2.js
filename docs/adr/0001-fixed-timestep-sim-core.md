@@ -14,6 +14,18 @@ The sim advances only by `step(commands)`. It does not read the wall clock or an
 - RNG streams are xoshiro128** (`combat`, `ai`, `mission`), seeded from the match seed and the stream name. State is part of the snapshot and the xxHash32 state hash.
 - The same seed and command log produce the same hash sequence headless, including from a worker. Render, UI, and audio are not in this change; they are expected to read snapshots and events only.
 
+## Why this is lockstep-safe
+
+Lockstep means every peer applies the same tick only after it has that tick's command bundle, and every peer that does so must land on the same state. This policy is lockstep-safe because the hash of that state is a pure function of the match seed, the scenario, and the canonical command log:
+
+- `step` takes commands and no `dt`. The wall clock never enters the sim. Game speed only changes how many ticks the driver runs between frames, and pause runs none, so two peers that have applied the same ticks match even when their frame rates do not.
+- The only randomness is the named xoshiro128** streams, seeded from the match seed and the stream name. Stream state is inside the snapshot and the xxHash32 state hash. A draw on one stream does not move another.
+- Every sim quantity is an integer: Q16.16, or an exact i64 for distance-squared, cross, and dot. Division floors, overflow saturates, and both the hash and the command codec are explicit little-endian bytes. A later WASM port has to reproduce those bits. There is no floating-point rounding for JS and WASM to disagree on, and no host endianness in the hashed bytes.
+- Entity visits, system order, and command order are total orders: ascending entity index, then phase, priority, and system id, and commands by `(tick, slot, seq)`. Arrival order, object-key order, and locale do not change state.
+- Input delay is a count of sim ticks (`current + delay`, or the next tick when delay is 0). It is not a wall-clock stamp, so a command applies on the same tick on every peer.
+
+The known hazards, the guard for each one, and the gaps that are still open are tracked in [determinism-hazards.md](../engine/determinism-hazards.md).
+
 ## Assumptions recorded with the code
 
 These are the calls the specs leave open. They are pinned by tests so a later change is visible.

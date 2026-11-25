@@ -9,6 +9,7 @@ Clean room: these docs are original design. Allowed references are listed in [`d
 | Doc | Owner | What it fixes |
 | --- | --- | --- |
 | [determinism.md](determinism.md) | Audio & Netcode QA Lead (co-owner: Engine Lead) | **The normative determinism contract** (T/R/N/S/C/H/V requirement IDs). The docs below cite it and don't restate it. On `main` via PR #53. |
+| [determinism-hazards.md](determinism-hazards.md) | Audio & Netcode QA Lead (co-owner: Engine Lead) | Tracked list of known determinism hazards for [#27](https://github.com/danielsegan/sfc2.js/issues/27): status, guard, and gap. |
 | [sim-core.md](sim-core.md) | Engine Lead | Tick loop, math core (committed `FX_SHIFT = 16`), RNG streams, ECS and ids, phase order, command envelope, sessions, hashing and versioning, all as TypeScript shapes |
 | [data-loader.md](data-loader.md) | Engine Lead | How `{data, diagnostics}` parser output becomes the immutable fixed-point `GameDatabase`: scale table, exact-case weapon matching, weapon compaction, spawn-key interning, build detection |
 | [mission-host.md](mission-host.md) | Engine Lead (API surface: Mission & Campaign Designer) | Emit-only mission runtime host: commands on slot 255, token events, sandbox, operation budget, read-only queries |

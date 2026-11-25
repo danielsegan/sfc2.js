@@ -24,6 +24,7 @@
     "tools/formats/**/*.ts",
     "tools/ship-audit/**/*.ts",
     "tools/viewer-check/**/*.ts",
+    "tools/duel-metrics/**/*.ts",
     "tools/turn-curve.d.mts",
     "engine/**/*.ts",
     "web/**/*.ts",
