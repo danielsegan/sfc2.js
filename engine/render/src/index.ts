@@ -29,7 +29,14 @@ export {
   type ViewerKeyResult,
 } from './ship-turntable.ts';
 
-export { applyShipPose, createShipStage, frameDistance, type ShipStage } from './ship-stage.ts';
+export {
+  applyShipPose,
+  createShipStage,
+  frameDistance,
+  type FrameSample,
+  type ShipStage,
+  type ShipStageOptions,
+} from './ship-stage.ts';
 
 export { loadInterfaceBitmap, type InterfaceBitmap } from './interface-bitmap.ts';
 

@@ -35,16 +35,36 @@ export function applyShipPose(root: Object3D, yaw: number, pitch: number): void 
   root.rotation.x = pitch;
 }
 
+export interface ShipStageOptions {
+  /** Keep the drawing buffer addressable after render. The interactive viewer leaves this off. */
+  preserveDrawingBuffer?: boolean;
+}
+
+/** One framebuffer sample. Callers compare it and drop it. It is not a screenshot export. */
+export interface FrameSample {
+  width: number;
+  height: number;
+  pixels: Uint8Array;
+  /** 0, or the last WebGL error drained after the read. */
+  glError: number;
+}
+
 export interface ShipStage {
   show(ship: LoadedShip | null): void;
   setPose(yaw: number, pitch: number): void;
   setTier(tier: RenderTier): void;
   resize(): void;
   render(): void;
+  /** Read the drawing buffer. Valid in the same turn as `render`. */
+  readFrame(): FrameSample;
   dispose(): void;
 }
 
-export function createShipStage(canvas: HTMLCanvasElement, tier: RenderTier = 'period'): ShipStage {
+export function createShipStage(
+  canvas: HTMLCanvasElement,
+  tier: RenderTier = 'period',
+  options?: ShipStageOptions,
+): ShipStage {
   const scene = new Scene();
   scene.background = new Color(0x0b1118);
   const camera = new PerspectiveCamera(40, 1, 0.01, 400);
@@ -61,7 +81,11 @@ export function createShipStage(canvas: HTMLCanvasElement, tier: RenderTier = 'p
   const stars = makeStars();
   scene.add(stars);
 
-  const renderer = new WebGLRenderer({ canvas, antialias: true });
+  const renderer = new WebGLRenderer({
+    canvas,
+    antialias: true,
+    preserveDrawingBuffer: options?.preserveDrawingBuffer === true,
+  });
   renderer.outputColorSpace = SRGBColorSpace;
   renderer.setClearColor(0x0b1118, 1);
   renderer.setPixelRatio(Math.min(globalThis.devicePixelRatio || 1, 2));
@@ -87,14 +111,28 @@ export function createShipStage(canvas: HTMLCanvasElement, tier: RenderTier = 'p
       applyTier(renderer, fill, next);
     },
     resize() {
-      const width = canvas.clientWidth || 1;
-      const height = canvas.clientHeight || 1;
+      const width = canvas.clientWidth || canvas.width || 1;
+      const height = canvas.clientHeight || canvas.height || 1;
       renderer.setSize(width, height, false);
       camera.aspect = width / Math.max(height, 1);
       camera.updateProjectionMatrix();
     },
     render() {
       renderer.render(scene, camera);
+    },
+    readFrame() {
+      const gl = renderer.getContext();
+      const width = gl.drawingBufferWidth;
+      const height = gl.drawingBufferHeight;
+      const pixels = new Uint8Array(width * height * 4);
+      if (width > 0 && height > 0) gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+      let glError = 0;
+      for (let i = 0; i < 8; i++) {
+        const error = gl.getError();
+        if (error === gl.NO_ERROR) break;
+        glError = error;
+      }
+      return { width, height, pixels, glError };
     },
     dispose() {
       pivot.clear();

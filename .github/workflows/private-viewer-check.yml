@@ -1,0 +1,99 @@
+# Headless check that every shiplist row loads and spins.
+#
+# workflow_dispatch only. Runs on the sfc2-ci runner, which can read
+# /srv/sfc2/reference/2.670 (the Wine install, not the extracted tree).
+# Stdout is a JSON summary: ship id, empire, pass/fail, the stage that
+# failed, and an error class, plus totals. The artifact is that JSON only.
+# The job does not upload screenshots, textures, models, or the install.
+# Chromium is installed into the runner user cache and is not uploaded.
+name: Private ship viewer check
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: private-viewer-check
+  cancel-in-progress: false
+
+env:
+  SFC2_REFERENCE: /srv/sfc2/reference/2.670
+
+jobs:
+  viewer:
+    name: Every shiplist ship in the viewer
+    runs-on: [self-hosted, sfc2-ci, private-data]
+    timeout-minutes: 90
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Require the checker on this ref
+        run: |
+          set -euo pipefail
+          if [[ ! -f tools/viewer-check/cli.ts ]]; then
+            echo "tools/viewer-check/cli.ts is not on this ref ($(git rev-parse --abbrev-ref HEAD) @ $(git rev-parse --short HEAD))."
+            exit 1
+          fi
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Chromium for the headless viewer
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Confirm the reference install is present
+        run: |
+          set -euo pipefail
+          if [[ -d "$SFC2_REFERENCE" ]]; then
+            echo "present: $SFC2_REFERENCE"
+          else
+            echo "missing: $SFC2_REFERENCE"
+            exit 1
+          fi
+
+      - name: Check every shiplist ship
+        id: check
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          mkdir -p verify-output
+          node --experimental-strip-types tools/viewer-check/cli.ts > verify-output/viewer-check.json
+
+      - name: Guard the JSON summary
+        id: guard
+        if: always() && steps.check.outcome != 'cancelled'
+        run: |
+          set -euo pipefail
+          cd verify-output
+          for f in *; do
+            case "$f" in viewer-check.json) ;; *) echo "unexpected file in artifact dir: $f"; exit 1 ;; esac
+          done
+          size=$(stat -c %s viewer-check.json)
+          test "$size" -gt 0
+          test "$size" -lt 2097152
+          node --experimental-strip-types ../tools/viewer-check/cli.ts --summary viewer-check.json --allow-failures
+
+      - name: Upload JSON summary
+        if: steps.guard.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ce-2.670-viewer-check
+          path: verify-output/viewer-check.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Require every ship to pass
+        if: steps.guard.outcome == 'success'
+        run: node --experimental-strip-types tools/viewer-check/cli.ts --summary verify-output/viewer-check.json

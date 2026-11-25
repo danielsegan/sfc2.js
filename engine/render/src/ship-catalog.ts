@@ -51,6 +51,12 @@ export interface LoadShipCatalogOptions {
   tier?: RenderTier;
   /** Called after each row so the page can paint. Absent in unit tests. */
   onProgress?: (done: number, total: number) => void;
+  /**
+   * Called with each hull that produced a mesh, in shiplist order.
+   * The mesh is disposed when the callback returns, and it is not kept
+   * on the catalog. Failures are still listed.
+   */
+  onShip?: (ship: LoadedShip) => Promise<void> | void;
 }
 
 const HULL_HEADERS = new Set(['hull type', 'hulltype', 'hull']);
@@ -123,8 +129,18 @@ export async function loadShipCatalog(
     try {
       const outcome = await loadRow(vfs, row, parsed.data.columns, parsed.diagnostics, shiplistPath, tier);
       diagnostics.push(...outcome.diagnostics);
-      if (outcome.ship) ships.push(outcome.ship);
       if (outcome.failure) failures.push(outcome.failure);
+      if (outcome.ship) {
+        if (options?.onShip) {
+          try {
+            await options.onShip(outcome.ship);
+          } finally {
+            disposeBuilt(outcome.ship.mesh);
+          }
+        } else {
+          ships.push(outcome.ship);
+        }
+      }
     } catch {
       const item = diagnostic('shipLoadFailed', 'loader', 'error', {
         details: { spawnKey: row.spawnKey },
@@ -134,7 +150,7 @@ export async function loadShipCatalog(
       failures.push(failureFrom(row.spawnKey, row.line, item));
     }
     options?.onProgress?.(index + 1, parsed.data.rows.length);
-    if (options?.onProgress) await new Promise((resolve) => setTimeout(resolve, 0));
+    if (options?.onProgress || options?.onShip) await new Promise((resolve) => setTimeout(resolve, 0));
   }
 
   return { tier, shiplistPath, ships, failures, diagnostics };
@@ -295,11 +311,14 @@ function disposeBuilt(built: BuiltShipMesh): void {
     const mapped = material as Material & { map?: Texture | null; emissiveMap?: Texture | null };
     mapped.map?.dispose();
     mapped.emissiveMap?.dispose();
+    mapped.map = null;
+    mapped.emissiveMap = null;
     material.dispose();
   }
   built.root.traverse((obj) => {
     if (obj instanceof Mesh) obj.geometry.dispose();
   });
+  built.root.clear();
 }
 
 function modelOptional(race: string, hullType: string): boolean {
