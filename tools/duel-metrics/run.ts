@@ -20,30 +20,40 @@ import { CRUISE_TABLE, createCruise } from '../../engine/sim/cruise.ts';
 import {
   HEADING_ORDER_TABLE,
   VERB_ORDER_HEADING,
+  VERB_ORDER_HET,
   createHeadingSteer,
   headingHandler,
   headingPayload,
 } from '../../engine/sim/heading.ts';
 import { helmHandler } from '../../engine/sim/helm.ts';
-import { createHetTurn, hetHandler } from '../../engine/sim/het.ts';
-import { H, HULL, HULL_FIELDS, shipView, type ShipView } from '../../engine/sim/hull.ts';
-import { ENERGY_SCALE, MODE_NORMAL, weaponDef, weaponId } from '../../engine/sim/rules-tables.ts';
+import { EVENT_HET, HET_DONE, createHetTurn, hetHandler, hetPayload } from '../../engine/sim/het.ts';
+import { H, shipView, type ShipView } from '../../engine/sim/hull.ts';
+import {
+  DEFAULT_FC_HUNDREDTHS,
+  DEFAULT_LIFE_HUNDREDTHS,
+  ENERGY_SCALE,
+  MODE_NORMAL,
+  weaponDef,
+  weaponId,
+} from '../../engine/sim/rules-tables.ts';
 import { createSim, type Sim, type SimEvent } from '../../engine/sim/sim.ts';
 import { HET_TABLE, TURN_CURVE_TABLE } from '../../engine/sim/turn-curve.ts';
 import type { ShipSetup } from '../../engine/sim/bind-shiplist.ts';
 import {
   BEARINGS,
-  FIREPOWER_SPEEDS,
+  FCA_HIGH_SPEED_HUNDREDTHS,
   HEADING_TARGET,
   INPUT_DELAY,
+  PHASER_RANGES,
   PHOTON_CODE,
+  PHOTON_RANGES,
   PROBE_SHIPS,
-  RANGE_BANDS,
   RULES_TURN_TICKS,
   SEED,
   SHIELD_RANGE,
   SPEEDS,
   TICK_HZ,
+  armedPhotonSetup,
   motionSetup,
   powerSetup,
   weaponSetup,
@@ -52,6 +62,7 @@ import {
 
 const SELF = 65536;
 const TARGET = 65537;
+const RAMP_LIMIT = 8000;
 
 interface Stepper {
   readonly sim: Sim;
@@ -94,20 +105,6 @@ function viewAt(sim: Sim, index: number): ShipView {
   return shipView(sim.snapshot().world, index);
 }
 
-function hullAt(sim: Sim, index: number, field: number): number {
-  const snap = sim.snapshot().world;
-  for (const table of snap.tables) {
-    if (table.id !== HULL) continue;
-    return table.data[index * HULL_FIELDS + field] ?? 0;
-  }
-  throw new Error('hull table');
-}
-
-function rulePoints(hundredths: number): number {
-  if (!Number.isInteger(hundredths) || hundredths % ENERGY_SCALE !== 0) throw new Error('energy hundredths');
-  return hundredths / ENERGY_SCALE;
-}
-
 function tickOf(sim: Sim): number {
   return sim.tick as number;
 }
@@ -128,7 +125,7 @@ function ruleOn(events: readonly SimEvent[], entity: number): { reason: string; 
 
 function energyOrder(
   entity: number,
-  speed: number,
+  speedHundredths: number,
   life: boolean,
   fireControl: boolean,
   weapons: readonly { slot: number; request: number; mode: number }[],
@@ -136,7 +133,7 @@ function energyOrder(
   return setEnergyPayload(entity, {
     lifeSupport: life,
     fireControl,
-    speed,
+    speedHundredths,
     general: 0,
     specific: [0, 0, 0, 0, 0, 0],
     weapons,
@@ -144,31 +141,29 @@ function energyOrder(
 }
 
 export interface TurnSample {
-  readonly speed: number;
+  readonly speedHundredths: number;
   readonly delayTicks: number;
   readonly turnRate16PerTick: number;
-  readonly steadyRate16PerTick: number;
-  readonly headingOrder: 'verb-12';
+}
+
+export interface HetSample {
+  readonly speedHundredths: number;
+  readonly delayTicks: number;
+  readonly turnRate16PerTick: number;
+  readonly sweep16: number;
 }
 
 export interface SpeedSample {
-  readonly speed: number;
-  readonly ticksFromFirstApply: number;
-  readonly trace: readonly number[];
+  readonly speedHundredths: number;
+  readonly ticksFromRest: number;
 }
 
 export interface EnergySample {
-  readonly speed: number;
-  /** Movement spend on the setEnergy that landed on `speed`, in rule points. */
-  readonly rulePointsPerRulesTurn: number;
-  readonly perSpeedPointNumerator: number;
-  readonly perSpeedPointDenominator: number;
-  readonly perTickNumerator: number;
-  readonly perTickDenominator: number;
+  readonly speedHundredths: number;
+  readonly movementHundredths: number;
 }
 
 export interface PhaserProbe {
-  readonly band: string;
   readonly range: number;
   readonly damage: number | null;
   readonly reason: string;
@@ -176,35 +171,42 @@ export interface PhaserProbe {
 
 export interface HeavySample {
   readonly weapon: string;
-  readonly mode: 'normal';
+  readonly armPerTurn: number;
+  readonly holdCost: number;
   readonly catalogArmCost: number;
-  readonly catalogArmTicks: number;
-  readonly energyPaidRulePoints: number;
+  readonly energyPaidHundredths: number;
   readonly ticksUntilReady: number;
 }
 
 export interface ShieldSample {
   readonly bearing16: number;
   readonly facing: number;
-  readonly damage: number;
-  readonly reason: string;
 }
 
 export interface FirepowerSample {
-  readonly speed: number;
-  readonly weaponRulePoints: number;
-  readonly lifeRulePoints: number;
-  readonly fireControlRulePoints: number;
-  readonly movementRulePoints: number;
+  readonly speedHundredths: number;
+  readonly weaponHundredths: number;
+  readonly lifeHundredths: number;
+  readonly fireControlHundredths: number;
+  readonly movementHundredths: number;
+}
+
+export interface DecelSample {
+  readonly hundredthsLost: number;
+  readonly ticks: number;
 }
 
 export interface ShipReport {
   readonly id: ProbeShip['id'];
   readonly turnHull: ProbeShip['turnHull'];
+  readonly warp: number;
   readonly turns: readonly TurnSample[];
+  readonly hets: readonly HetSample[];
   readonly timeToSpeed: readonly SpeedSample[];
   readonly energy: readonly EnergySample[];
+  readonly decel: DecelSample;
   readonly phaser: readonly PhaserProbe[];
+  readonly photonDamage: readonly PhaserProbe[];
   readonly heavy: HeavySample;
   readonly shields: readonly ShieldSample[];
   readonly firepower: readonly FirepowerSample[];
@@ -216,12 +218,6 @@ export interface MetricsReport {
   readonly rulesTurnTicks: number;
   readonly inputDelay: number;
   readonly seed: number;
-  readonly acceleration: number;
-  readonly warp: number;
-  readonly moveCostRulePoints: number;
-  readonly headingVerb: number;
-  readonly energyVerb: number;
-  readonly fireVerb: number;
   readonly ships: readonly ShipReport[];
 }
 
@@ -230,25 +226,28 @@ function signedDelta(from: number, to: number): number {
   return d > 32767 ? d - 65536 : d;
 }
 
-function measureMotion(turnHull: string, speed: number): { turn: TurnSample; ramp: SpeedSample; energy: EnergySample } {
-  const stepper = boot([motionSetup(turnHull)], [{ x: 0, y: 0, heading: 0 }]);
-  let firstApply = -1;
-  const trace: number[] = [];
-  let landingApplied = 0;
-  for (let n = 0; n < 16; n++) {
-    const now = viewAt(stepper.sim, 0).speed;
-    if (now === speed && firstApply >= 0) break;
-    stepper.session.issue(VERB_SET_ENERGY, energyOrder(SELF, speed, false, false, []));
+function actualOf(sim: Sim): number {
+  return viewAt(sim, 0).speedActual100;
+}
+
+/** Order a speed and step until actual speed reaches it. Returns the ramp length and the energy paid. */
+function reachSpeed(stepper: Stepper, speedHundredths: number): { ticks: number; paidHundredths: number } {
+  stepper.session.issue(VERB_SET_ENERGY, energyOrder(SELF, speedHundredths, false, false, []));
+  let steps = 0;
+  let paid = 0;
+  while (steps < RAMP_LIMIT) {
     stepper.step();
-    if (firstApply < 0) firstApply = tickOf(stepper.sim);
-    const landed = viewAt(stepper.sim, 0);
-    trace.push(landed.speed);
-    landingApplied = landed.lastApplied;
-    if (landed.speed === speed) break;
+    steps += 1;
+    if (steps === 1) paid = viewAt(stepper.sim, 0).lastApplied;
+    if (actualOf(stepper.sim) >= speedHundredths) break;
   }
-  if (viewAt(stepper.sim, 0).speed !== speed || firstApply < 0) throw new Error(`speed ${speed} on ${turnHull}`);
-  const reach = tickOf(stepper.sim);
-  const rulePointsPaid = rulePoints(landingApplied);
+  if (actualOf(stepper.sim) < speedHundredths) throw new Error(`speed ${speedHundredths}`);
+  return { ticks: steps, paidHundredths: paid };
+}
+
+function measureTurn(turnHull: string, speedHundredths: number): TurnSample {
+  const stepper = boot([motionSetup(turnHull)], [{ x: 0, y: 0, heading: 0 }]);
+  reachSpeed(stepper, speedHundredths);
   const before = viewAt(stepper.sim, 0).heading;
   stepper.session.issue(VERB_ORDER_HEADING, headingPayload(SELF, HEADING_TARGET));
   stepper.step();
@@ -257,45 +256,73 @@ function measureMotion(turnHull: string, speed: number): { turn: TurnSample; ram
   let cursor = viewAt(stepper.sim, 0).heading;
   let firstTick = -1;
   let rate = 0;
-  let steady = 0;
   const take = (at: number, delta: number): void => {
     const mag = delta < 0 ? -delta : delta;
     if (firstTick < 0) {
       firstTick = at;
       rate = mag;
-      return;
     }
-    if (steady === 0) steady = mag;
   };
   const opened = signedDelta(prev, cursor);
   if (opened !== 0) take(orderTick, opened);
   prev = cursor;
-  for (let n = 0; n < 400 && steady === 0; n++) {
+  for (let n = 0; n < 400 && firstTick < 0; n++) {
     stepper.step();
     cursor = viewAt(stepper.sim, 0).heading;
     const delta = signedDelta(prev, cursor);
     if (delta !== 0) take(tickOf(stepper.sim), delta);
     prev = cursor;
   }
-  if (firstTick < 0 || rate <= 0 || steady <= 0) throw new Error(`turn ${turnHull} at ${speed}`);
-  return {
-    ramp: { speed, ticksFromFirstApply: reach - firstApply, trace },
-    energy: {
-      speed,
-      rulePointsPerRulesTurn: rulePointsPaid,
-      perSpeedPointNumerator: rulePointsPaid,
-      perSpeedPointDenominator: speed,
-      perTickNumerator: rulePointsPaid,
-      perTickDenominator: RULES_TURN_TICKS,
-    },
-    turn: {
-      speed,
-      delayTicks: firstTick - orderTick,
-      turnRate16PerTick: rate,
-      steadyRate16PerTick: steady,
-      headingOrder: 'verb-12',
-    },
+  if (firstTick < 0 || rate <= 0) throw new Error(`turn ${turnHull} at ${speedHundredths}`);
+  return { speedHundredths, delayTicks: firstTick - orderTick, turnRate16PerTick: rate };
+}
+
+function measureHet(turnHull: string, speedHundredths: number): HetSample {
+  const stepper = boot([motionSetup(turnHull)], [{ x: 0, y: 0, heading: 0 }]);
+  reachSpeed(stepper, speedHundredths);
+  const before = viewAt(stepper.sim, 0).heading;
+  stepper.session.issue(VERB_ORDER_HET, hetPayload(SELF, 1));
+  let events = stepper.step();
+  const orderTick = tickOf(stepper.sim);
+  let prev = before;
+  let firstTick = -1;
+  let rate = 0;
+  let sweep = 0;
+  let done = false;
+  const take = (eventsNow: readonly SimEvent[]): void => {
+    const cursor = viewAt(stepper.sim, 0).heading;
+    const delta = signedDelta(prev, cursor);
+    prev = cursor;
+    if (delta !== 0) {
+      const mag = delta < 0 ? -delta : delta;
+      if (firstTick < 0) {
+        firstTick = tickOf(stepper.sim);
+        rate = mag;
+      }
+      sweep += mag;
+    }
+    for (const event of eventsNow) {
+      if (event.kind === EVENT_HET && event.a === HET_DONE) done = true;
+    }
   };
+  take(events);
+  for (let n = 0; n < 800 && !done; n++) {
+    events = stepper.step();
+    take(events);
+  }
+  if (firstTick < 0 || rate <= 0 || sweep <= 0) throw new Error(`het ${turnHull} at ${speedHundredths}`);
+  return { speedHundredths, delayTicks: firstTick - orderTick, turnRate16PerTick: rate, sweep16: sweep };
+}
+
+function measureDecel(turnHull: string): DecelSample {
+  const stepper = boot([motionSetup(turnHull)], [{ x: 0, y: 0, heading: 0 }]);
+  reachSpeed(stepper, 2000);
+  const before = actualOf(stepper.sim);
+  stepper.session.issue(VERB_SET_ENERGY, energyOrder(SELF, 0, false, false, []));
+  const ticks = 300;
+  for (let n = 0; n < ticks; n++) stepper.step();
+  const after = actualOf(stepper.sim);
+  return { hundredthsLost: before - after, ticks };
 }
 
 function measurePhaser(turnHull: string, range: number): { damage: number | null; reason: string } {
@@ -310,6 +337,22 @@ function measurePhaser(turnHull: string, range: number): { damage: number | null
   const events = stepper.step();
   const rule = ruleOn(events, SELF);
   if (!rule) throw new Error(`no fire result at range ${range}`);
+  if (rule.reason !== 'ok') return { damage: null, reason: rule.reason };
+  return { damage: rule.applied, reason: rule.reason };
+}
+
+function measurePhoton(range: number): { damage: number | null; reason: string } {
+  const stepper = boot(
+    [armedPhotonSetup('F-CA'), armedPhotonSetup('F-CA')],
+    [
+      { x: 0, y: 0, heading: 0 },
+      { x: range, y: 0, heading: 0 },
+    ],
+  );
+  stepper.session.issue(VERB_FIRE, firePayload(SELF, 0, TARGET));
+  const events = stepper.step();
+  const rule = ruleOn(events, SELF);
+  if (!rule) throw new Error(`no photon at range ${range}`);
   if (rule.reason !== 'ok') return { damage: null, reason: rule.reason };
   return { damage: rule.applied, reason: rule.reason };
 }
@@ -330,7 +373,7 @@ function measureShield(turnHull: string, bearing16: number): ShieldSample {
   if (!rule || rule.reason !== 'ok' || hit.facing < 0) {
     throw new Error(`shield bearing ${bearing16} (${rule?.reason ?? 'none'})`);
   }
-  return { bearing16, facing: hit.facing, damage: hit.damage, reason: rule.reason };
+  return { bearing16, facing: hit.facing };
 }
 
 function mountReady(view: ShipView, slot: number, cost100: number, armTicks: number): boolean {
@@ -339,102 +382,150 @@ function mountReady(view: ShipView, slot: number, cost100: number, armTicks: num
   return row.charge100 >= cost100 && row.ticksCharging >= armTicks;
 }
 
-function measureHeavy(turnHull: string): HeavySample {
-  const def = weaponDef(weaponId(PHOTON_CODE));
-  if (!def) throw new Error('photon def');
+function measureHeavy(turnHull: string, code: string): HeavySample {
+  const def = weaponDef(weaponId(code));
+  if (!def) throw new Error(`${code} def`);
+  const perTurn = def.armPerTurn > 0 ? def.armPerTurn : def.armCost;
   const stepper = boot([weaponSetup(turnHull)], [{ x: 0, y: 0, heading: 0 }]);
-  stepper.session.issue(
-    VERB_SET_ENERGY,
-    energyOrder(SELF, 0, false, false, [{ slot: 1, request: def.armCost, mode: MODE_NORMAL }]),
-  );
-  stepper.step();
-  const applyTick = tickOf(stepper.sim);
-  const paid = viewAt(stepper.sim, 0).lastApplied;
+  let paid = 0;
+  let started = -1;
   let readyTick = -1;
-  if (mountReady(viewAt(stepper.sim, 0), 1, def.armCost * ENERGY_SCALE, def.armTicks)) readyTick = applyTick;
-  for (let n = 0; n < RULES_TURN_TICKS + 2 && readyTick < 0; n++) {
+  for (let plan = 0; plan < 4 && readyTick < 0; plan++) {
+    stepper.session.issue(
+      VERB_SET_ENERGY,
+      energyOrder(SELF, 0, false, false, [{ slot: 1, request: perTurn, mode: MODE_NORMAL }]),
+    );
     stepper.step();
-    if (mountReady(viewAt(stepper.sim, 0), 1, def.armCost * ENERGY_SCALE, def.armTicks)) readyTick = tickOf(stepper.sim);
+    if (started < 0) started = tickOf(stepper.sim);
+    paid += viewAt(stepper.sim, 0).lastApplied;
+    if (mountReady(viewAt(stepper.sim, 0), 1, def.armCost * ENERGY_SCALE, def.armTicks)) {
+      readyTick = tickOf(stepper.sim);
+      break;
+    }
+    for (let n = 1; n < RULES_TURN_TICKS && readyTick < 0; n++) {
+      stepper.step();
+      if (mountReady(viewAt(stepper.sim, 0), 1, def.armCost * ENERGY_SCALE, def.armTicks)) {
+        readyTick = tickOf(stepper.sim);
+      }
+    }
   }
-  if (readyTick < 0) throw new Error(`photon did not arm on ${turnHull}`);
+  if (readyTick < 0 || started < 0) throw new Error(`${code} did not arm on ${turnHull}`);
   return {
-    weapon: PHOTON_CODE,
-    mode: 'normal',
+    weapon: code,
+    armPerTurn: perTurn,
+    holdCost: def.holdCost,
     catalogArmCost: def.armCost,
-    catalogArmTicks: def.armTicks,
-    energyPaidRulePoints: rulePoints(paid),
-    ticksUntilReady: readyTick - applyTick + 1,
+    energyPaidHundredths: paid,
+    ticksUntilReady: readyTick - started + 1,
   };
 }
 
-function measureFirepower(turnHull: string, speed: number): FirepowerSample {
+function measureFirepower(turnHull: string, speedHundredths: number): FirepowerSample {
   const stepper = boot([powerSetup(turnHull)], [{ x: 0, y: 0, heading: 0 }]);
-  for (let n = 0; n < 16; n++) {
-    if (viewAt(stepper.sim, 0).speed === speed) break;
-    stepper.session.issue(VERB_SET_ENERGY, energyOrder(SELF, speed, false, false, []));
-    stepper.step();
-  }
-  if (viewAt(stepper.sim, 0).speed !== speed) throw new Error(`firepower speed ${speed}`);
   const weapons: { slot: number; request: number; mode: number }[] = [];
   for (let slot = 0; slot < viewAt(stepper.sim, 0).mounts.length; slot++) {
     const row = viewAt(stepper.sim, 0).mounts[slot]!;
     if (row.weaponId === 0) continue;
     weapons.push({ slot, request: 100, mode: MODE_NORMAL });
   }
-  stepper.session.issue(VERB_SET_ENERGY, energyOrder(SELF, speed, true, true, weapons));
+  stepper.session.issue(VERB_SET_ENERGY, energyOrder(SELF, speedHundredths, true, true, weapons));
   const events = stepper.step();
   const rule = ruleOn(events, SELF);
   if (!rule || (rule.reason !== 'ok' && rule.reason !== 'overDraw' && rule.reason !== 'chargeCapped')) {
-    throw new Error(`firepower ${turnHull} speed ${speed} (${rule?.reason ?? 'none'})`);
+    throw new Error(`firepower ${turnHull} speed ${speedHundredths} (${rule?.reason ?? 'none'})`);
   }
   const view = viewAt(stepper.sim, 0);
   let weapon100 = 0;
   for (const row of view.mounts) weapon100 += row.budget100;
-  const unpaid = hullAt(stepper.sim, 0, H.lsUnpaid);
+  const snap = stepper.sim.snapshot().world;
+  let unpaid = -1;
+  for (const table of snap.tables) {
+    if (table.id !== 'hull') continue;
+    unpaid = table.data[H.lsUnpaid] ?? 0;
+  }
   if (unpaid !== 0 && unpaid !== 1) throw new Error('life flag');
-  const life = unpaid === 0 ? 1 : 0;
-  const fireControl = view.fcPaid === 1 ? 1 : 0;
-  const movement100 = view.moveCost100 * view.speed;
-  const split = weapon100 + life * ENERGY_SCALE + fireControl * ENERGY_SCALE + movement100;
+  const lifeHundredths = unpaid === 0 ? DEFAULT_LIFE_HUNDREDTHS : 0;
+  const fireControlHundredths = view.fcPaid === 1 ? DEFAULT_FC_HUNDREDTHS : 0;
+  const movementHundredths =
+    view.moveCost100 * view.speed + Math.floor((view.moveCost100 * view.speedFrac100) / ENERGY_SCALE);
+  const split = weapon100 + lifeHundredths + fireControlHundredths + movementHundredths;
   if (split !== view.lastApplied) throw new Error(`energy split ${split} != ${view.lastApplied}`);
   return {
-    speed,
-    weaponRulePoints: rulePoints(weapon100),
-    lifeRulePoints: life,
-    fireControlRulePoints: fireControl,
-    movementRulePoints: rulePoints(movement100),
+    speedHundredths,
+    weaponHundredths: weapon100,
+    lifeHundredths,
+    fireControlHundredths,
+    movementHundredths,
   };
+}
+
+function turnSpeeds(ship: ProbeShip): number[] {
+  const out: number[] = [];
+  for (const speed of SPEEDS) out.push(speed * 100);
+  if (ship.turnHull === 'F-CA') out.push(FCA_HIGH_SPEED_HUNDREDTHS);
+  return out;
+}
+
+function timeSpeeds(ship: ProbeShip): number[] {
+  const out = [5, 10, 15, 20, 25, 30];
+  if (ship.turnHull === 'K-D7') out.push(31);
+  const hundredths: number[] = [];
+  for (const speed of out) hundredths.push(speed * 100);
+  return hundredths;
+}
+
+function firepowerSpeeds(ship: ProbeShip): number[] {
+  if (ship.turnHull === 'F-CA') return [0, 1000, 2000, FCA_HIGH_SPEED_HUNDREDTHS];
+  return [0, 1000, 2000, 3100];
 }
 
 function measureShip(ship: ProbeShip): ShipReport {
   const turns: TurnSample[] = [];
+  const hets: HetSample[] = [];
   const timeToSpeed: SpeedSample[] = [];
   const energy: EnergySample[] = [];
+  for (const speedHundredths of turnSpeeds(ship)) {
+    turns.push(measureTurn(ship.turnHull, speedHundredths));
+    hets.push(measureHet(ship.turnHull, speedHundredths));
+  }
+  for (const speedHundredths of timeSpeeds(ship)) {
+    const ramp = reachSpeed(boot([motionSetup(ship.turnHull)], [{ x: 0, y: 0, heading: 0 }]), speedHundredths);
+    timeToSpeed.push({ speedHundredths, ticksFromRest: ramp.ticks });
+  }
   for (const speed of SPEEDS) {
-    const sample = measureMotion(ship.turnHull, speed);
-    turns.push(sample.turn);
-    timeToSpeed.push(sample.ramp);
-    energy.push(sample.energy);
+    const paid = reachSpeed(boot([motionSetup(ship.turnHull)], [{ x: 0, y: 0, heading: 0 }]), speed * 100);
+    energy.push({ speedHundredths: speed * 100, movementHundredths: paid.paidHundredths });
   }
   const phaser: PhaserProbe[] = [];
-  for (const band of RANGE_BANDS) {
-    for (const range of band.probes) {
-      const shot = measurePhaser(ship.turnHull, range);
-      phaser.push({ band: band.band, range, damage: shot.damage, reason: shot.reason });
+  for (const range of PHASER_RANGES) {
+    const shot = measurePhaser(ship.turnHull, range);
+    phaser.push({ range, damage: shot.damage, reason: shot.reason });
+  }
+  const photonDamage: PhaserProbe[] = [];
+  if (ship.heavy === PHOTON_CODE) {
+    for (const range of PHOTON_RANGES) {
+      const shot = measurePhoton(range);
+      photonDamage.push({ range, damage: shot.damage, reason: shot.reason });
     }
   }
   const shields: ShieldSample[] = [];
   for (const bearing16 of BEARINGS) shields.push(measureShield(ship.turnHull, bearing16));
   const firepower: FirepowerSample[] = [];
-  for (const speed of FIREPOWER_SPEEDS) firepower.push(measureFirepower(ship.turnHull, speed));
+  for (const speedHundredths of firepowerSpeeds(ship)) {
+    firepower.push(measureFirepower(ship.turnHull, speedHundredths));
+  }
   return {
     id: ship.id,
     turnHull: ship.turnHull,
+    warp: ship.warp,
     turns,
+    hets,
     timeToSpeed,
     energy,
+    decel: measureDecel(ship.turnHull),
     phaser,
-    heavy: measureHeavy(ship.turnHull),
+    photonDamage,
+    heavy: measureHeavy(ship.turnHull, ship.heavy),
     shields,
     firepower,
   };
@@ -449,13 +540,6 @@ export function collectMetrics(): MetricsReport {
     rulesTurnTicks: RULES_TURN_TICKS,
     inputDelay: INPUT_DELAY,
     seed: SEED,
-    acceleration: motionSetup('F-CA').acceleration,
-    warp: motionSetup('F-CA').warp,
-    moveCostRulePoints: motionSetup('F-CA').moveCost100 / ENERGY_SCALE,
-    headingVerb: VERB_ORDER_HEADING,
-    energyVerb: VERB_SET_ENERGY,
-    fireVerb: VERB_FIRE,
     ships,
   };
 }
-

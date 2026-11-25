@@ -267,7 +267,7 @@ function rangeBandsOf(def: WeaponDef | undefined): number[] {
   if (!def) return [];
   const bands: number[] = [];
   for (const band of def.bands) {
-    const reach = band[0] ?? 0;
+    const reach = band.maxRange;
     if (reach > 0) bands.push(reach);
   }
   return bands;

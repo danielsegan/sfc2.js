@@ -572,6 +572,7 @@ function launchFighter(
   fields[H.classCode] = CLASS_FIGHTER;
   fields[H.turnMode] = TURN_TEST_A;
   fields[H.speedOverride] = -1;
+  fields[H.speedActual100] = -1;
   fields[H.acceleration] = type.speed;
   fields[H.crew] = 1;
   fields[H.lastHitFacing] = -1;

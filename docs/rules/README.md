@@ -7,6 +7,7 @@ Clean-room. These docs describe mechanisms in our own words. Synthetic fixtures 
 | Doc | Contents |
 | --- | --- |
 | [duel-slice.md](duel-slice.md) | Energy, movement, six shields, phasers, photons, damage, and where the real-time slice differs from tabletop play. |
+| [observed-reference.md](observed-reference.md) | Gameplay readings for turn rate, HET, acceleration, energy, phasers, photons, and disruptors, and how the sim scores them. |
 | [fleet-ai.md](fleet-ai.md) | Up to six ships, two sides, and the synthetic captain policy. |
 | [phase3-systems.md](phase3-systems.md) | ECM/ECCM and hit chance, heavy-weapon overload, tractor contest, and cloak timing. Synthetic numbers. |
 | [smallcraft.md](smallcraft.md) | Fighters launched from a parsed ftrlist, PF launch, mines, and boarding / hit-and-run. Synthetic numbers. |

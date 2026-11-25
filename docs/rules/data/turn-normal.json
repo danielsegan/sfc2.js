@@ -129,6 +129,11 @@
           "speedHundredths": 2950,
           "delayTicks": 44,
           "turnRate16PerTick": 49
+        },
+        {
+          "speedHundredths": 3050,
+          "delayTicks": 44,
+          "turnRate16PerTick": 44
         }
       ],
       "audit": {
@@ -182,43 +187,59 @@
     },
     "K-D7": {
       "status": "partial",
-      "note": "CE Tier-2 in-battle 10-90% capture 2026-11-24 (Wintermute, Klingon) at speed(s) 5, 10, 20, with per-hull measured normal delayTicks (30 Hz). Wall-clock rate fallback at speed(s) 5, 20 (TO VERIFY game-clock). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "note": "Synthetic D7-like normal turn tuned to later observed gameplay: about 5.0 / 8.6 / 8.4 / 9.3 / 9.4 deg/s at speeds 5 / 10 / 15 / 20 / 31, with the start delay held at 1.4 s (inside the observed 1.0–1.8 s). Rates are the nearest integer BAM/tick. An earlier curve was about 15% fast at speeds 10 and 15.",
       "verification": {
-        "turnRate16PerTick": "measured at speed(s) 5, 10, 20 (CE Tier-2 capture 2026-11-24); speeds <5 and >20 clamp to endpoints (TO VERIFY)",
-        "delayTicks": "measured single-run order_delay_s at speed(s) 5, 10, 20 (30 Hz); multi-run confirmation TO VERIFY"
+        "turnRate16PerTick": "observed gameplay, clean-room integer fit (see docs/rules/observed-reference.md)",
+        "delayTicks": "constant 42 ticks (1.4 s), inside the observed 1.0–1.8 s band"
       },
       "speedPoints": [
         {
           "speed": 5,
           "speedHundredths": 500,
-          "delayTicks": 69,
-          "turnRate16PerTick": 32
+          "delayTicks": 42,
+          "turnRate16PerTick": 30
         },
         {
           "speed": 10,
           "speedHundredths": 1000,
-          "delayTicks": 27,
-          "turnRate16PerTick": 61
+          "delayTicks": 42,
+          "turnRate16PerTick": 52
+        },
+        {
+          "speed": 15,
+          "speedHundredths": 1500,
+          "delayTicks": 42,
+          "turnRate16PerTick": 51
         },
         {
           "speed": 20,
           "speedHundredths": 2000,
-          "delayTicks": 54,
+          "delayTicks": 42,
+          "turnRate16PerTick": 56
+        },
+        {
+          "speed": 31,
+          "speedHundredths": 3100,
+          "delayTicks": 42,
           "turnRate16PerTick": 57
         }
       ],
       "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.normal.{5,10,20}.degPerSecond measured (10-90%); omitted speeds and delayS TO VERIFY",
+        "source": "observed gameplay, clean-room (docs/rules/observed-reference.md)",
+        "verification": "integer fit to the observed deg/s at speeds 5, 10, 15, 20, and 31; delay is not scored here",
         "expect": {
-          "turn.normal.5.degPerSecond": 5.34,
-          "turn.normal.10.degPerSecond": 10.1,
-          "turn.normal.20.degPerSecond": 9.44
+          "turn.normal.5.degPerSecond": 5.0,
+          "turn.normal.10.degPerSecond": 8.6,
+          "turn.normal.15.degPerSecond": 8.4,
+          "turn.normal.20.degPerSecond": 9.3,
+          "turn.normal.31.degPerSecond": 9.4
         },
         "tolerances": {
           "turn.normal.5.degPerSecond": 0.5,
           "turn.normal.10.degPerSecond": 0.5,
-          "turn.normal.20.degPerSecond": 0.5
+          "turn.normal.15.degPerSecond": 0.5,
+          "turn.normal.20.degPerSecond": 0.5,
+          "turn.normal.31.degPerSecond": 0.5
         }
       }
     },

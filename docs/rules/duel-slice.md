@@ -47,7 +47,7 @@ Draws, per rules-turn, placeholder costs in [`data/constants.json`](data/constan
 
 | Draw | Placeholder | Unpaid result |
 | --- | --- | --- |
-| Life support | 1 if requested | At the end of the rules-turn, lose 1 crew. Crew below `minCrew` sets `disabled`. |
+| Life support | 1.5 if requested | At the end of the rules-turn, lose 1 crew. Crew below `minCrew` sets `disabled`. |
 | Fire control | 1 if requested | `fire` returns `noFireControl`. |
 | Movement | `moveCost × speed` | Speed falls to what was paid (`overDraw`). |
 | Shields | general + specific, after caps | Reinforcement is the reduced plan. |
@@ -61,7 +61,7 @@ Each tick of the plan receives a Bresenham share so the shares sum to the commit
 
 Surplus generation refills the battery up to capacity. The placeholder lets the ship dump the whole battery in one rules-turn and refill it from one turn of surplus. Both the dump and the refill rate are unverified.
 
-A worked balance, all integers, generation 10: speed 4 at `moveCost` 1, life support, fire control, 2 general reinforcement, 2 weapon energy. Total 10. Status `ok`, `appliedValue` 10. Asking for speed 20 instead pays life support 1, fire control 1 and speed 8, and returns `overDraw` with `appliedValue` 10. Fixtures: `tests/set-energy.json`, `tests/life-support.json`.
+A worked balance, generation 11: speed 4 at `moveCost` 1, life support 1.5, fire control 1, 2 general reinforcement, 2 weapon energy. Total 10.5. Status `ok`, `appliedValue` 10.5. Asking for speed 20 on a plant of 10 instead pays life support 1.5, fire control 1 and speed 7.5 in the fixture checker (the sim's ordered speed is a whole number, so that case pays speed 7 and leaves the half point). Both return `overDraw`. Fixtures: `tests/set-energy.json`, `tests/life-support.json`. The observed systems load is speed + 2.5; see [observed-reference.md](observed-reference.md).
 
 ## 4. Movement and turn modes
 

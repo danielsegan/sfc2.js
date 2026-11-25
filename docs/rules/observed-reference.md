@@ -1,0 +1,60 @@
+# Observed duel reference
+
+Status: **clean-room notes from gameplay.** These are readings taken while watching the original Community Edition 2.670 on a private machine. They are not a copied table, and they are not a quote from a rulebook. The sim stores the integer fit in the synthetic rule files. A player's own install still supplies per-ship power and the turn-curve key.
+
+Confidence is H, M, or L. `duel:metrics` prints our value, this reference, the confidence, and pass or fail. A point passes within 10%. A delay band passes when our value sits inside the band. A weapon roll passes when the seeded sample sits inside the observed min and max.
+
+## Normal turn
+
+F-CA, confidence H. About 4.65 / 7.85 / 7.42 / 7.29 degrees per second at speeds 5 / 10 / 15 / 30.5. The pause after the order is about 1.0 to 1.9 seconds. The earlier F-CA curve already sat inside about 5% of those rates, so those points stayed. The high end now includes speed 30.5 so the 7.29 reading is on the curve.
+
+K-D7-like, confidence M. About 5.0 / 8.6 / 8.4 / 9.3 / 9.4 degrees per second at speeds 5 / 10 / 15 / 20 / 31. The pause is about 1.0 to 1.8 seconds. The previous D7-like curve was about 15% fast at speeds 10 and 15, so that row was refit. The start delay is a constant 1.4 seconds, inside the band.
+
+## High-energy turn
+
+F-CA, confidence H for the timing and M for the rate. The pause is about 5.5 to 5.8 seconds. The sweep is about 89 degrees. The rate is about 42 to 52 degrees per second, and about 48 at speed 31. The speed-15 step was raised so it sits inside that rate band.
+
+K-D7-like, confidence L to M. The rate is about 46 to 65 degrees per second and the sweep is about 82 to 98 degrees. The stored sweep stays the 90-degree baseline, which is inside that span. The speed-5 rate was nudged so it is inside the band.
+
+## Acceleration
+
+Confidence M. This was the large gap: ordered speed used to become actual speed on the next tick.
+
+From rest, an F-CA-like hull reaches speeds 5 / 10 / 15 / 20 / 25 / 30 in about 11 / 19 / 30 / 43 / 61 / 77 seconds. A K-D7-like hull does 10 / 18.5 / 28 / 41 / 57 / 76 seconds, and speed 31 at 79 seconds. Slowing down is about 1.1 speed per second.
+
+Ordered speed is still what the energy plan pays for. Actual speed, in hundredths, walks toward that order on the two hulls above. Other hulls keep the old per-order clamp and read their acceleration from the install as before. Movement energy stays 1 per ordered speed point.
+
+## Energy
+
+Confidence H. With life support and fire control on, the systems load is speed + 2.5. Power left for weapons is the plant minus that load.
+
+An F-CA-like plant is 34, so weapons see 31.5 / 21.5 / 11.5 / 1.0 at speeds 0 / 10 / 20 / 30.5. A K-D7-like plant is 39, so weapons see 36.5 / 26.5 / 16.5 / 5.5 at speeds 0 / 10 / 20 / 31. Life support is 1.5 and fire control is 1. A real install still computes plant output from its own power columns.
+
+## Phaser-1
+
+Confidence M on the edges and the maximum, L on the expected center. Each mount rolls once on the `combat` stream, uniform between the inclusive ends.
+
+| Range | Min–max | Expected |
+| --- | --- | --- |
+| 0–2 (0 grouped with 1–2) | 4–8 | 5 |
+| 3–4 | 3–6 | 4 |
+| 5 (the 4–5 group; 4 stays on the inner band) | 2–5 | 3.5 |
+| 6–10 | 0–4 | 2 |
+| 11–15 | 0–3 | 1 |
+| 16–30 | 0–2 | 0.4 |
+
+Nothing past about 30. The long-run mean of a uniform roll is the middle of the band, not the low-confidence expected center. The metric passes a sample that lands inside the band.
+
+## Photon
+
+Cost confidence H, time confidence M. Arming draws 2 per tube per rules-turn until 4 is stored, and the tube is not ready before two placeholder rules-turns (60 seconds). The observed arming time is about 66 seconds, two turns of about 33 seconds. 60 seconds is inside 10% of 66. After that, holding the tube costs 1 per rules-turn. Dropping the hold clears the charge at the end of the plan.
+
+Expected damage per tube: 8 inside range 2, 6.5 at 3, 5 at 4–5, 4 at 6–10, 2.5 at 11–12, and 1 at 13–30. A shared edge stays on the inner band. The sim stores those as hundredths of a point. Overload numbers are still the old placeholder.
+
+## Disruptor
+
+Cost confidence M, time confidence L. It draws 2 per rules-turn, spread across the turn, and is ready after one placeholder turn (30 seconds, inside 10% of about 33 seconds). The same 2 keeps it armed. Damage was not part of the reading, so a shot in range applies 0.
+
+## Shields
+
+Confidence M. Six facings of 60 degrees, with boundaries near ±30, ±90, and ±150 degrees. The sim already used that split, so the bins were left as they were.

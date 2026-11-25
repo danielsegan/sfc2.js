@@ -175,6 +175,10 @@ export function curvePoint(table: CurveTable, id: number, q: number): CurvePoint
 /** Speed the curve is keyed on: the cruise override when set, else the ordered speed. Hundredths. */
 export function speedKey(fields: readonly number[]): number {
   const override = fields[H.speedOverride] ?? -1;
+  const actual = fields[H.speedActual100] ?? -1;
+  if (override < 0 && actual >= 0) {
+    return actual < 0 ? 0 : actual > MAX_SPEED * 100 ? MAX_SPEED * 100 : actual;
+  }
   const speed = override >= 0 ? override : (fields[H.speed] ?? 0);
   const clamped = speed < 0 ? 0 : speed > MAX_SPEED ? MAX_SPEED : speed;
   return clamped * 100;

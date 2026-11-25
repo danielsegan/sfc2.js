@@ -68,13 +68,26 @@ export const H = {
   /** -1 means cruise uses ordered speed. A non-negative value replaces it for this tick. */
   speedOverride: 69,
   spottedBy: 70,
+  /**
+   * Actual speed in hundredths of a speed point.
+   * -1 means this hull has no ramp: cruise and the turn curve use ordered speed.
+   */
+  speedActual100: 71,
+  /** Bresenham remainder for the actual-speed ramp. */
+  speedRampAcc: 72,
+  /** Fractional ordered speed, 0–99 hundredths, added to `speed`. */
+  speedFrac100: 73,
+  /** Leftover shield hundredths when a hit is not a whole point. Six facings. */
+  shieldFrac0: 74,
+  /** Leftover penetrating hundredths, promoted to a chart point at 100. */
+  damageFrac: 80,
 } as const;
 
-export const HULL_FIELDS = 71;
+export const HULL_FIELDS = 81;
 
 /** One in-flight heavy weapon. Rows live on seeker entities, not on the ship. */
 export const SHOT = 'shot';
-export const SHOT_FIELDS = 9;
+export const SHOT_FIELDS = 10;
 
 export const S = {
   live: 0,
@@ -86,6 +99,8 @@ export const S = {
   prox: 6,
   mode: 7,
   seq: 8,
+  /** 1 = damage is whole points. 100 = damage is hundredths of a point. */
+  unit: 9,
 } as const;
 
 export const M = {
@@ -124,6 +139,7 @@ export interface ShotMem {
   prox: number;
   mode: number;
   seq: number;
+  unit: number;
 }
 
 export interface ShipSystems {
@@ -204,6 +220,7 @@ export function readShot(world: World, id: EntityId): ShotMem {
     prox: raw[S.prox]!,
     mode: raw[S.mode]!,
     seq: raw[S.seq]!,
+    unit: raw[S.unit]! > 0 ? raw[S.unit]! : 1,
   };
 }
 
@@ -218,6 +235,7 @@ export function writeShot(world: World, id: EntityId, shot: ShotMem): void {
     shot.prox,
     shot.mode,
     shot.seq,
+    shot.unit > 0 ? shot.unit : 1,
   ]);
 }
 
@@ -310,6 +328,8 @@ export interface ShipView {
   readonly tractorLink: number;
   readonly speedOverride: number;
   readonly spottedBy: number;
+  readonly speedActual100: number;
+  readonly speedFrac100: number;
 }
 
 export function shipView(snap: WorldSnap, index: number): ShipView {
@@ -401,6 +421,8 @@ export function shipView(snap: WorldSnap, index: number): ShipView {
     tractorLink: fields[H.tractorLink]!,
     speedOverride: fields[H.speedOverride]!,
     spottedBy: fields[H.spottedBy]!,
+    speedActual100: fields[H.speedActual100]!,
+    speedFrac100: fields[H.speedFrac100]!,
   };
 }
 
@@ -415,6 +437,7 @@ function shotFrom(raw: readonly number[], base: number): ShotMem {
     prox: raw[base + S.prox]!,
     mode: raw[base + S.mode]!,
     seq: raw[base + S.seq]!,
+    unit: raw[base + S.unit]! > 0 ? raw[base + S.unit]! : 1,
   };
 }
 

@@ -19,6 +19,7 @@ import type { CommandHandler, SimSystem, TickContext } from './sim.ts';
 import { ENTITY_KIND, type TableSpec, type World } from './world.ts';
 import { facingForRelative, relativeBearing, shotInArc, withinRange } from './arcs.ts';
 import { rulesDiv } from './rules-div.ts';
+import { createAccelRamp, stampAccel } from './accel.ts';
 import { stampCurve, usesCurve } from './turn-curve.ts';
 import type { ShipSetup } from './bind-shiplist.ts';
 import {
@@ -59,13 +60,14 @@ import {
   CLASS_FIGHTER,
   DAMAGE_CHART,
   DEFAULT_CREW_LOSS,
-  DEFAULT_FIRE_CONTROL,
-  DEFAULT_LIFE_SUPPORT,
+  DEFAULT_FC_HUNDREDTHS,
+  DEFAULT_LIFE_HUNDREDTHS,
   DEFAULT_REINFORCE_CAP,
   DEFAULT_REINFORCE_PER_ENERGY,
   DEFAULT_RULES_TURN_TICKS,
   ENERGY_SCALE,
   FALLBACK_YAW_PER_TICK,
+  INTERNAL_DISRUPTOR,
   INTERNAL_PHASER,
   INTERNAL_PHOTON,
   ROW_BRIDGE,
@@ -222,6 +224,8 @@ const PAY_WEAPON = 4;
 const FLAG_LIFE = 1;
 const FLAG_FC = 2;
 const FLAG_UNKNOWN = 4;
+/** The speed word is hundredths of a speed point, not whole points. */
+const FLAG_SPEED_100 = 8;
 
 export interface EnergyAsk {
   readonly slot: number;
@@ -234,6 +238,7 @@ export interface CombatOptions {
   readonly rulesTurnTicks?: number;
   readonly reinforceCapPerTurn?: number;
   readonly reinforcePerEnergy?: number;
+  /** Whole points. Omit to use the 1.5 / 1 defaults. */
   readonly lifeSupportCost?: number;
   readonly fireControlCost?: number;
   readonly crewLoss?: number;
@@ -243,8 +248,8 @@ interface ResolvedOptions {
   readonly rulesTurnTicks: number;
   readonly reinforceCapPerTurn: number;
   readonly reinforcePerEnergy: number;
-  readonly lifeSupportCost: number;
-  readonly fireControlCost: number;
+  readonly lifeSupportCost100: number;
+  readonly fireControlCost100: number;
   readonly crewLoss: number;
 }
 
@@ -277,8 +282,10 @@ function resolveOptions(options: CombatOptions | undefined): ResolvedOptions {
     rulesTurnTicks,
     reinforceCapPerTurn: options?.reinforceCapPerTurn ?? DEFAULT_REINFORCE_CAP,
     reinforcePerEnergy: options?.reinforcePerEnergy ?? DEFAULT_REINFORCE_PER_ENERGY,
-    lifeSupportCost: options?.lifeSupportCost ?? DEFAULT_LIFE_SUPPORT,
-    fireControlCost: options?.fireControlCost ?? DEFAULT_FIRE_CONTROL,
+    lifeSupportCost100:
+      options?.lifeSupportCost !== undefined ? scale(options.lifeSupportCost) : DEFAULT_LIFE_HUNDREDTHS,
+    fireControlCost100:
+      options?.fireControlCost !== undefined ? scale(options.fireControlCost) : DEFAULT_FC_HUNDREDTHS,
     crewLoss: options?.crewLoss ?? DEFAULT_CREW_LOSS,
   };
 }
@@ -399,12 +406,27 @@ function applyWeaponHit(
   fields: number[],
   facing: number,
   damage: number,
+  unit: number,
   ctx: TickContext,
 ): { absorbed: number; penetrating: number } {
-  const current = shieldAt(fields, facing);
-  const absorbed = current < damage ? current : damage;
-  setShieldAt(fields, facing, current - absorbed);
-  const penetrating = penetratingPoints(damage, absorbed);
+  const scaleUnit = unit > 1 ? unit : 1;
+  const fracAt = H.shieldFrac0 + facing;
+  const pooled = shieldAt(fields, facing) * scaleUnit + (scaleUnit > 1 ? fields[fracAt]! : 0);
+  const absorbed = pooled < damage ? pooled : damage;
+  const left = pooled - absorbed;
+  const whole = rulesDiv(left, scaleUnit);
+  setShieldAt(fields, facing, whole);
+  if (scaleUnit > 1) fields[fracAt] = left - whole * scaleUnit;
+  let wholePoints = rulesDiv(damage - absorbed, scaleUnit);
+  if (scaleUnit > 1) {
+    const rem = damage - absorbed - wholePoints * scaleUnit;
+    let bank = fields[H.damageFrac]! + rem;
+    const extra = rulesDiv(bank, scaleUnit);
+    wholePoints += extra;
+    bank -= extra * scaleUnit;
+    fields[H.damageFrac] = bank;
+  }
+  const penetrating = penetratingPoints(wholePoints, 0);
   fields[H.lastHitFacing] = facing;
   fields[H.lastHitDamage] = damage;
   fields[H.lastHitAbsorbed] = absorbed;
@@ -434,6 +456,8 @@ export interface EnergyOrder {
   fireControl?: boolean;
   unknownDraw?: boolean;
   speed?: number;
+  /** Hundredths of a speed point. When set, `speed` is ignored. */
+  speedHundredths?: number;
   general?: number;
   specific?: readonly number[];
   weapons?: readonly EnergyAsk[];
@@ -451,8 +475,10 @@ export function setEnergyPayload(entity: number, order: EnergyOrder): Uint8Array
   if (order.lifeSupport) flags |= FLAG_LIFE;
   if (order.fireControl) flags |= FLAG_FC;
   if (order.unknownDraw) flags |= FLAG_UNKNOWN;
+  const speedWord = order.speedHundredths !== undefined ? order.speedHundredths : (order.speed ?? 0);
+  if (order.speedHundredths !== undefined) flags |= FLAG_SPEED_100;
   const weapons = order.weapons ?? [];
-  const values = [entity, flags, order.speed ?? 0, order.general ?? 0, ...specific, weapons.length];
+  const values = [entity, flags, speedWord, order.general ?? 0, ...specific, weapons.length];
   for (const ask of weapons) values.push(ask.slot, ask.request, ask.mode);
   return words(values);
 }
@@ -478,10 +504,26 @@ function splitGeneral(points: number): number[] {
   return out;
 }
 
+function heavyFamily(internal: number): boolean {
+  return internal === INTERNAL_PHOTON || internal === INTERNAL_DISRUPTOR;
+}
+
 function armCostPoints(def: WeaponDef, mode: number): number {
   if (def.internal === INTERNAL_PHASER) return def.chargeCost;
-  if (def.internal === INTERNAL_PHOTON) return mode === MODE_OVERLOAD ? def.overloadArmCost : def.armCost;
+  if (def.internal === INTERNAL_PHOTON && mode === MODE_OVERLOAD) return def.overloadArmCost;
+  if (heavyFamily(def.internal)) return def.armCost;
   return 0;
+}
+
+function armTicksOf(def: WeaponDef, mode: number): number {
+  if (def.internal === INTERNAL_PHOTON && mode === MODE_OVERLOAD) return def.overloadArmTicks;
+  return def.armTicks;
+}
+
+function perTurnCap(def: WeaponDef, mode: number, cost: number): number {
+  const cap = def.internal === INTERNAL_PHOTON && mode === MODE_OVERLOAD ? def.overloadArmPerTurn : def.armPerTurn;
+  if (cap > 0) return scale(cap);
+  return scale(cost);
 }
 
 function capacitorMax(mounts: readonly MountMem[]): number {
@@ -516,12 +558,17 @@ function acceptedEnergy(mount: MountMem, def: WeaponDef, mode: number, request10
     const room = (need > 0 ? need : 0) + (capRoom > 0 ? capRoom : 0);
     return request100 < room ? request100 : room;
   }
-  if (def.internal === INTERNAL_PHOTON) {
+  if (heavyFamily(def.internal)) {
     const cost = armCostPoints(def, mode);
     if (cost <= 0) return 0;
     const need = scale(cost) - mount.charge100;
-    const room = need > 0 ? need : 0;
-    return request100 < room ? request100 : room;
+    const cap = perTurnCap(def, mode, cost);
+    const filling = need > 0 ? need : 0;
+    const room = filling < cap ? filling : cap;
+    const armed = mount.charge100 >= scale(cost) && mount.ticksCharging >= armTicksOf(def, mode);
+    const hold = armed && def.holdCost > 0 ? scale(def.holdCost) : 0;
+    const accept = room + hold;
+    return request100 < accept ? request100 : accept;
   }
   return 0;
 }
@@ -586,6 +633,7 @@ export function placeSetup(world: World, setup: ShipSetup, x: number, y: number,
   writeHull(world, id, fields);
   writeMounts(world, id, mounts);
   stampCurve(world, id, setup.classCode === CLASS_FIGHTER ? undefined : setup.turnHull);
+  stampAccel(world, id, setup.classCode === CLASS_FIGHTER ? undefined : setup.turnHull, setup.speed);
   return id;
 }
 
@@ -735,7 +783,7 @@ function applySetEnergy(world: World, cmd: Command, ctx: TickContext, options: R
       return;
     }
     const def = weaponDef(mounts[ask.slot]!.weaponId);
-    if (!def || (def.internal !== INTERNAL_PHASER && def.internal !== INTERNAL_PHOTON)) {
+    if (!def || (def.internal !== INTERNAL_PHASER && !heavyFamily(def.internal))) {
       emitRule(ctx, id as number, R.notInDuelSlice, -1);
       return;
     }
@@ -755,20 +803,26 @@ function applySetEnergy(world: World, cmd: Command, ctx: TickContext, options: R
     return;
   }
 
-  let speed = speedReq;
+  const speedHundredths = (flags & FLAG_SPEED_100) !== 0;
+  let speed = speedHundredths ? rulesDiv(speedReq, ENERGY_SCALE) : speedReq;
+  let speedFrac = speedHundredths ? speedReq - speed * ENERGY_SCALE : 0;
+  if (speedFrac < 0) speedFrac = 0;
   let immobileClamp = false;
   let accelClamp = false;
   const absentAccel = fields[H.acceleration]! < 0;
+  const ramps = fields[H.speedActual100]! >= 0;
   if (turnImmobile(fields[H.turnMode]!) === 1 || absentAccel) {
-    if (speed > 0) immobileClamp = true;
+    if (speed > 0 || speedFrac > 0) immobileClamp = true;
     speed = 0;
-  } else {
+    speedFrac = 0;
+  } else if (!ramps) {
     const accel = fields[H.acceleration]!;
     const current = fields[H.speed]!;
     const deltaSpeed = speed - current;
     const gap = deltaSpeed < 0 ? -deltaSpeed : deltaSpeed;
     if (gap > accel) {
       speed = current + (deltaSpeed > 0 ? accel : -accel);
+      speedFrac = 0;
       accelClamp = true;
     }
   }
@@ -818,10 +872,11 @@ function applySetEnergy(world: World, cmd: Command, ctx: TickContext, options: R
   const fcOn = (flags & FLAG_FC) !== 0;
   const moveCost100 = fields[H.moveCost100]!;
   // A non-positive move cost spends nothing. Never divide by it.
-  const movementAsked = moveCost100 > 0 ? moveCost100 * speed : 0;
+  const movementAsked =
+    moveCost100 > 0 ? moveCost100 * speed + rulesDiv(moveCost100 * speedFrac, ENERGY_SCALE) : 0;
   const desired = [
-    lifeOn ? scale(options.lifeSupportCost) : 0,
-    fcOn ? scale(options.fireControlCost) : 0,
+    lifeOn ? options.lifeSupportCost100 : 0,
+    fcOn ? options.fireControlCost100 : 0,
     movementAsked,
     scale(shieldPoints),
     weaponDesired,
@@ -840,6 +895,7 @@ function applySetEnergy(world: World, cmd: Command, ctx: TickContext, options: R
     let leftover = paid[PAY_MOVE]! - used;
     paid[PAY_MOVE] = used;
     speed = affordable;
+    speedFrac = 0;
     const shieldShort = desired[PAY_SHIELD]! - paid[PAY_SHIELD]!;
     const giveS = leftover < shieldShort ? leftover : shieldShort;
     paid[PAY_SHIELD]! += giveS;
@@ -899,6 +955,7 @@ function applySetEnergy(world: World, cmd: Command, ctx: TickContext, options: R
   else if (chargeCapped) reason = R.chargeCapped;
 
   fields[H.speed] = speed;
+  fields[H.speedFrac100] = speedFrac;
   fields[H.fcPaid] = fcOn && paid[PAY_FC]! >= desired[PAY_FC]! ? 1 : 0;
   fields[H.battery100] = battery;
   fields[H.capacitor100] = capacitor;
@@ -920,26 +977,49 @@ function mountReady(mount: MountMem, def: WeaponDef): boolean {
     if (def.chargeCost <= 0) return false;
     return mount.charge100 >= scale(def.chargeCost);
   }
-  if (def.internal === INTERNAL_PHOTON) {
+  if (heavyFamily(def.internal)) {
     const cost = armCostPoints(def, mount.mode);
-    const ticks = mount.mode === MODE_OVERLOAD ? def.overloadArmTicks : def.armTicks;
+    const ticks = armTicksOf(def, mount.mode);
     if (cost <= 0) return false;
     return mount.charge100 >= scale(cost) && mount.ticksCharging >= ticks;
   }
   return false;
 }
 
-function shotDamage(def: WeaponDef, mode: number, dx: number, dy: number): number | undefined {
+function shotDamage(
+  def: WeaponDef,
+  mode: number,
+  dx: number,
+  dy: number,
+  ctx: TickContext,
+): { amount: number; unit: number } | undefined {
   if (def.internal === INTERNAL_PHASER) {
     for (const band of def.bands) {
-      if (withinRange(dx, dy, band[0])) return band[1];
+      if (!withinRange(dx, dy, band.maxRange)) continue;
+      const unit = band.hundredths === 1 ? ENERGY_SCALE : 1;
+      if (band.roll === 1) {
+        const span = band.max - band.min + 1;
+        return { amount: band.min + ctx.rng.stream('combat').int(span), unit };
+      }
+      return { amount: band.damage, unit };
     }
     return undefined;
   }
-  if (!withinRange(dx, dy, def.maxRange)) return undefined;
-  if (mode === MODE_OVERLOAD) return def.overloadDamage;
-  if (mode === MODE_PROXIMITY) return def.proxDamage;
-  return def.directDamage;
+  if (def.internal === INTERNAL_PHOTON && mode === MODE_NORMAL && def.bands.length > 0) {
+    for (const band of def.bands) {
+      if (!withinRange(dx, dy, band.maxRange)) continue;
+      return { amount: band.damage, unit: band.hundredths === 1 ? ENERGY_SCALE : 1 };
+    }
+    return undefined;
+  }
+  if (def.internal === INTERNAL_PHOTON || def.internal === INTERNAL_DISRUPTOR) {
+    if (!withinRange(dx, dy, def.maxRange)) return undefined;
+    if (def.internal === INTERNAL_DISRUPTOR) return { amount: def.directDamage, unit: 1 };
+    if (mode === MODE_OVERLOAD) return { amount: def.overloadDamage, unit: 1 };
+    if (mode === MODE_PROXIMITY) return { amount: def.proxDamage, unit: 1 };
+    return { amount: def.directDamage, unit: 1 };
+  }
+  return undefined;
 }
 
 function applyFire(world: World, cmd: Command, ctx: TickContext): void {
@@ -971,7 +1051,7 @@ function applyFire(world: World, cmd: Command, ctx: TickContext): void {
   }
   const mount = mounts[slotIndex]!;
   const def = weaponDef(mount.weaponId);
-  if (!def || (def.internal !== INTERNAL_PHASER && def.internal !== INTERNAL_PHOTON)) {
+  if (!def || (def.internal !== INTERNAL_PHASER && !heavyFamily(def.internal))) {
     emitRule(ctx, id as number, R.notInDuelSlice, -1);
     return;
   }
@@ -1013,11 +1093,13 @@ function applyFire(world: World, cmd: Command, ctx: TickContext): void {
     emitRule(ctx, id as number, R.outOfArc, -1);
     return;
   }
-  const damage = shotDamage(def, mount.mode, dx, dy);
-  if (damage === undefined) {
+  const shotHit = shotDamage(def, mount.mode, dx, dy, ctx);
+  if (!shotHit) {
     emitRule(ctx, id as number, R.outOfRange, -1);
     return;
   }
+  const damage = shotHit.amount;
+  const unit = shotHit.unit;
   if (targetHidden(world, id, targetId, fields, target)) {
     emitRule(ctx, id as number, R.notDetected, -1);
     return;
@@ -1041,6 +1123,7 @@ function applyFire(world: World, cmd: Command, ctx: TickContext): void {
       prox: fx(def.proxRadius) as number,
       mode: mount.mode,
       seq,
+      unit,
     };
     writeShot(world, shotId, shot);
     writeMounts(world, id, mounts);
@@ -1060,7 +1143,7 @@ function applyFire(world: World, cmd: Command, ctx: TickContext): void {
     emitRule(ctx, id as number, R.ewMiss, 0);
     return;
   }
-  const hit = applyWeaponHit(victim, facing, damage, ctx);
+  const hit = applyWeaponHit(victim, facing, damage, unit, ctx);
   writeMounts(world, id, mounts);
   writeHull(world, id, fields);
   if (!same) writeHull(world, targetId, target);
@@ -1111,7 +1194,7 @@ function impactShot(world: World, shot: ShotMem, ctx: TickContext): void {
     return;
   }
   const facing = facingForRelative(incoming);
-  const hit = applyWeaponHit(target, facing, shot.damage, ctx);
+  const hit = applyWeaponHit(target, facing, shot.damage, shot.unit > 0 ? shot.unit : 1, ctx);
   writeHull(world, targetId, target);
   ctx.emit({ kind: EVENT_HIT, entity: targetId as number, a: facing, b: hit.absorbed });
 }
@@ -1161,7 +1244,7 @@ function drip(world: World, options: ResolvedOptions): void {
       const share = tickShare(mount.budget100, index, period);
       const def = weaponDef(mount.weaponId);
       if (!def) continue;
-      if (share > 0) mount.ticksCharging += 1;
+      if (mount.budget100 > 0) mount.ticksCharging += 1;
       const cost = armCostPoints(def, mount.mode);
       const cost100 = scale(cost);
       const room = cost100 - mount.charge100;
@@ -1178,6 +1261,19 @@ function drip(world: World, options: ResolvedOptions): void {
     fields[H.capacitor100] = capacitor;
     fields[H.planTickIndex] = index + 1;
     fields[H.planTicksLeft] = fields[H.planTicksLeft]! - 1;
+    if (fields[H.planTicksLeft] === 0) {
+      for (const mount of mounts) {
+        const def = weaponDef(mount.weaponId);
+        if (!def || def.holdCost <= 0 || !heavyFamily(def.internal)) continue;
+        const cost = armCostPoints(def, mount.mode);
+        const ticks = armTicksOf(def, mount.mode);
+        const armed = cost > 0 && mount.charge100 >= scale(cost) && mount.ticksCharging >= ticks;
+        if (armed && mount.budget100 < scale(def.holdCost)) {
+          mount.charge100 = 0;
+          mount.ticksCharging = 0;
+        }
+      }
+    }
     if (fields[H.planTicksLeft] === 0 && fields[H.lsUnpaid] === 1) {
       let crew = fields[H.crew]! - options.crewLoss;
       if (crew < 0) crew = 0;
@@ -1243,7 +1339,7 @@ export function createCombat(setups: readonly ShipSetup[], options?: CombatOptio
   const phase3 = createPhase3(resolved.rulesTurnTicks);
   return {
     tables: COMBAT_TABLES,
-    systems: [allocation, flight, ...phase3.systems],
+    systems: [allocation, flight, createAccelRamp(), ...phase3.systems],
     handlers: [...handlers, ...phase3.handlers],
   };
 }

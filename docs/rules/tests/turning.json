@@ -194,7 +194,7 @@
       "hull": "F-CA",
       "speedHundredths": 4000,
       "expect": {
-        "turnRate16PerTick": 49,
+        "turnRate16PerTick": 44,
         "delayTicks": 44
       }
     },
@@ -212,8 +212,8 @@
       "hull": "K-D7",
       "speedHundredths": 700,
       "expect": {
-        "turnRate16PerTick": 44,
-        "delayTicks": 52
+        "turnRate16PerTick": 39,
+        "delayTicks": 42
       }
     },
     {
@@ -222,7 +222,7 @@
       "speedHundredths": 3100,
       "expect": {
         "turnRate16PerTick": 57,
-        "delayTicks": 54
+        "delayTicks": 42
       }
     },
     {
@@ -230,8 +230,8 @@
       "hull": "K-D7",
       "speedHundredths": 1500,
       "expect": {
-        "turnRate16PerTick": 59,
-        "delayTicks": 41
+        "turnRate16PerTick": 51,
+        "delayTicks": 42
       }
     },
     {
@@ -239,8 +239,8 @@
       "hull": "K-D7",
       "speedHundredths": 0,
       "expect": {
-        "turnRate16PerTick": 32,
-        "delayTicks": 69
+        "turnRate16PerTick": 30,
+        "delayTicks": 42
       }
     },
     {
@@ -499,8 +499,8 @@
       "hull": "K-D7",
       "speedHundredths": 500,
       "expect": {
-        "turnRate16PerTick": 32,
-        "delayTicks": 69
+        "turnRate16PerTick": 30,
+        "delayTicks": 42
       }
     },
     {
@@ -508,8 +508,8 @@
       "hull": "K-D7",
       "speedHundredths": 1000,
       "expect": {
-        "turnRate16PerTick": 61,
-        "delayTicks": 27
+        "turnRate16PerTick": 52,
+        "delayTicks": 42
       }
     },
     {
@@ -517,8 +517,8 @@
       "hull": "K-D7",
       "speedHundredths": 2000,
       "expect": {
-        "turnRate16PerTick": 57,
-        "delayTicks": 54
+        "turnRate16PerTick": 56,
+        "delayTicks": 42
       }
     },
     {
