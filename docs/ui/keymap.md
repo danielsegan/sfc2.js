@@ -23,9 +23,12 @@ Mouse actions on the 3D view and the sensor map follow the original grammar, and
 | Alpha strike (fire the selection) | unbound (Weapons panel button) |
 | Toggle overload on the selected photon | `O` |
 | Toggle proximity | unbound; the Proximity button is shown when a selected mount is a photon |
-| Reinforce bow, forward starboard, aft starboard, stern, aft port, forward port | Numpad `8` `9` `3` `2` `1` `7` |
-| Clear that facing | Shift+the same numpad key |
-| Toggle general reinforcement | Numpad `5` |
+| Select bow, forward starboard, aft starboard, stern, aft port, forward port | Numpad `8` `9` `3` `2` `1` `7` |
+| Clear committed reinforcement on that facing | Shift+the same numpad key |
+| Select all shield facings, then none | Numpad `5` |
+| Reinforce the selected facings | `N` |
+| Reinforce all (general) | Shift+`N` |
+| Toggle general reinforcement | unbound |
 | Attack / Balanced / Run / Defense presets | `F1`–`F4` |
 | Next / previous hostile | `Tab` / Shift+`Tab` |
 | Nearest hostile | `T` |
@@ -50,7 +53,7 @@ Mouse actions on the 3D view and the sensor map follow the original grammar, and
 | Zoom the camera | Wheel on the view |
 | Zoom the sensor map | Wheel on the map |
 | Change desired speed | Wheel (`±1`), or click / drag the lower speed bar. Click and drag map the bar position to a whole speed in `0..speedMax`. Whether CE 2.670 uses the same integer snap on drag is **TO VERIFY**. |
-| Add one point of reinforcement | Left-click a shield arc. Shift-click clears it. |
+| Select a shield facing | Left-click an arc. Shift-click adds or removes that facing. Click the centre ship to select all, then none. Set the Reinforcement amount (integer energy points, step 1; the CE 2.670 slider detent is **TO VERIFY**) and click Reinforce or Reinforce all, or use `N` / Shift+`N`. Down / Minimal / Up are disabled until a shield-state verb exists (issue #145). |
 
 EW, tractor, cloak, fighter, mine, and boarding keys send the same sim verbs the captain uses. Reverse, erratic maneuvers, and drones still only report that they are not in this duel.
 

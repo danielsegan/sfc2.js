@@ -13,7 +13,9 @@ interface Recording {
   slots: number[];
   groups: number[][];
   group: number;
-  plan: { modes: number[] };
+  plan: { modes: number[]; specific: number[]; general: number };
+  facings: number[];
+  amount: number;
 }
 
 function hostRecording(opts?: { weapons?: Array<{ slotIndex: number; family: string }> }): Recording {
@@ -23,7 +25,9 @@ function hostRecording(opts?: { weapons?: Array<{ slotIndex: number; family: str
   const notes: string[] = [];
   const slots = [0];
   const groups: number[][] = [[0], [1], [], [], [], []];
-  const plan = { modes: [] as number[] };
+  const plan = { modes: [] as number[], specific: [] as number[], general: 0 };
+  const facings: number[] = [];
+  let amount = 1;
   const weapons = opts?.weapons ?? [];
   const match = {
     plan,
@@ -36,6 +40,12 @@ function hostRecording(opts?: { weapons?: Array<{ slotIndex: number; family: str
     setWeaponMode(slot: number, mode: number) {
       plan.modes[slot] = mode;
       modes.push({ slot, mode });
+    },
+    setFacing(facing: number, points: number) {
+      plan.specific[facing] = points;
+    },
+    setGeneral(points: number) {
+      plan.general = points;
     },
   } as unknown as DuelMatch;
   const host: CommandHost = {
@@ -68,12 +78,20 @@ function hostRecording(opts?: { weapons?: Array<{ slotIndex: number; family: str
     setInterfaceCollapsed(on) {
       host.interfaceCollapsed = on;
     },
+    getShieldSelection: () => facings,
+    setShieldSelection(next) {
+      facings.splice(0, facings.length, ...next);
+    },
+    getReinforceAmount: () => amount,
+    setReinforceAmount(points) {
+      amount = points;
+    },
     view: () =>
       weapons.length === 0
         ? null
         : ({ self: { weapons } } as unknown as ViewModel),
   };
-  return { host, dirs, fired, modes, notes, slots, groups, group: 0, plan };
+  return { host, dirs, fired, modes, notes, slots, groups, group: 0, plan, facings, amount };
 }
 
 describe('HET command path', () => {
@@ -157,5 +175,60 @@ describe('interface bar toggle', () => {
     expect(rec.host.interfaceCollapsed).toBe(true);
     runAction(rec.host, 'hud.toggleInterfaceBar');
     expect(rec.host.interfaceCollapsed).toBe(false);
+  });
+});
+
+describe('shield selection and reinforcement', () => {
+  it('selects a facing without committing points, then Reinforce writes setFacing', () => {
+    const rec = hostRecording();
+    rec.host.setReinforceAmount(4);
+    runAction(rec.host, 'shields.facing0');
+    expect(rec.facings).toEqual([0]);
+    expect(rec.plan.specific[0]).toBeUndefined();
+    runAction(rec.host, 'shields.reinforce');
+    expect(rec.plan.specific[0]).toBe(4);
+  });
+
+  it('notes when Reinforce has no facing selected', () => {
+    const rec = hostRecording();
+    rec.host.setReinforceAmount(3);
+    runAction(rec.host, 'shields.reinforce');
+    expect(rec.notes).toEqual(['Select a shield facing first.']);
+    expect(rec.plan.specific).toEqual([]);
+  });
+
+  it('commits the pending amount to every selected facing', () => {
+    const rec = hostRecording();
+    rec.host.setReinforceAmount(6);
+    rec.host.setShieldSelection([0, 3]);
+    runAction(rec.host, 'shields.reinforce');
+    expect(rec.plan.specific[0]).toBe(6);
+    expect(rec.plan.specific[3]).toBe(6);
+    expect(rec.plan.general).toBe(0);
+  });
+
+  it('toggles all facings, then none, with selectAll', () => {
+    const rec = hostRecording();
+    runAction(rec.host, 'shields.selectAll');
+    expect(rec.facings).toEqual([0, 1, 2, 3, 4, 5]);
+    runAction(rec.host, 'shields.selectAll');
+    expect(rec.facings).toEqual([]);
+  });
+
+  it('Reinforce All commits the pending amount through setGeneral', () => {
+    const rec = hostRecording();
+    rec.host.setReinforceAmount(5);
+    rec.host.setShieldSelection([]);
+    runAction(rec.host, 'shields.reinforceAll');
+    expect(rec.plan.general).toBe(5);
+    expect(rec.plan.specific).toEqual([]);
+  });
+
+  it('keeps the unbound general toggle as a 0 / 2 setGeneral flip', () => {
+    const rec = hostRecording();
+    runAction(rec.host, 'shields.general');
+    expect(rec.plan.general).toBe(2);
+    runAction(rec.host, 'shields.general');
+    expect(rec.plan.general).toBe(0);
   });
 });

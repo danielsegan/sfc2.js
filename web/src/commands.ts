@@ -7,6 +7,7 @@ import type { DuelMatch } from '../../engine/duel/match.ts';
 import { MODE_NORMAL, MODE_OVERLOAD, MODE_PROXIMITY } from '../../engine/sim/rules-tables.ts';
 import type { ViewModel } from '../../engine/view/view-model.ts';
 import type { DuelScene } from './scene.ts';
+import { clampReinforceAmount, selectFacing, toggleAllFacings } from './shield-select.ts';
 import { assignSlotsToGroup, selectAllSlots, supportsProximity } from './weapon-select.ts';
 
 export interface CommandHost {
@@ -29,6 +30,10 @@ export interface CommandHost {
   setMapFull(on: boolean): void;
   interfaceCollapsed: boolean;
   setInterfaceCollapsed(on: boolean): void;
+  getShieldSelection(): readonly number[];
+  setShieldSelection(facings: readonly number[]): void;
+  getReinforceAmount(): number;
+  setReinforceAmount(points: number): void;
   view(): ViewModel | null;
 }
 
@@ -76,7 +81,10 @@ export function runAction(host: CommandHost, id: string): void {
   else if (id.startsWith('weapons.assign')) assignGroup(host, Number(id.slice('weapons.assign'.length)) - 1);
   else if (id.startsWith('weapons.group')) selectGroup(host, Number(id.slice('weapons.group'.length)) - 1);
   else if (id.startsWith('shields.clear')) host.match.setFacing(Number(id.slice('shields.clear'.length)), 0);
-  else if (id.startsWith('shields.facing')) reinforce(host, Number(id.slice('shields.facing'.length)));
+  else if (id.startsWith('shields.facing')) selectShieldFacing(host, Number(id.slice('shields.facing'.length)));
+  else if (id === 'shields.selectAll') host.setShieldSelection(toggleAllFacings(host.getShieldSelection()));
+  else if (id === 'shields.reinforce') reinforceSelected(host);
+  else if (id === 'shields.reinforceAll') reinforceAll(host);
   else if (id === 'shields.general') {
     host.match.setGeneral(host.match.plan.general > 0 ? 0 : 2);
   } else if (id === 'target.next') cycleTarget(host, 1, 'hostile');
@@ -136,9 +144,22 @@ function selectedSlots(host: CommandHost): number[] {
   return slots.length > 0 ? [...slots] : [host.getSlot()];
 }
 
-function reinforce(host: CommandHost, facing: number): void {
-  const current = host.match.plan.specific[facing] ?? 0;
-  host.match.setFacing(facing, current + 1);
+function selectShieldFacing(host: CommandHost, facing: number): void {
+  host.setShieldSelection(selectFacing(host.getShieldSelection(), facing, false));
+}
+
+function reinforceSelected(host: CommandHost): void {
+  const facings = host.getShieldSelection();
+  if (facings.length === 0) {
+    host.note('Select a shield facing first.');
+    return;
+  }
+  const amount = clampReinforceAmount(host.getReinforceAmount());
+  for (const facing of facings) host.match.setFacing(facing, amount);
+}
+
+function reinforceAll(host: CommandHost): void {
+  host.match.setGeneral(clampReinforceAmount(host.getReinforceAmount()));
 }
 
 function clampEw(points: number): number {
