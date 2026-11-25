@@ -1,0 +1,32 @@
+{
+  "status": "observed",
+  "note": "Actual speed moves toward the ordered speed. Ordered speed is what movement energy pays for (1 per speed point, including a half point). These bands are a clean-room fit to observed spool-up times. Each band adds gainHundredths once per overTicks, and the fraction divides the band width exactly, so the boundary is reached on a tick with a zero remainder. Deceleration is 110 hundredths per 30 ticks (1.1 speed per second) for both hulls. A hull that is not listed keeps the per-order acceleration clamp and has no separate actual speed.",
+  "decelHundredths": 110,
+  "decelTicks": 30,
+  "hullOrder": ["F-CA", "K-D7"],
+  "hulls": {
+    "F-CA": {
+      "note": "From rest, about 11 / 19 / 30 / 43 / 61 / 77 s to speeds 5 / 10 / 15 / 20 / 25 / 30.",
+      "bands": [
+        { "upToHundredths": 500, "gainHundredths": 50, "overTicks": 33 },
+        { "upToHundredths": 1000, "gainHundredths": 25, "overTicks": 12 },
+        { "upToHundredths": 1500, "gainHundredths": 50, "overTicks": 33 },
+        { "upToHundredths": 2000, "gainHundredths": 50, "overTicks": 39 },
+        { "upToHundredths": 2500, "gainHundredths": 25, "overTicks": 27 },
+        { "upToHundredths": 3000, "gainHundredths": 25, "overTicks": 24 }
+      ]
+    },
+    "K-D7": {
+      "note": "From rest, about 10 / 18.5 / 28 / 41 / 57 / 76 s to speeds 5 / 10 / 15 / 20 / 25 / 30, and 31 at 79 s.",
+      "bands": [
+        { "upToHundredths": 500, "gainHundredths": 5, "overTicks": 3 },
+        { "upToHundredths": 1000, "gainHundredths": 100, "overTicks": 51 },
+        { "upToHundredths": 1500, "gainHundredths": 100, "overTicks": 57 },
+        { "upToHundredths": 2000, "gainHundredths": 50, "overTicks": 39 },
+        { "upToHundredths": 2500, "gainHundredths": 25, "overTicks": 24 },
+        { "upToHundredths": 3000, "gainHundredths": 50, "overTicks": 57 },
+        { "upToHundredths": 3100, "gainHundredths": 10, "overTicks": 9 }
+      ]
+    }
+  }
+}

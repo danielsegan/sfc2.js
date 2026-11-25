@@ -8,7 +8,7 @@
       "className": "test-ca-01",
       "race": "test-empire-a",
       "class": "ship",
-      "power": { "warp": 10, "impulse": 0, "apr": 0, "battery": 0, "batteryCapacity": 0 },
+      "power": { "warp": 11, "impulse": 0, "apr": 0, "battery": 0, "batteryCapacity": 0 },
       "movement": { "moveCost": 1, "turnMode": "TEST-C", "acceleration": 100, "speed": 0, "heading16": 0 },
       "shields": [0, 0, 0, 0, 0, 0],
       "shieldsMax": [20, 20, 20, 20, 20, 20],
@@ -109,16 +109,16 @@
   ],
   "expect": {
     "results": [
-      { "token": 1, "status": "applied", "reason": "ok", "appliedValue": 10 },
+      { "token": 1, "status": "applied", "reason": "ok", "appliedValue": 10.5 },
       { "token": 2, "status": "clamped", "reason": "overDraw", "appliedValue": 10 },
       { "token": 3, "status": "clamped", "reason": "speedClamped", "appliedValue": 1 },
-      { "token": 4, "status": "clamped", "reason": "immobile", "appliedValue": 1 },
+      { "token": 4, "status": "clamped", "reason": "immobile", "appliedValue": 1.5 },
       { "token": 5, "status": "clamped", "reason": "chargeCapped", "appliedValue": 4 },
       { "token": 6, "status": "clamped", "reason": "reinforceCapped", "appliedValue": 8 }
     ],
     "state": {
       "test-empire-a:test-ca-01": { "speed": 4, "fcPaid": true },
-      "test-empire-b:test-ff-02": { "speed": 8 },
+      "test-empire-b:test-ff-02": { "speed": 7.5 },
       "test-empire-a:test-dd-03": { "speed": 1 },
       "test-empire-b:test-bs-04": { "speed": 0 },
       "test-empire-a:test-ca-05": { "weapons": [{ "slotIndex": 0, "charge": 0 }] }

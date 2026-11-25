@@ -32,7 +32,33 @@
         "reloadCounted": true,
         "weaponId": "test-drone"
       },
-      "Phot": { "internal": "photon", "weaponId": "photon", "verification": "to-verify" },
+      "Phot": {
+        "internal": "photon",
+        "weaponId": "photon",
+        "verification": "observed-reference",
+        "armCost": 4,
+        "armPerTurn": 2,
+        "armTicks": 1800,
+        "holdCost": 1,
+        "directDamage": 8,
+        "overloadArmCost": 8,
+        "overloadArmPerTurn": 4,
+        "overloadArmTicks": 1800,
+        "overloadDamage": 12,
+        "proxRadius": 2,
+        "proxDamage": 4,
+        "projectileSpeed": 2,
+        "maxRange": 30,
+        "note": "Normal arming accepts 2 per rules-turn until 4 is stored, and the mount is not ready before 1800 ticks (two 30 s placeholder turns, inside 10% of the observed 66 s). Hold is 1 per rules-turn after that. Overload numbers are still unverified. Normal damage is hundredths of a point by range; a shared edge stays on the inner band.",
+        "rangeBands": [
+          { "maxRange": 2, "damageHundredths": 800 },
+          { "maxRange": 3, "damageHundredths": 650 },
+          { "maxRange": 5, "damageHundredths": 500 },
+          { "maxRange": 10, "damageHundredths": 400 },
+          { "maxRange": 12, "damageHundredths": 250 },
+          { "maxRange": 30, "damageHundredths": 100 }
+        ]
+      },
       "Dis1": { "internal": "disruptor", "weaponId": "disruptor-1", "verification": "to-verify" },
       "Dis2": { "internal": "disruptor", "weaponId": "disruptor-2", "verification": "to-verify" },
       "Dis3": { "internal": "disruptor", "weaponId": "disruptor-3", "verification": "to-verify" },
@@ -58,7 +84,22 @@
       "PPD": { "internal": "ppd", "weaponId": "ppd", "verification": "to-verify" },
       "ADD6": { "internal": "add", "weaponId": "add-6", "reloadCounted": true, "omnidirectional": true, "verification": "to-verify", "note": "Observed Arc values are only 1. Whether that number is reloads or rack capacity is TO VERIFY." },
       "ADD12": { "internal": "add", "weaponId": "add-12", "reloadCounted": true, "omnidirectional": true, "verification": "to-verify", "note": "Observed Arc values are only 1. Whether that number is reloads or rack capacity is TO VERIFY." },
-      "Ph1": { "internal": "phaser", "weaponId": "phaser-1", "verification": "to-verify" },
+      "Ph1": {
+        "internal": "phaser",
+        "weaponId": "phaser-1",
+        "verification": "observed-reference",
+        "chargeCost": 4,
+        "holdCost": 0,
+        "note": "One seeded combat-stream roll per shot, uniform on the inclusive integer band. Range 0 is grouped with 1–2. A shared edge stays on the inner band, so 4 is still 3–6 and 5 is 2–5. Nothing past 30.",
+        "rangeBands": [
+          { "maxRange": 2, "damageMin": 4, "damageMax": 8 },
+          { "maxRange": 4, "damageMin": 3, "damageMax": 6 },
+          { "maxRange": 5, "damageMin": 2, "damageMax": 5 },
+          { "maxRange": 10, "damageMin": 0, "damageMax": 4 },
+          { "maxRange": 15, "damageMin": 0, "damageMax": 3 },
+          { "maxRange": 30, "damageMin": 0, "damageMax": 2 }
+        ]
+      },
       "Ph2": { "internal": "phaser", "weaponId": "phaser-2", "verification": "to-verify" },
       "Ph3": { "internal": "phaser", "weaponId": "phaser-3", "verification": "to-verify" },
       "Ph4": { "internal": "phaser", "weaponId": "phaser-4", "verification": "to-verify" },
@@ -266,6 +307,16 @@
       "proxDamage": 4,
       "projectileSpeed": 2,
       "maxRange": 30
+    },
+    "disruptor": {
+      "armCost": 2,
+      "armPerTurn": 2,
+      "armTicks": 900,
+      "holdCost": 2,
+      "directDamage": 0,
+      "maxRange": 30,
+      "projectileSpeed": 0,
+      "note": "2 energy per rules-turn, drawn across the turn by the drip. Ready after one 30 s placeholder turn (inside 10% of about 33 s). The same 2 keeps it armed. Damage was not in the observation, so a shot in range applies 0."
     }
   },
   "reloadCountTokens": ["1", "2", "3"],

@@ -30,20 +30,24 @@ export function createCruise(rulesTurnTicks: number): SimSystem {
         const fields = readHull(world, id);
         if (fields[H.classCode] === 0 || fields[H.destroyed] === 1) continue;
         const override = fields[H.speedOverride]!;
+        const actual = fields[H.speedActual100] ?? -1;
+        const useActual = override < 0 && actual >= 0;
         const speed = override >= 0 ? override : fields[H.speed]!;
-        if (speed <= 0) {
+        const speed100 = useActual ? actual : speed * 100;
+        if (speed100 <= 0) {
           world.setFields(id, CRUISE, [0]);
           continue;
         }
         const carried = world.getFields(id, CRUISE)[0]!;
-        const addend = speed * FX_ONE;
+        const denom = useActual ? rulesTurnTicks * 100 : rulesTurnTicks;
+        const addend = useActual ? speed100 * FX_ONE : speed * FX_ONE;
         const sum = carried + addend;
         if (sum > IDIV_MAX || sum < 0) {
           world.setFields(id, CRUISE, [0]);
           continue;
         }
-        const step = rulesDiv(sum, rulesTurnTicks);
-        const rest = sum - step * rulesTurnTicks;
+        const step = rulesDiv(sum, denom);
+        const rest = sum - step * denom;
         world.setFields(id, CRUISE, [rest]);
         if (step === 0) continue;
         const mag = fxRaw(step);

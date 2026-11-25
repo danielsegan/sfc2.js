@@ -366,7 +366,7 @@ test("table expect scores F-CA and K-D7 normal turns when the run omits expect",
         spawnKey: "Klingon:K-D7",
         turn: "normal",
         target_speed: 7,
-        mean_rate_deg_per_game_s_10_90: 7.24,
+        mean_rate_deg_per_game_s_10_90: 6.44,
         order_delay_s: 1.45,
       },
       {
@@ -517,7 +517,7 @@ test("table expect covers Tier-2 non-Fed hulls and skips omitted cells", () => {
     method: "test",
     heading_convention: "degrees, negative = port",
     runs: [
-      { label: "kd7-n10", spawnKey: "Klingon:K-D7", turn: "normal", target_speed: 10, mean_rate_deg_per_game_s_10_90: 10.1, order_delay_s: 0.9 },
+      { label: "kd7-n10", spawnKey: "Klingon:K-D7", turn: "normal", target_speed: 10, mean_rate_deg_per_game_s_10_90: 8.6, order_delay_s: 0.9 },
       { label: "kd7-h31", spawnKey: "Klingon:K-D7", turn: "het", target_speed: 31, total_turn_deg: -97.3, mean_rate_deg_per_game_s_10_90: 53.62, order_delay_s: 5.44 },
       { label: "rsna-n5", spawnKey: "Romulan:R-SNA", turn: "normal", target_speed: 5, mean_rate_deg_per_game_s_10_90: 7.67 },
       { label: "rbh-h15", spawnKey: "Romulan:R-BH", turn: "het", target_speed: 15, total_turn_deg: -90.0, mean_rate_deg_per_game_s_10_90: 50.0, order_delay_s: 5.7 },

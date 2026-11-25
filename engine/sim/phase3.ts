@@ -28,6 +28,7 @@ import {
   EW_HIT_DENOM,
   EW_HIT_FLOOR,
   EW_PENALTY_PER_POINT,
+  INTERNAL_DISRUPTOR,
   INTERNAL_PHASER,
   INTERNAL_PHOTON,
   MODE_NORMAL,
@@ -250,6 +251,7 @@ export function targetHidden(world: World, searcherId: EntityId, targetId: Entit
 export function mountEnergyCost(def: WeaponDef, mode: number): number {
   if (def.internal === INTERNAL_PHASER) return def.chargeCost;
   if (def.internal === INTERNAL_PHOTON) return mode === MODE_OVERLOAD ? def.overloadArmCost : def.armCost;
+  if (def.internal === INTERNAL_DISRUPTOR) return def.armCost;
   return 0;
 }
 
@@ -260,6 +262,7 @@ export function stampPhase3(fields: number[], setup: ShipSetup): void {
   fields[H.cloakCost] = setup.cloakCost ?? 0;
   fields[H.tractors] = setup.tractors ?? 0;
   fields[H.speedOverride] = -1;
+  fields[H.speedActual100] = -1;
 }
 
 export function setEwPayload(entity: number, ecm: number, eccm: number): Uint8Array {

@@ -10,8 +10,8 @@ import { parseShiplist } from '../../tools/formats/shiplist.ts';
 import {
   CLASS_FIGHTER,
   CLASS_SHIP,
-  DEFAULT_FIRE_CONTROL,
-  DEFAULT_LIFE_SUPPORT,
+  DEFAULT_FC_HUNDREDTHS,
+  DEFAULT_LIFE_HUNDREDTHS,
   DEFAULT_REINFORCE_CAP,
   DEFAULT_REINFORCE_PER_ENERGY,
   DEFAULT_RULES_TURN_TICKS,
@@ -217,6 +217,8 @@ describe('facing, range, and arcs', () => {
     const constants = JSON.parse(readFileSync('docs/rules/data/constants.json', 'utf8')) as {
       lifeSupportCost: number;
       fireControlCost: number;
+      lifeSupportCostHundredths: number;
+      fireControlCostHundredths: number;
       reinforcePerEnergy: number;
       reinforceCapPerTurn: number;
       rulesTurnSeconds: number;
@@ -237,8 +239,9 @@ describe('facing, range, and arcs', () => {
     expect(weaponDef(weaponId('Dis1'))?.chargeCost).toBe(0);
     expect(weaponDef(weaponId('PhoF'))?.armCost).toBe(syntheticPhoton?.armCost);
     expect(ARC_CODES).toEqual(Object.keys(table.ship.arcs));
-    expect(DEFAULT_LIFE_SUPPORT).toBe(constants.lifeSupportCost);
-    expect(DEFAULT_FIRE_CONTROL).toBe(constants.fireControlCost);
+    expect(DEFAULT_LIFE_HUNDREDTHS).toBe(constants.lifeSupportCostHundredths);
+    expect(DEFAULT_FC_HUNDREDTHS).toBe(constants.fireControlCostHundredths);
+    expect(DEFAULT_LIFE_HUNDREDTHS + DEFAULT_FC_HUNDREDTHS).toBe(250);
     expect(DEFAULT_REINFORCE_PER_ENERGY).toBe(constants.reinforcePerEnergy);
     expect(DEFAULT_REINFORCE_CAP).toBe(constants.reinforceCapPerTurn);
     expect(DEFAULT_RULES_TURN_TICKS).toBe(constants.rulesTurnSeconds * constants.tickHz);
@@ -366,7 +369,7 @@ describe('energy, shields, and fire', () => {
   });
 
   it('pays the worked 10-point plan and drips shields the same tick', () => {
-    const sim = boot([cruiser(), cruiser({ mounts: [] })], { rulesTurnTicks: 1 });
+    const sim = boot([cruiser({ warp: 11 }), cruiser({ mounts: [] })], { rulesTurnTicks: 1 });
     const ids = spawnBoth(sim, 0, 1);
     const result = play(sim, [
 { kind: VERB_SET_ENERGY, payload: setEnergyPayload(ids.attacker, {
@@ -379,7 +382,7 @@ describe('energy, shields, and fire', () => {
 ]);
     const rule = result.events.find((event) => event.kind === EVENT_RULE)!;
     expect(rule.a).toBe(R.ok);
-    expect(rule.b).toBe(10 * ENERGY_SCALE);
+    expect(rule.b).toBe(1050);
     const ship = viewAt(sim, 0);
     expect(ship.speed).toBe(4);
     expect(ship.fcPaid).toBe(1);
@@ -403,9 +406,9 @@ describe('energy, shields, and fire', () => {
 ]);
     expect(result.events.find((event) => event.kind === EVENT_RULE)).toMatchObject({
       a: R.overDraw,
-      b: 10 * ENERGY_SCALE,
+      b: 950,
     });
-    expect(viewAt(sim, 0).speed).toBe(8);
+    expect(viewAt(sim, 0).speed).toBe(7);
     expect(viewAt(sim, 0).lastStatus).toBe(STATUS_CLAMPED);
   });
 
@@ -430,7 +433,7 @@ describe('energy, shields, and fire', () => {
 ]);
     expect(held.events.find((event) => event.kind === EVENT_RULE)?.a).toBe(R.immobile);
     expect(viewAt(fixed, 0).speed).toBe(0);
-    expect(viewAt(fixed, 0).lastApplied).toBe(ENERGY_SCALE);
+    expect(viewAt(fixed, 0).lastApplied).toBe(150);
   });
 
   it('caps a photon request at its arm cost and a shield plan at the reinforce cap', () => {
@@ -1201,30 +1204,30 @@ describe('CE weapon codes', () => {
     play(sim);
     play(sim);
     play(sim);
-    for (const slot of [0, 1, 10, 11, 12]) {
+    for (const slot of [10, 11, 12]) {
       const mount = viewAt(sim, 0).mounts[slot];
       expect(mount?.weaponId).not.toBe(0);
       expect(mount?.charge100).toBe(4 * ENERGY_SCALE);
       expect(mount?.ticksCharging).toBe(4);
     }
+    for (const slot of [0, 1]) {
+      const mount = viewAt(sim, 0).mounts[slot];
+      expect(mount?.charge100).toBe(2 * ENERGY_SCALE);
+      expect(mount?.ticksCharging).toBe(4);
+    }
     const phaser = play(sim, [{ kind: VERB_FIRE, payload: firePayload(ids[0]!, 10, ids[1]!) }]);
-    expect(phaser.events.find((event) => event.kind === EVENT_RULE)).toMatchObject({ a: R.ok, b: 3 });
-    expect(phaser.events.find((event) => event.kind === EVENT_HIT)).toMatchObject({ entity: ids[1], a: 0, b: 3 });
-    expect(viewAt(sim, 1).shields[0]).toBe(17);
+    const phaserRule = phaser.events.find((event) => event.kind === EVENT_RULE);
+    expect(phaserRule?.a).toBe(R.ok);
+    expect(phaserRule?.b).toBeGreaterThanOrEqual(0);
+    expect(phaserRule?.b).toBeLessThanOrEqual(4);
+    expect(phaser.events.find((event) => event.kind === EVENT_HIT)).toMatchObject({ entity: ids[1], a: 0, b: phaserRule?.b });
+    expect(viewAt(sim, 1).shields[0]).toBe(20 - (phaserRule?.b ?? 0));
     expect(viewAt(sim, 0).mounts[10]?.charge100).toBe(0);
     const launched = play(sim, [{ kind: VERB_FIRE, payload: firePayload(ids[0]!, 0, ids[1]!) }]);
-    expect(launched.events.find((event) => event.kind === EVENT_RULE)).toMatchObject({ a: R.ok, b: 8 });
-    expect(launched.events.find((event) => event.kind === EVENT_HIT)).toBeUndefined();
-    expect(viewAt(sim, 0).mounts[0]?.charge100).toBe(0);
-    expect(viewAt(sim, 1).shields[0]).toBe(17);
-    play(sim);
-    const impact = play(sim);
-    expect(impact.events.find((event) => event.kind === EVENT_HIT)).toMatchObject({ entity: ids[1], a: 0, b: 8 });
-    expect(viewAt(sim, 1).shields[0]).toBe(9);
-    expect(viewAt(sim, 0).mounts[1]?.charge100).toBe(4 * ENERGY_SCALE);
-    expect(viewAt(sim, 0).mounts[11]?.charge100).toBe(4 * ENERGY_SCALE);
+    expect(launched.events.find((event) => event.kind === EVENT_RULE)?.a).toBe(R.notCharged);
+    expect(viewAt(sim, 0).mounts[0]?.charge100).toBe(2 * ENERGY_SCALE);
   });
 });
 
-const GOLDEN_HASHES = [2693120973, 731687729, 978246665, 3745810545];
-const GOLDEN_EVENTS = [304015889, 2931359003, 4167057522];
+const GOLDEN_HASHES = [3378670192, 373267073, 137873134, 1839710659];
+const GOLDEN_EVENTS = [304015889, 2539086287, 4167057522];

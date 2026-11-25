@@ -65,6 +65,7 @@ export const INTERNAL_PHASER = 1;
 export const INTERNAL_PHOTON = 2;
 export const INTERNAL_DRONE = 3;
 export const INTERNAL_OTHER = 4;
+export const INTERNAL_DISRUPTOR = 5;
 
 export const MODE_NORMAL = 0;
 export const MODE_OVERLOAD = 1;
@@ -76,8 +77,19 @@ export const TICK_HZ = 30;
 export const RULES_TURN_SECONDS = 30;
 export const DEFAULT_RULES_TURN_TICKS = TICK_HZ * RULES_TURN_SECONDS;
 
-export const DEFAULT_LIFE_SUPPORT = 1;
-export const DEFAULT_FIRE_CONTROL = 1;
+/** Life support and fire control, in energy hundredths. 150 + 100 = 2.5 points. */
+export const DEFAULT_LIFE_HUNDREDTHS = tableInt(
+  constants.lifeSupportCostHundredths,
+  'lifeSupportCostHundredths',
+  0,
+  100000,
+);
+export const DEFAULT_FC_HUNDREDTHS = tableInt(
+  constants.fireControlCostHundredths,
+  'fireControlCostHundredths',
+  0,
+  100000,
+);
 
 function tableInt(value: number | undefined, name: string, min: number, max: number): number {
   if (value === undefined || !Number.isInteger(value) || value < min || value > max) throw new Error(name);
@@ -174,21 +186,31 @@ export const ARC_CODES: readonly string[] = [
   'RAL', 'RAR', 'LS', 'RS', 'LP', 'RP', 'LW', 'RW', 'LLR', 'RRR',
 ];
 
+interface BandJson {
+  maxRange?: number;
+  damage?: number;
+  damageMin?: number;
+  damageMax?: number;
+  damageHundredths?: number;
+}
+
 interface WeaponJson {
   internal?: string;
   chargeCost?: number;
   holdCost?: number;
   armCost?: number;
   armTicks?: number;
+  armPerTurn?: number;
   overloadArmCost?: number;
   overloadArmTicks?: number;
+  overloadArmPerTurn?: number;
   directDamage?: number;
   overloadDamage?: number;
   proxRadius?: number;
   proxDamage?: number;
   projectileSpeed?: number;
   maxRange?: number;
-  rangeBands?: readonly { maxRange?: number; damage?: number }[];
+  rangeBands?: readonly BandJson[];
   reloadCounted?: boolean;
   omnidirectional?: boolean;
 }
@@ -198,6 +220,18 @@ interface ArcJson {
   spans?: readonly { from16?: number; to16?: number }[];
 }
 
+export interface RangeBand {
+  readonly maxRange: number;
+  /** Fixed damage when `roll` is 0. Hundredths of a point when `hundredths` is 1. */
+  readonly damage: number;
+  readonly min: number;
+  readonly max: number;
+  /** 1 = draw min..max on the combat stream. */
+  readonly roll: number;
+  /** 1 = `damage` / `min` / `max` are hundredths of a point. */
+  readonly hundredths: number;
+}
+
 export interface WeaponDef {
   readonly code: string;
   readonly internal: number;
@@ -205,15 +239,18 @@ export interface WeaponDef {
   readonly holdCost: number;
   readonly armCost: number;
   readonly armTicks: number;
+  /** Energy accepted toward arming in one rules-turn. 0 means the whole remaining arm cost. */
+  readonly armPerTurn: number;
   readonly overloadArmCost: number;
   readonly overloadArmTicks: number;
+  readonly overloadArmPerTurn: number;
   readonly directDamage: number;
   readonly overloadDamage: number;
   readonly proxDamage: number;
   readonly proxRadius: number;
   readonly projectileSpeed: number;
   readonly maxRange: number;
-  readonly bands: readonly (readonly [number, number])[];
+  readonly bands: readonly RangeBand[];
   readonly omni: number;
 }
 
@@ -228,6 +265,7 @@ function internalId(name: string | undefined): number {
   if (name === 'phaser') return INTERNAL_PHASER;
   if (name === 'photon') return INTERNAL_PHOTON;
   if (name === 'drone') return INTERNAL_DRONE;
+  if (name === 'disruptor') return INTERNAL_DISRUPTOR;
   return INTERNAL_OTHER;
 }
 
@@ -238,6 +276,7 @@ function num(value: number | undefined): number {
 interface CostFallback {
   phaser?: WeaponJson;
   photon?: WeaponJson;
+  disruptor?: WeaponJson;
 }
 
 /**
@@ -252,6 +291,9 @@ function withCostFallback(row: WeaponJson, fallback: CostFallback | undefined): 
   if (row.internal === 'photon' && row.armCost == null && fallback?.photon) {
     return { ...fallback.photon, ...row };
   }
+  if (row.internal === 'disruptor' && row.armCost == null && fallback?.disruptor) {
+    return { ...fallback.disruptor, ...row };
+  }
   return row;
 }
 
@@ -264,9 +306,21 @@ function buildWeapons(): readonly WeaponDef[] {
     const source = ship[code] ?? fighter[code];
     if (!source) throw new Error(`missing weapon ${code}`);
     const row = withCostFallback(source, fallback);
-    const bands: (readonly [number, number])[] = [];
+    const bands: RangeBand[] = [];
     for (const band of row.rangeBands ?? []) {
-      bands.push([num(band.maxRange), num(band.damage)]);
+      const hundredths = band.damageHundredths !== undefined ? 1 : 0;
+      const fixed = hundredths === 1 ? num(band.damageHundredths) : num(band.damage);
+      const rolled = band.damageMin !== undefined || band.damageMax !== undefined;
+      const min = rolled ? num(band.damageMin) : fixed;
+      const max = rolled ? num(band.damageMax) : fixed;
+      bands.push({
+        maxRange: num(band.maxRange),
+        damage: rolled ? max : fixed,
+        min,
+        max,
+        roll: rolled && max > min ? 1 : 0,
+        hundredths,
+      });
     }
     const reload = row.reloadCounted === true || row.omnidirectional === true;
     const internal = internalId(row.internal);
@@ -274,6 +328,7 @@ function buildWeapons(): readonly WeaponDef[] {
     const armCost = num(row.armCost);
     if (internal === INTERNAL_PHASER && chargeCost <= 0) throw new Error(`phaser ${code} has no cost`);
     if (internal === INTERNAL_PHOTON && armCost <= 0) throw new Error(`photon ${code} has no cost`);
+    if (internal === INTERNAL_DISRUPTOR && armCost <= 0) throw new Error(`disruptor ${code} has no cost`);
     out.push({
       code,
       internal,
@@ -281,8 +336,10 @@ function buildWeapons(): readonly WeaponDef[] {
       holdCost: num(row.holdCost),
       armCost,
       armTicks: num(row.armTicks),
+      armPerTurn: num(row.armPerTurn),
       overloadArmCost: num(row.overloadArmCost),
       overloadArmTicks: num(row.overloadArmTicks),
+      overloadArmPerTurn: num(row.overloadArmPerTurn),
       directDamage: num(row.directDamage),
       overloadDamage: num(row.overloadDamage),
       proxDamage: num(row.proxDamage),

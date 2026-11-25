@@ -27,6 +27,8 @@ import {
   MODE_RETREAT,
 } from './allegiance.ts';
 import {
+  DEFAULT_FC_HUNDREDTHS,
+  DEFAULT_LIFE_HUNDREDTHS,
   ENERGY_SCALE,
   INTERNAL_PHASER,
   INTERNAL_PHOTON,
@@ -473,8 +475,8 @@ function energyOrder(
 ): { lifeSupport: boolean; fireControl: boolean; speed: number; general: number; specific: number[]; weapons: EnergyAsk[] } {
   const gen = hull[H.warp100]! + hull[H.impulse100]! + hull[H.apr100]!;
   let left = gen > 0 ? gen : 0;
-  const lifeCost = ENERGY_SCALE;
-  const fcCost = ENERGY_SCALE;
+  const lifeCost = DEFAULT_LIFE_HUNDREDTHS;
+  const fcCost = DEFAULT_FC_HUNDREDTHS;
   let life = false;
   let fireControl = false;
   if (left >= lifeCost) {
@@ -582,7 +584,7 @@ function outerRange(def: WeaponDef): number {
   if (def.internal === INTERNAL_PHOTON) return def.maxRange;
   let max = 0;
   for (const band of def.bands) {
-    if (band[0]! > max) max = band[0]!;
+    if (band.maxRange > max) max = band.maxRange;
   }
   return max;
 }
