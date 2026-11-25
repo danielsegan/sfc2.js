@@ -16,6 +16,8 @@ Do not commit, push, upload, or otherwise add original SFC2 game files, installe
 
 If you discover an original asset in the tree, do not spread it. Tell the Producer, and remove it from git history if it was ever committed.
 
+Two README screenshots, `docs/media/game-art-fed-vs-kli.png` and `docs/media/game-art-kli-vs-fed.png`, are approved illustrations of the engine pointed at a legal install. The models and art in those pictures are not included as game files, are not part of any release, and stay the property of their rights holders. The takedown policy below covers them.
+
 ## Clean-room rule
 
 This is a **clean-room** rewrite.
@@ -25,9 +27,15 @@ This is a **clean-room** rewrite.
 - Allowed references include: the original game running under Wine as a black box, official or Taldren-released materials (for example published manuals, Taldren-released C++ mission sources, and the Mission API as published), community format documentation such as sfcmod notes, and Star Fleet Battles rules used as a design reference.
 - When a format is undocumented, document what we observe in `docs/formats/` from clean-room analysis and community docs — not from decompiled source.
 
+## Takedown policy
+
+Rights holders, including Paramount/CBS and the successors to Taldren and Interplay, can contact the maintainer by opening a [GitHub issue](https://github.com/danielsegan/sfc2.js/issues) on this repository, or through the repo owner's GitHub profile at [github.com/danielsegan](https://github.com/danielsegan).
+
+On any such request we will promptly remove the two game-art README screenshots (`docs/media/game-art-fed-vs-kli.png` and `docs/media/game-art-kli-vs-fed.png`) and anything else the request identifies, or take the repository private.
+
 ## Going public
 
-The repository starts private. Making it public is a release-time decision. Before any public release or distribution, the project needs a takedown plan and a final legal review.
+The repository started private. On 2026-11-25 the owner decided to publish it. The takedown plan required before that release is done: it is the [Takedown policy](#takedown-policy) above.
 
 ## Questions
 
