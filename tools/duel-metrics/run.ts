@@ -33,6 +33,7 @@ import {
   DEFAULT_LIFE_HUNDREDTHS,
   ENERGY_SCALE,
   MODE_NORMAL,
+  MODE_OVERLOAD,
   weaponDef,
   weaponId,
 } from '../../engine/sim/rules-tables.ts';
@@ -44,6 +45,9 @@ import {
   FCA_HIGH_SPEED_HUNDREDTHS,
   HEADING_TARGET,
   INPUT_DELAY,
+  DISRUPTOR_CODE,
+  DISRUPTOR_OVERLOAD_RANGES,
+  DISRUPTOR_RANGES,
   PHASER_RANGES,
   PHOTON_CODE,
   PHOTON_RANGES,
@@ -56,6 +60,7 @@ import {
   armedPhotonSetup,
   motionSetup,
   powerSetup,
+  armedDisruptorSetup,
   weaponSetup,
   type ProbeShip,
 } from './ships.ts';
@@ -207,6 +212,8 @@ export interface ShipReport {
   readonly decel: DecelSample;
   readonly phaser: readonly PhaserProbe[];
   readonly photonDamage: readonly PhaserProbe[];
+  readonly disruptorDamage: readonly PhaserProbe[];
+  readonly disruptorOverload: readonly PhaserProbe[];
   readonly heavy: HeavySample;
   readonly shields: readonly ShieldSample[];
   readonly firepower: readonly FirepowerSample[];
@@ -337,6 +344,22 @@ function measurePhaser(turnHull: string, range: number): { damage: number | null
   const events = stepper.step();
   const rule = ruleOn(events, SELF);
   if (!rule) throw new Error(`no fire result at range ${range}`);
+  if (rule.reason !== 'ok') return { damage: null, reason: rule.reason };
+  return { damage: rule.applied, reason: rule.reason };
+}
+
+function measureDisruptor(rangeK: number, mode: number): { damage: number | null; reason: string } {
+  const stepper = boot(
+    [armedDisruptorSetup(mode), weaponSetup('K-D7')],
+    [
+      { x: 0, y: 0, heading: 0 },
+      { x: rangeK * 1000, y: 0, heading: 0 },
+    ],
+  );
+  stepper.session.issue(VERB_FIRE, firePayload(SELF, 0, TARGET));
+  const events = stepper.step();
+  const rule = ruleOn(events, SELF);
+  if (!rule) throw new Error(`no disruptor at range ${rangeK}k`);
   if (rule.reason !== 'ok') return { damage: null, reason: rule.reason };
   return { damage: rule.applied, reason: rule.reason };
 }
@@ -502,10 +525,22 @@ function measureShip(ship: ProbeShip): ShipReport {
     phaser.push({ range, damage: shot.damage, reason: shot.reason });
   }
   const photonDamage: PhaserProbe[] = [];
+  const disruptorDamage: PhaserProbe[] = [];
+  const disruptorOverload: PhaserProbe[] = [];
   if (ship.heavy === PHOTON_CODE) {
     for (const range of PHOTON_RANGES) {
       const shot = measurePhoton(range);
       photonDamage.push({ range, damage: shot.damage, reason: shot.reason });
+    }
+  }
+  if (ship.heavy === DISRUPTOR_CODE) {
+    for (const range of DISRUPTOR_RANGES) {
+      const shot = measureDisruptor(range, MODE_NORMAL);
+      disruptorDamage.push({ range, damage: shot.damage, reason: shot.reason });
+    }
+    for (const range of DISRUPTOR_OVERLOAD_RANGES) {
+      const shot = measureDisruptor(range, MODE_OVERLOAD);
+      disruptorOverload.push({ range, damage: shot.damage, reason: shot.reason });
     }
   }
   const shields: ShieldSample[] = [];
@@ -525,6 +560,8 @@ function measureShip(ship: ProbeShip): ShipReport {
     decel: measureDecel(ship.turnHull),
     phaser,
     photonDamage,
+    disruptorDamage,
+    disruptorOverload,
     heavy: measureHeavy(ship.turnHull, ship.heavy),
     shields,
     firepower,

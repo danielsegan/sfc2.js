@@ -251,7 +251,7 @@ export function targetHidden(world: World, searcherId: EntityId, targetId: Entit
 export function mountEnergyCost(def: WeaponDef, mode: number): number {
   if (def.internal === INTERNAL_PHASER) return def.chargeCost;
   if (def.internal === INTERNAL_PHOTON) return mode === MODE_OVERLOAD ? def.overloadArmCost : def.armCost;
-  if (def.internal === INTERNAL_DISRUPTOR) return def.armCost;
+  if (def.internal === INTERNAL_DISRUPTOR) return mode === MODE_OVERLOAD ? def.overloadArmCost : def.armCost;
   return 0;
 }
 
@@ -374,11 +374,15 @@ function applySetWeaponMode(world: World, cmd: Command, ctx: TickContext): void 
   }
   const mount = mounts[slot]!;
   const def = weaponDef(mount.weaponId);
-  if (!def || (def.internal !== INTERNAL_PHASER && def.internal !== INTERNAL_PHOTON)) {
+  if (!def || (def.internal !== INTERNAL_PHASER && def.internal !== INTERNAL_PHOTON && def.internal !== INTERNAL_DISRUPTOR)) {
     finish(world, id, fields, ctx, VERB_SET_WEAPON_MODE, NOT_SLICE, -1);
     return;
   }
   if (def.internal === INTERNAL_PHASER && mode !== MODE_NORMAL) {
+    finish(world, id, fields, ctx, VERB_SET_WEAPON_MODE, NOT_SLICE, -1);
+    return;
+  }
+  if (def.internal === INTERNAL_DISRUPTOR && mode === MODE_PROXIMITY) {
     finish(world, id, fields, ctx, VERB_SET_WEAPON_MODE, NOT_SLICE, -1);
     return;
   }

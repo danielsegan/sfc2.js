@@ -2,7 +2,7 @@
 
 `pnpm duel:metrics` runs the Phase 2 sim headlessly and prints a scenario definition, a markdown table, and the same report as JSON.
 
-The hulls are synthetic. **F-CA-like** and **K-D7-like** name the `F-CA` and `K-D7` rows of the integer turn curves. Their plants are 34 and 39. Actual speed ramps on those two hulls. `Ph1` rolls a damage band, `Phot` arms over two rules-turns, and the K-D7-like heavy mount is a disruptor. Nothing in this folder is a capture from the original game, and it does not read an install. The comparison numbers are the observed readings in [docs/rules/observed-reference.md](../../docs/rules/observed-reference.md).
+The hulls are synthetic. **F-CA-like** and **K-D7-like** name the `F-CA` and `K-D7` rows of the integer turn curves. Their plants are 34 and 39. Actual speed ramps on those two hulls. `Ph1` rolls a damage band, `Phot` arms over two rules-turns, and the K-D7-like heavy mount is a disruptor whose hit damage is fixed by range. Nothing in this folder is a capture from the original game, and it does not read an install. The comparison numbers are the observed readings in [docs/rules/observed-reference.md](../../docs/rules/observed-reference.md).
 
 A private VM can compare the table with numbers captured there. Every row carries a unit and the scenario block states the order, the positions, and the clock.
 

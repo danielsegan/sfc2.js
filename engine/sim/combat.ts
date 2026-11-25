@@ -18,6 +18,7 @@ import { divFloorI64byI32, mulU32ToI64 } from '../core/i64.ts';
 import type { CommandHandler, SimSystem, TickContext } from './sim.ts';
 import { ENTITY_KIND, type TableSpec, type World } from './world.ts';
 import { facingForRelative, relativeBearing, shotInArc, withinRange } from './arcs.ts';
+import { disruptorShot } from './disruptor.ts';
 import { rulesDiv } from './rules-div.ts';
 import { createAccelRamp, stampAccel } from './accel.ts';
 import { stampCurve, usesCurve } from './turn-curve.ts';
@@ -508,20 +509,24 @@ function heavyFamily(internal: number): boolean {
   return internal === INTERNAL_PHOTON || internal === INTERNAL_DISRUPTOR;
 }
 
+function overloadHeavy(def: WeaponDef, mode: number): boolean {
+  return mode === MODE_OVERLOAD && (def.internal === INTERNAL_PHOTON || def.internal === INTERNAL_DISRUPTOR);
+}
+
 function armCostPoints(def: WeaponDef, mode: number): number {
   if (def.internal === INTERNAL_PHASER) return def.chargeCost;
-  if (def.internal === INTERNAL_PHOTON && mode === MODE_OVERLOAD) return def.overloadArmCost;
+  if (overloadHeavy(def, mode)) return def.overloadArmCost;
   if (heavyFamily(def.internal)) return def.armCost;
   return 0;
 }
 
 function armTicksOf(def: WeaponDef, mode: number): number {
-  if (def.internal === INTERNAL_PHOTON && mode === MODE_OVERLOAD) return def.overloadArmTicks;
+  if (overloadHeavy(def, mode)) return def.overloadArmTicks;
   return def.armTicks;
 }
 
 function perTurnCap(def: WeaponDef, mode: number, cost: number): number {
-  const cap = def.internal === INTERNAL_PHOTON && mode === MODE_OVERLOAD ? def.overloadArmPerTurn : def.armPerTurn;
+  const cap = overloadHeavy(def, mode) ? def.overloadArmPerTurn : def.armPerTurn;
   if (cap > 0) return scale(cap);
   return scale(cost);
 }
@@ -1012,9 +1017,11 @@ function shotDamage(
     }
     return undefined;
   }
-  if (def.internal === INTERNAL_PHOTON || def.internal === INTERNAL_DISRUPTOR) {
+  if (def.internal === INTERNAL_DISRUPTOR) {
+    return disruptorShot(def, mode, dx, dy, ctx.rng.stream('combat'));
+  }
+  if (def.internal === INTERNAL_PHOTON) {
     if (!withinRange(dx, dy, def.maxRange)) return undefined;
-    if (def.internal === INTERNAL_DISRUPTOR) return { amount: def.directDamage, unit: 1 };
     if (mode === MODE_OVERLOAD) return { amount: def.overloadDamage, unit: 1 };
     if (mode === MODE_PROXIMITY) return { amount: def.proxDamage, unit: 1 };
     return { amount: def.directDamage, unit: 1 };
