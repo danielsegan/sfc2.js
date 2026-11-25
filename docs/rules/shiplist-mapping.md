@@ -58,6 +58,8 @@ interface FighterModel {
 }
 ```
 
+The duel target list, fleet roster, target plate, and field tags use that `displayName` when the row has a `Full Name`, `Name`, or `Display Name` column. An empty name falls back to the class token. Synthetic skirmish rows stay `Federation Fixture cruiser` and are not shiplist names.
+
 Absent ftrlist columns become `null`. A written zero stays 0. Fixed-point conversion uses 16.16 (`FX_SHIFT = 16`, one unit = one range unit) from [`docs/engine/sim-core.md`](../engine/sim-core.md). That file is not on `main` yet.
 
 The CE 2.670 shiplist has 15 `FTR` hull rows and no PF rows. `class: "pf"` stays on the model for a mod or a later file. Stock fighters are the lighter model, and the duel entry points reject them with `notAShip`.

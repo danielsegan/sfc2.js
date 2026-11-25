@@ -5,6 +5,7 @@
 import { preferredDirectoryPicker, type Vfs } from '@sfc2js/platform';
 import { Group } from 'three';
 import { classById, empireById, linePosition, syntheticRoster, syntheticSetup } from '../../engine/duel/catalog.ts';
+import { shipPlateName } from '../../engine/duel/roster.ts';
 import { SYNTHETIC_FIXTURE_PATH, type RosterEntry } from '../../engine/duel/fixture.ts';
 import { createFleetMatch, type DuelMatch, type FleetSlot } from '../../engine/duel/match.ts';
 import { groupFromMod, loadFleetHulls } from '../../engine/duel/meshes.ts';
@@ -674,7 +675,7 @@ function syncSpeedInput(): void {
 
 function candidateLabel(candidate: LoadedDuel['candidates'][number]): string {
   const hull = candidate.hullType.length > 0 ? ` (${candidate.hullType})` : '';
-  return `${candidate.race} ${candidate.className}${hull}`.trim();
+  return `${candidate.race} ${shipPlateName(candidate)}${hull}`.trim();
 }
 
 function rosterLabel(entry: RosterEntry): string {
@@ -1112,7 +1113,7 @@ async function startShiplist(
     seen[choice.side] = (seen[choice.side] ?? 0) + 1;
     setups.push(candidate.setup);
     nextRoster.push({
-      name: candidate.className.length > 0 ? candidate.className : candidate.spawnKey,
+      name: shipPlateName(candidate),
       empire: candidate.race.length > 0 ? candidate.race : 'Empire',
       accent: '#4F8FD6',
       modelFile: candidate.geometry,
