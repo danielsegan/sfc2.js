@@ -2,6 +2,7 @@ name: Rules fixtures
 
 on:
   push:
+    branches: [main]
   pull_request:
 
 jobs:

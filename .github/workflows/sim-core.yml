@@ -2,6 +2,7 @@ name: Sim core
 
 on:
   push:
+    branches: [main]
   pull_request:
 
 jobs:
