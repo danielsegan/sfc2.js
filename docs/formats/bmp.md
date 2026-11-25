@@ -132,3 +132,12 @@ Dispatch **Private BMP install check** (`.github/workflows/private-bmp-verify.ym
 5. Pair count: 1,072 paired glow maps, 1 orphan, 166 size mismatches, and whether the single `-i` / `-I` names are glow maps.
 6. Whether glow palettes are grayscale, and whether a visual pass wants the HD bloom cutoff moved from `0.15`.
 7. Mipmaps and anisotropy on a real GPU upload. Headless tests only check the texture flags.
+
+## Edge cases
+
+`parseBmp` returns a `DecodedBmp` for every byte string. An error diagnostic means `width`, `height`, and `rgba` are all empty: the decoder does not allocate a partial image. Width or height outside 1..8,192, including the int32 height extreme, is `badDimensions` and allocates nothing. A short pixel buffer is `truncated` and allocates nothing. `BI_RLE8`, `BI_RLE4`, `BI_BITFIELDS`, JPEG, and PNG compression are `unsupportedCompression`. A `Uint8Array` view is read from its own offset. Property coverage is [`tools/formats/fuzz.test.ts`](../../tools/formats/fuzz.test.ts). No original BMP is committed.
+
+## Unknown / unparsed
+
+- **Unknown.** The CE colour key (magenta, black, palette index 0, or none). The default stays `none`. Whether glow palettes are grayscale. Whether the single `-i` / `-I` names are glow maps. The fourth byte of an `RGBQUAD` (ignored). Full-set bit depth for non-glow BMPs.
+- **Unparsed on purpose.** RLE, bitfields, and embedded JPEG/PNG. No resample when a glow map and its base differ in size (`selfIllumSizeMismatch`, both kept). No colour-space conversion on the CPU. The bloom pass is not this decoder; HD only records the cutoff.

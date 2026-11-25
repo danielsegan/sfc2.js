@@ -8,7 +8,7 @@
 
 import { makeDiagnostic, type Diagnostic, type ParseResult } from "./diagnostics.ts";
 import { installRelativeFile } from "./src/diagnostic.ts";
-import { decodeSpecText, normalizeInstallPath, parseNumberCell } from "./text.ts";
+import { decodeSpecText, parseNumberCell, specLocationFile } from "./text.ts";
 
 export const SOUND_FILE_TYPES = ["wave", "pcm22k16s", "pcm22k16m"] as const;
 
@@ -71,7 +71,7 @@ export interface SoundParseOptions {
 const KEYWORDS = new Set(["class", "format", "wave", "pcm22k16s", "pcm22k16m"]);
 
 export function parseSounds(input: ArrayBuffer | Uint8Array | string, options?: SoundParseOptions): ParseResult<SoundIndex> {
-  const file = options?.file ? normalizeInstallPath(options.file) : undefined;
+  const file = specLocationFile(options?.file);
   const text = decodeSpecText(input);
   if (text.trim() === "") {
     return { data: emptyIndex(), diagnostics: [makeDiagnostic("emptyFile", "sounds", "error", file, undefined)] };
