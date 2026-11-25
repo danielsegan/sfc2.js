@@ -1,6 +1,6 @@
 import type { RosterEntry } from '../../engine/duel/fixture.ts';
 import type { DuelPlan } from '../../engine/duel/match.ts';
-import { MODE_OVERLOAD, MODE_PROXIMITY } from '../../engine/sim/rules-tables.ts';
+import { MODE_OFFLINE, MODE_OVERLOAD, MODE_PROXIMITY } from '../../engine/sim/rules-tables.ts';
 import { toDisplayHeading } from '../../engine/view/units.ts';
 import type { HelmView, HudEvent, ViewModel, WeaponReadout } from '../../engine/view/view-model.ts';
 import { EMPIRE_MARKS, empireIdForRace, empireMarkFor } from './empire-marks.ts';
@@ -393,6 +393,18 @@ function renderShieldTable(vm: ViewModel, plan: DuelPlan, hud: HudHandles): void
   });
   text('shield-selection', formatFacingList(hud.selectedFacings));
   text('shield-committed', formatCommitted(plan));
+  paintShieldState(vm.self?.shieldState ?? 'up');
+}
+
+function paintShieldState(state: 'down' | 'minimal' | 'up'): void {
+  const blocked = state === 'down' || state === 'minimal';
+  for (const name of ['down', 'minimal', 'up'] as const) {
+    document.getElementById(`shields-${name}`)?.setAttribute('aria-pressed', state === name ? 'true' : 'false');
+  }
+  for (const id of ['shields-reinforce', 'shields-reinforce-all']) {
+    const button = document.getElementById(id);
+    if (button instanceof HTMLButtonElement) button.disabled = blocked;
+  }
 }
 
 function formatCommitted(plan: DuelPlan): string {
@@ -986,10 +998,13 @@ function syncWeaponsMfdSummary(vm: ViewModel, hud: HudHandles, plan: DuelPlan): 
   if (arcPath) {
     arcPath.setAttribute('d', active ? arcPieSvgPath(active.arcFrom16, active.arcTo16, active.arcFull) : '');
   }
-  const anyOverload = picked.some((w) => (plan.modes[w.slotIndex] ?? w.mode) === MODE_OVERLOAD);
-  const anyProx = picked.some((w) => (plan.modes[w.slotIndex] ?? w.mode) === MODE_PROXIMITY);
+  const modeOf = (slot: number, fallback: number): number => plan.modes[slot] ?? fallback;
+  const anyOffline = picked.some((w) => modeOf(w.slotIndex, w.mode) === MODE_OFFLINE);
+  const anyOverload = picked.some((w) => modeOf(w.slotIndex, w.mode) === MODE_OVERLOAD);
+  const anyProx = picked.some((w) => modeOf(w.slotIndex, w.mode) === MODE_PROXIMITY);
+  document.getElementById('weapons-offline')?.setAttribute('aria-pressed', anyOffline ? 'true' : 'false');
   document.getElementById('weapons-overload')?.setAttribute('aria-pressed', anyOverload ? 'true' : 'false');
-  document.getElementById('weapons-normal')?.setAttribute('aria-pressed', !anyOverload && !anyProx ? 'true' : 'false');
+  document.getElementById('weapons-normal')?.setAttribute('aria-pressed', !anyOffline && !anyOverload && !anyProx ? 'true' : 'false');
   for (const oval of document.querySelectorAll<HTMLElement>('[data-group-oval]')) {
     const idx = Number(oval.dataset.groupOval);
     const activeGroup = idx === hud.group;

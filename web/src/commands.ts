@@ -165,6 +165,10 @@ function selectShieldFacing(host: CommandHost, facing: number): void {
 }
 
 function reinforceSelected(host: CommandHost): void {
+  if (reinforcementBlocked(host)) {
+    host.note('Reinforcement is off while shields are down or minimal.');
+    return;
+  }
   const facings = host.getShieldSelection();
   if (facings.length === 0) {
     host.note('Select a shield facing first.');
@@ -175,7 +179,16 @@ function reinforceSelected(host: CommandHost): void {
 }
 
 function reinforceAll(host: CommandHost): void {
+  if (reinforcementBlocked(host)) {
+    host.note('Reinforcement is off while shields are down or minimal.');
+    return;
+  }
   host.match.setGeneral(clampReinforceAmount(host.getReinforceAmount()));
+}
+
+function reinforcementBlocked(host: CommandHost): boolean {
+  const state = host.view()?.self?.shieldState;
+  return state === 'down' || state === 'minimal';
 }
 
 function clampEw(points: number): number {

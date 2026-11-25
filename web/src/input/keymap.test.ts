@@ -33,6 +33,10 @@ describe('modern keymap', () => {
     expect(profile).toHaveProperty('weapons.selectAll', null);
     expect(profile).toHaveProperty('weapons.alphaStrike', null);
     expect(profile).toHaveProperty('weapons.normal', null);
+    expect(profile).toHaveProperty('weapons.offline', null);
+    expect(profile).toHaveProperty('shields.down', null);
+    expect(profile).toHaveProperty('shields.minimal', null);
+    expect(profile).toHaveProperty('shields.up', null);
     expect(profile).toHaveProperty('weapons.proximity', null);
     expect(actionFor(profile, chordFromEvent({ code: 'Numpad8', ctrlKey: false, shiftKey: false, altKey: false, metaKey: false }))).toBe('shields.facing0');
     expect(actionFor(profile, chordFromEvent({ code: 'Numpad5', ctrlKey: false, shiftKey: false, altKey: false, metaKey: false }))).toBe('shields.selectAll');
@@ -156,6 +160,10 @@ describe('SFC2 Classic keymap preset', () => {
     expect(profile['view.map']).toBeNull();
     expect(profile['helm.turnLeft']).toBeNull();
     expect(profile['helm.reverse']).toBeNull();
+    expect(profile['weapons.offline']).toBeNull();
+    expect(profile['shields.down']).toBeNull();
+    expect(profile['shields.minimal']).toBeNull();
+    expect(profile['shields.up']).toBeNull();
   });
 
   it('starts on Modern and restores it after switching to Classic', () => {
