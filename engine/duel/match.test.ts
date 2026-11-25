@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { VERB_FIRE, firePayload } from '../sim/combat.ts';
 import { FALLBACK_YAW_PER_TICK, TURN_H, TURN_TEST_A, TURN_TEST_C, TURN_UNVERIFIED, turnYawCap } from '../sim/rules-tables.ts';
 import { syntheticSetups, SYNTHETIC_SPAWNS } from './fixture.ts';
-import { createDuelMatch, createSyntheticDuel } from './match.ts';
+import { clampSpeed, createDuelMatch, createSyntheticDuel } from './match.ts';
 
 const TICK = 1000 / 30;
 
@@ -17,6 +17,26 @@ function boot(overrides: Parameters<typeof createSyntheticDuel>[0] = {}) {
 }
 
 describe('duel match', () => {
+  it('rounds ordered speed to tenths and keeps the current speed when the input is not finite', () => {
+    expect(clampSpeed(12.34, 4)).toEqual({ speed: 12.3, clamped: true });
+    expect(clampSpeed(12.3, 4)).toEqual({ speed: 12.3, clamped: false });
+    expect(clampSpeed(40, 4)).toEqual({ speed: 32, clamped: true });
+    expect(clampSpeed(Number.NaN, 4.2)).toEqual({ speed: 4.2, clamped: true });
+    const match = boot();
+    match.frame(TICK);
+    match.setSpeed(Number.NaN);
+    expect(match.plan.speed).toBe(4);
+    expect(match.plan.speedClamped).toBe(true);
+    match.setSpeed(4.34);
+    expect(match.plan.speed).toBe(4.3);
+    expect(match.plan.speedClamped).toBe(true);
+    match.frame(TICK);
+    const self = match.view().self;
+    expect(self?.speed).toBeCloseTo(4.3, 5);
+    expect(self?.speedMax).toBe(32);
+    expect(self?.speedMaxForPower).toBeGreaterThan(0);
+  });
+
   it('keeps the yaw caps on the synthetic turn-mode table', () => {
     const table = JSON.parse(readFileSync('docs/rules/data/turn-modes.json', 'utf8')) as {
       modes: Record<string, { maxYawPerTick: number }>;

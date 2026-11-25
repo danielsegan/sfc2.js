@@ -129,6 +129,8 @@ export interface DuelPlan {
   lifeSupport: boolean;
   fireControl: boolean;
   speed: number;
+  /** True when the last speed order was rounded, capped, or ignored because it was not finite. */
+  speedClamped: boolean;
   general: number;
   /** Null asks each phaser or photon for its own cost. */
   weaponRequest: number | null;
@@ -253,9 +255,35 @@ function watchSim(sim: Sim, sink: SimEvent[]): Sim {
   };
 }
 
-function clampSpeed(speed: number): number {
-  if (!Number.isInteger(speed) || speed < 0) return 0;
-  return speed > SPEED_CAP ? SPEED_CAP : speed;
+const SPEED_TENTH = 10;
+
+/**
+ * Round to the nearest tenth and clamp to 0..32.
+ * A non-finite input keeps `current` and is reported as clamped.
+ * The Engine Lead's clamp was still the integer reject-to-zero path; this replaces it.
+ */
+export function clampSpeed(speed: number, current = 0): { speed: number; clamped: boolean } {
+  const kept = Number.isFinite(current) ? current : 0;
+  if (!Number.isFinite(speed)) return { speed: roundTenth(kept), clamped: true };
+  let tenths = Math.round(speed * SPEED_TENTH);
+  const rounded = tenths / SPEED_TENTH;
+  let clamped = Math.abs(speed - rounded) > 1e-6;
+  if (tenths < 0) {
+    tenths = 0;
+    clamped = true;
+  }
+  const cap = SPEED_CAP * SPEED_TENTH;
+  if (tenths > cap) {
+    tenths = cap;
+    clamped = true;
+  }
+  return { speed: tenths / SPEED_TENTH, clamped };
+}
+
+function roundTenth(speed: number): number {
+  const tenths = Math.round(speed * SPEED_TENTH);
+  const capped = tenths < 0 ? 0 : tenths > SPEED_CAP * SPEED_TENTH ? SPEED_CAP * SPEED_TENTH : tenths;
+  return capped / SPEED_TENTH;
 }
 
 function clampPoints(points: number): number {
@@ -331,7 +359,8 @@ class Match implements DuelMatch {
     this.plan = {
       lifeSupport: options.plan?.lifeSupport ?? base.lifeSupport,
       fireControl: options.plan?.fireControl ?? base.fireControl,
-      speed: clampSpeed(options.plan?.speed ?? base.speed),
+      speed: clampSpeed(options.plan?.speed ?? base.speed).speed,
+      speedClamped: clampSpeed(options.plan?.speed ?? base.speed).clamped,
       general: clampPoints(options.plan?.general ?? base.general),
       weaponRequest: options.plan?.weaponRequest === undefined ? base.weaponRequest : options.plan.weaponRequest,
       specific: normalizeSpecific(options.plan?.specific),
@@ -440,6 +469,10 @@ class Match implements DuelMatch {
   }
 
   setSpeed(speed: number): void {
+    if (!Number.isFinite(speed)) {
+      this.plan.speedClamped = true;
+      return;
+    }
     this.setAllocation({ speed });
   }
 
@@ -527,7 +560,11 @@ class Match implements DuelMatch {
   setAllocation(next: Partial<DuelPlan>): void {
     if (next.lifeSupport !== undefined) this.plan.lifeSupport = next.lifeSupport;
     if (next.fireControl !== undefined) this.plan.fireControl = next.fireControl;
-    if (next.speed !== undefined) this.plan.speed = clampSpeed(next.speed);
+    if (next.speed !== undefined) {
+      const clamped = clampSpeed(next.speed, this.plan.speed);
+      this.plan.speed = clamped.speed;
+      this.plan.speedClamped = clamped.clamped;
+    }
     if (next.general !== undefined) this.plan.general = clampPoints(next.general);
     if (next.weaponRequest !== undefined) {
       this.plan.weaponRequest = next.weaponRequest === null ? null : clampPoints(next.weaponRequest);
@@ -762,7 +799,7 @@ class Match implements DuelMatch {
     return setEnergyPayload(this.selfEntity ?? 0, {
       lifeSupport: this.plan.lifeSupport,
       fireControl: this.plan.fireControl,
-      speed: this.plan.speed,
+      speedHundredths: Math.round(this.plan.speed * 100),
       general: this.plan.general,
       specific: this.plan.specific,
       weapons,

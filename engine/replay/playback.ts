@@ -1,5 +1,5 @@
 import { compareCommands } from '../core/codec.ts';
-import { REPLAY_FORMAT, simSourceHash, versionHash, type SourceFile } from '../core/version.ts';
+import { LEGACY_REPLAY_FORMAT, REPLAY_FORMAT, simSourceHash, versionHash, type SourceFile } from '../core/version.ts';
 import { hashEvents, type Sim } from '../sim/sim.ts';
 import {
   commandLogError,
@@ -173,10 +173,25 @@ export function runtimeStamp(
   };
 }
 
+/** Format 1 files keep their commands. The writer now stamps format 2. */
+export function migrateReplay(replay: ReplayFile): ReplayFile {
+  if (replay.replayFormat !== LEGACY_REPLAY_FORMAT) return replay;
+  return {
+    ...replay,
+    replayFormat: REPLAY_FORMAT,
+    versionHash: versionHash(REPLAY_FORMAT, replay.simSourceHash, replay.dataHash),
+  };
+}
+
+function formatAccepted(format: number): boolean {
+  return format === REPLAY_FORMAT || format === LEGACY_REPLAY_FORMAT;
+}
+
 function staleDetail(replay: ReplayFile, runtime: RuntimeStamp): { parts: string[]; detail: string } {
-  const runtimeVersion = versionHash(REPLAY_FORMAT, runtime.simSourceHash, runtime.dataHash);
+  const stamped = formatAccepted(replay.replayFormat) ? replay.replayFormat : REPLAY_FORMAT;
+  const runtimeVersion = versionHash(stamped, runtime.simSourceHash, runtime.dataHash);
   const rows: readonly (readonly [string, number, number])[] = [
-    ['replayFormat', replay.replayFormat, REPLAY_FORMAT],
+    ['replayFormat', formatAccepted(replay.replayFormat) ? stamped : replay.replayFormat, stamped],
     ['simSourceHash', replay.simSourceHash, runtime.simSourceHash],
     ['dataHash', replay.dataHash, runtime.dataHash],
     ['versionHash', replay.versionHash, runtimeVersion],
@@ -200,7 +215,7 @@ function staleDetail(replay: ReplayFile, runtime: RuntimeStamp): { parts: string
  * and still checks the file's own versionHash and the per-tick samples.
  */
 export function playReplay(replay: ReplayFile, scenario: Scenario, runtime: RuntimeStamp | null): PlayResult {
-  if (replay.replayFormat !== REPLAY_FORMAT) {
+  if (!formatAccepted(replay.replayFormat)) {
     return fail(
       'stale',
       `unsupported replayFormat ${String(replay.replayFormat)} (this build plays ${String(REPLAY_FORMAT)})`,

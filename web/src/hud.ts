@@ -96,7 +96,7 @@ export function updateHud(vm: ViewModel, roster: readonly RosterEntry[], hud: Hu
     ?? vm.contacts.find((contact) => contact.kind === 'ship' && contact.hostility === 'hostile' && contact.detected);
   text('tick', String(vm.tick));
   text('speed', self ? formatSpeed(self.speed) : formatSpeed(0));
-  text('speed-ordered', String(plan.speed));
+  text('speed-ordered', formatSpeed(plan.speed));
   text('heading', self ? formatDeg(self.heading16) : '—');
   text('heading-ordered', self && self.orderedHeading16 !== null ? formatDeg(self.orderedHeading16) : '—');
   text('turn-ticks', self && self.turnTicksRemaining !== null ? String(self.turnTicksRemaining) : '—');
@@ -112,7 +112,8 @@ export function updateHud(vm: ViewModel, roster: readonly RosterEntry[], hud: Hu
   text('gen-impulse', fmt(self?.energy.impulse ?? 0));
   text('gen-apr', fmt(self?.energy.apr ?? 0));
   text('gen-battery', `${fmt(self?.energy.battery ?? 0)} / ${fmt(self?.energy.batteryCapacity ?? 0)}`);
-  text('energy-reason', self && self.energy.lastReason && self.energy.lastReason !== 'ok' ? self.energy.lastReason : '');
+  const speedWarn = plan.speedClamped && (!self?.energy.lastReason || self.energy.lastReason === 'ok');
+  text('energy-reason', speedWarn ? 'speedClamped' : self && self.energy.lastReason && self.energy.lastReason !== 'ok' ? self.energy.lastReason : '');
   const shift = self && self.netShift !== null ? String(self.netShift) : '—';
   text('ew-status', self ? `ECM ${String(self.ecm)} · ECCM ${String(self.eccm)} · shift ${shift}` : 'No ship');
   barWidth('ew-ecm-bar', self ? self.ecm : 0);

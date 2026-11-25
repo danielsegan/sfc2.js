@@ -209,6 +209,10 @@ export interface SelfView {
   readonly hull: HullReadout;
   readonly weapons: readonly WeaponReadout[];
   readonly speed: number;
+  /** Duel speed cap, in speed points. */
+  readonly speedMax: number;
+  /** Fastest ordered speed the current plant can pay, before other loads. */
+  readonly speedMaxForPower: number;
   readonly heading16: number;
   /** Null when the ship has no heading order. Otherwise the ordered heading. */
   readonly orderedHeading16: number | null;
@@ -787,7 +791,9 @@ export function buildViewModel(input: ViewBuildInput): ViewModel {
         shields: shieldsOf(ship),
         hull: hullOf(ship),
         weapons,
-        speed: ship.speed,
+        speed: ship.speed + fieldAt(input.curr.world, input.selfIndex, H.speedFrac100) / 100,
+        speedMax: 32,
+        speedMaxForPower: speedForPower(ship),
         heading16: ship.heading,
         ...helm,
         headingOrdered16: helm.orderedHeading16 ?? undefined,
@@ -823,6 +829,15 @@ export function buildViewModel(input: ViewBuildInput): ViewModel {
     mission: { objectives: [], timers: [] },
     events,
   };
+}
+
+function speedForPower(ship: ReturnType<typeof shipView>): number {
+  const gen = toDisplayEnergy(ship.warp100 + ship.impulse100 + ship.apr100);
+  const move = ship.moveCost100 / 100;
+  if (!(move > 0)) return 0;
+  const tenths = Math.floor((gen / move) * 10);
+  const capped = tenths > 320 ? 320 : tenths;
+  return capped / 10;
 }
 
 function hostilityOf(index: number, selfIndex: number, selfSide: number, side: number): ContactView['hostility'] {

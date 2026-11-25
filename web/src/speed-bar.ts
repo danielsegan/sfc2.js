@@ -3,8 +3,7 @@
  *
  * Click and left-button drag set a continuous ordered speed proportional
  * to pointer X in 0..`max`, rounded to the native resolution of
- * `DuelMatch.setSpeed` / `clampSpeed` (whole integer units today; a
- * non-integer is rejected and stored as 0). The order is sent live
+ * `DuelMatch.setSpeed` (tenths of a speed point). The order is sent live
  * while the pointer moves, once the rounded value changes. Wheel and
  * right-click do nothing on the bar. The `<` / `>` end arrows and the
  * speed up/down key actions stay at exactly ±1.0 via `bumpSpeed`.
@@ -12,8 +11,8 @@
 
 export type SpeedBarGesture = 'start' | 'move' | 'end' | 'ignore';
 
-/** Native resolution of `DuelMatch.setSpeed` / `clampSpeed` (integer units). */
-export const SPEED_ORDER_STEP = 1;
+/** Native resolution of `DuelMatch.setSpeed`: tenths of a speed point. */
+export const SPEED_ORDER_STEP = 0.1;
 
 /** Left-button pointerdown starts a capture-drag; later moves/up apply only while captured. */
 export function speedBarGesture(type: string, button: number, captured: boolean): SpeedBarGesture {

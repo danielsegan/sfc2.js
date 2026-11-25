@@ -10,7 +10,7 @@ Little-endian. Magic `SFC2RPLY` (8 bytes), then:
 
 | Field | Type | Notes |
 | --- | --- | --- |
-| replayFormat | u32 | `REPLAY_FORMAT` in `engine/core/version.ts`. This build plays 1. |
+| replayFormat | u32 | `REPLAY_FORMAT` in `engine/core/version.ts`. This build writes 2 and still plays 1. `migrateReplay` restamps a format 1 file as format 2 and leaves the command log alone. |
 | simSourceHash | u32 | xxHash32 of sim sources. See below. |
 | dataHash | u32 | Game database hash. The corpus uses the empty database, so this is 0. |
 | versionHash | u32 | `versionHash(replayFormat, simSourceHash, dataHash)` from determinism.md V1. |

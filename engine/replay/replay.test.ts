@@ -5,9 +5,10 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { EMPTY_GAME_DATABASE } from '../core/database.ts';
-import { REPLAY_FORMAT, simSourceHash, versionHash } from '../core/version.ts';
+import { LEGACY_REPLAY_FORMAT, REPLAY_FORMAT, simSourceHash, versionHash } from '../core/version.ts';
 import { decodeReplay, encodeReplay, roundTripSnapshot, sampleTicks } from './format.ts';
 import { checkBytes, checkCorpus, loadSimSources, recordScript } from './node-corpus.ts';
+import { migrateReplay } from './playback.ts';
 import { aiRegen, aiRegenScript } from './scenarios/ai-regen.ts';
 import { CORPUS } from './scenarios/index.ts';
 import { idleRngScript } from './scenarios/idle-rng.ts';
@@ -22,6 +23,22 @@ function reports(result: { rows: readonly { report: string }[] }): string {
 }
 
 describe('replay corpus', () => {
+  it('migrates a format 1 file onto format 2 without changing its commands', () => {
+    const decoded = decodeReplay(readFileSync(join(corpusDir, 'idle-rng.s2replay')));
+    expect(decoded.ok).toBe(true);
+    if (!decoded.ok) return;
+    const legacy = {
+      ...decoded.replay,
+      replayFormat: LEGACY_REPLAY_FORMAT,
+      versionHash: versionHash(LEGACY_REPLAY_FORMAT, decoded.replay.simSourceHash, decoded.replay.dataHash),
+    };
+    const migrated = migrateReplay(legacy);
+    expect(migrated.replayFormat).toBe(REPLAY_FORMAT);
+    expect(migrated.commands).toEqual(legacy.commands);
+    expect(migrated.snapshot).toEqual(legacy.snapshot);
+    expect(migrated.versionHash).toBe(versionHash(REPLAY_FORMAT, legacy.simSourceHash, legacy.dataHash));
+  });
+
   it('samples tick 0, every period, and the final tick', () => {
     expect(sampleTicks(5, 2)).toEqual([0, 2, 4, 5]);
     expect(sampleTicks(4, 1)).toEqual([0, 1, 2, 3, 4]);
