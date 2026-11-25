@@ -103,6 +103,8 @@ export function runAction(host: CommandHost, id: string): void {
   }
   else if (id === 'view.mapZoomIn') host.setMapZoom(stepMapZoom(host.mapZoom, 1));
   else if (id === 'view.mapZoomOut') host.setMapZoom(stepMapZoom(host.mapZoom, -1));
+  else if (id === 'view.zoomIn') host.scene.dolly(-1.2);
+  else if (id === 'view.zoomOut') host.scene.dolly(1.2);
   else if (id === 'view.mapOrientation') host.setHeadingUp(!host.headingUp);
   else if (id === 'view.reset') host.scene.resetView();
   else if (id === 'view.pause') host.togglePause();

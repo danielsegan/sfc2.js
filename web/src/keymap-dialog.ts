@@ -1,15 +1,41 @@
 /**
- * Rebind dialog. The profile is the modern default until the player
- * changes a row. Browser-reserved chords are refused.
+ * Rebind dialog. Modern is the default until the player picks
+ * SFC2 Classic or changes a row. Browser-reserved chords are refused.
  */
 import { ACTIONS, formatChord, type Chord } from './input/actions.ts';
 import type { KeyTracker } from './input/keymap.ts';
+import {
+  KEYMAP_PRESET_IDS,
+  KEYMAP_PRESET_LABELS,
+  isKeymapPresetId,
+  type KeymapPresetId,
+} from './input/presets.ts';
+
+const PRESET_BLURB: Readonly<Record<KeymapPresetId, string>> = {
+  modern: 'Modern profile (default). Bindings use the physical key, so they survive a different keyboard layout.',
+  classic: 'SFC2 Classic profile, from the CE 2.670 Hot Keys notes. Only actions that exist in this build are bound; the rest stay unbound. Bindings use the physical key.',
+};
 
 export function mountKeymapDialog(keys: KeyTracker, note: (text: string) => void): void {
   const dialog = document.getElementById('keymap');
   const list = document.getElementById('keymap-list');
+  const presetSelect = document.getElementById('keymap-preset');
+  const blurb = document.getElementById('keymap-blurb');
+  const reset = document.getElementById('keys-reset');
   if (!(dialog instanceof HTMLDialogElement) || !list) return;
+  if (presetSelect instanceof HTMLSelectElement && presetSelect.options.length === 0) {
+    for (const id of KEYMAP_PRESET_IDS) {
+      const option = document.createElement('option');
+      option.value = id;
+      option.textContent = KEYMAP_PRESET_LABELS[id];
+      presetSelect.append(option);
+    }
+  }
   const paint = () => {
+    const preset = keys.preset();
+    if (presetSelect instanceof HTMLSelectElement) presetSelect.value = preset;
+    if (blurb) blurb.textContent = PRESET_BLURB[preset];
+    if (reset) reset.textContent = `Reset ${KEYMAP_PRESET_LABELS[preset]}`;
     list.replaceChildren();
     const profile = keys.profile();
     let group = '';
@@ -97,6 +123,12 @@ export function mountKeymapDialog(keys: KeyTracker, note: (text: string) => void
   document.getElementById('keys-open')?.addEventListener('click', () => {
     paint();
     dialog.showModal();
+  });
+  presetSelect?.addEventListener('change', () => {
+    if (!(presetSelect instanceof HTMLSelectElement)) return;
+    if (!isKeymapPresetId(presetSelect.value)) return;
+    keys.setPreset(presetSelect.value);
+    paint();
   });
   document.getElementById('keys-reset')?.addEventListener('click', () => {
     keys.reset();
