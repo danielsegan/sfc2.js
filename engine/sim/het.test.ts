@@ -171,7 +171,7 @@ describe('orderHet (verb 13)', () => {
     expect(heading(sim, 5)).toBe(285);
   });
 
-  it('takes the K-D7 sweep and gives unknown hulls the default row', () => {
+  it('gives K-D7 the 90° preset baseline sweep and unknown hulls the default row', () => {
     const { sim } = run([setup('K-D7', 31), setup('no-such-hull', 40), setup(undefined, 5), setup('K-D7', 5)], 240, {
       2: [
         [VERB_ORDER_HET, hetPayload(SHIP, 1)],
@@ -180,10 +180,10 @@ describe('orderHet (verb 13)', () => {
         [VERB_ORDER_HET, hetPayload(SHIP + 3, 1)],
       ],
     });
-    expect(heading(sim, 0)).toBe(17713);
+    expect(heading(sim, 0)).toBe(16384);
     expect(heading(sim, 1)).toBe(16384);
     expect(heading(sim, 2)).toBe(49152);
-    expect(heading(sim, 3)).toBe(15110);
+    expect(heading(sim, 3)).toBe(16384);
   });
 
   it('uses Tier-2 HET rates and sweeps for non-Fed hulls and keeps unmeasured ones on default', () => {

@@ -532,10 +532,13 @@ test("table expect covers Tier-2 non-Fed hulls and skips omitted cells", () => {
   assert.equal(summary.harness?.turnNoop, 1);
   assert.equal(summary.harness?.fields["turn.normal.10.degPerSecond"]?.pass, 1);
   assert.equal(summary.harness?.fields["turn.normal.5.degPerSecond"]?.pass, 2);
-  assert.equal(summary.harness?.fields["turn.het.31.deg"]?.pass, 2);
+  // K-D7 s31 keeps measured audit deg (97.3); G-CA s31 was a 135° pad capture so deg is omitted (skip).
+  assert.equal(summary.harness?.fields["turn.het.31.deg"]?.pass, 1);
+  assert.equal(summary.harness?.fields["turn.het.31.deg"]?.skip, 1);
   assert.equal(summary.harness?.fields["turn.het.31.delayS"]?.pass, 2);
   assert.equal(summary.harness?.fields["turn.het.31.degPerSecond"]?.pass, 2);
+  // H-HN s5 and Z-CA s5 are 90° preset captures; L-CC s15 was a 135° pad capture so deg is omitted (skip).
   assert.equal(summary.harness?.fields["turn.het.5.deg"]?.pass, 2);
-  assert.equal(summary.harness?.fields["turn.het.15.deg"]?.pass, 1);
+  assert.equal(summary.harness?.fields["turn.het.15.deg"]?.skip, 1);
   assert.equal(summaryFailed(summary), false);
 });
