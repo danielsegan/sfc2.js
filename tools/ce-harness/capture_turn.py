@@ -4,16 +4,21 @@ record timestamped screenshots. Usage: capture_turn.py <label> <target_speed> <b
 import json, os, subprocess, sys, time
 BUTTONS = {"port": (31, 82), "stbd": (139, 82), "hard_port": (31, 118), "hard_stbd": (139, 118), "u_turn": (84, 118)}
 # Per-skin helm-panel HET buttons (1024x768). Federation is the default.
-# Klingon coords were measured in battle. Others are from HUD screenshots and will be
-# confirmed on the first hull of that empire.
+# port/stbd are the 90-deg arrow pads; hard_port/hard_stbd are the 135-deg
+# preset pads; u_turn is the centre/180 control. Rate samples must click port
+# (the 90-deg arrow), not hard_port.
+# Federation, Klingon, and Mirak already had port on the 90-deg pad (upper
+# arrow; measured HET sweeps ~90 deg). Romulan, Lyran, Hydran, Gorn, and ISC
+# previously had port mapped to the lower 135-deg preset (sweeps ~135 deg);
+# those five maps are swapped so port is the 90-deg arrow.
 HUD_BUTTONS = {
     "federation": {"port": (31, 82), "stbd": (139, 82), "hard_port": (31, 118), "hard_stbd": (139, 118), "u_turn": (84, 118)},
     "klingon":    {"port": (60, 80), "stbd": (117, 80), "hard_port": (60, 112), "hard_stbd": (117, 112), "u_turn": (84, 112)},
-    "romulan":    {"port": (48, 113), "stbd": (132, 113), "hard_port": (42, 88), "hard_stbd": (132, 88), "u_turn": (90, 113)},
-    "hydran":     {"port": (52, 116), "stbd": (118, 116), "hard_port": (52, 90), "hard_stbd": (118, 90), "u_turn": (86, 116)},
-    "isc":        {"port": (52, 116), "stbd": (124, 116), "hard_port": (52, 86), "hard_stbd": (124, 86), "u_turn": (88, 118)},
-    "lyran":      {"port": (50, 112), "stbd": (126, 112), "hard_port": (50, 90), "hard_stbd": (126, 90), "u_turn": (88, 112)},
-    "gorn":       {"port": (50, 114), "stbd": (130, 114), "hard_port": (50, 82), "hard_stbd": (130, 82), "u_turn": (90, 114)},
+    "romulan":    {"port": (42, 88), "stbd": (132, 88), "hard_port": (48, 113), "hard_stbd": (132, 113), "u_turn": (90, 113)},
+    "hydran":     {"port": (52, 90), "stbd": (118, 90), "hard_port": (52, 116), "hard_stbd": (118, 116), "u_turn": (86, 116)},
+    "isc":        {"port": (52, 86), "stbd": (124, 86), "hard_port": (52, 116), "hard_stbd": (124, 86), "u_turn": (88, 118)},
+    "lyran":      {"port": (50, 90), "stbd": (126, 90), "hard_port": (50, 112), "hard_stbd": (126, 112), "u_turn": (88, 112)},
+    "gorn":       {"port": (50, 82), "stbd": (130, 82), "hard_port": (50, 114), "hard_stbd": (130, 114), "u_turn": (90, 114)},
     "mirak":      {"port": (44, 80), "stbd": (126, 80), "hard_port": (48, 108), "hard_stbd": (122, 108), "u_turn": (84, 108)},
     "orion":      {"port": (31, 82), "stbd": (139, 82), "hard_port": (31, 118), "hard_stbd": (139, 118), "u_turn": (84, 118)},
 }
@@ -51,11 +56,17 @@ sh("xdotool", "mousemove", "182", "196", "click", "1", "mousemove", *PARK); time
 subprocess.run(["import", "-window", "root", "-crop", "200x232+0+0", "+repage", f"{fdir}/energy.png"])
 sh("xdotool", "mousemove", "182", "15", "click", "1", "mousemove", *PARK); time.sleep(0.6)
 idx = []; start = time.time(); acted = None; i = 0
+pad_name, pad_xy = button, None
 while time.time() - start < secs:
     if acted is None and time.time() - start > 1.0:
-        x, y = MOUSE[button] if button in MOUSE else BUTTONS[button]
+        if button in MOUSE:
+            x, y = MOUSE[button]
+        else:
+            x, y = BUTTONS[button]
+        pad_name, pad_xy = button, [int(x), int(y)]
         sh("xdotool", "mousemove", str(x), str(y), "click", "1", "mousemove", *PARK); acted = time.time()
     p = f"{fdir}/{i:04d}.png"; t = time.time(); grab(p); idx.append([round(t, 4), p]); i += 1
-json.dump({"label": label, "target_speed": target, "button": button, "speed_history": hist,
+json.dump({"label": label, "target_speed": target, "button": button, "hud": hud,
+           "pad": pad_name, "pad_coords": pad_xy, "speed_history": hist,
            "action_wall": acted, "frames": idx}, open(f"{fdir}/capture.json", "w"), indent=1)
 print(label, "settled", hist[-1], "frames", len(idx))

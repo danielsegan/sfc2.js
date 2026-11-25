@@ -60,6 +60,7 @@ if __name__ == "__main__":
     for label in sys.argv[1:]:
       try:
         cap = json.load(open(f"/out/frames/{label}/capture.json")); a0 = cap["action_wall"]
+        pad_meta = {k: cap[k] for k in ("hud", "pad", "pad_coords") if k in cap}
         rows = []
         for k, (t, p) in enumerate(cap["frames"]):
             a = axis(p)
@@ -87,6 +88,7 @@ if __name__ == "__main__":
                    "speed_key": _speed_key(cap["target_speed"], cap["speed_history"][-1] if cap["speed_history"] else None)}
             if os.environ.get("SPAWN_KEY"):
                 res["spawnKey"] = os.environ["SPAWN_KEY"]
+            res.update(pad_meta)
             json.dump(res, open(f"/out/runs/{label}.json", "w"), indent=1)
             print(json.dumps({k: v for k, v in res.items() if k != "series"}))
             continue
@@ -117,6 +119,7 @@ if __name__ == "__main__":
                "series": [[round(t, 3), round(v, 2)] for t, v in sm]}
         if os.environ.get("SPAWN_KEY"):
             res["spawnKey"] = os.environ["SPAWN_KEY"]
+        res.update(pad_meta)
         apply_noop(res)
         json.dump(res, open(f"/out/runs/{label}.json", "w"), indent=1)
         print(json.dumps({k: v for k, v in res.items() if k != "series"}))
