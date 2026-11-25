@@ -15,7 +15,7 @@ The committed roadmap is [docs/plan.md](docs/plan.md). Current work is **Phase 2
 | Status | Phase | Goal |
 | --- | --- | --- |
 | ✅ Done | 0 Setup | Repository, CI, legal posture, and an inventory of the reference install |
-| 🟡 Partial | 1 Asset pipeline | Parsers, importer, and a ship viewer |
+| ✅ Done | 1 Asset pipeline | Parsers, importer, and a ship viewer |
 | 🟢 Active | 2 Tactical duel | One ship against one: energy, six shields, arcs, and a deterministic replay |
 | 🟢 Active | 3 Full skirmish | The rest of the weapons and systems, fleets, captains, the HUD, and sound |
 | ⚪ Planned | 4 Missions | Mission runtime and the first campaign |
@@ -75,7 +75,7 @@ Nothing is uploaded. **Load install folder** uses the browser's directory picker
 
 ## Desktop builds
 
-`desktop/` is reserved for the Tauri shell. There is no `src-tauri` project yet. Versioning, tags, and what a release may ship are the Phase 8 process in [docs/release/process.md](docs/release/process.md). The version in the tree today is `0.0.0`. [`.github/workflows/release.yml`](.github/workflows/release.yml) zips the web build on a `v*` tag or a manual run, writes SHA-256 sums, and skips desktop bundles until a Tauri config exists. Those artifacts are unsigned, and the workflow does not open a GitHub Release. Signing keys remain the owner's decision.
+`desktop/` is the Tauri v2 shell. The scaffold is `desktop/src-tauri/` ([#124](https://github.com/danielsegan/sfc2.js/pull/124)), with `tauri.conf.json` and the Rust crate. Versioning, tags, and what a release may ship are the Phase 8 process in [docs/release/process.md](docs/release/process.md). The version in the tree today is `0.0.0`. [`.github/workflows/release.yml`](.github/workflows/release.yml) zips the web build on a `v*` tag or a manual run, writes SHA-256 sums, and builds desktop bundles from that Tauri project. Those artifacts are unsigned, and the workflow does not open a GitHub Release. Signing keys remain the owner's decision.
 
 ## Contribute
 
