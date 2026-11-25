@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createVfs, type VfsSourceFile } from '@sfc2js/platform';
-import { resolveShipTexture, textureSearchRoots } from './texture-resolve.ts';
+import { classifyTextureMiss, resolveShipTexture, textureSearchRoots } from './texture-resolve.ts';
 
 const MODEL = 'Assets/MODELS/fed/variant/Hull.mod';
 
@@ -71,6 +71,25 @@ describe('resolveShipTexture', () => {
   it('reports absent only after the shared folders and parents miss', () => {
     const vfs = files(['Assets/MODELS/other/Hull_1.bmp']);
     expect(resolveShipTexture(vfs, MODEL, 'Hull_1')).toEqual({ reason: 'absent' });
+  });
+
+  it('classifies a miss without keeping the texture name', () => {
+    const vfs = files([
+      'Assets/MODELS/rom/panel.bmp',
+      'Assets/MODELS/lyr/mark.pcx',
+      'Assets/MODELS/fed/variant/notes.txt',
+    ]);
+    expect(classifyTextureMiss(vfs, 'panel')).toBe('differentEmpire');
+    expect(classifyTextureMiss(vfs, 'mark')).toBe('unsupportedExtension');
+    expect(classifyTextureMiss(vfs, 'glow#1')).toBe('unusualName');
+    expect(classifyTextureMiss(vfs, 'not-there')).toBe('missingFile');
+    expect(classifyTextureMiss(vfs, 'C:/Games/panel.bmp')).toBe('unusualName');
+    expect(JSON.stringify([
+      classifyTextureMiss(vfs, 'panel'),
+      classifyTextureMiss(vfs, 'mark'),
+      classifyTextureMiss(vfs, 'glow#1'),
+      classifyTextureMiss(vfs, 'not-there'),
+    ])).toBe('["differentEmpire","unsupportedExtension","unusualName","missingFile"]');
   });
 });
 

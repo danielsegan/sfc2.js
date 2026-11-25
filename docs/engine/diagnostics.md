@@ -78,7 +78,7 @@ interface Diagnostic {
 | bmp | `nonPowerOfTwo` | info | Formats | `{ width, height }`. The image is still loaded |
 | bmp | `orphanSelfIllum` | warning | Formats | `{ illumPath }`. A `_<token>i` file with no base in the same directory |
 | bmp | `missingTexture` | error | Formats | `{ path }`. Requested install-relative path is not in the VFS. The mesh builder does not emit this after its texture search; a miss there is `texturePlaceholder` |
-| bmp | `texturePlaceholder` | warning | Engine | `{ which }`. `diffuse` or `luminance`. The named map was not in the ship folder, a parent, or a `common` / `shared` / `textures` folder. The material is a neutral stand-in, or the glow layer is omitted. The name is not stored |
+| bmp | `texturePlaceholder` | warning | Engine | `{ which, miss }`. `which` is `diffuse` or `luminance`. `miss` is `missingFile` (no file with that stem), `unsupportedExtension` (the stem exists only with an extension the loader does not read), `differentEmpire` (a supported image with that stem exists outside the model search, including another empire folder), `unusualName` (the name is not a usual token), or `decodeFailed` (a file was found and did not decode). The material is a neutral stand-in, or the glow layer is omitted. The name and the path are not stored. The every-ship check sums these classes into the aggregate summary |
 | bmp | `selfIllumSizeMismatch` | info | Formats | `{ baseWidth, baseHeight, illumWidth, illumHeight }`. Both maps are kept and sampled by UV |
 | mod | `emptyFile` | error | Formats | Zero-byte `.mod`. No `location` |
 | mod | `fileTooLarge` | error | Formats | `{ size, limit }`. Over 8 MiB; nothing is parsed |

@@ -121,6 +121,7 @@ describe('viewer check summary', () => {
       stage_failed: null,
       error: null,
       warnings: 1,
+      textureMisses: { missingFile: 1 },
     });
 
     expect(
@@ -172,6 +173,8 @@ describe('viewer check summary', () => {
       failed: 1,
       skipped: 0,
       warnings: 0,
+      skips: { noHullModel: 0, degenerate: 0, unpaintable: 0, symmetric: 0 },
+      textureMisses: { missingFile: 0, unsupportedExtension: 0, differentEmpire: 0, unusualName: 0, decodeFailed: 0 },
       byStage: { resolve: 1, geometry: 0, texture: 0, selfIllum: 0, render: 0 },
       elapsedMs: 12,
     });
@@ -212,8 +215,8 @@ describe('viewer check summary', () => {
       selfIlluminated: false,
       unboundSelfIllum: false,
       diagnostics: [
-        { source: 'bmp', code: 'texturePlaceholder', severity: 'warning', which: 'diffuse' },
-        { source: 'bmp', code: 'texturePlaceholder', severity: 'warning', which: 'luminance' },
+        { source: 'bmp', code: 'texturePlaceholder', severity: 'warning', which: 'diffuse', miss: 'missingFile' },
+        { source: 'bmp', code: 'texturePlaceholder', severity: 'warning', which: 'luminance', miss: 'differentEmpire' },
       ],
     });
     const skipped = skippedResult('Neutral:CY');
@@ -239,11 +242,34 @@ describe('viewer check summary', () => {
       byStage: { resolve: 1, geometry: 0, texture: 0, selfIllum: 0, render: 0 },
     });
     expect(inspectReport(report).problem).toBeNull();
+    expect(warned.textureMisses).toEqual({ missingFile: 1, differentEmpire: 1 });
+    expect(skipped.skipReason).toBe('noHullModel');
+    expect(degenerate.skipReason).toBe('degenerate');
+    expect(
+      gradeRenderedShip(
+        loadedResult({
+          spawnKey: 'Neutral:TEST-BALL',
+          placeholder: false,
+          textured: false,
+          selfIlluminated: false,
+          unboundSelfIllum: false,
+          diagnostics: [],
+        }),
+        'symmetric',
+      ).skipReason,
+    ).toBe('symmetric');
     expect(publicSummary(report).result).toBe('fail');
     expect(publicSummary(report).errors).toEqual([{ class: 'loader.missingModel', count: 1 }]);
+    expect(publicSummary(report).totals.textureMisses.missingFile).toBe(1);
+    expect(publicSummary(report).totals.textureMisses.differentEmpire).toBe(1);
+    expect(publicSummary(report).totals.skips).toMatchObject({ noHullModel: 1, degenerate: 1 });
     const text = JSON.stringify(publicSummary(report));
     expect(text).not.toContain('TEST-DUMMY');
     expect(text).not.toContain('Neutral');
+    expect(text).not.toMatch(/\.bmp|Assets\/|panel|Hull_/);
+    expect(formatPublicSummary(publicSummary(report))).toContain('viewer textureMiss=missingFile count=1');
+    expect(formatPublicSummary(publicSummary(report))).toContain('viewer skip=degenerate count=1');
+    expect(formatPublicSummary(publicSummary(report))).not.toContain('TEST-MISS');
 
     const passed = buildReport([skipped, warned], 1);
     expect(publicSummary(passed).result).toBe('pass');

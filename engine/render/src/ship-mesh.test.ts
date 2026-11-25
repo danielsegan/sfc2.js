@@ -129,7 +129,7 @@ describe('buildShipMesh', () => {
     const parsed = parseMod(texturedMod({ luminance: null }));
     const built = await buildShipMesh(parsed.data, { vfs: createVfs([]), modelPath: MODEL });
     expect(built.diagnostics.map((item) => item.code)).toEqual(['texturePlaceholder']);
-    expect(built.diagnostics[0]?.details).toEqual({ which: 'diffuse' });
+    expect(built.diagnostics[0]?.details).toEqual({ which: 'diffuse', miss: 'missingFile' });
     expect(built.diagnostics.map((item) => item.code)).not.toContain('missingTexture');
     const material = built.data.materials[0] as MeshLambertMaterial;
     expect(material.map).toBeNull();

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BufferGeometry, Float32BufferAttribute, Group, Mesh, MeshLambertMaterial } from 'three';
+import { AdditiveBlending, BufferGeometry, Float32BufferAttribute, Group, Mesh, MeshLambertMaterial } from 'three';
 import { frameCameraFit, frameDistance, measureShipFrame } from './ship-stage.ts';
 
 describe('ship framing', () => {
@@ -24,6 +24,52 @@ describe('ship framing', () => {
     expect(thin.frame.radius).toBeGreaterThan(0);
   });
 
+  it('treats collinear faces, an empty selected surface, and a speck as degenerate', () => {
+    const axes = new Group();
+    axes.add(meshOf([0, 0, 0, 4, 0, 0, 2, 0, 0, 0, 0, 0, 0, 5, 0, 0, 3, 0, 0, 0, 0, 0, 0, 6, 0, 0, 1]));
+    expect(measureShipFrame(axes).frame).toMatchObject({ degenerate: true, radial: false });
+
+    const speck = new Group();
+    speck.add(meshOf([0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 20000, 0, 0, 40000, 0, 0]));
+    const speckFrame = measureShipFrame(speck).frame;
+    expect(speckFrame.degenerate).toBe(true);
+    expect(speckFrame.radius).toBe(0);
+
+    expect(measureShipFrame(new Group()).frame.degenerate).toBe(true);
+  });
+
+  it('marks invisible, fully transparent, and blended materials as unpaintable', () => {
+    const hidden = new MeshLambertMaterial();
+    hidden.visible = false;
+    expect(measureShipFrame(wrap(hidden)).frame).toMatchObject({ degenerate: false, unpaintable: true });
+
+    const clear = new MeshLambertMaterial({ transparent: true, opacity: 0 });
+    expect(measureShipFrame(wrap(clear)).frame.unpaintable).toBe(true);
+
+    const blended = new MeshLambertMaterial({ blending: AdditiveBlending, transparent: true });
+    expect(measureShipFrame(wrap(blended)).frame).toMatchObject({ degenerate: false, unpaintable: true });
+
+    expect(measureShipFrame(wrap(new MeshLambertMaterial({ color: 0x6688aa }))).frame.unpaintable).toBe(false);
+  });
+
+  it('notices vertices that sit on a ball', () => {
+    const radius = 2;
+    const positions = [
+      0, radius, 0, radius, 0, 0, 0, 0, radius,
+      0, radius, 0, 0, 0, radius, -radius, 0, 0,
+      0, radius, 0, -radius, 0, 0, 0, 0, -radius,
+      0, radius, 0, 0, 0, -radius, radius, 0, 0,
+      0, -radius, 0, 0, 0, radius, radius, 0, 0,
+      0, -radius, 0, -radius, 0, 0, 0, 0, radius,
+      0, -radius, 0, 0, 0, -radius, -radius, 0, 0,
+      0, -radius, 0, radius, 0, 0, 0, 0, -radius,
+    ];
+    const frame = measureShipFrame(triangle(positions)).frame;
+    expect(frame.degenerate).toBe(false);
+    expect(frame.radial).toBe(true);
+    expect(frame.unpaintable).toBe(false);
+  });
+
   it('keeps the near plane in front of a tiny hull', () => {
     expect(frameDistance(0)).toBe(3);
     const fit = frameCameraFit(0.02);
@@ -34,9 +80,19 @@ describe('ship framing', () => {
 });
 
 function triangle(positions: number[]): Group {
+  return wrap(new MeshLambertMaterial(), positions);
+}
+
+function meshOf(positions: number[]): Mesh {
+  const geometry = new BufferGeometry();
+  geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
+  return new Mesh(geometry, new MeshLambertMaterial());
+}
+
+function wrap(material: MeshLambertMaterial, positions: number[] = [0, 0, 0, 2, 0, 0, 0, 2, 0]): Group {
   const geometry = new BufferGeometry();
   geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
   const root = new Group();
-  root.add(new Mesh(geometry, new MeshLambertMaterial()));
+  root.add(new Mesh(geometry, material));
   return root;
 }

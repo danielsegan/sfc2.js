@@ -111,7 +111,9 @@ Search order, first hit wins:
 
 If the relative directory misses, the basename is tried through steps 3 and 4. A drive letter, a leading slash, a NUL, or a `..` that leaves the install is `textureNameRejected`. The rejected text is not copied into the diagnostic.
 
-When every candidate misses, the mesh is kept and the material is a neutral placeholder (`texturePlaceholder`, warning). That is not `missingTexture`. `loadShipTexture` still reports `missingTexture` when it is asked to read a path that is not in the index.
+When every candidate misses, the mesh is kept and the material is a neutral placeholder (`texturePlaceholder`, warning, `details.miss`). That is not `missingTexture`. `miss` says whether the stem is absent, present only with an unsupported extension, present only outside the model search (another empire or model folder), or written with characters outside the usual token set. A file that is found and does not decode is the same warning with `miss: decodeFailed`, and the BMP error is not also raised. The name is not stored. `loadShipTexture` still reports `missingTexture` when it is asked to read a path that is not in the index.
+
+The every-ship check skips a loaded model that has no paintable surface. Zero area (collinear faces, including axes that still span a box), no triangles on the selected LOD, or a speck of area inside a much larger box is `degenerate`. A model whose visible materials are all invisible (no flags and a black color), fully transparent (flat, untextured, black, no blend mode), or blended (`0x0010`) and that does not show a turn is `unpaintable`. Vertices on a ball whose flat color does not change when the view turns are `symmetric`. These are check rules, not a claim about how CE draws the same bytes. A blended material that does change when turned still passes.
 
 When the luminance flag is set and the luminance name resolves, that path is the glow map. An empty luminance name skips that lookup. Otherwise the builder pairs [bmp.md](bmp.md) `_<token>i` in the directory of the resolved base. The explicit name wins when both exist. Glow maps are decoded with `colorKey: 'none'`, by `loadShipTexture`.
 
