@@ -24,6 +24,8 @@
     "dev:viewer": "vite --config web/ship-viewer/vite.config.ts",
     "dev:web": "vite --config web/vite.config.ts --host 127.0.0.1 --port 5174 --strictPort",
     "build:web": "vite build --config web/vite.config.ts",
+    "desktop:dev": "pnpm exec tauri dev",
+    "desktop:build": "pnpm exec tauri build",
     "check": "pnpm typecheck && pnpm lint:sim && pnpm lut:check && pnpm test && pnpm replay:check && node tools/check-rules-fixtures.mjs && bash tools/check-no-game-files.sh"
   },
   "dependencies": {
@@ -35,6 +37,7 @@
   "devDependencies": {
     "@eslint/js": "^9.16.0",
     "@playwright/test": "^1.65.1",
+    "@tauri-apps/cli": "^2.12.6",
     "@types/node": "^22.19.1",
     "@types/three": "^0.181.0",
     "eslint": "^9.16.0",
