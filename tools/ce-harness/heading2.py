@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Heading change by rotation registration of the own-ship silhouette (screen pixels only, overhead camera).
-Works for grey (Federation) and green (Klingon) hulls and has no 180-degree ambiguity.
+Works for grey (Federation), green (Klingon), and gold/bronze (Lyran) hulls and has no 180-degree ambiguity.
 track(paths) -> list of cumulative heading change (deg, clockwise positive) relative to paths[0], or None."""
 import numpy as np
 from PIL import Image, ImageFilter
@@ -10,8 +10,14 @@ def mask(path):
     im = np.asarray(Image.open(path).convert("RGB")).astype(np.int16)
     c = im[CY-R:CY+R, CX-R:CX+R]
     r, g, b = c[..., 0], c[..., 1], c[..., 2]
-    m = (g >= 25) & (g * 10 >= r * 8) & (g * 10 >= b * 8)      # hull: grey or green; drops red/blue grid lines
-    m &= ~((r * 4 >= g * 3) & (b * 2 < g))                      # drop the olive/yellow HeadingDisplay wedge
+    # Grey or green hulls (Federation, Klingon, Gorn, ...). Drops red/blue grid lines.
+    grey_green = (g >= 25) & (g * 10 >= r * 8) & (g * 10 >= b * 8)
+    grey_green &= ~((r * 4 >= g * 3) & (b * 2 < g))              # olive/yellow HeadingDisplay wedge
+    # Gold/bronze hulls (Lyran). r dominates g; exclude the dark olive grid (r ≈ g)
+    # and the red HeadingDisplay wedge.
+    gold = (r >= 55) & (g >= 20) & (r > g + 8) & (g >= b) & (r + g + b >= 90) & (g >= 25)
+    gold &= ~((r >= 80) & (r > g * 2) & (r > b * 2) & (g < 80))
+    m = grey_green | gold
     yy, xx = np.mgrid[-R:R, -R:R]
     m &= (xx * xx + yy * yy) < R * R
     ys, xs = np.nonzero(m)

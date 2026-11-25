@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Analysis phase: heading per frame (screen pixels), game clock / speed OCR, turn timing.
 Usage: analyze_turn.py <label> ...  -> /out/runs/<label>.json"""
-import json, os, subprocess, sys, statistics
+import json, os, subprocess, sys, statistics, traceback
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from heading import axis
 from turn_tags import apply_noop, sane_clock_ratio, turn_kind
@@ -58,6 +58,7 @@ def turn_kind(button):
 if __name__ == "__main__":
     os.makedirs("/out/runs", exist_ok=True)
     for label in sys.argv[1:]:
+      try:
         cap = json.load(open(f"/out/frames/{label}/capture.json")); a0 = cap["action_wall"]
         rows = []
         for k, (t, p) in enumerate(cap["frames"]):
@@ -73,7 +74,23 @@ if __name__ == "__main__":
         sm = [(raw[i][0], statistics.median(v for _, v in raw[max(0, i - 2):i + 3])) for i in range(len(raw))]
         pre = [v for t, v in sm if t < 0]; base = statistics.median(pre) if pre else 0.0
         sm = [(t, v - base) for t, v in sm]
-        tail = [v for t, v in sm[-10:]]; total = statistics.median(tail)
+        tail = [v for t, v in sm[-10:]]
+        if len(raw) < 2 or not tail:
+            from turn_tags import speed_key as _speed_key
+            res = {"label": label, "energy_panel": energy(f"/out/frames/{label}/energy.png"), "button": cap["button"], "kind": turn_kind(cap["button"]), "target_speed": cap["target_speed"],
+                   "settled_speed": cap["speed_history"][-1] if cap["speed_history"] else None,
+                   "speed_during_run": None, "fps": None, "game_s_per_wall_s": None,
+                   "total_turn_deg": None, "order_delay_s": None, "t10_s": None, "t50_s": None, "t90_s": None,
+                   "mean_rate_deg_per_wall_s_10_90": None, "mean_rate_deg_per_game_s_10_90": None,
+                   "fit_rate_deg_per_wall_s": None, "series": [],
+                   "noop": True, "noop_reason": "heading_untracked",
+                   "speed_key": _speed_key(cap["target_speed"], cap["speed_history"][-1] if cap["speed_history"] else None)}
+            if os.environ.get("SPAWN_KEY"):
+                res["spawnKey"] = os.environ["SPAWN_KEY"]
+            json.dump(res, open(f"/out/runs/{label}.json", "w"), indent=1)
+            print(json.dumps({k: v for k, v in res.items() if k != "series"}))
+            continue
+        total = statistics.median(tail)
         def first(frac): return next((t for t, v in sm if t > 0 and abs(v) >= frac * abs(total)), None)
         t10, t50, t90 = first(0.1), first(0.5), first(0.9)
         mean_rate = (0.8 * abs(total)) / (t90 - t10) if t10 is not None and t90 and t90 > t10 else None
@@ -103,3 +120,7 @@ if __name__ == "__main__":
         apply_noop(res)
         json.dump(res, open(f"/out/runs/{label}.json", "w"), indent=1)
         print(json.dumps({k: v for k, v in res.items() if k != "series"}))
+      except Exception as e:
+        print(f"WARN analyze v1 failed {label}: {e}")
+        traceback.print_exc()
+        continue

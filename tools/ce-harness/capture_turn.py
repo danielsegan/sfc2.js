@@ -9,10 +9,10 @@ BUTTONS = {"port": (31, 82), "stbd": (139, 82), "hard_port": (31, 118), "hard_st
 HUD_BUTTONS = {
     "federation": {"port": (31, 82), "stbd": (139, 82), "hard_port": (31, 118), "hard_stbd": (139, 118), "u_turn": (84, 118)},
     "klingon":    {"port": (60, 80), "stbd": (117, 80), "hard_port": (60, 112), "hard_stbd": (117, 112), "u_turn": (84, 112)},
-    "romulan":    {"port": (49, 87), "stbd": (133, 87), "hard_port": (40, 112), "hard_stbd": (124, 112), "u_turn": (82, 112)},
+    "romulan":    {"port": (48, 113), "stbd": (132, 113), "hard_port": (42, 88), "hard_stbd": (132, 88), "u_turn": (90, 113)},
     "hydran":     {"port": (57, 94), "stbd": (114, 94), "hard_port": (57, 120), "hard_stbd": (114, 120), "u_turn": (85, 124)},
     "isc":        {"port": (85, 87), "stbd": (120, 86), "hard_port": (85, 119), "hard_stbd": (120, 120), "u_turn": (85, 87)},
-    "lyran":      {"port": (31, 82), "stbd": (139, 82), "hard_port": (31, 118), "hard_stbd": (139, 118), "u_turn": (84, 118)},
+    "lyran":      {"port": (50, 112), "stbd": (126, 112), "hard_port": (50, 90), "hard_stbd": (126, 90), "u_turn": (88, 112)},
     "gorn":       {"port": (31, 82), "stbd": (139, 82), "hard_port": (31, 118), "hard_stbd": (139, 118), "u_turn": (84, 118)},
     "mirak":      {"port": (31, 82), "stbd": (139, 82), "hard_port": (31, 118), "hard_stbd": (139, 118), "u_turn": (84, 118)},
     "orion":      {"port": (31, 82), "stbd": (139, 82), "hard_port": (31, 118), "hard_stbd": (139, 118), "u_turn": (84, 118)},
