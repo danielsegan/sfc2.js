@@ -16,6 +16,8 @@ SELECT, RACE = (344, 291), (306, 242)
 
 def race_name(i):
     # i is 0-based within this sweep, added to race_clicks
+    # RACE_ORDER names Orion as index 8, but the Your Fleet arrow wraps
+    # after Mirak, so a sweep that asks for a 9th race is Federation again.
     idx = (race_clicks + i) % len(choose_vessel.RACE_ORDER)
     return choose_vessel.RACE_ORDER[idx]
 
