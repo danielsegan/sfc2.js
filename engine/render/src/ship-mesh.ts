@@ -31,7 +31,7 @@ import {
   Object3D,
   type Material,
 } from 'three';
-import { resolveShipTexture } from './texture-resolve.ts';
+import { classifyTextureMiss, resolveShipTexture, type TextureMissClass } from './texture-resolve.ts';
 import { loadShipTexture, type LoadShipTextureOptions, type RenderTier } from './ship-texture.ts';
 
 /** Neutral stand-in used when a named texture is not in the install. */
@@ -219,8 +219,10 @@ async function createMaterial(modMaterial: ModMaterial | undefined, ctx: Materia
       applyFlags(plain, modMaterial);
       return plain;
     }
-    if (diffuse.reason === 'absent') notePlaceholder(ctx, 'diffuse');
-    if (glow.named && !glow.rejected && glow.path === undefined) notePlaceholder(ctx, 'luminance');
+    if (diffuse.reason === 'absent') notePlaceholder(ctx, 'diffuse', classifyTextureMiss(ctx.vfs, modMaterial.diffuseTexture.name));
+    if (glow.named && !glow.rejected && glow.path === undefined && modMaterial.luminanceTexture !== null) {
+      notePlaceholder(ctx, 'luminance', classifyTextureMiss(ctx.vfs, modMaterial.luminanceTexture.name));
+    }
     const standIn = placeholderMaterial(ctx.tier);
     applyFlags(standIn, modMaterial, { keepColor: true });
     return standIn;
@@ -230,7 +232,9 @@ async function createMaterial(modMaterial: ModMaterial | undefined, ctx: Materia
   if (glowPath === undefined && !glow.rejected) {
     const beside = glowBeside(ctx.vfs, diffuse.path);
     if (beside !== undefined) glowPath = beside;
-    else if (glow.named) notePlaceholder(ctx, 'luminance');
+    else if (glow.named && modMaterial.luminanceTexture !== null) {
+      notePlaceholder(ctx, 'luminance', classifyTextureMiss(ctx.vfs, modMaterial.luminanceTexture.name));
+    }
   }
 
   const loaded = await loadShipTexture(
@@ -238,15 +242,22 @@ async function createMaterial(modMaterial: ModMaterial | undefined, ctx: Materia
     { basePath: diffuse.path, ...(glowPath === undefined ? {} : { selfIllumPath: glowPath }) },
     { tier: ctx.tier, colorKey: ctx.colorKey },
   );
-  ctx.diagnostics.push(...loaded.diagnostics);
-  if (loaded.data.material !== null) {
+  const baseFailed = loaded.data.material === null;
+  const glowFailed = glowPath !== undefined && loaded.data.selfIllumTexture === null;
+  if (baseFailed) notePlaceholder(ctx, 'diffuse', 'decodeFailed');
+  else if (glowFailed) notePlaceholder(ctx, 'luminance', 'decodeFailed');
+  for (const item of loaded.diagnostics) {
+    if (item.severity === 'error' && item.source === 'bmp' && (baseFailed || glowFailed)) continue;
+    ctx.diagnostics.push(item);
+  }
+  if (!baseFailed && loaded.data.material !== null) {
     applyFlags(loaded.data.material, modMaterial);
     return loaded.data.material;
   }
 
-  const plain = plainMaterial(ctx.tier, modMaterial.color);
-  applyFlags(plain, modMaterial);
-  return plain;
+  const standIn = placeholderMaterial(ctx.tier);
+  applyFlags(standIn, modMaterial, { keepColor: true });
+  return standIn;
 }
 
 function namedGlow(
@@ -332,16 +343,49 @@ function plainMaterial(tier: RenderTier, color: { r: number; g: number; b: numbe
 }
 
 function applyFlags(material: Material, modMaterial: ModMaterial, options?: { keepColor?: boolean }): void {
-  const shaded = material as Material & Shadeable;
+  const shaded = material as Material & Shadeable & { visible: boolean; opacity: number; depthWrite: boolean };
   if (options?.keepColor !== true) {
     shaded.color.setRGB(modMaterial.color.r / 255, modMaterial.color.g / 255, modMaterial.color.b / 255);
   }
   if (modMaterial.wire) shaded.wireframe = true;
   if (modMaterial.flat && !modMaterial.gouraud) shaded.flatShading = true;
+  const notes = (material.userData ?? {}) as Record<string, unknown>;
+  material.userData = notes;
   if (modMaterial.additive) {
     shaded.blending = AdditiveBlending;
     shaded.transparent = true;
+    notes.effectBlend = 'additive';
+  } else if (isInvisibleMarker(modMaterial)) {
+    shaded.visible = false;
+    notes.effectBlend = 'invisible';
+  } else if (isClearedAlpha(modMaterial)) {
+    shaded.transparent = true;
+    shaded.opacity = 0;
+    shaded.depthWrite = false;
+    notes.effectBlend = 'alpha';
   }
+}
+
+/** No flags and no color: the material has nothing to draw. */
+function isInvisibleMarker(material: ModMaterial): boolean {
+  return material.flags === 0 && material.color.r === 0 && material.color.g === 0 && material.color.b === 0;
+}
+
+/**
+ * Flat-shaded, untextured, and black, with no blend mode. Treated as a
+ * fully transparent effect rather than a hull surface.
+ */
+function isClearedAlpha(material: ModMaterial): boolean {
+  return (
+    material.flat &&
+    !material.gouraud &&
+    !material.textured &&
+    !material.wire &&
+    !material.additive &&
+    material.color.r === 0 &&
+    material.color.g === 0 &&
+    material.color.b === 0
+  );
 }
 
 function glowBeside(vfs: Vfs, basePath: string): string | undefined {
@@ -370,10 +414,10 @@ function rejectTextureName(ctx: MaterialContext): void {
   );
 }
 
-function notePlaceholder(ctx: MaterialContext, which: 'diffuse' | 'luminance'): void {
+function notePlaceholder(ctx: MaterialContext, which: 'diffuse' | 'luminance', miss: TextureMissClass): void {
   ctx.diagnostics.push(
     diagnostic('texturePlaceholder', 'bmp', 'warning', {
-      details: { which },
+      details: { which, miss },
       ...(ctx.modelPath === undefined ? {} : { location: { file: ctx.modelPath } }),
     }),
   );

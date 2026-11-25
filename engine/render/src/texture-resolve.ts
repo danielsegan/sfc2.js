@@ -17,6 +17,50 @@ export type TextureResolution =
   | { path: string }
   | { reason: 'empty-name' | 'texture-name' | 'absent' };
 
+/**
+ * Why a texture name became a placeholder. Counts of these classes are
+ * safe to log. The name and the path are not.
+ */
+export const TEXTURE_MISS_CLASSES = [
+  'missingFile',
+  'unsupportedExtension',
+  'differentEmpire',
+  'unusualName',
+  'decodeFailed',
+] as const;
+export type TextureMissClass = (typeof TEXTURE_MISS_CLASSES)[number];
+
+const USUAL_SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+
+/**
+ * Classify a name the search already missed. A supported image with the
+ * same stem outside the model search is `differentEmpire` (another empire
+ * or model folder the lookup does not walk). A stem that exists only with
+ * some other extension is `unsupportedExtension`. A name with characters
+ * outside the usual token set is `unusualName`. Otherwise nothing in the
+ * install uses that stem (`missingFile`). `decodeFailed` is assigned by
+ * the mesh builder when a file was found and did not decode.
+ */
+export function classifyTextureMiss(vfs: Vfs, rawName: string): TextureMissClass {
+  const parsed = parseTextureName(rawName);
+  if (parsed.kind === 'empty') return 'missingFile';
+  if (parsed.kind === 'rejected') return 'unusualName';
+  const stem = stemOf(parsed.file);
+  let supported = false;
+  let unsupported = false;
+  for (const entry of vfs.list()) {
+    const slash = entry.path.lastIndexOf('/');
+    const base = slash >= 0 ? entry.path.slice(slash + 1) : entry.path;
+    const match = stemMatch(base, stem);
+    if (match === 'supported') supported = true;
+    else if (match === 'unsupported') unsupported = true;
+  }
+  if (supported) return 'differentEmpire';
+  if (unsupported) return 'unsupportedExtension';
+  if (unusualSegments(parsed.dirParts, parsed.file)) return 'unusualName';
+  return 'missingFile';
+}
+
 export function resolveShipTexture(vfs: Vfs, modelPath: string, rawName: string): TextureResolution {
   const parsed = parseTextureName(rawName);
   if (parsed.kind !== 'ok') return { reason: parsed.kind === 'empty' ? 'empty-name' : 'texture-name' };
@@ -137,4 +181,25 @@ function firstExisting(vfs: Vfs, dir: string, variants: readonly string[]): stri
 function directoryOf(modelPath: string): string {
   const slash = modelPath.lastIndexOf('/');
   return slash >= 0 ? modelPath.slice(0, slash) : '';
+}
+
+function stemOf(file: string): string {
+  const dot = file.lastIndexOf('.');
+  return dot > 0 ? file.slice(0, dot) : file;
+}
+
+function stemMatch(fileName: string, stem: string): 'supported' | 'unsupported' | 'no' {
+  const dot = fileName.lastIndexOf('.');
+  const ext = dot > 0 ? fileName.slice(dot).toLowerCase() : '';
+  const fileStem = dot > 0 ? fileName.slice(0, dot) : fileName;
+  if (fileStem.toLowerCase() !== stem.toLowerCase()) return 'no';
+  if (ext.length > 0 && IMAGE_EXT.has(ext)) return 'supported';
+  return 'unsupported';
+}
+
+function unusualSegments(dirParts: readonly string[], file: string): boolean {
+  for (const segment of [...dirParts, file]) {
+    if (!USUAL_SEGMENT.test(segment)) return true;
+  }
+  return false;
 }

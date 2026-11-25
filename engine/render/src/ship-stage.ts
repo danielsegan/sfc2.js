@@ -5,6 +5,7 @@
 
 import {
   ACESFilmicToneMapping,
+  AdditiveBlending,
   AmbientLight,
   Box3,
   BufferGeometry,
@@ -22,6 +23,7 @@ import {
   SRGBColorSpace,
   Vector3,
   WebGLRenderer,
+  type Material,
   type Object3D,
 } from 'three';
 import type { LoadedShip } from './ship-catalog.ts';
@@ -29,11 +31,26 @@ import type { RenderTier } from './ship-texture.ts';
 
 /** A mesh this thin on two axes does not paint a surface that can spin. */
 export const PAINTABLE_EXTENT = 1e-4;
+/** Triangle area at or below this is a point or a set of collinear edges. */
+const AREA_EPSILON = 1e-8;
+/** Area divided by the box's face areas. Below this, the surface is a speck in a huge box. */
+const SPECK_RATIO = 1e-4;
+/** Radius spread for "these vertices lie on a sphere". */
+const RADIAL_CV = 0.05;
+const RADIAL_MIN_SAMPLES = 8;
 
 export interface ShipFrame {
   radius: number;
-  /** Empty, a point, or a line. The every-ship check skips the row. */
+  /**
+   * Nothing to spin: empty, a point, a line, zero area (collinear faces,
+   * including a 3-axis cross), no visible triangles, or a speck inside a
+   * much larger box. The every-ship check skips the row.
+   */
   degenerate: boolean;
+  /** Every visible material is invisible, fully transparent, or blended. */
+  unpaintable: boolean;
+  /** Vertices sit on a ball, so a flat color does not show a turn. */
+  radial: boolean;
 }
 
 export function frameDistance(radius: number): number {
@@ -54,20 +71,29 @@ export function frameCameraFit(radius: number): { distance: number; near: number
  * same space as `root` when `root` has an identity world matrix.
  */
 export function measureShipFrame(root: Object3D): { frame: ShipFrame; center: Vector3 } {
-  const box = new Box3();
-  const corner = new Vector3();
-  walkBounds(root, box, corner);
-  if (box.isEmpty()) return { frame: { radius: 0, degenerate: true }, center: new Vector3() };
-  const size = box.getSize(new Vector3());
-  const center = box.getCenter(new Vector3());
+  const measured = walkSurfaces(root);
+  const empty: ShipFrame = { radius: 0, degenerate: true, unpaintable: false, radial: false };
+  if (measured.box.isEmpty()) return { frame: empty, center: new Vector3() };
+  const size = measured.box.getSize(new Vector3());
+  const center = measured.box.getCenter(new Vector3());
   if (![size.x, size.y, size.z, center.x, center.y, center.z].every((value) => Number.isFinite(value))) {
-    return { frame: { radius: 0, degenerate: true }, center: new Vector3() };
+    return { frame: empty, center: new Vector3() };
   }
   const dims = [size.x, size.y, size.z].sort((left, right) => left - right);
-  const degenerate = (dims[1] ?? 0) < PAINTABLE_EXTENT;
+  const faceArea = size.x * size.y + size.y * size.z + size.z * size.x;
+  const speck = faceArea > 0 && measured.area / faceArea < SPECK_RATIO;
+  const degenerate =
+    (dims[1] ?? 0) < PAINTABLE_EXTENT || measured.triangles === 0 || measured.area <= AREA_EPSILON || speck;
   const radius = 0.5 * Math.hypot(size.x, size.y, size.z);
+  const longest = dims[2] ?? 0;
+  const ball = longest > PAINTABLE_EXTENT && (dims[0] ?? 0) > longest * 0.5;
   return {
-    frame: { radius: degenerate || !Number.isFinite(radius) ? 0 : radius, degenerate },
+    frame: {
+      radius: degenerate || !Number.isFinite(radius) ? 0 : radius,
+      degenerate,
+      unpaintable: measured.meshes > 0 && measured.paintable === 0,
+      radial: !degenerate && ball && radialSpread(measured.samples, center),
+    },
     center,
   };
 }
@@ -140,7 +166,7 @@ export function createShipStage(
       pivot.clear();
       if (ship === null) {
         frameCamera(camera, 1);
-        return { radius: 1, degenerate: false };
+        return { radius: 1, degenerate: false, unpaintable: false, radial: false };
       }
       const root = ship.mesh.root;
       root.removeFromParent();
@@ -212,25 +238,98 @@ function frameCamera(camera: PerspectiveCamera, radius: number): void {
   camera.updateProjectionMatrix();
 }
 
-function walkBounds(obj: Object3D, box: Box3, corner: Vector3): void {
+interface SurfaceTally {
+  box: Box3;
+  area: number;
+  triangles: number;
+  meshes: number;
+  paintable: number;
+  samples: Vector3[];
+}
+
+function walkSurfaces(root: Object3D): SurfaceTally {
+  const tally: SurfaceTally = {
+    box: new Box3(),
+    area: 0,
+    triangles: 0,
+    meshes: 0,
+    paintable: 0,
+    samples: [],
+  };
+  const corner = new Vector3();
+  walkMesh(root, tally, corner);
+  return tally;
+}
+
+function walkMesh(obj: Object3D, tally: SurfaceTally, corner: Vector3): void {
   if (!obj.visible) return;
   if (obj instanceof Mesh) {
-    const geometry = obj.geometry;
-    if (geometry.boundingBox === null) geometry.computeBoundingBox();
-    const local = geometry.boundingBox;
-    if (local !== null && !local.isEmpty()) {
-      for (const x of [local.min.x, local.max.x]) {
-        for (const y of [local.min.y, local.max.y]) {
-          for (const z of [local.min.z, local.max.z]) {
-            corner.set(x, y, z);
-            obj.localToWorld(corner);
-            box.expandByPoint(corner);
-          }
-        }
+    tally.meshes += 1;
+    if (materialsOf(obj).some(drawsSurface)) tally.paintable += 1;
+    const position = obj.geometry.getAttribute('position');
+    const index = obj.geometry.getIndex();
+    if (position !== undefined && position.count >= 3) {
+      const triCount = Math.floor((index === null ? position.count : index.count) / 3);
+      for (let tri = 0; tri < triCount; tri += 1) {
+        const ids = [0, 1, 2].map((offset) => (index === null ? tri * 3 + offset : index.getX(tri * 3 + offset)));
+        const points = ids.map((id) => {
+          corner.set(position.getX(id), position.getY(id), position.getZ(id));
+          return obj.localToWorld(corner).clone();
+        });
+        const [a, b, c] = points;
+        if (a === undefined || b === undefined || c === undefined) continue;
+        tally.area += triangleArea(a, b, c);
+        tally.triangles += 1;
+        tally.box.expandByPoint(a);
+        tally.box.expandByPoint(b);
+        tally.box.expandByPoint(c);
+        if (tally.samples.length < 3000) tally.samples.push(a, b, c);
       }
     }
   }
-  for (const child of obj.children) walkBounds(child, box, corner);
+  for (const child of obj.children) walkMesh(child, tally, corner);
+}
+
+function triangleArea(a: Vector3, b: Vector3, c: Vector3): number {
+  const abx = b.x - a.x;
+  const aby = b.y - a.y;
+  const abz = b.z - a.z;
+  const acx = c.x - a.x;
+  const acy = c.y - a.y;
+  const acz = c.z - a.z;
+  const cx = aby * acz - abz * acy;
+  const cy = abz * acx - abx * acz;
+  const cz = abx * acy - aby * acx;
+  return 0.5 * Math.hypot(cx, cy, cz);
+}
+
+function radialSpread(samples: readonly Vector3[], center: Vector3): boolean {
+  if (samples.length < RADIAL_MIN_SAMPLES) return false;
+  let mean = 0;
+  const radii: number[] = [];
+  for (const sample of samples) {
+    const radius = sample.distanceTo(center);
+    radii.push(radius);
+    mean += radius;
+  }
+  mean /= radii.length;
+  if (!(mean > PAINTABLE_EXTENT)) return false;
+  let variance = 0;
+  for (const radius of radii) {
+    const delta = radius - mean;
+    variance += delta * delta;
+  }
+  return Math.sqrt(variance / radii.length) / mean < RADIAL_CV;
+}
+
+function materialsOf(mesh: Mesh): Material[] {
+  return Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+}
+
+/** Invisible, fully transparent, or a blended (additive / alpha) effect. */
+function drawsSurface(material: Material): boolean {
+  if (!material.visible || material.opacity <= 0.001) return false;
+  return material.blending !== AdditiveBlending;
 }
 
 function makeStars(): Points {

@@ -2,8 +2,10 @@
 #
 # workflow_dispatch only. Runs on the sfc2-ci runner, which can read
 # /srv/sfc2/reference/2.670 (the Wine install, not the extracted tree).
-# The log and the uploaded artifact are counts, pass/fail, and error
-# classes. The per-ship report (hull id and empire) stays on the runner
+# The log and the uploaded artifact are counts, pass/fail, error
+# classes, skip reasons, and texture-miss classes. They do not include
+# hull ids, texture names, or paths. The per-ship report (hull id and
+# empire, still without texture names or paths) stays on the runner
 # under $HOME/sfc2-private/viewer-check/<run-id>/. The job does not
 # upload screenshots, textures, models, or the install.
 # Chromium is installed into the runner user cache and is not uploaded.

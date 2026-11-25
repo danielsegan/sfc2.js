@@ -18,6 +18,7 @@ import {
 import { pairSelfIllumination } from '../formats/src/self-illum.ts';
 import { filesFromDevInstall } from '../../web/src/dev-install-client.ts';
 import {
+  TEXTURE_MISS_CLASSES,
   buildReport,
   failureResult,
   gradeRenderedShip,
@@ -27,6 +28,7 @@ import {
   type DiagnosticSnap,
   type RenderError,
   type ShipResult,
+  type TextureMissClass,
   type ViewerCheckReport,
 } from './report.ts';
 
@@ -108,7 +110,7 @@ function assessShip(
   webgl: boolean,
   frames: number,
 ): ShipResult {
-  if (ship.expectedNoModel) return skippedResult(ship.spawnKey);
+  if (ship.expectedNoModel) return skippedResult(ship.spawnKey, 'noHullModel');
   const loaded = loadedResult({
     spawnKey: ship.spawnKey,
     placeholder: ship.placeholder,
@@ -122,24 +124,29 @@ function assessShip(
   return gradeRenderedShip(loaded, renderFrames(stage, ship, frames));
 }
 
-function renderFrames(stage: ShipStage, ship: LoadedShip, frames: number): RenderError | 'degenerate' | null {
+function renderFrames(stage: ShipStage, ship: LoadedShip, frames: number): RenderError | 'degenerate' | 'unpaintable' | 'symmetric' | null {
   try {
-    stage.show(null);
+    const framing = stage.show(ship);
+    if (framing.degenerate) return 'degenerate';
+    // Baseline uses the framed camera with the mesh hidden. Comparing
+    // against the unframed empty stage counts starfield motion as a ship
+    // that then fails to spin.
+    const root = ship.mesh.root;
+    root.visible = false;
     stage.setPose(0, 0);
     stage.render();
     const baseline = stage.readFrame();
+    root.visible = true;
     if (baseline.width < 16 || baseline.height < 16) return 'render.failed';
     if (baseline.glError !== 0) return 'render.glError';
 
-    const framing = stage.show(ship);
-    if (framing.degenerate) return 'degenerate';
     let turn = createTurntable(false);
     let previous: Uint8Array | null = null;
     let sawShip = false;
     let sawSpin = false;
     for (let frame = 0; frame < frames; frame++) {
       for (let tick = 0; tick < SPIN_TICKS; tick++) turn = advanceSpin(turn, 0.1, false);
-      stage.setPose(turn.yaw, turn.pitch);
+      stage.setPose(turn.yaw, 0.2 + Math.sin(frame * 1.7) * 0.85);
       stage.render();
       const sample = stage.readFrame();
       if (sample.glError !== 0) return 'render.glError';
@@ -147,7 +154,9 @@ function renderFrames(stage: ShipStage, ship: LoadedShip, frames: number): Rende
       if (previous !== null && framesDiffer(previous, sample.pixels)) sawSpin = true;
       previous = sample.pixels;
     }
+    if ((!sawShip || !sawSpin) && framing.unpaintable) return 'unpaintable';
     if (!sawShip) return 'render.emptyFrame';
+    if (!sawSpin && framing.radial) return 'symmetric';
     if (!sawSpin) return 'render.unchanged';
     return null;
   } catch {
@@ -198,12 +207,18 @@ function glowBesideBase(vfs: Vfs, basePath: string): string | undefined {
 
 function snapDiagnostic(item: { source: string; code: string; severity: string; details?: Record<string, unknown> }): DiagnosticSnap {
   const which = item.details?.which;
+  const miss = item.details?.miss;
   return {
     source: item.source,
     code: item.code,
     severity: item.severity,
     ...(which === 'diffuse' || which === 'luminance' ? { which } : {}),
+    ...(isMissClass(miss) ? { miss } : {}),
   };
+}
+
+function isMissClass(value: unknown): value is TextureMissClass {
+  return typeof value === 'string' && (TEXTURE_MISS_CLASSES as readonly string[]).includes(value);
 }
 
 function framesDiffer(left: Uint8Array, right: Uint8Array): boolean {
