@@ -189,8 +189,8 @@ describe('orderHet (verb 13)', () => {
   it('uses Tier-2 HET rates and sweeps for non-Fed hulls and keeps unmeasured ones on default', () => {
     const { sim } = run([
       setup('Z-CA', 5),
-      setup('H-HN', 5),
-      setup('L-CC', 15),
+      setup('H-HN', 15),
+      setup('L-CC', 5),
       setup('G-CA', 31),
       setup('I-FF', 5),
       setup('R-KR', 10),
@@ -205,10 +205,10 @@ describe('orderHet (verb 13)', () => {
       ],
     });
     expect(heading(sim, 0)).toBe(318);
-    expect(heading(sim, 1)).toBe(331);
-    expect(heading(sim, 2)).toBe(316);
-    expect(heading(sim, 3)).toBe(247);
-    expect(heading(sim, 4)).toBe(282);
+    expect(heading(sim, 1)).toBe(363);
+    expect(heading(sim, 2)).toBe(267);
+    expect(heading(sim, 3)).toBe(307);
+    expect(heading(sim, 4)).toBe(370);
     expect(heading(sim, 5)).toBe(285);
   });
 
