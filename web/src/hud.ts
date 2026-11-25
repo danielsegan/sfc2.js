@@ -3,7 +3,16 @@ import type { DuelPlan } from '../../engine/duel/match.ts';
 import { MODE_OVERLOAD, MODE_PROXIMITY } from '../../engine/sim/rules-tables.ts';
 import { toDisplayHeading } from '../../engine/view/units.ts';
 import type { HelmView, HudEvent, ViewModel, WeaponReadout } from '../../engine/view/view-model.ts';
+import { empireIdForRace } from './empire-marks.ts';
 import { mapOffset } from './map-geom.ts';
+import {
+  arcPieSvgPath,
+  drawPlaceholderHull,
+  facingTowardPoint,
+  hardpointPositions,
+  scanGatedTargetStatus,
+  type SchematicMode,
+} from './schematic.ts';
 import { FACING_NAMES, formatFacingList, normalizeFacings } from './shield-select.ts';
 import { supportsProximity } from './weapon-select.ts';
 
@@ -26,7 +35,9 @@ export interface HudHandles {
   targetId: number | null;
   selectedFacings: readonly number[];
   reinforceAmount: number;
+  schematicMode: SchematicMode;
   onSelect(slot: number, additive?: boolean): void;
+  onSchematicSelect?(slot: number, additive?: boolean): void;
   onTarget?(id: number): void;
 }
 
@@ -45,7 +56,9 @@ export let mapFrame: MapFrame | null = null;
 
 export function updateHud(vm: ViewModel, roster: readonly RosterEntry[], hud: HudHandles, plan: DuelPlan, now: number): void {
   const self = vm.self;
-  const target = vm.contacts.find((contact) => contact.kind === 'ship' && contact.id === hud.targetId && contact.detected)
+  const target = (hud.targetId !== null
+    ? vm.contacts.find((contact) => contact.kind === 'ship' && contact.id === hud.targetId)
+    : undefined)
     ?? vm.contacts.find((contact) => contact.kind === 'ship' && contact.hostility === 'hostile' && contact.detected);
   text('tick', String(vm.tick));
   text('speed', self ? String(self.speed) : '0');
@@ -88,18 +101,17 @@ export function updateHud(vm: ViewModel, roster: readonly RosterEntry[], hud: Hu
   const rearm = rearming > 0 ? ` · ${String(rearming)} rearming` : '';
   text('fighter-status', `${countWord(ready, 'fighter', 'fighters')} · ${countWord(pfs, 'PF', 'PFs')}${rearm}`);
   text('mine-status', `${countWord(self?.craft.mines ?? 0, 'mine', 'mines')} · ${countWord(self?.craft.boarding ?? 0, 'party', 'parties')}`);
-  text('target-name', target ? roster[target.index]?.name ?? 'Contact' : 'No contact');
-  text('target-class', target ? roster[target.index]?.empire ?? '' : 'Tab to target');
-  text('target-range', target ? fmt(target.rangeFromSelf) : '—');
-  text('target-bearing', target && self ? formatDeg(bearing(self.heading16, selfContact(vm), target)) : '—');
-  text('target-shields', target ? target.shields.map((facing) => String(facing.current)).join(' · ') : '');
-  renderTargetList(vm, roster, hud);
+  text('transporter-status', self ? `${countWord(self.craft.boarding, 'boarding party', 'boarding parties')} ready` : 'No ship');
+  renderTargetSchematic(vm, self, target, roster, hud);
   const alert = latestAlert(vm.events, vm.self?.id);
   text('alert', alert);
   appendLog(vm);
   drawShields(vm, plan, hud, now);
+  drawShipSchematic(vm, self, target, plan, now);
+  renderSchematicHardpoints(vm, hud, plan);
   drawMap(vm, hud);
   renderWeapons(vm, hud, plan);
+  syncWeaponsMfdSummary(vm, hud, plan);
   syncProximityButton(vm, hud, plan);
   renderContacts(vm, roster);
   renderShieldTable(vm, plan, hud);
@@ -612,6 +624,288 @@ function renderTargetList(vm: ViewModel, roster: readonly RosterEntry[], hud: Hu
     button.className = `${contact.hostility}${selected ? ' selected' : ''}`;
     button.addEventListener('click', () => hud.onTarget?.(contact.id));
     host.append(button);
+  }
+}
+
+function renderTargetSchematic(
+  vm: ViewModel,
+  self: ViewModel['self'],
+  target: ViewModel['contacts'][number] | undefined,
+  roster: readonly RosterEntry[],
+  hud: HudHandles,
+): void {
+  const scan = scanGatedTargetStatus(target);
+  text('target-scan-state', scan.scanLabel);
+  text('target-weapon-status', scan.weaponStatusLabel);
+  text('target-name', target ? roster[target.index]?.name ?? 'Contact' : 'No contact');
+  text('target-class', target ? roster[target.index]?.empire ?? '' : 'Tab to target');
+  const visible = Boolean(target && target.detected);
+  text('target-range', visible && target ? fmt(target.rangeFromSelf) : '—');
+  text('target-speed', visible && target ? fmt(target.speed) : '—');
+  text('target-bearing', visible && target && self ? formatDeg(bearing(self.heading16, selfContact(vm), target)) : '—');
+  text(
+    'target-hull',
+    target && scan.shieldVisible ? `${String(target.hull.forward)} · ${String(target.hull.center)} · ${String(target.hull.aft)}` : '—',
+  );
+  text(
+    'target-shields',
+    target && scan.shieldVisible ? target.shields.map((facing) => String(facing.current)).join(' · ') : '',
+  );
+  drawTargetShields(vm, target, roster, scan.shieldVisible);
+  renderTargetList(vm, roster, hud);
+}
+
+function drawTargetShields(
+  vm: ViewModel,
+  target: ViewModel['contacts'][number] | undefined,
+  roster: readonly RosterEntry[],
+  shieldVisible: boolean,
+): void {
+  const canvas = document.getElementById('target-shields-canvas');
+  if (!(canvas instanceof HTMLCanvasElement)) return;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  const w = canvas.width;
+  const h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+  const cx = w / 2;
+  const cy = h / 2;
+  const radius = Math.min(w, h) * 0.38;
+  const targetEmpire = target ? empireIdForRace(roster[target.index]?.empire ?? '') : 'neutral';
+  drawPlaceholderHull(ctx, cx, cy, radius, targetEmpire, shieldVisible ? '#8a9aab' : '#55606b');
+  const selfPos = selfContact(vm);
+  const facingUs = target && selfPos && shieldVisible ? facingTowardPoint(target.heading16, target, selfPos) : null;
+  const shields = target?.shields ?? [];
+  for (let i = 0; i < 6; i++) {
+    const start = -Math.PI / 2 - Math.PI / 6 + i * (Math.PI / 3);
+    const end = start + Math.PI / 3;
+    const gap = 0.08;
+    const facing = shields[i];
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, start + gap, end - gap);
+    if (!shieldVisible || !target) {
+      ctx.strokeStyle = '#55606b';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([2, 3]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      continue;
+    }
+    const ratio = facing && facing.max > 0 ? facing.current / facing.max : 0;
+    ctx.strokeStyle = ratio <= 0 ? '#e5484d' : ratio < 0.25 ? '#f2b33d' : '#5fd3a0';
+    ctx.lineWidth = facingUs === i ? 5 : 3;
+    if (ratio > 0 && ratio < 0.25) ctx.setLineDash([3, 3]);
+    else ctx.setLineDash([]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    if (facingUs === i) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius + 6, start + gap, end - gap);
+      ctx.strokeStyle = '#ff6b5e';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+    const mid = (start + end) / 2;
+    const labelAt = radius - 13;
+    ctx.fillStyle = facingUs === i ? '#ffffff' : '#d8e2ec';
+    ctx.font = '9px ui-monospace, monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(String(facing?.current ?? 0), cx + Math.cos(mid) * labelAt, cy + Math.sin(mid) * labelAt);
+  }
+}
+
+function drawShipSchematic(
+  vm: ViewModel,
+  self: ViewModel['self'],
+  target: ViewModel['contacts'][number] | undefined,
+  plan: DuelPlan,
+  now: number,
+): void {
+  const canvas = document.getElementById('ship-schematic-shields');
+  if (!(canvas instanceof HTMLCanvasElement)) return;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  const w = canvas.width;
+  const h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+  const cx = w / 2;
+  const cy = h / 2;
+  const radius = Math.min(w, h) * 0.42;
+  const empire = document.body.dataset.empire ?? 'fed';
+  const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#4f8fd6';
+  drawPlaceholderHull(ctx, cx, cy, radius, empire, accent, 'rgba(79, 143, 214, 0.08)');
+  const selfPos = selfContact(vm);
+  const facingTarget = self && selfPos && target && target.detected && !target.cloaked
+    ? facingTowardPoint(self.heading16, selfPos, target)
+    : null;
+  const shields = self?.shields ?? [];
+  for (let i = 0; i < 6; i++) {
+    const facing = shields[i];
+    const start = -Math.PI / 2 - Math.PI / 6 + i * (Math.PI / 3);
+    const end = start + Math.PI / 3;
+    const gap = 0.07;
+    const ratio = facing && facing.max > 0 ? facing.current / facing.max : 0;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, start + gap, end - gap);
+    ctx.strokeStyle = ratio <= 0 ? '#e5484d' : ratio < 0.25 ? '#f2b33d' : '#5fd3a0';
+    ctx.lineWidth = flashes.get(i) !== undefined && (flashes.get(i) ?? 0) > now ? 6 : 3;
+    if (ratio > 0 && ratio < 0.25) ctx.setLineDash([3, 3]);
+    else ctx.setLineDash([]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    if ((plan.specific[i] ?? 0) > 0 || (facing?.reinforced ?? 0) > 0) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius + 5, start + gap, end - gap);
+      ctx.strokeStyle = '#f2b33d';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+    if (facingTarget === i) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius - 5, start + gap, end - gap);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+  }
+}
+
+let hardpointKey = '';
+
+function renderSchematicHardpoints(vm: ViewModel, hud: HudHandles, plan: DuelPlan): void {
+  const host = document.getElementById('schematic-hardpoints');
+  if (!host) return;
+  const weapons = vm.self?.weapons ?? [];
+  const readyCount = weapons.filter((w) => w.ready).length;
+  text('ship-schematic-summary', `${String(readyCount)}/${String(weapons.length)} ready`);
+  const positions = hardpointPositions(weapons);
+  const key = `${hud.schematicMode}:${weapons.map((w) => `${String(w.slotIndex)}:${w.family}:${String(w.arcFrom16)}:${String(w.arcTo16)}`).join('|')}`;
+  if (key !== hardpointKey) {
+    hardpointKey = key;
+    host.replaceChildren();
+    for (const weapon of weapons) {
+      const pos = positions.find((item) => item.slotIndex === weapon.slotIndex);
+      if (!pos) continue;
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'hardpoint';
+      button.dataset.hardpointSlot = String(weapon.slotIndex);
+      button.style.left = `${String(pos.xPct)}%`;
+      button.style.top = `${String(pos.yPct)}%`;
+      button.title = `${weapon.code} (${weapon.arc})`;
+      if (hud.schematicMode === 'arcs') {
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('viewBox', '0 0 20 20');
+        svg.setAttribute('aria-hidden', 'true');
+        const ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        ring.setAttribute('cx', '10');
+        ring.setAttribute('cy', '10');
+        ring.setAttribute('r', '7');
+        ring.setAttribute('fill', 'none');
+        ring.setAttribute('stroke', '#627488');
+        ring.setAttribute('stroke-width', '1');
+        const wedge = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        wedge.setAttribute('d', arcPieSvgPath(weapon.arcFrom16, weapon.arcTo16, weapon.arcFull));
+        wedge.setAttribute('fill', '#4fa3e0');
+        wedge.setAttribute('fill-opacity', '0.5');
+        wedge.setAttribute('stroke', '#4fa3e0');
+        wedge.setAttribute('stroke-width', '1');
+        svg.append(ring, wedge);
+        button.append(svg);
+      } else {
+        const icon = document.createElement('img');
+        icon.alt = '';
+        icon.width = 14;
+        icon.height = 14;
+        icon.src = weapon.family === 'photon' ? './art/icon-warhead.svg' : './art/icon-phaser.svg';
+        button.append(icon);
+      }
+      const bar = document.createElement('span');
+      bar.className = 'hp-bar';
+      const fill = document.createElement('span');
+      fill.dataset.role = 'fill';
+      bar.append(fill);
+      const grp = document.createElement('span');
+      grp.className = 'hp-grp';
+      grp.dataset.role = 'grp';
+      button.append(bar, grp);
+      button.addEventListener('click', (event) => {
+        if (hud.onSchematicSelect) hud.onSchematicSelect(weapon.slotIndex, event.shiftKey);
+        else hud.onSelect(weapon.slotIndex, event.shiftKey);
+      });
+      host.append(button);
+    }
+  }
+  for (const weapon of weapons) {
+    const button = host.querySelector<HTMLButtonElement>(`button[data-hardpoint-slot="${String(weapon.slotIndex)}"]`);
+    if (!button) continue;
+    const picked = hud.selectedSlots.includes(weapon.slotIndex) || weapon.slotIndex === hud.selectedSlot;
+    const mode = plan.modes[weapon.slotIndex] ?? weapon.mode;
+    const destroyed = weapon.boxesMax > 0 && weapon.boxes <= 0;
+    button.classList.toggle('selected', picked);
+    button.classList.toggle('ready', weapon.ready);
+    button.classList.toggle('overload', mode === MODE_OVERLOAD);
+    button.classList.toggle('destroyed', destroyed);
+    const fill = button.querySelector<HTMLElement>('[data-role="fill"]');
+    if (fill) {
+      const pct = weapon.cost > 0 ? Math.max(0, Math.min(1, weapon.charge / weapon.cost)) : weapon.ready ? 1 : 0;
+      fill.style.width = `${String(Math.round(pct * 100))}%`;
+    }
+    const grp = button.querySelector<HTMLElement>('[data-role="grp"]');
+    if (grp) {
+      const groupIdx = hud.groups.findIndex((members) => members.includes(weapon.slotIndex));
+      grp.textContent = groupIdx >= 0 ? String(groupIdx + 1) : '';
+      grp.hidden = groupIdx < 0;
+    }
+  }
+}
+
+function syncWeaponsMfdSummary(vm: ViewModel, hud: HudHandles, plan: DuelPlan): void {
+  const weapons = vm.self?.weapons ?? [];
+  const slots = selectionSlots(hud);
+  const picked = weapons.filter((w) => slots.includes(w.slotIndex));
+  const active = picked[0] ?? weapons[0];
+  const families = new Set(picked.map((w) => w.family));
+  const phaserClass = picked.length > 0 && families.size === 1 && active?.family === 'phaser';
+  const title =
+    picked.length === 0
+      ? 'No mounts'
+      : families.size > 1
+        ? 'MULTIPLE'
+        : active?.family === 'phaser'
+          ? 'PHASERS'
+          : active?.family === 'photon'
+            ? 'PHOTONS'
+            : (active?.code ?? 'Weapons');
+  text('mfd-weapon-title', title);
+  const normalBtn = document.getElementById('weapons-normal');
+  if (normalBtn instanceof HTMLButtonElement) normalBtn.textContent = phaserClass ? 'Online' : 'Normal';
+  const overloadBtn = document.getElementById('weapons-overload');
+  if (overloadBtn instanceof HTMLButtonElement) {
+    overloadBtn.hidden = phaserClass;
+    overloadBtn.disabled = phaserClass;
+  }
+  const bar = document.getElementById('mfd-weapon-bar');
+  const barWrap = bar?.parentElement;
+  if (bar instanceof HTMLElement) {
+    const pct = active && active.cost > 0 ? Math.max(0, Math.min(1, active.charge / active.cost)) : active?.ready ? 1 : 0;
+    bar.style.width = `${String(Math.round(pct * 100))}%`;
+  }
+  barWrap?.classList.toggle('ready', Boolean(active?.ready));
+  const arcPath = document.getElementById('mfd-weapon-arc-path');
+  if (arcPath) {
+    arcPath.setAttribute('d', active ? arcPieSvgPath(active.arcFrom16, active.arcTo16, active.arcFull) : '');
+  }
+  const anyOverload = picked.some((w) => (plan.modes[w.slotIndex] ?? w.mode) === MODE_OVERLOAD);
+  const anyProx = picked.some((w) => (plan.modes[w.slotIndex] ?? w.mode) === MODE_PROXIMITY);
+  document.getElementById('weapons-overload')?.setAttribute('aria-pressed', anyOverload ? 'true' : 'false');
+  document.getElementById('weapons-normal')?.setAttribute('aria-pressed', !anyOverload && !anyProx ? 'true' : 'false');
+  for (const oval of document.querySelectorAll<HTMLElement>('[data-group-oval]')) {
+    const idx = Number(oval.dataset.groupOval);
+    const activeGroup = idx === hud.group;
+    oval.classList.toggle('active', activeGroup);
+    oval.setAttribute('aria-pressed', activeGroup ? 'true' : 'false');
   }
 }
 

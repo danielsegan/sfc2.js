@@ -24,6 +24,7 @@ describe('modern keymap', () => {
     expect(actionFor(profile, chordFromEvent({ code: 'KeyF', ctrlKey: false, shiftKey: false, altKey: false, metaKey: false }))).toBe('helm.hetStarboard');
     expect(profile).toHaveProperty('weapons.selectAll', null);
     expect(profile).toHaveProperty('weapons.alphaStrike', null);
+    expect(profile).toHaveProperty('weapons.normal', null);
     expect(profile).toHaveProperty('weapons.proximity', null);
     expect(actionFor(profile, chordFromEvent({ code: 'Numpad8', ctrlKey: false, shiftKey: false, altKey: false, metaKey: false }))).toBe('shields.facing0');
     expect(actionFor(profile, chordFromEvent({ code: 'Numpad5', ctrlKey: false, shiftKey: false, altKey: false, metaKey: false }))).toBe('shields.selectAll');

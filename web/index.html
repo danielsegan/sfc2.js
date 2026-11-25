@@ -106,14 +106,63 @@
       <canvas id="overlay" aria-hidden="true"></canvas>
       <div id="field-events" class="field-events" aria-live="polite"></div>
       <div id="offscreen-tags"></div>
-      <section class="float target plate" aria-label="Target">
-        <h2>Target</h2>
-        <p id="target-name" class="name">No contact</p>
-        <p id="target-class" class="read"></p>
-        <p class="read"><span>Range</span> <span id="target-range" class="num">—</span></p>
-        <p class="read"><span>Bearing</span> <span id="target-bearing" class="num">—</span></p>
-        <p id="target-shields" class="read"></p>
-        <div id="target-list"></div>
+      <section class="float helm-float plate" aria-label="Helm">
+        <h2>Helm</h2>
+        <div class="helm-compact">
+          <div class="helm-grid" role="group" aria-label="High-energy turn buttons. Port and starboard are live.">
+            <button type="button" id="helm-nw" disabled title="This High-energy turn heading is not in this duel.">↖</button>
+            <button type="button" id="helm-n" disabled title="This High-energy turn heading is not in this duel.">↑</button>
+            <button type="button" id="helm-ne" disabled title="This High-energy turn heading is not in this duel.">↗</button>
+            <button type="button" id="helm-w" data-action="helm.hetPort" title="High-energy turn to port">←</button>
+            <button type="button" id="helm-hold" disabled title="This High-energy turn heading is not in this duel.">·</button>
+            <button type="button" id="helm-e" data-action="helm.hetStarboard" title="High-energy turn to starboard">→</button>
+            <button type="button" id="helm-sw" disabled title="This High-energy turn heading is not in this duel.">↙</button>
+            <button type="button" id="helm-s" disabled title="This High-energy turn heading is not in this duel.">↓</button>
+            <button type="button" id="helm-se" disabled title="This High-energy turn heading is not in this duel.">↘</button>
+          </div>
+          <div class="helm-reads">
+            <p class="read"><span>Spd</span> <span id="speed" class="num">0</span></p>
+            <p class="read"><span>Ord</span> <span id="speed-ordered" class="num">0</span></p>
+            <p class="read"><span>Hdg</span> <span id="heading" class="num">0</span></p>
+            <p class="read"><span>Turn</span> <span id="heading-ordered" class="num">—</span></p>
+            <p class="read"><span>HET</span> <span id="het-delay" class="num">—</span></p>
+            <p class="read"><span>Ticks</span> <span id="turn-ticks" class="num">—</span></p>
+            <p class="read"><span>Tick</span> <span id="tick" class="num">0</span></p>
+            <p class="read"><span>Plan</span> <span id="plan" class="num">0</span>t</p>
+          </div>
+        </div>
+        <label class="step">Ordered speed
+          <input id="ordered-speed" type="number" min="0" max="32" step="1" value="4" />
+        </label>
+        <div class="presets">
+          <button type="button" id="helm-camera" data-action="view.camera" title="Cycle the camera (V)">Camera</button>
+          <button type="button" id="helm-go" disabled title="Go waits for a later helm change. Speed stays on the ordered-speed control.">Go</button>
+          <button type="button" data-action="helm.stop">Stop</button>
+        </div>
+      </section>
+      <section class="float energy-float plate" id="energy" aria-label="Energy allocation">
+        <h2>Energy</h2>
+        <div class="energy-reads">
+          <p class="read"><span>Warp</span> <span id="gen-warp" class="num">0</span></p>
+          <p class="read"><span>Imp</span> <span id="gen-impulse" class="num">0</span></p>
+          <p class="read"><span>APR</span> <span id="gen-apr" class="num">0</span></p>
+          <p class="read"><span>Bat</span> <span id="gen-battery" class="num">0</span></p>
+        </div>
+        <div class="presets">
+          <button type="button" data-action="power.attack">Attack</button>
+          <button type="button" data-action="power.balanced">Balanced</button>
+          <button type="button" data-action="power.run">Run</button>
+          <button type="button" data-action="power.defense">Defense</button>
+        </div>
+        <div class="energy-checks">
+          <label class="check"><input id="life" type="checkbox" checked /> Life</label>
+          <label class="check"><input id="fire-control" type="checkbox" checked /> FC</label>
+        </div>
+        <div class="energy-inputs">
+          <label class="step">Gen <input id="general" type="number" min="0" max="100" step="1" value="0" /></label>
+          <label class="step">Wpn <input id="weapon-energy" type="number" min="0" max="100" step="1" placeholder="auto" /></label>
+        </div>
+        <p id="energy-reason" class="reason"></p>
       </section>
       <section class="float alerts plate" aria-label="Alerts">
         <h2>Alerts</h2>
@@ -126,148 +175,208 @@
       <p id="keys" class="keys">Left-click sets a heading · right-click targets · middle-drag or Alt-drag orbits · Shift+click multi-selects weapons · Q / F High-energy turn · ` hides the console · Keys to rebind</p>
       <p id="notice" class="keys" role="status"></p>
     </div>
-    <section id="console" aria-label="Helm console">
+    <section id="console" aria-label="Interface bar">
       <div class="console-toolbar">
         <button type="button" data-action="hud.toggleInterfaceBar" data-role="console-toggle" aria-expanded="true" aria-controls="console">Hide console</button>
       </div>
-      <div class="console-row primary">
-      <section class="plate" id="energy" aria-label="Energy allocation">
-        <h2>Energy</h2>
-        <p class="read"><span>Warp</span> <span id="gen-warp" class="num">0</span></p>
-        <p class="read"><span>Impulse</span> <span id="gen-impulse" class="num">0</span></p>
-        <p class="read"><span>APR</span> <span id="gen-apr" class="num">0</span></p>
-        <p class="read"><span>Battery</span> <span id="gen-battery" class="num">0</span></p>
-        <div class="presets">
-          <button type="button" data-action="power.attack">Attack</button>
-          <button type="button" data-action="power.balanced">Balanced</button>
-          <button type="button" data-action="power.run">Run</button>
-          <button type="button" data-action="power.defense">Defense</button>
-        </div>
-        <label class="check"><input id="life" type="checkbox" checked /> Life support</label>
-        <label class="check"><input id="fire-control" type="checkbox" checked /> Fire control</label>
-        <label class="step">General reinforce
-          <input id="general" type="number" min="0" max="100" step="1" value="0" />
-        </label>
-        <label class="step">Weapon energy
-          <input id="weapon-energy" type="number" min="0" max="100" step="1" placeholder="auto" />
-        </label>
-        <p id="energy-reason" class="reason"></p>
-      </section>
-      <section class="plate" aria-label="Shields">
-        <h2>Shields</h2>
-        <div class="shield-layout">
-          <canvas id="shields" width="180" height="180" aria-hidden="true"></canvas>
-          <div class="shield-controls">
-            <p class="shield-status">Selected <span id="shield-selection">None</span></p>
-            <p class="shield-status">Committed <span id="shield-committed">None</span></p>
-            <label class="shield-amount" title="Amount is in integer energy points, step 1. The original CE 2.670 slider detent is TO VERIFY.">Reinforcement
-              <input id="reinforce-slider" type="range" min="0" max="100" step="1" value="1" />
-              <input id="reinforce-amount" type="number" min="0" max="100" step="1" value="1" />
+      <div class="interface-bar">
+        <section class="plate system-buttons" aria-label="System buttons">
+          <h2 class="sr">Systems</h2>
+          <div class="sys-btn-list" role="tablist" aria-label="System MFD switcher">
+            <button type="button" id="mfd-btn-shields" class="sys-btn" data-mfd="shields" aria-pressed="false" title="Shields System MFD">
+              <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 L13 4.5 V9.5 L8 14 L3 9.5 V4.5 Z" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>
+              <span>Shields</span>
+            </button>
+            <button type="button" id="mfd-btn-ew" class="sys-btn" data-mfd="ew" aria-pressed="false" title="Electronic Warfare &amp; Cloak MFD">
+              <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 5 Q5 3 8 5 T14 5 M2 8.5 Q5 6.5 8 8.5 T14 8.5 M2 12 Q5 10 8 12 T14 12" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>
+              <span>EW</span>
+            </button>
+            <button type="button" id="mfd-btn-transporters" class="sys-btn" data-mfd="transporters" aria-pressed="false" title="Transporters &amp; Boarding MFD">
+              <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3 H11 M4 6 H12 M6 9 V13 M10 9 V13 M3 13 H13" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>
+              <span>Transporters</span>
+            </button>
+            <button type="button" id="mfd-btn-tractors" class="sys-btn" data-mfd="tractors" aria-pressed="false" title="Tractor Beam MFD">
+              <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 L13 13 H3 Z M6 9 H10" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>
+              <span>Tractors</span>
+            </button>
+            <button type="button" id="mfd-btn-shuttles" class="sys-btn" data-mfd="shuttles" aria-pressed="false" title="Shuttles, Fighters &amp; Mines MFD">
+              <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 L13 11 L8 9 L3 11 Z M5 13 H11" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>
+              <span>Shuttles</span>
+            </button>
+            <button type="button" id="mfd-btn-conversion" class="sys-btn" data-mfd="conversion" aria-pressed="false" title="Shuttle Conversion MFD">
+              <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 6 H11 L9 4 M13 10 H5 L7 12" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>
+              <span>Conversion</span>
+            </button>
+          </div>
+        </section>
+        <section class="plate ship-schematic" aria-label="Ship schematic">
+          <div class="plate-head">
+            <h2>Ship schematic</h2>
+            <div class="schematic-modes" role="group" aria-label="Schematic display mode">
+              <button type="button" id="schematic-mode-mounts" class="mini-btn active" data-schematic-mode="mounts" aria-pressed="true" title="Weapon mount view">Mounts</button>
+              <button type="button" id="schematic-mode-arcs" class="mini-btn" data-schematic-mode="arcs" aria-pressed="false" title="Show firing arc dials on mounts">Arcs</button>
+            </div>
+          </div>
+          <div class="ship-schematic-body">
+            <div id="ship-schematic-stage" class="ship-schematic-stage">
+              <canvas id="ship-schematic-shields" width="144" height="144" aria-hidden="true"></canvas>
+              <div id="schematic-hardpoints" class="schematic-hardpoints" aria-label="Weapon hardpoints"></div>
+            </div>
+            <div class="schematic-side">
+              <p class="micro" id="ship-schematic-summary">0 mounts</p>
+              <button type="button" id="schematic-weapons-btn" class="mini-btn active" data-mfd="weapons" aria-pressed="true" title="Open Weapons System MFD">Weapons</button>
+            </div>
+          </div>
+        </section>
+        <section class="plate system-mfd" aria-label="System MFD">
+          <div class="mfd-page" data-mfd-page="weapons">
+            <div class="plate-head">
+              <h2>Weapons</h2>
+              <span id="mfd-weapon-title" class="micro">All mounts</span>
+            </div>
+            <div class="wpn-fire-row">
+              <button type="button" data-action="weapons.fire">Fire</button>
+              <span class="wpn-charge-bar" aria-label="Selected weapon charge"><span id="mfd-weapon-bar"></span></span>
+              <svg id="mfd-weapon-arc" class="arc-dial" viewBox="0 0 20 20" aria-hidden="true">
+                <circle cx="10" cy="10" r="7" fill="none" stroke="var(--panel-edge)" stroke-width="1"/>
+                <path id="mfd-weapon-arc-path" d="" fill="var(--state-warning)" fill-opacity="0.45" stroke="var(--state-warning)" stroke-width="1"/>
+              </svg>
+            </div>
+            <div class="wpn-controls-row">
+              <div class="presets wpn-modes">
+                <button type="button" id="weapons-offline" disabled title="Offline weapon mode has no DuelMatch verb yet. Tracked on issue #145.">Offline</button>
+                <button type="button" id="weapons-normal" data-action="weapons.normal" aria-pressed="true">Normal</button>
+                <button type="button" id="weapons-overload" data-action="weapons.overload" aria-pressed="false">Overload</button>
+                <button type="button" id="weapons-proximity" data-action="weapons.proximity" hidden aria-pressed="false">Proximity</button>
+              </div>
+              <div class="group-ovals" role="group" aria-label="Weapon groups 1 to 4 (click selects, Shift+click assigns)">
+                <button type="button" class="group-oval active" data-group-oval="0" aria-pressed="true" title="Group 1 (Shift+click assigns selection)">1</button>
+                <button type="button" class="group-oval" data-group-oval="1" aria-pressed="false" title="Group 2 (Shift+click assigns selection)">2</button>
+                <button type="button" class="group-oval" data-group-oval="2" aria-pressed="false" title="Group 3 (Shift+click assigns selection)">3</button>
+                <button type="button" class="group-oval" data-group-oval="3" aria-pressed="false" title="Group 4 (Shift+click assigns selection)">4</button>
+              </div>
+              <div class="presets">
+                <button type="button" data-action="weapons.selectAll">Select all</button>
+                <button type="button" data-action="weapons.alphaStrike">Alpha strike</button>
+              </div>
+            </div>
+            <div id="weapons"></div>
+          </div>
+          <div class="mfd-page" data-mfd-page="shields" hidden>
+            <div class="plate-head">
+              <h2>Shields</h2>
+              <div class="presets" role="group" aria-label="Shield state">
+                <button type="button" disabled title="Down, Minimal, and Up have no DuelMatch verb yet. Tracked on issue #145.">Down</button>
+                <button type="button" disabled title="Down, Minimal, and Up have no DuelMatch verb yet. Tracked on issue #145.">Minimal</button>
+                <button type="button" disabled title="Down, Minimal, and Up have no DuelMatch verb yet. Tracked on issue #145.">Up</button>
+              </div>
+            </div>
+            <div class="shield-layout">
+              <canvas id="shields" width="180" height="180" aria-hidden="true"></canvas>
+              <div class="shield-controls">
+                <p class="shield-status">Selected <span id="shield-selection">None</span></p>
+                <p class="shield-status">Committed <span id="shield-committed">None</span></p>
+                <div class="shield-amount" title="Amount is in integer energy points, step 1. The original CE 2.670 slider detent is TO VERIFY.">
+                  <button type="button" id="reinforce-dec" class="mini-btn" aria-label="Decrease reinforcement">&lt;</button>
+                  <input id="reinforce-slider" type="range" min="0" max="100" step="1" value="1" aria-label="Reinforcement slider" />
+                  <button type="button" id="reinforce-inc" class="mini-btn" aria-label="Increase reinforcement">&gt;</button>
+                  <input id="reinforce-amount" type="number" min="0" max="100" step="1" value="1" aria-label="Reinforcement points" />
+                </div>
+                <div class="presets">
+                  <button type="button" data-action="shields.reinforce">Reinforce</button>
+                  <button type="button" data-action="shields.reinforceAll">Reinforce all</button>
+                </div>
+              </div>
+            </div>
+            <table id="shield-table">
+              <caption class="sr">Six shield facings, bow first, clockwise, with committed and pending reinforcement</caption>
+              <thead><tr><th>Facing</th><th>Strength</th><th>Committed</th><th>Pending</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="mfd-page" data-mfd-page="ew" hidden>
+            <h2>EW &amp; Stealth</h2>
+            <p id="ew-status" class="mfd-copy">ECM 0 · ECCM 0</p>
+            <div class="bars" aria-hidden="true"><span id="ew-ecm-bar"></span><span id="ew-eccm-bar"></span></div>
+            <div class="mfd-pair">
+              <label class="step">ECM
+                <input id="ew-ecm" type="number" min="0" max="12" step="1" value="0" />
+              </label>
+              <label class="step">ECCM
+                <input id="ew-eccm" type="number" min="0" max="12" step="1" value="0" />
+              </label>
+            </div>
+            <div class="mfd-pair">
+              <span id="cloak-status" class="mfd-copy">Off</span>
+              <button type="button" id="cloak" data-action="ops.cloak">Cloak</button>
+            </div>
+            <p class="empty-state">Target ECM/ECCM scan awaits ViewModel ContactView.ew (issue #145).</p>
+          </div>
+          <div class="mfd-page" data-mfd-page="transporters" hidden>
+            <h2>Transporters</h2>
+            <p id="transporter-status" class="mfd-copy">0 boarding parties</p>
+            <div class="presets">
+              <button type="button" disabled title="General transporter energize has no DuelMatch verb yet. Tracked on issue #145.">Energize</button>
+              <button type="button" disabled title="Beam out has no DuelMatch verb yet. Tracked on issue #145.">Beam out</button>
+              <button type="button" disabled title="Beam in has no DuelMatch verb yet. Tracked on issue #145.">Beam in</button>
+            </div>
+            <div class="presets">
+              <button type="button" data-action="ops.hitAndRun">Hit and run</button>
+              <button type="button" data-action="ops.board">Board</button>
+            </div>
+            <p class="empty-state">Target-shield &amp; transporter cooldown status awaits ViewModel fields (issue #145).</p>
+          </div>
+          <div class="mfd-page" data-mfd-page="tractors" hidden>
+            <h2>Tractors</h2>
+            <p id="tractor-status" class="mfd-copy">Idle</p>
+            <label class="step">Energy
+              <input id="tractor-energy" type="number" min="0" max="12" step="1" value="1" />
             </label>
             <div class="presets">
-              <button type="button" data-action="shields.reinforce">Reinforce</button>
-              <button type="button" data-action="shields.reinforceAll">Reinforce all</button>
-            </div>
-            <div class="presets" role="group" aria-label="Shield state">
-              <button type="button" disabled title="Down, Minimal, and Up have no DuelMatch verb yet. Tracked on issue #145.">Down</button>
-              <button type="button" disabled title="Down, Minimal, and Up have no DuelMatch verb yet. Tracked on issue #145.">Minimal</button>
-              <button type="button" disabled title="Down, Minimal, and Up have no DuelMatch verb yet. Tracked on issue #145.">Up</button>
+              <button type="button" data-action="ops.tractor">Tractor</button>
+              <button type="button" data-action="ops.repel">Repel</button>
             </div>
           </div>
-        </div>
-        <table id="shield-table">
-          <caption class="sr">Six shield facings, bow first, clockwise, with committed and pending reinforcement</caption>
-          <thead><tr><th>Facing</th><th>Strength</th><th>Committed</th><th>Pending</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </section>
-      <section class="plate" aria-label="Weapons">
-        <h2>Weapons</h2>
-        <div class="presets">
-          <button type="button" data-action="weapons.fire">Fire</button>
-          <button type="button" data-action="weapons.overload">Overload</button>
-          <button type="button" id="weapons-proximity" data-action="weapons.proximity" hidden aria-pressed="false">Proximity</button>
-          <button type="button" data-action="weapons.selectAll">Select all</button>
-          <button type="button" data-action="weapons.alphaStrike">Alpha strike</button>
-        </div>
-        <div id="weapons"></div>
-      </section>
-      <section class="plate" aria-label="Helm">
-        <h2>Helm</h2>
-        <div class="helm-grid" role="group" aria-label="High-energy turn buttons. Port and starboard are live.">
-          <button type="button" id="helm-nw" disabled title="This High-energy turn heading is not in this duel.">↖</button>
-          <button type="button" id="helm-n" disabled title="This High-energy turn heading is not in this duel.">↑</button>
-          <button type="button" id="helm-ne" disabled title="This High-energy turn heading is not in this duel.">↗</button>
-          <button type="button" id="helm-w" data-action="helm.hetPort" title="High-energy turn to port">←</button>
-          <button type="button" id="helm-hold" disabled title="This High-energy turn heading is not in this duel.">·</button>
-          <button type="button" id="helm-e" data-action="helm.hetStarboard" title="High-energy turn to starboard">→</button>
-          <button type="button" id="helm-sw" disabled title="This High-energy turn heading is not in this duel.">↙</button>
-          <button type="button" id="helm-s" disabled title="This High-energy turn heading is not in this duel.">↓</button>
-          <button type="button" id="helm-se" disabled title="This High-energy turn heading is not in this duel.">↘</button>
-        </div>
-        <div class="helm-reads">
-          <p class="read"><span>Speed</span> <span id="speed" class="num">0</span></p>
-          <p class="read"><span>Ordered</span> <span id="speed-ordered" class="num">0</span></p>
-          <p class="read"><span>Heading</span> <span id="heading" class="num">0</span></p>
-          <p class="read"><span>Ordered heading</span> <span id="heading-ordered" class="num">—</span></p>
-          <p class="read"><span>HET delay</span> <span id="het-delay" class="num">—</span></p>
-          <p class="read"><span>Turn ticks</span> <span id="turn-ticks" class="num">—</span></p>
-          <p class="read"><span>Tick</span> <span id="tick" class="num">0</span></p>
-          <p class="read"><span>Plan</span> <span id="plan" class="num">0</span> t</p>
-        </div>
-        <label class="step">Ordered speed
-          <input id="ordered-speed" type="number" min="0" max="32" step="1" value="4" />
-        </label>
-        <div class="presets">
-          <button type="button" id="helm-camera" data-action="view.camera" title="Cycle the camera (V)">Camera</button>
-          <button type="button" id="helm-go" disabled title="Go waits for a later helm change. Speed stays on the ordered-speed control.">Go</button>
-          <button type="button" data-action="helm.stop">Stop</button>
-        </div>
-      </section>
-      </div>
-      <div class="console-row systems">
-        <section class="plate slot" aria-label="Electronic warfare">
-          <h2>EW</h2>
-          <p id="ew-status">ECM 0 · ECCM 0</p>
-          <div class="bars" aria-hidden="true"><span id="ew-ecm-bar"></span><span id="ew-eccm-bar"></span></div>
-          <label class="step">ECM
-            <input id="ew-ecm" type="number" min="0" max="12" step="1" value="0" />
-          </label>
-          <label class="step">ECCM
-            <input id="ew-eccm" type="number" min="0" max="12" step="1" value="0" />
-          </label>
-        </section>
-        <section class="plate slot" aria-label="Tractor">
-          <h2>Tractor</h2>
-          <p id="tractor-status">Idle</p>
-          <label class="step">Energy
-            <input id="tractor-energy" type="number" min="0" max="12" step="1" value="1" />
-          </label>
-          <div class="presets">
-            <button type="button" data-action="ops.tractor">Tractor</button>
-            <button type="button" data-action="ops.repel">Repel</button>
-            <button type="button" data-action="ops.hitAndRun">Hit and run</button>
-            <button type="button" data-action="ops.board">Board</button>
+          <div class="mfd-page" data-mfd-page="shuttles" hidden>
+            <h2>Shuttles &amp; Mines</h2>
+            <p id="fighter-status" class="mfd-copy">No bays yet.</p>
+            <div class="presets">
+              <button type="button" data-action="craft.launch">Launch</button>
+              <button type="button" data-action="craft.launchPf">PF</button>
+              <button type="button" data-action="craft.recall">Recall</button>
+            </div>
+            <p id="mine-status" class="mfd-copy">No mines yet.</p>
+            <button type="button" data-action="craft.mine">Lay mine</button>
+          </div>
+          <div class="mfd-page" data-mfd-page="conversion" hidden>
+            <h2>Conversion</h2>
+            <div class="presets">
+              <button type="button" disabled title="Shuttle conversion has no DuelMatch verb yet. Tracked on issue #145.">Scatter-pack</button>
+              <button type="button" disabled title="Shuttle conversion has no DuelMatch verb yet. Tracked on issue #145.">Wild Weasel</button>
+              <button type="button" disabled title="Shuttle conversion has no DuelMatch verb yet. Tracked on issue #145.">Suicide</button>
+            </div>
+            <p class="empty-state">Shuttle conversion is not wired in this duel yet (no ViewModel bay-conversion state or DuelMatch verb — tracked on issue #145).</p>
           </div>
         </section>
-        <section class="plate slot" aria-label="Cloak">
-          <h2>Cloak</h2>
-          <p id="cloak-status">Off</p>
-          <button type="button" id="cloak" data-action="ops.cloak">Cloak</button>
-        </section>
-        <section class="plate slot" aria-label="Fighters">
-          <h2>Fighters</h2>
-          <p id="fighter-status">No bays yet.</p>
-          <div class="presets">
-            <button type="button" data-action="craft.launch">Launch</button>
-            <button type="button" data-action="craft.launchPf">PF</button>
-            <button type="button" data-action="craft.recall">Recall</button>
+        <section class="plate target-schematic" aria-label="Target schematic">
+          <div class="plate-head">
+            <h2>Target</h2>
+            <span id="target-scan-state" class="micro">No target</span>
           </div>
-        </section>
-        <section class="plate slot" aria-label="Mines">
-          <h2>Mines</h2>
-          <p id="mine-status">No mines yet.</p>
-          <button type="button" data-action="craft.mine">Lay mine</button>
+          <div class="target-body">
+            <canvas id="target-shields-canvas" width="120" height="120" aria-hidden="true"></canvas>
+            <div class="target-telemetry">
+              <p id="target-name" class="name">No contact</p>
+              <p id="target-class" class="micro">Tab to target</p>
+              <p class="read"><span>Rng</span> <span id="target-range" class="num">—</span></p>
+              <p class="read"><span>Spd</span> <span id="target-speed" class="num">—</span></p>
+              <p class="read"><span>Brg</span> <span id="target-bearing" class="num">—</span></p>
+              <p class="read"><span>Hull</span> <span id="target-hull" class="num">—</span></p>
+              <p id="target-shields" class="sr"></p>
+            </div>
+          </div>
+          <p id="target-weapon-status" class="empty-state">Select a target to inspect shields and scan status.</p>
+          <div id="target-list"></div>
         </section>
       </div>
     </section>

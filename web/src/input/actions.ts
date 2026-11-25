@@ -48,6 +48,7 @@ export const ACTIONS: readonly ActionDef[] = [
   { id: 'weapons.fire', label: 'Fire selected group', group: 'Weapons', binding: chord('Space') },
   { id: 'weapons.selectAll', label: 'Select all weapons', group: 'Weapons', binding: null },
   { id: 'weapons.alphaStrike', label: 'Alpha strike', group: 'Weapons', binding: null },
+  { id: 'weapons.normal', label: 'Normal weapon mode', group: 'Weapons', binding: null },
   { id: 'weapons.overload', label: 'Toggle overload', group: 'Weapons', binding: chord('KeyO') },
   { id: 'weapons.proximity', label: 'Toggle proximity', group: 'Weapons', binding: null },
   { id: 'weapons.assign1', label: 'Assign selection to group 1', group: 'Weapons', binding: chord('Digit1', { ctrl: true }) },
