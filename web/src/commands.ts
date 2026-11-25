@@ -77,6 +77,7 @@ export function runAction(host: CommandHost, id: string): void {
   else if (id === 'ew.shiftEccm') shiftEw(host, -1);
   else if (id === 'ew.totalDown') changeEw(host, -1, 0);
   else if (id === 'ew.totalUp') changeEw(host, 0, 1);
+  else if (id === 'weapons.normal') setNormalMode(host);
   else if (id === 'weapons.proximity') toggleMode(host, MODE_PROXIMITY);
   else if (id.startsWith('weapons.assign')) assignGroup(host, Number(id.slice('weapons.assign'.length)) - 1);
   else if (id.startsWith('weapons.group')) selectGroup(host, Number(id.slice('weapons.group'.length)) - 1);
@@ -188,6 +189,10 @@ function toggleCloak(host: CommandHost): void {
     return;
   }
   host.match.setCloak(self.cloakState === 0);
+}
+
+function setNormalMode(host: CommandHost): void {
+  for (const slot of selectedSlots(host)) host.match.setWeaponMode(slot, MODE_NORMAL);
 }
 
 function toggleMode(host: CommandHost, mode: number): void {

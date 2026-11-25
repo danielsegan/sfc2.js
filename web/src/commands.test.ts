@@ -165,6 +165,16 @@ describe('weapon selection and firing', () => {
     expect(rec.notes).toEqual(['No mounts.']);
     expect(rec.slots).toEqual([0]);
   });
+
+  it('sets selected mounts back to MODE_NORMAL with weapons.normal', () => {
+    const rec = hostRecording({ weapons: photons });
+    rec.host.setSlots([0, 1]);
+    runAction(rec.host, 'weapons.normal');
+    expect(rec.modes).toEqual([
+      { slot: 0, mode: MODE_NORMAL },
+      { slot: 1, mode: MODE_NORMAL },
+    ]);
+  });
 });
 
 describe('interface bar toggle', () => {

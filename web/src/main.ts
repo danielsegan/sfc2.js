@@ -20,7 +20,8 @@ import { DuelScene } from './scene.ts';
 import { hudScaleFromLocation, paintFieldHud } from './field-hud.ts';
 import { speedScale } from './tactical/frame.ts';
 import { barFractionFromClientX, speedBarGesture, speedFromBarFraction } from './speed-bar.ts';
-import { clampReinforceAmount, selectFacing, toggleAllFacings } from './shield-select.ts';
+import type { SchematicMode, SystemMfdPage } from './schematic.ts';
+import { clampReinforceAmount, REINFORCE_STEP, selectFacing, toggleAllFacings } from './shield-select.ts';
 import { toggleSlot } from './weapon-select.ts';
 import { fieldRelease, orbitOnPress } from './tactical/pointer.ts';
 import { pickContact } from './tactical/tags.ts';
@@ -61,6 +62,8 @@ let selectedSlots: number[] = [0];
 let selectedGroup = 0;
 let selectedFacings: number[] = [];
 let reinforceAmount = 1;
+let systemMfd: SystemMfdPage = 'weapons';
+let schematicMode: SchematicMode = 'mounts';
 let mapZoom = 8;
 let headingUp = false;
 let mapFull = false;
@@ -119,9 +122,17 @@ const hud = {
   get reinforceAmount() {
     return reinforceAmount;
   },
+  get schematicMode() {
+    return schematicMode;
+  },
   onSelect(slot: number, additive = false) {
     selectedSlots = additive ? toggleSlot(selectedSlots, slot) : [slot];
     selectedSlot = slot;
+  },
+  onSchematicSelect(slot: number, additive = false) {
+    selectedSlots = additive ? toggleSlot(selectedSlots, slot) : [slot];
+    selectedSlot = slot;
+    setSystemMfd('weapons');
   },
   onTarget(id: number) {
     match.setTarget(id);
@@ -348,6 +359,67 @@ document.getElementById('reinforce-amount')?.addEventListener('input', onReinfor
 document.getElementById('reinforce-amount')?.addEventListener('change', onReinforceInput);
 document.getElementById('reinforce-slider')?.addEventListener('input', onReinforceInput);
 document.getElementById('reinforce-slider')?.addEventListener('change', onReinforceInput);
+
+document.getElementById('reinforce-dec')?.addEventListener('click', () => {
+  setPendingReinforce(reinforceAmount - REINFORCE_STEP);
+});
+document.getElementById('reinforce-inc')?.addEventListener('click', () => {
+  setPendingReinforce(reinforceAmount + REINFORCE_STEP);
+});
+
+function setSystemMfd(page: SystemMfdPage): void {
+  systemMfd = page;
+  for (const node of document.querySelectorAll<HTMLElement>('[data-mfd-page]')) {
+    node.hidden = node.dataset.mfdPage !== page;
+  }
+  for (const button of document.querySelectorAll<HTMLElement>('[data-mfd]')) {
+    const on = button.dataset.mfd === page;
+    button.classList.toggle('active', on);
+    button.setAttribute('aria-pressed', on ? 'true' : 'false');
+  }
+}
+
+function setSchematicMode(mode: SchematicMode): void {
+  schematicMode = mode;
+  for (const button of document.querySelectorAll<HTMLElement>('[data-schematic-mode]')) {
+    const on = button.dataset.schematicMode === mode;
+    button.classList.toggle('active', on);
+    button.setAttribute('aria-pressed', on ? 'true' : 'false');
+  }
+}
+
+for (const button of document.querySelectorAll<HTMLElement>('[data-mfd]')) {
+  button.addEventListener('click', () => {
+    const page = button.dataset.mfd as SystemMfdPage | undefined;
+    if (!page) return;
+    audio.unlock();
+    audio.play(['ui.click'], performance.now());
+    setSystemMfd(page);
+  });
+}
+
+for (const button of document.querySelectorAll<HTMLElement>('[data-schematic-mode]')) {
+  button.addEventListener('click', () => {
+    const mode = button.dataset.schematicMode as SchematicMode | undefined;
+    if (!mode) return;
+    audio.unlock();
+    audio.play(['ui.click'], performance.now());
+    setSchematicMode(mode);
+  });
+}
+
+for (const oval of document.querySelectorAll<HTMLElement>('[data-group-oval]')) {
+  oval.addEventListener('click', (event) => {
+    const num = Number(oval.dataset.groupOval) + 1;
+    if (num < 1 || num > 4) return;
+    audio.unlock();
+    audio.play(['ui.click'], performance.now());
+    runAction(host, `${event.shiftKey ? 'weapons.assign' : 'weapons.group'}${String(num)}`);
+  });
+}
+
+setSystemMfd(systemMfd);
+setSchematicMode(schematicMode);
 
 const stage = document.getElementById('stage');
 let orbiting = false;

@@ -23,6 +23,8 @@ export const HIT_TARGET_IDS = [
   'helm-go',
   'ordered-speed',
   'shields',
+  'mfd-btn-shields',
+  'schematic-weapons-btn',
   'space',
   'energy',
   'cloak',
