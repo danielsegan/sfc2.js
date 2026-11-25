@@ -56,9 +56,13 @@ export const PP = {
   drawWpn: 28,
   drawShd: 29,
   drawOther: 30,
+  desMove: 31,
+  desWpn: 32,
+  desShd: 33,
+  desOther: 34,
 } as const;
 
-export const POWER_FIELDS = 31;
+export const POWER_FIELDS = 35;
 
 export const POWER_TABLE: TableSpec = { id: POWER, fieldCount: POWER_FIELDS };
 
@@ -153,6 +157,10 @@ export function rememberSettlement(
   weapons: number,
   shields: number,
   other: number,
+  wantMove: number,
+  wantWeapons: number,
+  wantShields: number,
+  wantOther: number,
 ): void {
   const row = rowOf(world, id);
   if (!row) return;
@@ -163,6 +171,10 @@ export function rememberSettlement(
   row[PP.drawWpn] = weapons;
   row[PP.drawShd] = shields;
   row[PP.drawOther] = other;
+  row[PP.desMove] = wantMove;
+  row[PP.desWpn] = wantWeapons;
+  row[PP.desShd] = wantShields;
+  row[PP.desOther] = wantOther;
   writeRow(world, id, row);
 }
 
@@ -334,6 +346,16 @@ export interface PowerView {
     readonly other: number;
     readonly cloak: number;
   };
+  /** Asked amount before the plant shortfall. Same units as `draws`. */
+  readonly desired: {
+    readonly movement: number;
+    readonly weapons: number;
+    readonly shields: number;
+    readonly tractors: number;
+    readonly ecm: number;
+    readonly other: number;
+    readonly cloak: number;
+  };
   readonly repairQueue: readonly string[];
   readonly systemMax: readonly number[];
   readonly crewMax: number;
@@ -383,6 +405,15 @@ export function readPower(snap: WorldSnap, index: number): PowerView | null {
       tractors: 0,
       ecm: 0,
       other: row[PP.drawOther] ?? 0,
+      cloak: 0,
+    },
+    desired: {
+      movement: row[PP.desMove] ?? 0,
+      weapons: row[PP.desWpn] ?? 0,
+      shields: row[PP.desShd] ?? 0,
+      tractors: 0,
+      ecm: 0,
+      other: row[PP.desOther] ?? 0,
       cloak: 0,
     },
     repairQueue: queue,

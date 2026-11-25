@@ -12,6 +12,7 @@ import {
   spawnPayload,
 } from './combat.ts';
 import { createSim, type Sim } from './sim.ts';
+import { buildViewModel } from '../view/view-model.ts';
 import { H, HULL_FIELDS, shipView } from './hull.ts';
 import { World } from './world.ts';
 import type { TickContext } from './sim.ts';
@@ -145,6 +146,28 @@ describe('energy priorities and repair', () => {
     go(open, 2, [[VERB_SET_ENERGY, setEnergyPayload(SHIP, { speed: 6 })]]);
     expect(shipView(open.snapshot().world, 0).speed).toBe(6);
     expect(shipView(open.snapshot().world, 0).battery100).toBe(3 * ENERGY_SCALE);
+  });
+
+  it('publishes desired power above the paid draw when the plant is short', () => {
+    const sim = boot([hull({ warp: 4, battery: 5, mounts: [] })]);
+    go(sim, 1, []);
+    go(sim, 2, [
+      [VERB_SET_BATTERY, batteryPayload(SHIP, 0)],
+      [
+        VERB_SET_ENERGY,
+        setEnergyPayload(SHIP, { speed: 6 }),
+      ],
+    ]);
+    const snap = sim.snapshot();
+    const view = buildViewModel({ prev: snap, curr: snap, alpha: 0, events: [], selfIndex: 0 });
+    const energy = view.self?.energy;
+    expect(energy?.desired.movement).toBe(6);
+    expect(energy?.draws.movement).toBe(4);
+    expect(energy?.desired.weapons).toBe(0);
+    expect(energy?.draws.weapons).toBe(0);
+    expect(energy?.desired.shields).toBe(0);
+    expect(energy?.draws.shields).toBe(0);
+    expect(view.self?.damage.repairPoints).toBe(0);
   });
 
   it('drops shields, raises the basic facing, and refuses reinforcement while down', () => {

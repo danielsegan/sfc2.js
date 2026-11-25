@@ -983,6 +983,10 @@ function applySetEnergy(world: World, cmd: Command, ctx: TickContext, options: R
     paid[PAY_WEAPON]!,
     paid[PAY_SHIELD]!,
     paid[PAY_LIFE]! + paid[PAY_FC]!,
+    desired[PAY_MOVE]!,
+    desired[PAY_WEAPON]!,
+    desired[PAY_SHIELD]!,
+    desired[PAY_LIFE]! + desired[PAY_FC]!,
   );
   fields[H.speed] = speed;
   fields[H.speedFrac100] = speedFrac;

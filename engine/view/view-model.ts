@@ -161,6 +161,16 @@ export interface EnergyReadout {
     readonly other: number;
     readonly cloak: number;
   };
+  /** Requested power before an overdraw cut. Same shape and units as `draws`. */
+  readonly desired: {
+    readonly movement: number;
+    readonly weapons: number;
+    readonly shields: number;
+    readonly tractors: number;
+    readonly ecm: number;
+    readonly other: number;
+    readonly cloak: number;
+  };
   readonly priorities: {
     readonly movement: number;
     readonly weapons: number;
@@ -739,6 +749,15 @@ export function buildViewModel(input: ViewBuildInput): ViewModel {
             tractors: ship.tractorPaid,
             ecm: ship.ecmPaid + ship.eccmPaid,
             other: toDisplayEnergy(power?.draws.other ?? 0),
+            cloak: 0,
+          },
+          desired: {
+            movement: toDisplayEnergy(power?.desired.movement ?? 0),
+            weapons: toDisplayEnergy(power?.desired.weapons ?? 0),
+            shields: toDisplayEnergy(power?.desired.shields ?? 0),
+            tractors: ship.tractorPaid,
+            ecm: ship.ecmPaid + ship.eccmPaid,
+            other: toDisplayEnergy(power?.desired.other ?? 0),
             cloak: 0,
           },
           priorities: power?.priorities ?? { movement: 3, weapons: 3, shields: 3, tractors: 3, ecm: 3 },
