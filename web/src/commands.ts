@@ -9,6 +9,7 @@ import type { ViewModel } from '../../engine/view/view-model.ts';
 import type { DuelScene } from './scene.ts';
 import { clampReinforceAmount, selectFacing, toggleAllFacings } from './shield-select.ts';
 import { assignSlotsToGroup, selectAllSlots, supportsProximity } from './weapon-select.ts';
+import { isOfficerPage, stepMapZoom, type OfficerPageId } from './officer-mfd.ts';
 
 export interface CommandHost {
   match: DuelMatch;
@@ -28,6 +29,8 @@ export interface CommandHost {
   setHeadingUp(on: boolean): void;
   mapFull: boolean;
   setMapFull(on: boolean): void;
+  officerPage: OfficerPageId;
+  setOfficerPage(page: OfficerPageId): void;
   interfaceCollapsed: boolean;
   setInterfaceCollapsed(on: boolean): void;
   getShieldSelection(): readonly number[];
@@ -93,7 +96,13 @@ export function runAction(host: CommandHost, id: string): void {
   else if (id === 'target.nearest') nearestHostile(host);
   else if (id === 'target.friendly') cycleTarget(host, 1, 'friendly');
   else if (id === 'view.camera') host.scene.cycleCamera();
-  else if (id === 'view.map') host.setMapFull(!host.mapFull);
+  else if (id === 'view.map' || id === 'mfd.page.map') host.setOfficerPage('map');
+  else if (id.startsWith('mfd.page.')) {
+    const page = id.slice('mfd.page.'.length);
+    if (isOfficerPage(page)) host.setOfficerPage(page);
+  }
+  else if (id === 'view.mapZoomIn') host.setMapZoom(stepMapZoom(host.mapZoom, 1));
+  else if (id === 'view.mapZoomOut') host.setMapZoom(stepMapZoom(host.mapZoom, -1));
   else if (id === 'view.mapOrientation') host.setHeadingUp(!host.headingUp);
   else if (id === 'view.reset') host.scene.resetView();
   else if (id === 'view.pause') host.togglePause();

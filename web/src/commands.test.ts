@@ -68,12 +68,18 @@ function hostRecording(opts?: { weapons?: Array<{ slotIndex: number; family: str
     setGroup(group) {
       host.group = group;
     },
-    setMapZoom() {},
+    setMapZoom(zoom) {
+      host.mapZoom = zoom;
+    },
     mapZoom: 8,
     headingUp: false,
     setHeadingUp() {},
     mapFull: false,
     setMapFull() {},
+    officerPage: 'helm',
+    setOfficerPage(page) {
+      host.officerPage = page;
+    },
     interfaceCollapsed: false,
     setInterfaceCollapsed(on) {
       host.interfaceCollapsed = on;
@@ -240,5 +246,32 @@ describe('shield selection and reinforcement', () => {
     expect(rec.plan.general).toBe(2);
     runAction(rec.host, 'shields.general');
     expect(rec.plan.general).toBe(0);
+  });
+});
+
+describe('Officer MFD page and map zoom actions', () => {
+  it('opens officer pages, with M jumping to the Map page', () => {
+    const rec = hostRecording();
+    runAction(rec.host, 'mfd.page.comms');
+    expect(rec.host.officerPage).toBe('comms');
+    runAction(rec.host, 'view.map');
+    expect(rec.host.officerPage).toBe('map');
+    runAction(rec.host, 'mfd.page.helm');
+    expect(rec.host.officerPage).toBe('helm');
+  });
+
+  it('steps map zoom through three ~2× tiers and clamps at the ends', () => {
+    const rec = hostRecording();
+    expect(rec.host.mapZoom).toBe(8);
+    runAction(rec.host, 'view.mapZoomOut');
+    expect(rec.host.mapZoom).toBe(8);
+    runAction(rec.host, 'view.mapZoomIn');
+    expect(rec.host.mapZoom).toBe(16);
+    runAction(rec.host, 'view.mapZoomIn');
+    expect(rec.host.mapZoom).toBe(32);
+    runAction(rec.host, 'view.mapZoomIn');
+    expect(rec.host.mapZoom).toBe(32);
+    runAction(rec.host, 'view.mapZoomOut');
+    expect(rec.host.mapZoom).toBe(16);
   });
 });

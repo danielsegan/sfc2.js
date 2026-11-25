@@ -30,6 +30,12 @@ describe('modern keymap', () => {
     expect(actionFor(profile, chordFromEvent({ code: 'Numpad5', ctrlKey: false, shiftKey: false, altKey: false, metaKey: false }))).toBe('shields.selectAll');
     expect(actionFor(profile, chordFromEvent({ code: 'KeyN', ctrlKey: false, shiftKey: false, altKey: false, metaKey: false }))).toBe('shields.reinforce');
     expect(actionFor(profile, chordFromEvent({ code: 'KeyN', ctrlKey: false, shiftKey: true, altKey: false, metaKey: false }))).toBe('shields.reinforceAll');
+    expect(actionFor(profile, chordFromEvent({ code: 'KeyM', ctrlKey: false, shiftKey: false, altKey: false, metaKey: false }))).toBe('view.map');
+    expect(actionFor(profile, chordFromEvent({ code: 'Equal', ctrlKey: false, shiftKey: true, altKey: false, metaKey: false }))).toBe('view.mapZoomIn');
+    expect(actionFor(profile, chordFromEvent({ code: 'Minus', ctrlKey: false, shiftKey: true, altKey: false, metaKey: false }))).toBe('view.mapZoomOut');
+    expect(profile).toHaveProperty('mfd.page.helm', null);
+    expect(profile).toHaveProperty('mfd.page.map', null);
+    expect(profile).toHaveProperty('mfd.page.comms', null);
     expect(profile).toHaveProperty('shields.general', null);
     expect(actionFor(profile, { code: 'MouseMiddle', ctrl: false, shift: false, alt: false, meta: false })).toBe('view.orbitMiddle');
     expect(actionFor(profile, { code: 'MouseLeft', ctrl: false, shift: false, alt: true, meta: false })).toBe('view.orbitAlt');

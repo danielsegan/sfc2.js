@@ -60,6 +60,7 @@ export function applyChromeBudget(budget: ChromeBudget): void {
   root.style.setProperty('--chrome-header-max', `${String(budget.headerMax)}px`);
   root.style.setProperty('--chrome-skirmish-max', `${String(budget.skirmishMax)}px`);
   root.style.setProperty('--chrome-console-max', `${String(budget.consoleMax)}px`);
+  root.style.setProperty('--chrome-field-min', `${String(budget.fieldMin)}px`);
   document.body.classList.toggle('console-collapsed', budget.consoleCollapsed);
   document.body.dataset.console = budget.consoleCollapsed ? 'collapsed' : 'expanded';
   for (const button of document.querySelectorAll<HTMLElement>('[data-action="hud.toggleInterfaceBar"]')) {

@@ -3,7 +3,7 @@ import type { DuelPlan } from '../../engine/duel/match.ts';
 import { MODE_OVERLOAD, MODE_PROXIMITY } from '../../engine/sim/rules-tables.ts';
 import { toDisplayHeading } from '../../engine/view/units.ts';
 import type { HelmView, HudEvent, ViewModel, WeaponReadout } from '../../engine/view/view-model.ts';
-import { empireIdForRace } from './empire-marks.ts';
+import { EMPIRE_MARKS, empireIdForRace, empireMarkFor } from './empire-marks.ts';
 import { mapOffset } from './map-geom.ts';
 import {
   arcPieSvgPath,
@@ -14,6 +14,14 @@ import {
   type SchematicMode,
 } from './schematic.ts';
 import { FACING_NAMES, formatFacingList, normalizeFacings } from './shield-select.ts';
+import {
+  classifyLogChannel,
+  mapEmpireColor,
+  mapRingDistances,
+  mapZoomIndex,
+  MAP_ZOOM_LEVELS,
+  type LogChannel,
+} from './officer-mfd.ts';
 import { formatSpeed } from './speed-bar.ts';
 import { supportsProximity } from './weapon-select.ts';
 
@@ -37,6 +45,8 @@ export interface HudHandles {
   selectedFacings: readonly number[];
   reinforceAmount: number;
   schematicMode: SchematicMode;
+  officerPage?: string;
+  logFilters?: Readonly<Partial<Record<LogChannel, boolean>>>;
   onSelect(slot: number, additive?: boolean): void;
   onSchematicSelect?(slot: number, additive?: boolean): void;
   onTarget?(id: number): void;
@@ -62,7 +72,7 @@ export function updateHud(vm: ViewModel, roster: readonly RosterEntry[], hud: Hu
     : undefined)
     ?? vm.contacts.find((contact) => contact.kind === 'ship' && contact.hostility === 'hostile' && contact.detected);
   text('tick', String(vm.tick));
-  text('speed', self ? String(self.speed) : '0');
+  text('speed', self ? formatSpeed(self.speed) : formatSpeed(0));
   text('speed-ordered', String(plan.speed));
   text('heading', self ? formatDeg(self.heading16) : '—');
   text('heading-ordered', self && self.orderedHeading16 !== null ? formatDeg(self.orderedHeading16) : '—');
@@ -106,11 +116,12 @@ export function updateHud(vm: ViewModel, roster: readonly RosterEntry[], hud: Hu
   renderTargetSchematic(vm, self, target, roster, hud);
   const alert = latestAlert(vm.events, vm.self?.id);
   text('alert', alert);
-  appendLog(vm);
+  appendLog(vm, hud);
   drawShields(vm, plan, hud, now);
   drawShipSchematic(vm, self, target, plan, now);
   renderSchematicHardpoints(vm, hud, plan);
-  drawMap(vm, hud);
+  drawMap(vm, roster, hud);
+  renderFleetRoster(vm, roster);
   renderWeapons(vm, hud, plan);
   syncWeaponsMfdSummary(vm, hud, plan);
   syncProximityButton(vm, hud, plan);
@@ -198,10 +209,11 @@ export function latestAlert(events: readonly HudEvent[], selfId?: number | null)
 
 const seen = new Set<string>();
 
-function appendLog(vm: ViewModel): void {
+function appendLog(vm: ViewModel, hud: HudHandles): void {
   const list = document.getElementById('log');
   if (!list) return;
   const selfId = vm.self?.id;
+  let added = false;
   for (const event of vm.events) {
     if (isOtherShipYawClamp(event, selfId)) {
       console.debug('yawClamped', event);
@@ -212,11 +224,17 @@ function appendLog(vm: ViewModel): void {
     const key = `${String(vm.tick)}:${line}`;
     if (seen.has(key)) continue;
     seen.add(key);
+    const channel = classifyLogChannel(event);
     const item = document.createElement('li');
     item.textContent = line;
+    item.dataset.channel = channel;
+    const visible = hud.logFilters?.[channel] !== false;
+    item.dataset.filtered = visible ? '0' : '1';
     list.append(item);
+    added = true;
   }
   while (list.childElementCount > 200) list.firstElementChild?.remove();
+  if (added) list.lastElementChild?.scrollIntoView({ block: 'end' });
 }
 
 export function hudLogLine(tick: number, event: HudEvent, selfId?: number | null): string | null {
@@ -481,7 +499,7 @@ function drawShields(vm: ViewModel, plan: DuelPlan, hud: HudHandles, now: number
   }
 }
 
-function drawMap(vm: ViewModel, hud: HudHandles): void {
+function clearOverlay(): void {
   const canvas = document.getElementById('overlay');
   const stage = document.getElementById('stage');
   if (!(canvas instanceof HTMLCanvasElement) || !stage) return;
@@ -499,37 +517,53 @@ function drawMap(vm: ViewModel, hud: HudHandles): void {
   if (!ctx) return;
   ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
   ctx.clearRect(0, 0, width, height);
-  const size = hud.mapFull ? Math.min(width, height) - 32 : 220;
-  const x = hud.mapFull ? Math.floor((width - size) / 2) : width - size - 16;
-  const y = hud.mapFull ? 16 : 16;
-  ctx.fillStyle = 'rgba(11, 17, 24, 0.85)';
-  ctx.strokeStyle = '#627488';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(x + 6, y);
-  ctx.lineTo(x + size, y);
-  ctx.lineTo(x + size, y + size - 6);
-  ctx.lineTo(x + size - 6, y + size);
-  ctx.lineTo(x, y + size);
-  ctx.lineTo(x, y + 6);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-  ctx.fillStyle = '#4f8fd6';
-  ctx.fillRect(x, y, size, 2);
-  ctx.fillStyle = '#8a9aab';
-  ctx.font = '12px sans-serif';
-  ctx.textAlign = 'left';
-  ctx.fillText(hud.headingUp ? 'SENSOR  HDG' : 'SENSOR  NORTH', x + 10, y + 18);
-  const cx = x + size / 2;
-  const cy = y + size / 2 + 8;
+}
+
+function syncMapChrome(hud: HudHandles): void {
+  const index = mapZoomIndex(hud.mapZoom);
+  text('map-zoom-label', `Zoom ${String(index + 1)} / ${String(MAP_ZOOM_LEVELS.length)} · ×${String(hud.mapZoom)}`);
+  const heading = document.getElementById('map-heading');
+  if (heading) heading.textContent = hud.headingUp ? 'HDG' : 'N';
+  const zoomOut = document.querySelector<HTMLButtonElement>('[data-action="view.mapZoomOut"]');
+  const zoomIn = document.querySelector<HTMLButtonElement>('[data-action="view.mapZoomIn"]');
+  zoomOut?.toggleAttribute('disabled', index <= 0);
+  zoomIn?.toggleAttribute('disabled', index >= MAP_ZOOM_LEVELS.length - 1);
+}
+
+function drawMap(vm: ViewModel, roster: readonly RosterEntry[], hud: HudHandles): void {
+  clearOverlay();
+  syncMapChrome(hud);
+  const canvas = document.getElementById('officer-map');
+  if (!(canvas instanceof HTMLCanvasElement)) {
+    mapFrame = null;
+    return;
+  }
+  const ratio = window.devicePixelRatio || 1;
+  const width = Math.max(32, Math.floor(canvas.clientWidth || 180));
+  const height = Math.max(32, Math.floor(canvas.clientHeight || 140));
+  if (canvas.width !== Math.floor(width * ratio) || canvas.height !== Math.floor(height * ratio)) {
+    canvas.width = Math.floor(width * ratio);
+    canvas.height = Math.floor(height * ratio);
+    canvas.style.width = `${String(width)}px`;
+    canvas.style.height = `${String(height)}px`;
+  }
+  const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    mapFrame = null;
+    return;
+  }
+  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  ctx.clearRect(0, 0, width, height);
+  const cx = width / 2;
+  const cy = height / 2;
   const scale = hud.mapZoom;
+  const radius = Math.max(8, Math.min(cx, cy) - 4);
   const self = vm.contacts.find((contact) => contact.hostility === 'self');
   const selfPose = self ? { x: self.x, y: self.y, heading16: self.heading16 } : undefined;
   mapFrame = {
-    left: x,
-    top: y,
-    size,
+    left: 0,
+    top: 0,
+    size: Math.min(width, height),
     scale,
     cx,
     cy,
@@ -540,15 +574,22 @@ function drawMap(vm: ViewModel, hud: HudHandles): void {
     const offset = mapOffset({ x: wx, y: wy }, selfPose, hud.headingUp);
     return [cx + offset.x * scale, cy - offset.y * scale];
   };
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
   ctx.strokeStyle = '#627488';
-  ctx.font = '10px ui-monospace, monospace';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.font = '9px ui-monospace, monospace';
   ctx.textAlign = 'left';
-  for (const ring of [5, 10]) {
+  for (const ring of mapRingDistances(scale, radius)) {
+    const ringPx = ring * scale;
+    if (ringPx <= 0) continue;
     ctx.beginPath();
-    ctx.arc(cx, cy, ring * scale, 0, Math.PI * 2);
+    ctx.arc(cx, cy, ringPx, 0, Math.PI * 2);
+    ctx.strokeStyle = '#627488';
     ctx.stroke();
     ctx.fillStyle = '#8a9aab';
-    ctx.fillText(String(ring), cx + 4, cy - ring * scale);
+    ctx.fillText(String(ring), cx + 3, cy - ring * scale);
   }
   const weapon = vm.self?.weapons.find((item) => item.slotIndex === hud.selectedSlot) ?? vm.self?.weapons[0];
   if (self && weapon) {
@@ -573,34 +614,81 @@ function drawMap(vm: ViewModel, hud: HudHandles): void {
     const py = at[1];
     let ang = (contact.heading16 / 65536) * Math.PI * 2;
     if (hud.headingUp && self) ang += Math.PI / 2 - (self.heading16 / 65536) * Math.PI * 2;
-    const point = (lx: number, ly: number) => {
-      const sx = Math.cos(ang) * lx - Math.sin(ang) * ly;
-      const sy = Math.sin(ang) * lx + Math.cos(ang) * ly;
-      return [px + sx, py - sy] as const;
-    };
     const targeted = contact.id === hud.targetId;
-    ctx.fillStyle = contact.kind === 'shot' ? '#f2b33d' : contact.hostility === 'self' ? '#5fb7ff' : contact.hostility === 'friendly' ? '#5fd3a0' : '#ff6b5e';
-    ctx.beginPath();
-    if (contact.kind === 'shot') {
-      ctx.moveTo(px, py - 3);
-      ctx.lineTo(px + 3, py);
-      ctx.lineTo(px, py + 3);
-      ctx.lineTo(px - 3, py);
-    } else if (contact.hostility === 'self') {
-      const nose = point(7, 0);
-      const left = point(-5, 4);
-      const right = point(-5, -4);
-      ctx.moveTo(nose[0], nose[1]);
-      ctx.lineTo(left[0], left[1]);
-      ctx.lineTo(right[0], right[1]);
+    if (contact.kind === 'shot' || contact.kind === 'mine' || contact.kind === 'fighter') {
+      ctx.fillStyle = contact.kind === 'shot' ? '#f2b33d' : contact.kind === 'mine' ? '#8a9aab' : '#d9a441';
+      ctx.beginPath();
+      if (contact.kind === 'shot') {
+        ctx.moveTo(px, py - 3);
+        ctx.lineTo(px + 3, py);
+        ctx.lineTo(px, py + 3);
+        ctx.lineTo(px - 3, py);
+      } else {
+        ctx.arc(px, py, contact.kind === 'fighter' ? 3 : 2.5, 0, Math.PI * 2);
+      }
+      ctx.fill();
     } else {
-      ctx.rect(px - 4, py - 4, 8, 8);
+      const empire = roster[contact.index]?.empire ?? '';
+      const mark = empireMarkFor(empire);
+      const color = mapEmpireColor(mark.id);
+      const size = contact.hostility === 'self' ? 14 : 12;
+      ctx.save();
+      ctx.translate(px, py);
+      ctx.scale(size / 16, size / 16);
+      ctx.translate(-8, -8);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.5;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.stroke(empireMarkPath(mark.id));
+      ctx.restore();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(px, py);
+      ctx.lineTo(px + Math.cos(ang) * 8, py - Math.sin(ang) * 8);
+      ctx.stroke();
     }
-    ctx.fill();
     if (targeted) {
       ctx.strokeStyle = '#ffffff';
-      ctx.strokeRect(px - 7, py - 7, 14, 14);
+      ctx.lineWidth = 1;
+      ctx.strokeRect(px - 8, py - 8, 16, 16);
     }
+  }
+}
+
+const empireMarkPaths = new Map<string, Path2D>();
+
+function empireMarkPath(id: string): Path2D {
+  let path = empireMarkPaths.get(id);
+  if (!path) {
+    const mark = EMPIRE_MARKS[id as keyof typeof EMPIRE_MARKS] ?? EMPIRE_MARKS.neutral;
+    path = new Path2D(mark.path);
+    empireMarkPaths.set(id, path);
+  }
+  return path;
+}
+
+function renderFleetRoster(vm: ViewModel, roster: readonly RosterEntry[]): void {
+  const host = document.getElementById('fleet-roster');
+  if (!host) return;
+  host.replaceChildren();
+  const ships = vm.contacts.filter((contact) => contact.kind === 'ship' && contact.detected);
+  if (ships.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'muted';
+    empty.textContent = 'No ships on sensors.';
+    host.append(empty);
+    return;
+  }
+  for (const contact of ships) {
+    const row = document.createElement('div');
+    const name = roster[contact.index]?.name ?? `Ship ${String(contact.index)}`;
+    const empire = roster[contact.index]?.empire ?? '';
+    const who = contact.hostility === 'self' ? 'you' : contact.control === 'ai' ? 'AI' : contact.hostility;
+    const side = contact.side < 0 ? '' : contact.side === 0 ? 'A · ' : 'B · ';
+    row.textContent = `${side}${name} · ${empire} · ${who}`;
+    host.append(row);
   }
 }
 
