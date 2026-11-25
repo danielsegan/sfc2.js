@@ -12,17 +12,19 @@ That description is general. It is not the manual, and it is not the game's own 
 
 The committed roadmap is [docs/plan.md](docs/plan.md). Current work is **Phase 2** (the tactical duel) and **Phase 3** (the full skirmish). The sim steps at a fixed **30 Hz** on fixed-point integers, so a replay hashes the same state every time. The ship-data audit in `tools/ship-audit` checks shiplist rows for the eight empires named in the plan: Federation, Klingon, Romulan, Lyran, Hydran, Gorn, ISC, and Mirak.
 
-| Phase | Goal |
-| --- | --- |
-| 0 Setup | Repository, CI, legal posture, and an inventory of the reference install |
-| 1 Asset pipeline | Parsers, importer, and a ship viewer |
-| 2 Tactical duel | One ship against one: energy, six shields, arcs, and a deterministic replay |
-| 3 Full skirmish | The rest of the weapons and systems, fleets, captains, the HUD, and sound |
-| 4 Missions | Mission runtime and the first campaign |
-| 5 All campaigns | The remaining empire campaigns |
-| 6 Conquest | A persistent single-player map |
-| 7 Multiplayer | Lockstep battles, a lobby, and a shared server |
-| 8 Mods and polish | Mod loading, HD options, a controller, and the Tauri release |
+| Status | Phase | Goal |
+| --- | --- | --- |
+| ✅ Done | 0 Setup | Repository, CI, legal posture, and an inventory of the reference install |
+| 🟡 Partial | 1 Asset pipeline | Parsers, importer, and a ship viewer |
+| 🟢 Active | 2 Tactical duel | One ship against one: energy, six shields, arcs, and a deterministic replay |
+| 🟢 Active | 3 Full skirmish | The rest of the weapons and systems, fleets, captains, the HUD, and sound |
+| ⚪ Planned | 4 Missions | Mission runtime and the first campaign |
+| ⚪ Planned | 5 All campaigns | The remaining empire campaigns |
+| ⚪ Planned | 6 Conquest | A persistent single-player map |
+| ⚪ Planned | 7 Multiplayer | Lockstep battles, a lobby, and a shared server |
+| 🟡 Partial | 8 Mods and polish | Mod loading, HD options, a controller, and the Tauri release |
+
+✅ Done · 🟢 Active · 🟡 Partial · ⚪ Planned
 
 Exit criteria, estimates, and the risk register stay in the plan. This table is only the phase list.
 
