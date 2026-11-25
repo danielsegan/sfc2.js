@@ -56,7 +56,9 @@
     "I-CL",
     "I-CA",
     "I-CC",
-    "Z-CA"
+    "Z-CA",
+    "G-FF",
+    "I-DN"
   ],
   "hullOrderNote": "Stable sim ids: engine/sim numbers hull rows by their position in this list, so append new hull keys at the end. Every key under hulls must be listed. default is the row for hulls with no entry of their own. Editing a row's speedPoints needs no code change.",
   "hulls": {
@@ -634,134 +636,106 @@
     },
     "R-SNA": {
       "status": "partial",
-      "note": "CE Tier-2 in-battle capture 2026-11-24 (Wintermute, Romulan): usable HET data at speed(s) 5, 15, 31. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; captured sweep at speed(s) 5, 15, 31 came from the ~135\u00b0 helm pad (not a hull property); audit `deg` omitted until the harness records the commanded preset (TO VERIFY). Wall-clock rate fallback at speed(s) 5, 15 (TO VERIFY game-clock). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "note": "CE Tier-2 90-pad HET rerun 2026-11-24 11:47 PM EST (Wintermute, Romulan): usable 90-pad HET data at speed(s) 5, 15. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; measured sweep at speed(s) 5, 15 is 90.1\u00b0, 88.6\u00b0, treated as 90\u00b0 preset overshoot/undershoot; sim uses 16384 and audit keeps the measured `deg` (TO VERIFY). Wall-clock rate fallback at speed(s) 5, 15 (TO VERIFY game-clock). Omitted (TO VERIFY): speed 31: suspect 178 deg / 4.19 s (90-pad, excluded). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
       "verification": {
-        "delayTicks": "measured Tier-2 capture 2026-11-24 (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
-        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg omitted for pad-driven captures",
-        "turnRate16PerTick": "measured at speed(s) 5, 15, 31"
+        "delayTicks": "measured 90-pad HET rerun 2026-11-24 11:47 PM EST (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
+        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg keeps measured overshoot/undershoot of the 90\u00b0 preset from the 90-pad rerun",
+        "turnRate16PerTick": "measured 90-pad at speed(s) 5, 15; omitted/missing speeds TO VERIFY"
       },
       "speedPoints": [
         {
           "speed": 5,
           "delayTicks": 171,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 272
+          "turnRate16PerTick": 248
         },
         {
           "speed": 15,
           "delayTicks": 171,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 275
-        },
-        {
-          "speed": 31,
-          "delayTicks": 171,
-          "turnAngle16": 16384,
-          "turnRate16PerTick": 315
+          "turnRate16PerTick": 253
         }
       ],
       "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.het.{5,15,31} measured; omitted/missing speeds TO VERIFY",
+        "source": "CE Tier-2 90-pad HET rerun (Wintermute, 2026-11-24 11:47 PM EST)",
+        "verification": "turn.het.{5,15} measured 90-pad; omitted/missing speeds TO VERIFY",
         "expect": {
+          "turn.het.5.deg": 90.1,
           "turn.het.5.delayS": 5.7,
-          "turn.het.5.degPerSecond": 44.89,
+          "turn.het.5.degPerSecond": 40.93,
+          "turn.het.15.deg": 88.6,
           "turn.het.15.delayS": 5.7,
-          "turn.het.15.degPerSecond": 45.35,
-          "turn.het.31.delayS": 5.7,
-          "turn.het.31.degPerSecond": 51.99
+          "turn.het.15.degPerSecond": 41.67
         },
         "tolerances": {
+          "turn.het.5.deg": 6,
           "turn.het.5.delayS": 0.3,
           "turn.het.5.degPerSecond": 6,
+          "turn.het.15.deg": 6,
           "turn.het.15.delayS": 0.3,
-          "turn.het.15.degPerSecond": 6,
-          "turn.het.31.delayS": 0.3,
-          "turn.het.31.degPerSecond": 6
+          "turn.het.15.degPerSecond": 6
         }
       }
     },
     "R-BH": {
       "status": "partial",
-      "note": "CE Tier-2 in-battle capture 2026-11-24 (Wintermute, Romulan): usable HET data at speed(s) 5, 15, 31. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; captured sweep at speed(s) 5, 15, 31 came from the ~135\u00b0 helm pad (not a hull property); audit `deg` omitted until the harness records the commanded preset (TO VERIFY). Wall-clock rate fallback at speed(s) 5, 15 (TO VERIFY game-clock). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "note": "CE Tier-2 90-pad HET rerun 2026-11-24 11:47 PM EST (Wintermute, Romulan): no usable 90-pad HET sample. Speed points reuse the default placeholder (171-tick delay, 90 deg / 16384, 285 units/tick). Prior 135-pad rates were removed rather than kept as live sim data. Omitted (TO VERIFY): speed 5: null, -25.0, null (het_not_executed); speed 15: null, -0.0, null (het_not_executed); speed 31: 135-only sample excluded (5.65 s, -112.4 deg, 38.05 deg/s). The hull keeps its hullOrder row id so later ids stay stable.",
       "verification": {
-        "delayTicks": "measured Tier-2 capture 2026-11-24 (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
-        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg omitted for pad-driven captures",
-        "turnRate16PerTick": "measured at speed(s) 5, 15, 31"
+        "delayTicks": "default placeholder 171 ticks (TO VERIFY)",
+        "turnAngle16": "90 deg preset baseline (16384) (TO VERIFY)",
+        "turnRate16PerTick": "default placeholder 285; no usable 90-pad sample (TO VERIFY)"
       },
       "speedPoints": [
         {
           "speed": 5,
           "delayTicks": 171,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 280
-        },
-        {
-          "speed": 15,
-          "delayTicks": 171,
-          "turnAngle16": 16384,
-          "turnRate16PerTick": 332
+          "turnRate16PerTick": 285
         },
         {
           "speed": 31,
           "delayTicks": 171,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 231
+          "turnRate16PerTick": 285
         }
       ],
       "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.het.{5,15,31} measured; omitted/missing speeds TO VERIFY",
-        "expect": {
-          "turn.het.5.delayS": 5.7,
-          "turn.het.5.degPerSecond": 46.07,
-          "turn.het.15.delayS": 5.7,
-          "turn.het.15.degPerSecond": 54.73,
-          "turn.het.31.delayS": 5.7,
-          "turn.het.31.degPerSecond": 38.05
-        },
-        "tolerances": {
-          "turn.het.5.delayS": 0.3,
-          "turn.het.5.degPerSecond": 6,
-          "turn.het.15.delayS": 0.3,
-          "turn.het.15.degPerSecond": 6,
-          "turn.het.31.delayS": 0.3,
-          "turn.het.31.degPerSecond": 6
-        }
+        "source": "CE Tier-2 90-pad HET rerun (Wintermute, 2026-11-24 11:47 PM EST)",
+        "verification": "no usable 90-pad cell; no audit expect (TO VERIFY)"
       }
     },
     "R-SPA": {
       "status": "partial",
-      "note": "CE Tier-2 in-battle capture 2026-11-24 (Wintermute, Romulan): usable HET data at speed(s) 5, 15. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; measured sweep at speed(s) 5, 15 is 89.9\u00b0, 91.1\u00b0, treated as 90\u00b0 preset overshoot/undershoot; sim uses 16384 and audit keeps the measured `deg` (TO VERIFY). Omitted (TO VERIFY): speed 31: null, 0.8, null (het_not_executed). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "note": "CE Tier-2 90-pad HET rerun 2026-11-24 11:47 PM EST (Wintermute, Romulan): usable 90-pad HET data at speed(s) 5, 15. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; measured sweep at speed(s) 5, 15 is 90.4\u00b0, 90.1\u00b0, treated as 90\u00b0 preset overshoot/undershoot; sim uses 16384 and audit keeps the measured `deg` (TO VERIFY). Wall-clock rate fallback at speed(s) 5 (TO VERIFY game-clock). Omitted (TO VERIFY): speed 31: null, 0.1, null (het_not_executed). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
       "verification": {
-        "delayTicks": "measured Tier-2 capture 2026-11-24 (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
-        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg keeps measured overshoot/undershoot of the 90\u00b0 preset",
-        "turnRate16PerTick": "measured at speed(s) 5, 15; omitted/missing speeds TO VERIFY"
+        "delayTicks": "measured 90-pad HET rerun 2026-11-24 11:47 PM EST (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
+        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg keeps measured overshoot/undershoot of the 90\u00b0 preset from the 90-pad rerun",
+        "turnRate16PerTick": "measured 90-pad at speed(s) 5, 15; omitted/missing speeds TO VERIFY"
       },
       "speedPoints": [
         {
           "speed": 5,
           "delayTicks": 171,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 330
+          "turnRate16PerTick": 345
         },
         {
           "speed": 15,
           "delayTicks": 171,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 385
+          "turnRate16PerTick": 376
         }
       ],
       "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.het.{5,15} measured; omitted/missing speeds TO VERIFY",
+        "source": "CE Tier-2 90-pad HET rerun (Wintermute, 2026-11-24 11:47 PM EST)",
+        "verification": "turn.het.{5,15} measured 90-pad; omitted/missing speeds TO VERIFY",
         "expect": {
-          "turn.het.5.deg": 89.9,
+          "turn.het.5.deg": 90.4,
           "turn.het.5.delayS": 5.7,
-          "turn.het.5.degPerSecond": 54.35,
-          "turn.het.15.deg": 91.1,
+          "turn.het.5.degPerSecond": 56.83,
+          "turn.het.15.deg": 90.1,
           "turn.het.15.delayS": 5.7,
-          "turn.het.15.degPerSecond": 63.49
+          "turn.het.15.degPerSecond": 61.95
         },
         "tolerances": {
           "turn.het.5.deg": 6,
@@ -775,38 +749,42 @@
     },
     "R-KRC": {
       "status": "partial",
-      "note": "CE Tier-2 in-battle capture 2026-11-24 (Wintermute, Romulan): usable HET data at speed(s) 5, 15. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; captured sweep at speed(s) 5, 15 came from the ~135\u00b0 helm pad (not a hull property); audit `deg` omitted until the harness records the commanded preset (TO VERIFY). Omitted (TO VERIFY): speed 31: null, -0.8, null (het_not_executed). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "note": "CE Tier-2 90-pad HET rerun 2026-11-24 11:47 PM EST (Wintermute, Romulan): usable 90-pad HET data at speed(s) 5, 15. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; measured sweep at speed(s) 5, 15 is 83.6\u00b0, 97.3\u00b0, treated as 90\u00b0 preset overshoot/undershoot; sim uses 16384 and audit keeps the measured `deg` (TO VERIFY). Wall-clock rate fallback at speed(s) 15 (TO VERIFY game-clock). Omitted (TO VERIFY): speed 31: null, 15.8, null (het_not_executed). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
       "verification": {
-        "delayTicks": "measured Tier-2 capture 2026-11-24 (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
-        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg omitted for pad-driven captures",
-        "turnRate16PerTick": "measured at speed(s) 5, 15; omitted/missing speeds TO VERIFY"
+        "delayTicks": "measured 90-pad HET rerun 2026-11-24 11:47 PM EST (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
+        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg keeps measured overshoot/undershoot of the 90\u00b0 preset from the 90-pad rerun",
+        "turnRate16PerTick": "measured 90-pad at speed(s) 5, 15; omitted/missing speeds TO VERIFY"
       },
       "speedPoints": [
         {
           "speed": 5,
           "delayTicks": 171,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 327
+          "turnRate16PerTick": 329
         },
         {
           "speed": 15,
           "delayTicks": 171,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 386
+          "turnRate16PerTick": 407
         }
       ],
       "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.het.{5,15} measured; omitted/missing speeds TO VERIFY",
+        "source": "CE Tier-2 90-pad HET rerun (Wintermute, 2026-11-24 11:47 PM EST)",
+        "verification": "turn.het.{5,15} measured 90-pad; omitted/missing speeds TO VERIFY",
         "expect": {
+          "turn.het.5.deg": 83.6,
           "turn.het.5.delayS": 5.7,
-          "turn.het.5.degPerSecond": 53.96,
+          "turn.het.5.degPerSecond": 54.27,
+          "turn.het.15.deg": 97.3,
           "turn.het.15.delayS": 5.7,
-          "turn.het.15.degPerSecond": 63.56
+          "turn.het.15.degPerSecond": 67.05
         },
         "tolerances": {
+          "turn.het.5.deg": 6,
           "turn.het.5.delayS": 0.3,
           "turn.het.5.degPerSecond": 6,
+          "turn.het.15.deg": 6,
           "turn.het.15.delayS": 0.3,
           "turn.het.15.degPerSecond": 6
         }
@@ -814,11 +792,85 @@
     },
     "R-CON": {
       "status": "partial",
-      "note": "CE Tier-2 in-battle capture 2026-11-24 (Wintermute, Romulan): usable HET data at speed(s) 5. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; captured sweep at speed(s) 5 came from the ~135\u00b0 helm pad (not a hull property); audit `deg` omitted until the harness records the commanded preset (TO VERIFY). Omitted (TO VERIFY): speed 15: null, 0.1, null (het_not_executed); speed 31: null, null, null (skip:damaged). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "note": "CE Tier-2 90-pad HET rerun 2026-11-24 11:47 PM EST (Wintermute, Romulan): usable 90-pad HET data at speed(s) 5, 15. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; measured sweep at speed(s) 5, 15 is 80.5\u00b0, 106.1\u00b0, treated as 90\u00b0 preset overshoot/undershoot; sim uses 16384 and audit keeps the measured `deg` (TO VERIFY). Wall-clock rate fallback at speed(s) 5 (TO VERIFY game-clock). Omitted (TO VERIFY): speed 31: null, 33.2, null (het_not_executed). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
       "verification": {
-        "delayTicks": "measured Tier-2 capture 2026-11-24 (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
-        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg omitted for pad-driven captures",
-        "turnRate16PerTick": "measured at speed(s) 5; omitted/missing speeds TO VERIFY"
+        "delayTicks": "measured 90-pad HET rerun 2026-11-24 11:47 PM EST (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
+        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg keeps measured overshoot/undershoot of the 90\u00b0 preset from the 90-pad rerun",
+        "turnRate16PerTick": "measured 90-pad at speed(s) 5, 15; omitted/missing speeds TO VERIFY"
+      },
+      "speedPoints": [
+        {
+          "speed": 5,
+          "delayTicks": 171,
+          "turnAngle16": 16384,
+          "turnRate16PerTick": 236
+        },
+        {
+          "speed": 15,
+          "delayTicks": 171,
+          "turnAngle16": 16384,
+          "turnRate16PerTick": 310
+        }
+      ],
+      "audit": {
+        "source": "CE Tier-2 90-pad HET rerun (Wintermute, 2026-11-24 11:47 PM EST)",
+        "verification": "turn.het.{5,15} measured 90-pad; omitted/missing speeds TO VERIFY",
+        "expect": {
+          "turn.het.5.deg": 80.5,
+          "turn.het.5.delayS": 5.7,
+          "turn.het.5.degPerSecond": 38.81,
+          "turn.het.15.deg": 106.1,
+          "turn.het.15.delayS": 5.7,
+          "turn.het.15.degPerSecond": 51.14
+        },
+        "tolerances": {
+          "turn.het.5.deg": 6,
+          "turn.het.5.delayS": 0.3,
+          "turn.het.5.degPerSecond": 6,
+          "turn.het.15.deg": 6,
+          "turn.het.15.delayS": 0.3,
+          "turn.het.15.degPerSecond": 6
+        }
+      }
+    },
+    "L-FF": {
+      "status": "partial",
+      "note": "CE Tier-2 90-pad HET rerun 2026-11-24 11:47 PM EST (Wintermute, Lyran): usable 90-pad HET data at speed(s) 15. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; measured sweep at speed(s) 15 is 80.6\u00b0, treated as 90\u00b0 preset overshoot/undershoot; sim uses 16384 and audit keeps the measured `deg` (TO VERIFY). Omitted (TO VERIFY): speed 5: suspect 70.7 deg, 9.37 deg/s (slow Lyran / bimodal); speed 31: slow 14.14 deg/s (bimodal, excluded). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "verification": {
+        "delayTicks": "measured 90-pad HET rerun 2026-11-24 11:47 PM EST (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
+        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg keeps measured overshoot/undershoot of the 90\u00b0 preset from the 90-pad rerun",
+        "turnRate16PerTick": "measured 90-pad at speed(s) 15; omitted/missing speeds TO VERIFY"
+      },
+      "speedPoints": [
+        {
+          "speed": 15,
+          "delayTicks": 171,
+          "turnAngle16": 16384,
+          "turnRate16PerTick": 258
+        }
+      ],
+      "audit": {
+        "source": "CE Tier-2 90-pad HET rerun (Wintermute, 2026-11-24 11:47 PM EST)",
+        "verification": "turn.het.{15} measured 90-pad; omitted/missing speeds TO VERIFY",
+        "expect": {
+          "turn.het.15.deg": 80.6,
+          "turn.het.15.delayS": 5.7,
+          "turn.het.15.degPerSecond": 42.47
+        },
+        "tolerances": {
+          "turn.het.15.deg": 6,
+          "turn.het.15.delayS": 0.3,
+          "turn.het.15.degPerSecond": 6
+        }
+      }
+    },
+    "L-DD": {
+      "status": "partial",
+      "note": "CE Tier-2 90-pad HET rerun 2026-11-24 11:47 PM EST (Wintermute, Lyran): no usable 90-pad HET sample. Speed points reuse the default placeholder (171-tick delay, 90 deg / 16384, 285 units/tick). Prior 135-pad rates were removed rather than kept as live sim data. Omitted (TO VERIFY): speed 5: high 97.9 deg/s (excluded); speed 15: slow 11.77 deg/s (bimodal, excluded); speed 31: null, 0.1, null (het_not_executed). The hull keeps its hullOrder row id so later ids stay stable.",
+      "verification": {
+        "delayTicks": "default placeholder 171 ticks (TO VERIFY)",
+        "turnAngle16": "90 deg preset baseline (16384) (TO VERIFY)",
+        "turnRate16PerTick": "default placeholder 285; no usable 90-pad sample (TO VERIFY)"
       },
       "speedPoints": [
         {
@@ -826,294 +878,53 @@
           "delayTicks": 171,
           "turnAngle16": 16384,
           "turnRate16PerTick": 285
-        }
-      ],
-      "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.het.{5} measured; omitted/missing speeds TO VERIFY",
-        "expect": {
-          "turn.het.5.delayS": 5.7,
-          "turn.het.5.degPerSecond": 46.95
-        },
-        "tolerances": {
-          "turn.het.5.delayS": 0.3,
-          "turn.het.5.degPerSecond": 6
-        }
-      }
-    },
-    "L-FF": {
-      "status": "partial",
-      "note": "CE Tier-2 in-battle capture 2026-11-24 (Wintermute, Lyran): usable HET data at speed(s) 15, 31. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; captured sweep at speed(s) 15, 31 came from the ~135\u00b0 helm pad (not a hull property); audit `deg` omitted until the harness records the commanded preset (TO VERIFY). Omitted (TO VERIFY): speed 5: null, -8.5, null (het_not_executed). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
-      "verification": {
-        "delayTicks": "measured Tier-2 capture 2026-11-24 (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
-        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg omitted for pad-driven captures",
-        "turnRate16PerTick": "measured at speed(s) 15, 31; omitted/missing speeds TO VERIFY"
-      },
-      "speedPoints": [
-        {
-          "speed": 15,
-          "delayTicks": 171,
-          "turnAngle16": 16384,
-          "turnRate16PerTick": 374
         },
         {
           "speed": 31,
           "delayTicks": 171,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 313
+          "turnRate16PerTick": 285
         }
       ],
       "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.het.{15,31} measured; omitted/missing speeds TO VERIFY",
-        "expect": {
-          "turn.het.15.delayS": 5.7,
-          "turn.het.15.degPerSecond": 61.64,
-          "turn.het.31.delayS": 5.7,
-          "turn.het.31.degPerSecond": 51.58
-        },
-        "tolerances": {
-          "turn.het.15.delayS": 0.3,
-          "turn.het.15.degPerSecond": 6,
-          "turn.het.31.delayS": 0.3,
-          "turn.het.31.degPerSecond": 6
-        }
-      }
-    },
-    "L-DD": {
-      "status": "partial",
-      "note": "CE Tier-2 in-battle capture 2026-11-24 (Wintermute, Lyran): usable HET data at speed(s) 5, 15, 31. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; captured sweep at speed(s) 5, 15, 31 came from the ~135\u00b0 helm pad (not a hull property); audit `deg` omitted until the harness records the commanded preset (TO VERIFY). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
-      "verification": {
-        "delayTicks": "measured Tier-2 capture 2026-11-24 (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
-        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg omitted for pad-driven captures",
-        "turnRate16PerTick": "measured at speed(s) 5, 15, 31"
-      },
-      "speedPoints": [
-        {
-          "speed": 5,
-          "delayTicks": 171,
-          "turnAngle16": 16384,
-          "turnRate16PerTick": 337
-        },
-        {
-          "speed": 15,
-          "delayTicks": 171,
-          "turnAngle16": 16384,
-          "turnRate16PerTick": 282
-        },
-        {
-          "speed": 31,
-          "delayTicks": 171,
-          "turnAngle16": 16384,
-          "turnRate16PerTick": 337
-        }
-      ],
-      "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.het.{5,15,31} measured; omitted/missing speeds TO VERIFY",
-        "expect": {
-          "turn.het.5.delayS": 5.7,
-          "turn.het.5.degPerSecond": 55.51,
-          "turn.het.15.delayS": 5.7,
-          "turn.het.15.degPerSecond": 46.43,
-          "turn.het.31.delayS": 5.7,
-          "turn.het.31.degPerSecond": 55.48
-        },
-        "tolerances": {
-          "turn.het.5.delayS": 0.3,
-          "turn.het.5.degPerSecond": 6,
-          "turn.het.15.delayS": 0.3,
-          "turn.het.15.degPerSecond": 6,
-          "turn.het.31.delayS": 0.3,
-          "turn.het.31.degPerSecond": 6
-        }
+        "source": "CE Tier-2 90-pad HET rerun (Wintermute, 2026-11-24 11:47 PM EST)",
+        "verification": "no usable 90-pad cell; no audit expect (TO VERIFY)"
       }
     },
     "L-CW": {
       "status": "partial",
-      "note": "CE Tier-2 in-battle capture 2026-11-24 (Wintermute, Lyran): usable HET data at speed(s) 15. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; captured sweep at speed(s) 15 came from the ~135\u00b0 helm pad (not a hull property); audit `deg` omitted until the harness records the commanded preset (TO VERIFY). Omitted (TO VERIFY): speed 5: suspect partial sweep (-48.1 deg, 18.96 deg/s); speed 31: suspect partial/reverse sweep (45.9 deg, 10.7 deg/s). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "note": "CE Tier-2 90-pad HET rerun 2026-11-24 11:47 PM EST (Wintermute, Lyran): no usable 90-pad HET sample. Speed points reuse the default placeholder (171-tick delay, 90 deg / 16384, 285 units/tick). Prior 135-pad rates were removed rather than kept as live sim data. Omitted (TO VERIFY): speed 5: slow 12.66 deg/s (bimodal, excluded); speed 15: 31.02 deg/s outside the clean 40-55 deg/s Lyran band (excluded); speed 31: slow 9.48 deg/s (bimodal, excluded). The hull keeps its hullOrder row id so later ids stay stable.",
       "verification": {
-        "delayTicks": "measured Tier-2 capture 2026-11-24 (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
-        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg omitted for pad-driven captures",
-        "turnRate16PerTick": "measured at speed(s) 15; omitted/missing speeds TO VERIFY"
+        "delayTicks": "default placeholder 171 ticks (TO VERIFY)",
+        "turnAngle16": "90 deg preset baseline (16384) (TO VERIFY)",
+        "turnRate16PerTick": "default placeholder 285; no usable 90-pad sample (TO VERIFY)"
       },
       "speedPoints": [
         {
-          "speed": 15,
+          "speed": 5,
           "delayTicks": 171,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 317
+          "turnRate16PerTick": 285
+        },
+        {
+          "speed": 31,
+          "delayTicks": 171,
+          "turnAngle16": 16384,
+          "turnRate16PerTick": 285
         }
       ],
       "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.het.{15} measured; omitted/missing speeds TO VERIFY",
-        "expect": {
-          "turn.het.15.delayS": 5.7,
-          "turn.het.15.degPerSecond": 52.25
-        },
-        "tolerances": {
-          "turn.het.15.delayS": 0.3,
-          "turn.het.15.degPerSecond": 6
-        }
+        "source": "CE Tier-2 90-pad HET rerun (Wintermute, 2026-11-24 11:47 PM EST)",
+        "verification": "no usable 90-pad cell; no audit expect (TO VERIFY)"
       }
     },
     "L-CA": {
       "status": "partial",
-      "note": "CE Tier-2 in-battle capture 2026-11-24 (Wintermute, Lyran): usable HET data at speed(s) 5, 15, 31. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; captured sweep at speed(s) 5, 31 came from the ~135\u00b0 helm pad (not a hull property); audit `deg` omitted until the harness records the commanded preset (TO VERIFY); measured sweep at speed(s) 15 is 94.0\u00b0, treated as 90\u00b0 preset overshoot/undershoot; sim uses 16384 and audit keeps the measured `deg` (TO VERIFY). Wall-clock rate fallback at speed(s) 5 (TO VERIFY game-clock). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "note": "CE Tier-2 90-pad HET rerun 2026-11-24 11:47 PM EST (Wintermute, Lyran): usable 90-pad HET data at speed(s) 5. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; measured sweep at speed(s) 5 is 88.6\u00b0, treated as 90\u00b0 preset overshoot/undershoot; sim uses 16384 and audit keeps the measured `deg` (TO VERIFY). Omitted (TO VERIFY): speed 15: null, 29.1, null (het_not_executed); speed 31: 135-only sample excluded (6.19 s, -129.0 deg, 50.8 deg/s). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
       "verification": {
-        "delayTicks": "measured Tier-2 capture 2026-11-24 (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
-        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg omitted for pad-driven captures; audit deg keeps measured overshoot/undershoot of the 90\u00b0 preset",
-        "turnRate16PerTick": "measured at speed(s) 5, 15, 31"
-      },
-      "speedPoints": [
-        {
-          "speed": 5,
-          "delayTicks": 171,
-          "turnAngle16": 16384,
-          "turnRate16PerTick": 318
-        },
-        {
-          "speed": 15,
-          "delayTicks": 185,
-          "turnAngle16": 16384,
-          "turnRate16PerTick": 226
-        },
-        {
-          "speed": 31,
-          "delayTicks": 186,
-          "turnAngle16": 16384,
-          "turnRate16PerTick": 308
-        }
-      ],
-      "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.het.{5,15,31} measured; omitted/missing speeds TO VERIFY",
-        "expect": {
-          "turn.het.5.delayS": 5.7,
-          "turn.het.5.degPerSecond": 52.38,
-          "turn.het.15.deg": 94.0,
-          "turn.het.15.delayS": 6.15,
-          "turn.het.15.degPerSecond": 37.31,
-          "turn.het.31.delayS": 6.19,
-          "turn.het.31.degPerSecond": 50.8
-        },
-        "tolerances": {
-          "turn.het.5.delayS": 0.3,
-          "turn.het.5.degPerSecond": 6,
-          "turn.het.15.deg": 6,
-          "turn.het.15.delayS": 0.3,
-          "turn.het.15.degPerSecond": 6,
-          "turn.het.31.delayS": 0.3,
-          "turn.het.31.degPerSecond": 6
-        }
-      }
-    },
-    "L-CC": {
-      "status": "partial",
-      "note": "CE Tier-2 in-battle capture 2026-11-24 (Wintermute, Lyran): usable HET data at speed(s) 5, 15, 31. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; captured sweep at speed(s) 5, 15, 31 came from the ~135\u00b0 helm pad (not a hull property); audit `deg` omitted until the harness records the commanded preset (TO VERIFY). Wall-clock rate fallback at speed(s) 31 (TO VERIFY game-clock). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
-      "verification": {
-        "delayTicks": "measured Tier-2 capture 2026-11-24 (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
-        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg omitted for pad-driven captures",
-        "turnRate16PerTick": "measured at speed(s) 5, 15, 31"
-      },
-      "speedPoints": [
-        {
-          "speed": 5,
-          "delayTicks": 171,
-          "turnAngle16": 16384,
-          "turnRate16PerTick": 318
-        },
-        {
-          "speed": 15,
-          "delayTicks": 171,
-          "turnAngle16": 16384,
-          "turnRate16PerTick": 316
-        },
-        {
-          "speed": 31,
-          "delayTicks": 171,
-          "turnAngle16": 16384,
-          "turnRate16PerTick": 290
-        }
-      ],
-      "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.het.{5,15,31} measured; omitted/missing speeds TO VERIFY",
-        "expect": {
-          "turn.het.5.delayS": 5.7,
-          "turn.het.5.degPerSecond": 52.36,
-          "turn.het.15.delayS": 5.7,
-          "turn.het.15.degPerSecond": 52.02,
-          "turn.het.31.delayS": 5.7,
-          "turn.het.31.degPerSecond": 47.72
-        },
-        "tolerances": {
-          "turn.het.5.delayS": 0.3,
-          "turn.het.5.degPerSecond": 6,
-          "turn.het.15.delayS": 0.3,
-          "turn.het.15.degPerSecond": 6,
-          "turn.het.31.delayS": 0.3,
-          "turn.het.31.degPerSecond": 6
-        }
-      }
-    },
-    "L-DN": {
-      "status": "partial",
-      "note": "CE Tier-2 in-battle capture 2026-11-24 (Wintermute, Lyran): usable HET data at speed(s) 5, 15, 31. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; captured sweep at speed(s) 5, 15, 31 came from the ~135\u00b0 helm pad (not a hull property); audit `deg` omitted until the harness records the commanded preset (TO VERIFY). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
-      "verification": {
-        "delayTicks": "measured Tier-2 capture 2026-11-24 (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
-        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg omitted for pad-driven captures",
-        "turnRate16PerTick": "measured at speed(s) 5, 15, 31"
-      },
-      "speedPoints": [
-        {
-          "speed": 5,
-          "delayTicks": 171,
-          "turnAngle16": 16384,
-          "turnRate16PerTick": 230
-        },
-        {
-          "speed": 15,
-          "delayTicks": 171,
-          "turnAngle16": 16384,
-          "turnRate16PerTick": 290
-        },
-        {
-          "speed": 31,
-          "delayTicks": 171,
-          "turnAngle16": 16384,
-          "turnRate16PerTick": 267
-        }
-      ],
-      "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.het.{5,15,31} measured; omitted/missing speeds TO VERIFY",
-        "expect": {
-          "turn.het.5.delayS": 5.7,
-          "turn.het.5.degPerSecond": 37.9,
-          "turn.het.15.delayS": 5.7,
-          "turn.het.15.degPerSecond": 47.79,
-          "turn.het.31.delayS": 5.7,
-          "turn.het.31.degPerSecond": 44.05
-        },
-        "tolerances": {
-          "turn.het.5.delayS": 0.3,
-          "turn.het.5.degPerSecond": 6,
-          "turn.het.15.delayS": 0.3,
-          "turn.het.15.degPerSecond": 6,
-          "turn.het.31.delayS": 0.3,
-          "turn.het.31.degPerSecond": 6
-        }
-      }
-    },
-    "H-HN": {
-      "status": "partial",
-      "note": "CE Tier-2 in-battle capture 2026-11-24 (Wintermute, Hydran): usable HET data at speed(s) 5, 31. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; measured sweep at speed(s) 5, 31 is 88.3\u00b0, 90.6\u00b0, treated as 90\u00b0 preset overshoot/undershoot; sim uses 16384 and audit keeps the measured `deg` (TO VERIFY). Omitted (TO VERIFY): speed 15: null, 18.9, null (het_not_executed). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
-      "verification": {
-        "delayTicks": "measured Tier-2 capture 2026-11-24 (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
-        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg keeps measured overshoot/undershoot of the 90\u00b0 preset",
-        "turnRate16PerTick": "measured at speed(s) 5, 31; omitted/missing speeds TO VERIFY"
+        "delayTicks": "measured 90-pad HET rerun 2026-11-24 11:47 PM EST (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
+        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg keeps measured overshoot/undershoot of the 90\u00b0 preset from the 90-pad rerun",
+        "turnRate16PerTick": "measured 90-pad at speed(s) 5; omitted/missing speeds TO VERIFY"
       },
       "speedPoints": [
         {
@@ -1121,29 +932,130 @@
           "delayTicks": 171,
           "turnAngle16": 16384,
           "turnRate16PerTick": 331
+        }
+      ],
+      "audit": {
+        "source": "CE Tier-2 90-pad HET rerun (Wintermute, 2026-11-24 11:47 PM EST)",
+        "verification": "turn.het.{5} measured 90-pad; omitted/missing speeds TO VERIFY",
+        "expect": {
+          "turn.het.5.deg": 88.6,
+          "turn.het.5.delayS": 5.7,
+          "turn.het.5.degPerSecond": 54.49
+        },
+        "tolerances": {
+          "turn.het.5.deg": 6,
+          "turn.het.5.delayS": 0.3,
+          "turn.het.5.degPerSecond": 6
+        }
+      }
+    },
+    "L-CC": {
+      "status": "partial",
+      "note": "CE Tier-2 90-pad HET rerun 2026-11-24 11:47 PM EST (Wintermute, Lyran): usable 90-pad HET data at speed(s) 5. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; measured sweep at speed(s) 5 is 88.6\u00b0, treated as 90\u00b0 preset overshoot/undershoot; sim uses 16384 and audit keeps the measured `deg` (TO VERIFY). Omitted (TO VERIFY): speed 15: 81.12 deg/s outside the clean 40-55 deg/s Lyran band (excluded); speed 31: null, 0.0, null (het_not_executed). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "verification": {
+        "delayTicks": "measured 90-pad HET rerun 2026-11-24 11:47 PM EST (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
+        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg keeps measured overshoot/undershoot of the 90\u00b0 preset from the 90-pad rerun",
+        "turnRate16PerTick": "measured 90-pad at speed(s) 5; omitted/missing speeds TO VERIFY"
+      },
+      "speedPoints": [
+        {
+          "speed": 5,
+          "delayTicks": 171,
+          "turnAngle16": 16384,
+          "turnRate16PerTick": 267
+        }
+      ],
+      "audit": {
+        "source": "CE Tier-2 90-pad HET rerun (Wintermute, 2026-11-24 11:47 PM EST)",
+        "verification": "turn.het.{5} measured 90-pad; omitted/missing speeds TO VERIFY",
+        "expect": {
+          "turn.het.5.deg": 88.6,
+          "turn.het.5.delayS": 5.7,
+          "turn.het.5.degPerSecond": 44.04
+        },
+        "tolerances": {
+          "turn.het.5.deg": 6,
+          "turn.het.5.delayS": 0.3,
+          "turn.het.5.degPerSecond": 6
+        }
+      }
+    },
+    "L-DN": {
+      "status": "partial",
+      "note": "CE Tier-2 90-pad HET rerun 2026-11-24 11:47 PM EST (Wintermute, Lyran): no usable 90-pad HET sample. Speed points reuse the default placeholder (171-tick delay, 90 deg / 16384, 285 units/tick). Prior 135-pad rates were removed rather than kept as live sim data. Omitted (TO VERIFY): speed 5: slow 17.26 deg/s (bimodal, excluded); speed 15: null, -1.9, null (het_not_executed); speed 31: 135-only sample excluded (5.6 s, -132.4 deg, 44.05 deg/s). The hull keeps its hullOrder row id so later ids stay stable.",
+      "verification": {
+        "delayTicks": "default placeholder 171 ticks (TO VERIFY)",
+        "turnAngle16": "90 deg preset baseline (16384) (TO VERIFY)",
+        "turnRate16PerTick": "default placeholder 285; no usable 90-pad sample (TO VERIFY)"
+      },
+      "speedPoints": [
+        {
+          "speed": 5,
+          "delayTicks": 171,
+          "turnAngle16": 16384,
+          "turnRate16PerTick": 285
         },
         {
           "speed": 31,
           "delayTicks": 171,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 414
+          "turnRate16PerTick": 285
         }
       ],
       "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.het.{5,31} measured; omitted/missing speeds TO VERIFY",
+        "source": "CE Tier-2 90-pad HET rerun (Wintermute, 2026-11-24 11:47 PM EST)",
+        "verification": "no usable 90-pad cell; no audit expect (TO VERIFY)"
+      }
+    },
+    "H-HN": {
+      "status": "partial",
+      "note": "CE Tier-2 90-pad HET rerun 2026-11-24 11:47 PM EST (Wintermute, Hydran): usable 90-pad HET data at speed(s) 5, 15, 31. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; measured sweep at speed(s) 5, 15, 31 is 87.2\u00b0, 90.9\u00b0, 91.2\u00b0, treated as 90\u00b0 preset overshoot/undershoot; sim uses 16384 and audit keeps the measured `deg` (TO VERIFY). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "verification": {
+        "delayTicks": "measured 90-pad HET rerun 2026-11-24 11:47 PM EST (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded: 5=184 ticks / 6.12 s); multi-run confirmation TO VERIFY",
+        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg keeps measured overshoot/undershoot of the 90\u00b0 preset from the 90-pad rerun",
+        "turnRate16PerTick": "measured 90-pad at speed(s) 5, 15, 31; omitted/missing speeds TO VERIFY"
+      },
+      "speedPoints": [
+        {
+          "speed": 5,
+          "delayTicks": 184,
+          "turnAngle16": 16384,
+          "turnRate16PerTick": 402
+        },
+        {
+          "speed": 15,
+          "delayTicks": 171,
+          "turnAngle16": 16384,
+          "turnRate16PerTick": 363
+        },
+        {
+          "speed": 31,
+          "delayTicks": 171,
+          "turnAngle16": 16384,
+          "turnRate16PerTick": 440
+        }
+      ],
+      "audit": {
+        "source": "CE Tier-2 90-pad HET rerun (Wintermute, 2026-11-24 11:47 PM EST)",
+        "verification": "turn.het.{5,15,31} measured 90-pad; omitted/missing speeds TO VERIFY",
         "expect": {
-          "turn.het.5.deg": 88.3,
-          "turn.het.5.delayS": 5.7,
-          "turn.het.5.degPerSecond": 54.57,
-          "turn.het.31.deg": 90.6,
+          "turn.het.5.deg": 87.2,
+          "turn.het.5.delayS": 6.12,
+          "turn.het.5.degPerSecond": 66.2,
+          "turn.het.15.deg": 90.9,
+          "turn.het.15.delayS": 5.7,
+          "turn.het.15.degPerSecond": 59.75,
+          "turn.het.31.deg": 91.2,
           "turn.het.31.delayS": 5.7,
-          "turn.het.31.degPerSecond": 68.3
+          "turn.het.31.degPerSecond": 72.54
         },
         "tolerances": {
           "turn.het.5.deg": 6,
           "turn.het.5.delayS": 0.3,
           "turn.het.5.degPerSecond": 6,
+          "turn.het.15.deg": 6,
+          "turn.het.15.delayS": 0.3,
+          "turn.het.15.degPerSecond": 6,
           "turn.het.31.deg": 6,
           "turn.het.31.delayS": 0.3,
           "turn.het.31.degPerSecond": 6
@@ -1152,67 +1064,85 @@
     },
     "H-LN": {
       "status": "partial",
-      "note": "CE Tier-2 in-battle capture 2026-11-24 (Wintermute, Hydran): usable HET data at speed(s) 15. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; captured sweep at speed(s) 15 came from the ~45\u00b0 helm pad (not a hull property); audit `deg` omitted until the harness records the commanded preset (TO VERIFY). Omitted (TO VERIFY): speed 5: null, -30.1, null (het_not_executed); speed 31: null, -52.7, null (het_not_executed). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "note": "CE Tier-2 90-pad HET rerun 2026-11-24 11:47 PM EST (Wintermute, Hydran): usable 90-pad HET data at speed(s) 31. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; measured sweep at speed(s) 31 is 80.8\u00b0, treated as 90\u00b0 preset overshoot/undershoot; sim uses 16384 and audit keeps the measured `deg` (TO VERIFY). Omitted (TO VERIFY): speed 5: suspect -59.5 deg, 7.05 s, 150.63 deg/s (excluded); speed 15: suspect 10.45 deg/s (excluded). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
       "verification": {
-        "delayTicks": "measured Tier-2 capture 2026-11-24 (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
-        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg omitted for pad-driven captures",
-        "turnRate16PerTick": "measured at speed(s) 15; omitted/missing speeds TO VERIFY"
+        "delayTicks": "measured 90-pad HET rerun 2026-11-24 11:47 PM EST (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
+        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg keeps measured overshoot/undershoot of the 90\u00b0 preset from the 90-pad rerun",
+        "turnRate16PerTick": "measured 90-pad at speed(s) 31; omitted/missing speeds TO VERIFY"
       },
       "speedPoints": [
         {
-          "speed": 15,
+          "speed": 31,
           "delayTicks": 171,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 264
+          "turnRate16PerTick": 271
         }
       ],
       "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.het.{15} measured; omitted/missing speeds TO VERIFY",
+        "source": "CE Tier-2 90-pad HET rerun (Wintermute, 2026-11-24 11:47 PM EST)",
+        "verification": "turn.het.{31} measured 90-pad; omitted/missing speeds TO VERIFY",
         "expect": {
-          "turn.het.15.delayS": 5.7,
-          "turn.het.15.degPerSecond": 43.44
+          "turn.het.31.deg": 80.8,
+          "turn.het.31.delayS": 5.7,
+          "turn.het.31.degPerSecond": 44.69
         },
         "tolerances": {
-          "turn.het.15.delayS": 0.3,
-          "turn.het.15.degPerSecond": 6
+          "turn.het.31.deg": 6,
+          "turn.het.31.delayS": 0.3,
+          "turn.het.31.degPerSecond": 6
         }
       }
     },
     "H-HR": {
       "status": "partial",
-      "note": "CE Tier-2 in-battle capture 2026-11-24 (Wintermute, Hydran): usable HET data at speed(s) 15, 31. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; captured sweep at speed(s) 15, 31 came from the ~135\u00b0 helm pad (not a hull property); audit `deg` omitted until the harness records the commanded preset (TO VERIFY). Wall-clock rate fallback at speed(s) 31 (TO VERIFY game-clock). Omitted (TO VERIFY): speed 5: null, -128.1, null (het_not_executed). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "note": "CE Tier-2 90-pad HET rerun 2026-11-24 11:47 PM EST (Wintermute, Hydran): usable 90-pad HET data at speed(s) 5, 15, 31. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; measured sweep at speed(s) 5, 15, 31 is 88.2\u00b0, 88.9\u00b0, 87.5\u00b0, treated as 90\u00b0 preset overshoot/undershoot; sim uses 16384 and audit keeps the measured `deg` (TO VERIFY). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
       "verification": {
-        "delayTicks": "measured Tier-2 capture 2026-11-24 (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
-        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg omitted for pad-driven captures",
-        "turnRate16PerTick": "measured at speed(s) 15, 31; omitted/missing speeds TO VERIFY"
+        "delayTicks": "measured 90-pad HET rerun 2026-11-24 11:47 PM EST (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
+        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg keeps measured overshoot/undershoot of the 90\u00b0 preset from the 90-pad rerun",
+        "turnRate16PerTick": "measured 90-pad at speed(s) 5, 15, 31; omitted/missing speeds TO VERIFY"
       },
       "speedPoints": [
+        {
+          "speed": 5,
+          "delayTicks": 171,
+          "turnAngle16": 16384,
+          "turnRate16PerTick": 311
+        },
         {
           "speed": 15,
           "delayTicks": 171,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 263
+          "turnRate16PerTick": 306
         },
         {
           "speed": 31,
           "delayTicks": 171,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 274
+          "turnRate16PerTick": 184
         }
       ],
       "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.het.{15,31} measured; omitted/missing speeds TO VERIFY",
+        "source": "CE Tier-2 90-pad HET rerun (Wintermute, 2026-11-24 11:47 PM EST)",
+        "verification": "turn.het.{5,15,31} measured 90-pad; omitted/missing speeds TO VERIFY",
         "expect": {
+          "turn.het.5.deg": 88.2,
+          "turn.het.5.delayS": 5.7,
+          "turn.het.5.degPerSecond": 51.2,
+          "turn.het.15.deg": 88.9,
           "turn.het.15.delayS": 5.7,
-          "turn.het.15.degPerSecond": 43.26,
+          "turn.het.15.degPerSecond": 50.43,
+          "turn.het.31.deg": 87.5,
           "turn.het.31.delayS": 5.7,
-          "turn.het.31.degPerSecond": 45.12
+          "turn.het.31.degPerSecond": 30.37
         },
         "tolerances": {
+          "turn.het.5.deg": 6,
+          "turn.het.5.delayS": 0.3,
+          "turn.het.5.degPerSecond": 6,
+          "turn.het.15.deg": 6,
           "turn.het.15.delayS": 0.3,
           "turn.het.15.degPerSecond": 6,
+          "turn.het.31.deg": 6,
           "turn.het.31.delayS": 0.3,
           "turn.het.31.degPerSecond": 6
         }
@@ -1220,79 +1150,73 @@
     },
     "H-RN": {
       "status": "partial",
-      "note": "CE Tier-2 in-battle capture 2026-11-24 (Wintermute, Hydran): usable HET data at speed(s) 5, 15, 31. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; captured sweep at speed(s) 5, 31 came from the ~135\u00b0 helm pad (not a hull property); audit `deg` omitted until the harness records the commanded preset (TO VERIFY); measured sweep at speed(s) 15 is 102.8\u00b0, treated as 90\u00b0 preset overshoot/undershoot; sim uses 16384 and audit keeps the measured `deg` (TO VERIFY). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "note": "CE Tier-2 90-pad HET rerun 2026-11-24 11:47 PM EST (Wintermute, Hydran): usable 90-pad HET data at speed(s) 5, 15. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; measured sweep at speed(s) 5, 15 is 86.6\u00b0, 89.0\u00b0, treated as 90\u00b0 preset overshoot/undershoot; sim uses 16384 and audit keeps the measured `deg` (TO VERIFY). Omitted (TO VERIFY): speed 31: null, 35.3, null (het_not_executed). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
       "verification": {
-        "delayTicks": "measured Tier-2 capture 2026-11-24 (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
-        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg omitted for pad-driven captures; audit deg keeps measured overshoot/undershoot of the 90\u00b0 preset",
-        "turnRate16PerTick": "measured at speed(s) 5, 15, 31"
+        "delayTicks": "measured 90-pad HET rerun 2026-11-24 11:47 PM EST (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
+        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg keeps measured overshoot/undershoot of the 90\u00b0 preset from the 90-pad rerun",
+        "turnRate16PerTick": "measured 90-pad at speed(s) 5, 15; omitted/missing speeds TO VERIFY"
       },
       "speedPoints": [
         {
           "speed": 5,
           "delayTicks": 171,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 313
+          "turnRate16PerTick": 281
         },
         {
           "speed": 15,
           "delayTicks": 171,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 304
-        },
-        {
-          "speed": 31,
-          "delayTicks": 171,
-          "turnAngle16": 16384,
-          "turnRate16PerTick": 312
+          "turnRate16PerTick": 305
         }
       ],
       "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.het.{5,15,31} measured; omitted/missing speeds TO VERIFY",
+        "source": "CE Tier-2 90-pad HET rerun (Wintermute, 2026-11-24 11:47 PM EST)",
+        "verification": "turn.het.{5,15} measured 90-pad; omitted/missing speeds TO VERIFY",
         "expect": {
+          "turn.het.5.deg": 86.6,
           "turn.het.5.delayS": 5.7,
-          "turn.het.5.degPerSecond": 51.55,
-          "turn.het.15.deg": 102.8,
+          "turn.het.5.degPerSecond": 46.36,
+          "turn.het.15.deg": 89.0,
           "turn.het.15.delayS": 5.7,
-          "turn.het.15.degPerSecond": 50.03,
-          "turn.het.31.delayS": 5.7,
-          "turn.het.31.degPerSecond": 51.42
+          "turn.het.15.degPerSecond": 50.26
         },
         "tolerances": {
+          "turn.het.5.deg": 6,
           "turn.het.5.delayS": 0.3,
           "turn.het.5.degPerSecond": 6,
           "turn.het.15.deg": 6,
           "turn.het.15.delayS": 0.3,
-          "turn.het.15.degPerSecond": 6,
-          "turn.het.31.delayS": 0.3,
-          "turn.het.31.degPerSecond": 6
+          "turn.het.15.degPerSecond": 6
         }
       }
     },
     "H-DG": {
       "status": "partial",
-      "note": "CE Tier-2 in-battle capture 2026-11-24 (Wintermute, Hydran): usable HET data at speed(s) 5. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; captured sweep at speed(s) 5 came from the ~135\u00b0 helm pad (not a hull property); audit `deg` omitted until the harness records the commanded preset (TO VERIFY). Omitted (TO VERIFY): speed 15: null, -15.7, null (het_not_executed); speed 31: null, 2.2, null (het_not_executed). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "note": "CE Tier-2 90-pad HET rerun 2026-11-24 11:47 PM EST (Wintermute, Hydran): usable 90-pad HET data at speed(s) 5. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; measured sweep at speed(s) 5 is 86.6\u00b0, treated as 90\u00b0 preset overshoot/undershoot; sim uses 16384 and audit keeps the measured `deg` (TO VERIFY). Omitted (TO VERIFY): speed 15: null, -0.4, null (het_not_executed); speed 31: null, 2.2, null (het_not_executed) 135-only excluded. Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
       "verification": {
-        "delayTicks": "measured Tier-2 capture 2026-11-24 (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
-        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg omitted for pad-driven captures",
-        "turnRate16PerTick": "measured at speed(s) 5; omitted/missing speeds TO VERIFY"
+        "delayTicks": "measured 90-pad HET rerun 2026-11-24 11:47 PM EST (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded: 5=162 ticks / 5.39 s); multi-run confirmation TO VERIFY",
+        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg keeps measured overshoot/undershoot of the 90\u00b0 preset from the 90-pad rerun",
+        "turnRate16PerTick": "measured 90-pad at speed(s) 5; omitted/missing speeds TO VERIFY"
       },
       "speedPoints": [
         {
           "speed": 5,
-          "delayTicks": 181,
+          "delayTicks": 162,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 347
+          "turnRate16PerTick": 283
         }
       ],
       "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.het.{5} measured; omitted/missing speeds TO VERIFY",
+        "source": "CE Tier-2 90-pad HET rerun (Wintermute, 2026-11-24 11:47 PM EST)",
+        "verification": "turn.het.{5} measured 90-pad; omitted/missing speeds TO VERIFY",
         "expect": {
-          "turn.het.5.delayS": 6.03,
-          "turn.het.5.degPerSecond": 57.14
+          "turn.het.5.deg": 86.6,
+          "turn.het.5.delayS": 5.39,
+          "turn.het.5.degPerSecond": 46.67
         },
         "tolerances": {
+          "turn.het.5.deg": 6,
           "turn.het.5.delayS": 0.3,
           "turn.het.5.degPerSecond": 6
         }
@@ -1300,28 +1224,30 @@
     },
     "H-PAL": {
       "status": "partial",
-      "note": "CE Tier-2 in-battle capture 2026-11-24 (Wintermute, Hydran): usable HET data at speed(s) 5. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; captured sweep at speed(s) 5 came from the ~135\u00b0 helm pad (not a hull property); audit `deg` omitted until the harness records the commanded preset (TO VERIFY). Omitted (TO VERIFY): speed 15: null, 0.0, null (het_not_executed); speed 31: null, null, null (skip:damaged). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "note": "CE Tier-2 90-pad HET rerun 2026-11-24 11:47 PM EST (Wintermute, Hydran): usable 90-pad HET data at speed(s) 5. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; measured sweep at speed(s) 5 is 89.3\u00b0, treated as 90\u00b0 preset overshoot/undershoot; sim uses 16384 and audit keeps the measured `deg` (TO VERIFY). Omitted (TO VERIFY): speed 15: null, -0.0, null (het_not_executed); speed 31: null, null, null (skip:damaged). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
       "verification": {
-        "delayTicks": "measured Tier-2 capture 2026-11-24 (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
-        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg omitted for pad-driven captures",
-        "turnRate16PerTick": "measured at speed(s) 5; omitted/missing speeds TO VERIFY"
+        "delayTicks": "measured 90-pad HET rerun 2026-11-24 11:47 PM EST (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
+        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg keeps measured overshoot/undershoot of the 90\u00b0 preset from the 90-pad rerun",
+        "turnRate16PerTick": "measured 90-pad at speed(s) 5; omitted/missing speeds TO VERIFY"
       },
       "speedPoints": [
         {
           "speed": 5,
           "delayTicks": 171,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 271
+          "turnRate16PerTick": 284
         }
       ],
       "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.het.{5} measured; omitted/missing speeds TO VERIFY",
+        "source": "CE Tier-2 90-pad HET rerun (Wintermute, 2026-11-24 11:47 PM EST)",
+        "verification": "turn.het.{5} measured 90-pad; omitted/missing speeds TO VERIFY",
         "expect": {
+          "turn.het.5.deg": 89.3,
           "turn.het.5.delayS": 5.7,
-          "turn.het.5.degPerSecond": 44.69
+          "turn.het.5.degPerSecond": 46.85
         },
         "tolerances": {
+          "turn.het.5.deg": 6,
           "turn.het.5.delayS": 0.3,
           "turn.het.5.degPerSecond": 6
         }
@@ -1329,87 +1255,85 @@
     },
     "G-CL": {
       "status": "partial",
-      "note": "CE Tier-2 in-battle capture 2026-11-24 (Wintermute, Gorn): usable HET data at speed(s) 5, 15. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; captured sweep at speed(s) 5, 15 came from the ~135\u00b0 helm pad (not a hull property); audit `deg` omitted until the harness records the commanded preset (TO VERIFY). Wall-clock rate fallback at speed(s) 5, 15 (TO VERIFY game-clock). Omitted (TO VERIFY): speed 31: null, 0.1, null (het_not_executed). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "note": "CE Tier-2 90-pad HET rerun 2026-11-24 11:47 PM EST (Wintermute, Gorn): usable 90-pad HET data at speed(s) 5. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; measured sweep at speed(s) 5 is 89.3\u00b0, treated as 90\u00b0 preset overshoot/undershoot; sim uses 16384 and audit keeps the measured `deg` (TO VERIFY). Wall-clock rate fallback at speed(s) 5 (TO VERIFY game-clock). Omitted (TO VERIFY): speed 15: null, -0.0, null (het_not_executed); speed 31: null, 0.1, null (het_not_executed) 135-only excluded. Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
       "verification": {
-        "delayTicks": "measured Tier-2 capture 2026-11-24 (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
-        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg omitted for pad-driven captures",
-        "turnRate16PerTick": "measured at speed(s) 5, 15; omitted/missing speeds TO VERIFY"
+        "delayTicks": "measured 90-pad HET rerun 2026-11-24 11:47 PM EST (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
+        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg keeps measured overshoot/undershoot of the 90\u00b0 preset from the 90-pad rerun",
+        "turnRate16PerTick": "measured 90-pad at speed(s) 5; omitted/missing speeds TO VERIFY"
       },
       "speedPoints": [
         {
           "speed": 5,
-          "delayTicks": 181,
-          "turnAngle16": 16384,
-          "turnRate16PerTick": 285
-        },
-        {
-          "speed": 15,
           "delayTicks": 171,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 256
+          "turnRate16PerTick": 288
         }
       ],
       "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.het.{5,15} measured; omitted/missing speeds TO VERIFY",
+        "source": "CE Tier-2 90-pad HET rerun (Wintermute, 2026-11-24 11:47 PM EST)",
+        "verification": "turn.het.{5} measured 90-pad; omitted/missing speeds TO VERIFY",
         "expect": {
-          "turn.het.5.delayS": 6.03,
-          "turn.het.5.degPerSecond": 46.99,
-          "turn.het.15.delayS": 5.7,
-          "turn.het.15.degPerSecond": 42.17
+          "turn.het.5.deg": 89.3,
+          "turn.het.5.delayS": 5.7,
+          "turn.het.5.degPerSecond": 47.54
         },
         "tolerances": {
+          "turn.het.5.deg": 6,
           "turn.het.5.delayS": 0.3,
-          "turn.het.5.degPerSecond": 6,
-          "turn.het.15.delayS": 0.3,
-          "turn.het.15.degPerSecond": 6
+          "turn.het.5.degPerSecond": 6
         }
       }
     },
     "G-CA": {
       "status": "partial",
-      "note": "CE Tier-2 in-battle capture 2026-11-24 (Wintermute, Gorn): usable HET data at speed(s) 5, 15, 31. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; captured sweep at speed(s) 5, 15, 31 came from the ~135\u00b0 helm pad (not a hull property); audit `deg` omitted until the harness records the commanded preset (TO VERIFY). Wall-clock rate fallback at speed(s) 5, 15, 31 (TO VERIFY game-clock). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "note": "CE Tier-2 90-pad HET rerun 2026-11-24 11:47 PM EST (Wintermute, Gorn): usable 90-pad HET data at speed(s) 5, 15, 31. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; measured sweep at speed(s) 5, 15, 31 is 89.2\u00b0, 92.1\u00b0, 89.1\u00b0, treated as 90\u00b0 preset overshoot/undershoot; sim uses 16384 and audit keeps the measured `deg` (TO VERIFY). Wall-clock rate fallback at speed(s) 5, 15, 31 (TO VERIFY game-clock). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
       "verification": {
-        "delayTicks": "measured Tier-2 capture 2026-11-24 (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
-        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg omitted for pad-driven captures",
-        "turnRate16PerTick": "measured at speed(s) 5, 15, 31"
+        "delayTicks": "measured 90-pad HET rerun 2026-11-24 11:47 PM EST (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded: 15=180 ticks / 6.01 s); multi-run confirmation TO VERIFY",
+        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg keeps measured overshoot/undershoot of the 90\u00b0 preset from the 90-pad rerun",
+        "turnRate16PerTick": "measured 90-pad at speed(s) 5, 15, 31; omitted/missing speeds TO VERIFY"
       },
       "speedPoints": [
         {
           "speed": 5,
           "delayTicks": 171,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 282
+          "turnRate16PerTick": 270
         },
         {
           "speed": 15,
-          "delayTicks": 171,
+          "delayTicks": 180,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 286
+          "turnRate16PerTick": 356
         },
         {
           "speed": 31,
           "delayTicks": 171,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 247
+          "turnRate16PerTick": 307
         }
       ],
       "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.het.{5,15,31} measured; omitted/missing speeds TO VERIFY",
+        "source": "CE Tier-2 90-pad HET rerun (Wintermute, 2026-11-24 11:47 PM EST)",
+        "verification": "turn.het.{5,15,31} measured 90-pad; omitted/missing speeds TO VERIFY",
         "expect": {
+          "turn.het.5.deg": 89.2,
           "turn.het.5.delayS": 5.7,
-          "turn.het.5.degPerSecond": 46.53,
-          "turn.het.15.delayS": 5.7,
-          "turn.het.15.degPerSecond": 47.07,
+          "turn.het.5.degPerSecond": 44.55,
+          "turn.het.15.deg": 92.1,
+          "turn.het.15.delayS": 6.01,
+          "turn.het.15.degPerSecond": 58.59,
+          "turn.het.31.deg": 89.1,
           "turn.het.31.delayS": 5.7,
-          "turn.het.31.degPerSecond": 40.74
+          "turn.het.31.degPerSecond": 50.51
         },
         "tolerances": {
+          "turn.het.5.deg": 6,
           "turn.het.5.delayS": 0.3,
           "turn.het.5.degPerSecond": 6,
+          "turn.het.15.deg": 6,
           "turn.het.15.delayS": 0.3,
           "turn.het.15.degPerSecond": 6,
+          "turn.het.31.deg": 6,
           "turn.het.31.delayS": 0.3,
           "turn.het.31.degPerSecond": 6
         }
@@ -1417,48 +1341,54 @@
     },
     "G-CC": {
       "status": "partial",
-      "note": "CE Tier-2 in-battle capture 2026-11-24 (Wintermute, Gorn): usable HET data at speed(s) 5, 15, 31. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; captured sweep at speed(s) 5, 15, 31 came from the ~135\u00b0 helm pad (not a hull property); audit `deg` omitted until the harness records the commanded preset (TO VERIFY). Wall-clock rate fallback at speed(s) 5, 15, 31 (TO VERIFY game-clock). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "note": "CE Tier-2 90-pad HET rerun 2026-11-24 11:47 PM EST (Wintermute, Gorn): usable 90-pad HET data at speed(s) 5, 15, 31. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; measured sweep at speed(s) 5, 15, 31 is 89.5\u00b0, 90.1\u00b0, 89.2\u00b0, treated as 90\u00b0 preset overshoot/undershoot; sim uses 16384 and audit keeps the measured `deg` (TO VERIFY). Wall-clock rate fallback at speed(s) 5, 15, 31 (TO VERIFY game-clock). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
       "verification": {
-        "delayTicks": "measured Tier-2 capture 2026-11-24 (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
-        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg omitted for pad-driven captures",
-        "turnRate16PerTick": "measured at speed(s) 5, 15, 31"
+        "delayTicks": "measured 90-pad HET rerun 2026-11-24 11:47 PM EST (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
+        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg keeps measured overshoot/undershoot of the 90\u00b0 preset from the 90-pad rerun",
+        "turnRate16PerTick": "measured 90-pad at speed(s) 5, 15, 31; omitted/missing speeds TO VERIFY"
       },
       "speedPoints": [
         {
           "speed": 5,
-          "delayTicks": 195,
+          "delayTicks": 171,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 380
+          "turnRate16PerTick": 300
         },
         {
           "speed": 15,
           "delayTicks": 171,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 256
+          "turnRate16PerTick": 317
         },
         {
           "speed": 31,
           "delayTicks": 171,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 253
+          "turnRate16PerTick": 251
         }
       ],
       "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.het.{5,15,31} measured; omitted/missing speeds TO VERIFY",
+        "source": "CE Tier-2 90-pad HET rerun (Wintermute, 2026-11-24 11:47 PM EST)",
+        "verification": "turn.het.{5,15,31} measured 90-pad; omitted/missing speeds TO VERIFY",
         "expect": {
-          "turn.het.5.delayS": 6.5,
-          "turn.het.5.degPerSecond": 62.61,
+          "turn.het.5.deg": 89.5,
+          "turn.het.5.delayS": 5.7,
+          "turn.het.5.degPerSecond": 49.37,
+          "turn.het.15.deg": 90.1,
           "turn.het.15.delayS": 5.7,
-          "turn.het.15.degPerSecond": 42.23,
+          "turn.het.15.degPerSecond": 52.24,
+          "turn.het.31.deg": 89.2,
           "turn.het.31.delayS": 5.7,
-          "turn.het.31.degPerSecond": 41.67
+          "turn.het.31.degPerSecond": 41.4
         },
         "tolerances": {
+          "turn.het.5.deg": 6,
           "turn.het.5.delayS": 0.3,
           "turn.het.5.degPerSecond": 6,
+          "turn.het.15.deg": 6,
           "turn.het.15.delayS": 0.3,
           "turn.het.15.degPerSecond": 6,
+          "turn.het.31.deg": 6,
           "turn.het.31.delayS": 0.3,
           "turn.het.31.degPerSecond": 6
         }
@@ -1466,48 +1396,54 @@
     },
     "I-FF": {
       "status": "partial",
-      "note": "CE Tier-2 in-battle capture 2026-11-24 (Wintermute, ISC): usable HET data at speed(s) 5, 15, 31. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; captured sweep at speed(s) 5, 15, 31 came from the ~135\u00b0 helm pad (not a hull property); audit `deg` omitted until the harness records the commanded preset (TO VERIFY). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "note": "CE Tier-2 90-pad HET rerun 2026-11-24 11:47 PM EST (Wintermute, ISC): usable 90-pad HET data at speed(s) 5, 15, 31. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; measured sweep at speed(s) 5, 15, 31 is 83.2\u00b0, 99.5\u00b0, 91.6\u00b0, treated as 90\u00b0 preset overshoot/undershoot; sim uses 16384 and audit keeps the measured `deg` (TO VERIFY). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
       "verification": {
-        "delayTicks": "measured Tier-2 capture 2026-11-24 (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
-        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg omitted for pad-driven captures",
-        "turnRate16PerTick": "measured at speed(s) 5, 15, 31"
+        "delayTicks": "measured 90-pad HET rerun 2026-11-24 11:47 PM EST (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
+        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg keeps measured overshoot/undershoot of the 90\u00b0 preset from the 90-pad rerun",
+        "turnRate16PerTick": "measured 90-pad at speed(s) 5, 15, 31; omitted/missing speeds TO VERIFY"
       },
       "speedPoints": [
         {
           "speed": 5,
           "delayTicks": 171,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 282
+          "turnRate16PerTick": 370
         },
         {
           "speed": 15,
           "delayTicks": 171,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 438
+          "turnRate16PerTick": 312
         },
         {
           "speed": 31,
           "delayTicks": 171,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 323
+          "turnRate16PerTick": 406
         }
       ],
       "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.het.{5,15,31} measured; omitted/missing speeds TO VERIFY",
+        "source": "CE Tier-2 90-pad HET rerun (Wintermute, 2026-11-24 11:47 PM EST)",
+        "verification": "turn.het.{5,15,31} measured 90-pad; omitted/missing speeds TO VERIFY",
         "expect": {
+          "turn.het.5.deg": 83.2,
           "turn.het.5.delayS": 5.7,
-          "turn.het.5.degPerSecond": 46.42,
+          "turn.het.5.degPerSecond": 60.97,
+          "turn.het.15.deg": 99.5,
           "turn.het.15.delayS": 5.7,
-          "turn.het.15.degPerSecond": 72.18,
+          "turn.het.15.degPerSecond": 51.4,
+          "turn.het.31.deg": 91.6,
           "turn.het.31.delayS": 5.7,
-          "turn.het.31.degPerSecond": 53.23
+          "turn.het.31.degPerSecond": 66.88
         },
         "tolerances": {
+          "turn.het.5.deg": 6,
           "turn.het.5.delayS": 0.3,
           "turn.het.5.degPerSecond": 6,
+          "turn.het.15.deg": 6,
           "turn.het.15.delayS": 0.3,
           "turn.het.15.degPerSecond": 6,
+          "turn.het.31.deg": 6,
           "turn.het.31.delayS": 0.3,
           "turn.het.31.degPerSecond": 6
         }
@@ -1515,28 +1451,30 @@
     },
     "I-DD": {
       "status": "partial",
-      "note": "CE Tier-2 in-battle capture 2026-11-24 (Wintermute, ISC): usable HET data at speed(s) 5. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; captured sweep at speed(s) 5 came from the ~135\u00b0 helm pad (not a hull property); audit `deg` omitted until the harness records the commanded preset (TO VERIFY). Omitted (TO VERIFY): speed 15: null, 0.7, null (het_not_executed); speed 31: null, null, null (skip:damaged). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "note": "CE Tier-2 90-pad HET rerun 2026-11-24 11:47 PM EST (Wintermute, ISC): usable 90-pad HET data at speed(s) 5. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; measured sweep at speed(s) 5 is 81.7\u00b0, treated as 90\u00b0 preset overshoot/undershoot; sim uses 16384 and audit keeps the measured `deg` (TO VERIFY). Omitted (TO VERIFY): speed 15: null, -6.0, null (het_not_executed); speed 31: null, 0.0, null (het_not_executed). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
       "verification": {
-        "delayTicks": "measured Tier-2 capture 2026-11-24 (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
-        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg omitted for pad-driven captures",
-        "turnRate16PerTick": "measured at speed(s) 5; omitted/missing speeds TO VERIFY"
+        "delayTicks": "measured 90-pad HET rerun 2026-11-24 11:47 PM EST (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
+        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg keeps measured overshoot/undershoot of the 90\u00b0 preset from the 90-pad rerun",
+        "turnRate16PerTick": "measured 90-pad at speed(s) 5; omitted/missing speeds TO VERIFY"
       },
       "speedPoints": [
         {
           "speed": 5,
           "delayTicks": 171,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 310
+          "turnRate16PerTick": 248
         }
       ],
       "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.het.{5} measured; omitted/missing speeds TO VERIFY",
+        "source": "CE Tier-2 90-pad HET rerun (Wintermute, 2026-11-24 11:47 PM EST)",
+        "verification": "turn.het.{5} measured 90-pad; omitted/missing speeds TO VERIFY",
         "expect": {
+          "turn.het.5.deg": 81.7,
           "turn.het.5.delayS": 5.7,
-          "turn.het.5.degPerSecond": 51.16
+          "turn.het.5.degPerSecond": 40.8
         },
         "tolerances": {
+          "turn.het.5.deg": 6,
           "turn.het.5.delayS": 0.3,
           "turn.het.5.degPerSecond": 6
         }
@@ -1544,96 +1482,116 @@
     },
     "I-CL": {
       "status": "partial",
-      "note": "CE Tier-2 in-battle capture 2026-11-24 (Wintermute, ISC): usable HET data at speed(s) 15, 31. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; captured sweep at speed(s) 15, 31 came from the ~135\u00b0 helm pad (not a hull property); audit `deg` omitted until the harness records the commanded preset (TO VERIFY). Omitted (TO VERIFY): speed 5: null, -160.9, null (het_not_executed). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "note": "CE Tier-2 90-pad HET rerun 2026-11-24 11:47 PM EST (Wintermute, ISC): usable 90-pad HET data at speed(s) 5. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; measured sweep at speed(s) 5 is 87.7\u00b0, treated as 90\u00b0 preset overshoot/undershoot; sim uses 16384 and audit keeps the measured `deg` (TO VERIFY). Omitted (TO VERIFY): speed 15: null, -20.3, null (het_not_executed); speed 31: null, -0.0, null (het_not_executed). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
       "verification": {
-        "delayTicks": "measured Tier-2 capture 2026-11-24 (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
-        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg omitted for pad-driven captures",
-        "turnRate16PerTick": "measured at speed(s) 15, 31; omitted/missing speeds TO VERIFY"
-      },
-      "speedPoints": [
-        {
-          "speed": 15,
-          "delayTicks": 171,
-          "turnAngle16": 16384,
-          "turnRate16PerTick": 296
-        },
-        {
-          "speed": 31,
-          "delayTicks": 171,
-          "turnAngle16": 16384,
-          "turnRate16PerTick": 298
-        }
-      ],
-      "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.het.{15,31} measured; omitted/missing speeds TO VERIFY",
-        "expect": {
-          "turn.het.15.delayS": 5.7,
-          "turn.het.15.degPerSecond": 48.86,
-          "turn.het.31.delayS": 5.7,
-          "turn.het.31.degPerSecond": 49.09
-        },
-        "tolerances": {
-          "turn.het.15.delayS": 0.3,
-          "turn.het.15.degPerSecond": 6,
-          "turn.het.31.delayS": 0.3,
-          "turn.het.31.degPerSecond": 6
-        }
-      }
-    },
-    "I-CA": {
-      "status": "partial",
-      "note": "CE Tier-2 in-battle capture 2026-11-24 (Wintermute, ISC): usable HET data at speed(s) 5. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; captured sweep at speed(s) 5 came from the ~135\u00b0 helm pad (not a hull property); audit `deg` omitted until the harness records the commanded preset (TO VERIFY). Omitted (TO VERIFY): speed 15: null, 0.0, null (het_not_executed); speed 31: null, null, null (skip:damaged). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
-      "verification": {
-        "delayTicks": "measured Tier-2 capture 2026-11-24 (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
-        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg omitted for pad-driven captures",
-        "turnRate16PerTick": "measured at speed(s) 5; omitted/missing speeds TO VERIFY"
+        "delayTicks": "measured 90-pad HET rerun 2026-11-24 11:47 PM EST (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
+        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg keeps measured overshoot/undershoot of the 90\u00b0 preset from the 90-pad rerun",
+        "turnRate16PerTick": "measured 90-pad at speed(s) 5; omitted/missing speeds TO VERIFY"
       },
       "speedPoints": [
         {
           "speed": 5,
           "delayTicks": 171,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 276
+          "turnRate16PerTick": 333
         }
       ],
       "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.het.{5} measured; omitted/missing speeds TO VERIFY",
+        "source": "CE Tier-2 90-pad HET rerun (Wintermute, 2026-11-24 11:47 PM EST)",
+        "verification": "turn.het.{5} measured 90-pad; omitted/missing speeds TO VERIFY",
         "expect": {
+          "turn.het.5.deg": 87.7,
           "turn.het.5.delayS": 5.7,
-          "turn.het.5.degPerSecond": 45.47
+          "turn.het.5.degPerSecond": 54.85
         },
         "tolerances": {
+          "turn.het.5.deg": 6,
           "turn.het.5.delayS": 0.3,
           "turn.het.5.degPerSecond": 6
         }
       }
     },
-    "I-CC": {
+    "I-CA": {
       "status": "partial",
-      "note": "CE Tier-2 in-battle capture 2026-11-24 (Wintermute, ISC): usable HET data at speed(s) 5. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; captured sweep at speed(s) 5 came from the ~135\u00b0 helm pad (not a hull property); audit `deg` omitted until the harness records the commanded preset (TO VERIFY). Omitted (TO VERIFY): speed 15: null, -0.6, null (het_not_executed); speed 31: null, null, null (skip:damaged). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "note": "CE Tier-2 90-pad HET rerun 2026-11-24 11:47 PM EST (Wintermute, ISC): usable 90-pad HET data at speed(s) 5, 15, 31. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; measured sweep at speed(s) 5, 15, 31 is 79.9\u00b0, 99.4\u00b0, 97.2\u00b0, treated as 90\u00b0 preset overshoot/undershoot; sim uses 16384 and audit keeps the measured `deg` (TO VERIFY). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
       "verification": {
-        "delayTicks": "measured Tier-2 capture 2026-11-24 (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
-        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg omitted for pad-driven captures",
-        "turnRate16PerTick": "measured at speed(s) 5; omitted/missing speeds TO VERIFY"
+        "delayTicks": "measured 90-pad HET rerun 2026-11-24 11:47 PM EST (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
+        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg keeps measured overshoot/undershoot of the 90\u00b0 preset from the 90-pad rerun",
+        "turnRate16PerTick": "measured 90-pad at speed(s) 5, 15, 31; omitted/missing speeds TO VERIFY"
       },
       "speedPoints": [
         {
           "speed": 5,
           "delayTicks": 171,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 264
+          "turnRate16PerTick": 284
+        },
+        {
+          "speed": 15,
+          "delayTicks": 171,
+          "turnAngle16": 16384,
+          "turnRate16PerTick": 136
+        },
+        {
+          "speed": 31,
+          "delayTicks": 171,
+          "turnAngle16": 16384,
+          "turnRate16PerTick": 147
         }
       ],
       "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.het.{5} measured; omitted/missing speeds TO VERIFY",
+        "source": "CE Tier-2 90-pad HET rerun (Wintermute, 2026-11-24 11:47 PM EST)",
+        "verification": "turn.het.{5,15,31} measured 90-pad; omitted/missing speeds TO VERIFY",
         "expect": {
+          "turn.het.5.deg": 79.9,
           "turn.het.5.delayS": 5.7,
-          "turn.het.5.degPerSecond": 43.47
+          "turn.het.5.degPerSecond": 46.76,
+          "turn.het.15.deg": 99.4,
+          "turn.het.15.delayS": 5.7,
+          "turn.het.15.degPerSecond": 22.46,
+          "turn.het.31.deg": 97.2,
+          "turn.het.31.delayS": 5.7,
+          "turn.het.31.degPerSecond": 24.15
         },
         "tolerances": {
+          "turn.het.5.deg": 6,
+          "turn.het.5.delayS": 0.3,
+          "turn.het.5.degPerSecond": 6,
+          "turn.het.15.deg": 6,
+          "turn.het.15.delayS": 0.3,
+          "turn.het.15.degPerSecond": 6,
+          "turn.het.31.deg": 6,
+          "turn.het.31.delayS": 0.3,
+          "turn.het.31.degPerSecond": 6
+        }
+      }
+    },
+    "I-CC": {
+      "status": "partial",
+      "note": "CE Tier-2 90-pad HET rerun 2026-11-24 11:47 PM EST (Wintermute, ISC): usable 90-pad HET data at speed(s) 5. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; measured sweep at speed(s) 5 is 80.1\u00b0, treated as 90\u00b0 preset overshoot/undershoot; sim uses 16384 and audit keeps the measured `deg` (TO VERIFY). Omitted (TO VERIFY): speed 15: null, 0.1, null (het_not_executed); speed 31: null, null, null (skip:damaged). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "verification": {
+        "delayTicks": "measured 90-pad HET rerun 2026-11-24 11:47 PM EST (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
+        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg keeps measured overshoot/undershoot of the 90\u00b0 preset from the 90-pad rerun",
+        "turnRate16PerTick": "measured 90-pad at speed(s) 5; omitted/missing speeds TO VERIFY"
+      },
+      "speedPoints": [
+        {
+          "speed": 5,
+          "delayTicks": 171,
+          "turnAngle16": 16384,
+          "turnRate16PerTick": 243
+        }
+      ],
+      "audit": {
+        "source": "CE Tier-2 90-pad HET rerun (Wintermute, 2026-11-24 11:47 PM EST)",
+        "verification": "turn.het.{5} measured 90-pad; omitted/missing speeds TO VERIFY",
+        "expect": {
+          "turn.het.5.deg": 80.1,
+          "turn.het.5.delayS": 5.7,
+          "turn.het.5.degPerSecond": 40.02
+        },
+        "tolerances": {
+          "turn.het.5.deg": 6,
           "turn.het.5.delayS": 0.3,
           "turn.het.5.degPerSecond": 6
         }
@@ -1680,6 +1638,92 @@
           "turn.het.31.deg": 89.7,
           "turn.het.31.delayS": 5.7,
           "turn.het.31.degPerSecond": 46.86
+        },
+        "tolerances": {
+          "turn.het.5.deg": 6,
+          "turn.het.5.delayS": 0.3,
+          "turn.het.5.degPerSecond": 6,
+          "turn.het.15.deg": 6,
+          "turn.het.15.delayS": 0.3,
+          "turn.het.15.degPerSecond": 6,
+          "turn.het.31.deg": 6,
+          "turn.het.31.delayS": 0.3,
+          "turn.het.31.degPerSecond": 6
+        }
+      }
+    },
+    "G-FF": {
+      "status": "partial",
+      "note": "CE Tier-2 90-pad HET rerun 2026-11-24 11:47 PM EST (Wintermute, Gorn): usable 90-pad HET data at speed(s) 15. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; measured sweep at speed(s) 15 is 80.3\u00b0, treated as 90\u00b0 preset overshoot/undershoot; sim uses 16384 and audit keeps the measured `deg` (TO VERIFY). Omitted (TO VERIFY): speed 5: null, 9.5, null (het_not_executed); speed 31: suspect 109.7 deg, 20.14w deg/s (excluded). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "verification": {
+        "delayTicks": "measured 90-pad HET rerun 2026-11-24 11:47 PM EST (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded: 15=186 ticks / 6.19 s); multi-run confirmation TO VERIFY",
+        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg keeps measured overshoot/undershoot of the 90\u00b0 preset from the 90-pad rerun",
+        "turnRate16PerTick": "measured 90-pad at speed(s) 15; omitted/missing speeds TO VERIFY"
+      },
+      "speedPoints": [
+        {
+          "speed": 15,
+          "delayTicks": 186,
+          "turnAngle16": 16384,
+          "turnRate16PerTick": 196
+        }
+      ],
+      "audit": {
+        "source": "CE Tier-2 90-pad HET rerun (Wintermute, 2026-11-24 11:47 PM EST)",
+        "verification": "turn.het.{15} measured 90-pad; omitted/missing speeds TO VERIFY",
+        "expect": {
+          "turn.het.15.deg": 80.3,
+          "turn.het.15.delayS": 6.19,
+          "turn.het.15.degPerSecond": 32.37
+        },
+        "tolerances": {
+          "turn.het.15.deg": 6,
+          "turn.het.15.delayS": 0.3,
+          "turn.het.15.degPerSecond": 6
+        }
+      }
+    },
+    "I-DN": {
+      "status": "partial",
+      "note": "CE Tier-2 90-pad HET rerun 2026-11-24 11:47 PM EST (Wintermute, ISC): usable 90-pad HET data at speed(s) 5, 15, 31. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; measured sweep at speed(s) 5, 15, 31 is 86.6\u00b0, 93.2\u00b0, 89.6\u00b0, treated as 90\u00b0 preset overshoot/undershoot; sim uses 16384 and audit keeps the measured `deg` (TO VERIFY). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "verification": {
+        "delayTicks": "measured 90-pad HET rerun 2026-11-24 11:47 PM EST (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
+        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg keeps measured overshoot/undershoot of the 90\u00b0 preset from the 90-pad rerun",
+        "turnRate16PerTick": "measured 90-pad at speed(s) 5, 15, 31; omitted/missing speeds TO VERIFY"
+      },
+      "speedPoints": [
+        {
+          "speed": 5,
+          "delayTicks": 171,
+          "turnAngle16": 16384,
+          "turnRate16PerTick": 240
+        },
+        {
+          "speed": 15,
+          "delayTicks": 171,
+          "turnAngle16": 16384,
+          "turnRate16PerTick": 240
+        },
+        {
+          "speed": 31,
+          "delayTicks": 171,
+          "turnAngle16": 16384,
+          "turnRate16PerTick": 245
+        }
+      ],
+      "audit": {
+        "source": "CE Tier-2 90-pad HET rerun (Wintermute, 2026-11-24 11:47 PM EST)",
+        "verification": "turn.het.{5,15,31} measured 90-pad; omitted/missing speeds TO VERIFY",
+        "expect": {
+          "turn.het.5.deg": 86.6,
+          "turn.het.5.delayS": 5.7,
+          "turn.het.5.degPerSecond": 39.6,
+          "turn.het.15.deg": 93.2,
+          "turn.het.15.delayS": 5.7,
+          "turn.het.15.degPerSecond": 39.6,
+          "turn.het.31.deg": 89.6,
+          "turn.het.31.delayS": 5.7,
+          "turn.het.31.degPerSecond": 40.4
         },
         "tolerances": {
           "turn.het.5.deg": 6,

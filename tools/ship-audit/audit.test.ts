@@ -504,6 +504,7 @@ test("table expect covers Tier-2 non-Fed hulls and skips omitted cells", () => {
     "Race\tHull Type\tClass\tTurn mode\tMove Cost\tAcceleration\tShield 1\tShield 2 _ 6\tShield 3 _ 5\tShield 4\tShield Total\tR_L_Warp\tC_Warp\tImpulse\tApr\tBattery",
     "Klingon\tCA\tK-D7\tC\t1\t3\t10\t8\t6\t4\t42\t5\t3\t4\t2\t6",
     "Romulan\tCA\tR-SNA\tC\t1\t3\t10\t8\t6\t4\t42\t5\t3\t4\t2\t6",
+    "Romulan\tBH\tR-BH\tC\t1\t3\t10\t8\t6\t4\t42\t5\t3\t4\t2\t6",
     "Lyran\tCC\tL-CC\tC\t1\t3\t10\t8\t6\t4\t42\t5\t3\t4\t2\t6",
     "Hydran\tFF\tH-HN\tA\t1\t3\t10\t8\t6\t4\t42\t5\t3\t4\t2\t6",
     "Gorn\tCA\tG-CA\tC\t1\t3\t10\t8\t6\t4\t42\t5\t3\t4\t2\t6",
@@ -519,9 +520,9 @@ test("table expect covers Tier-2 non-Fed hulls and skips omitted cells", () => {
       { label: "kd7-n10", spawnKey: "Klingon:K-D7", turn: "normal", target_speed: 10, mean_rate_deg_per_game_s_10_90: 10.1, order_delay_s: 0.9 },
       { label: "kd7-h31", spawnKey: "Klingon:K-D7", turn: "het", target_speed: 31, total_turn_deg: -97.3, mean_rate_deg_per_game_s_10_90: 53.62, order_delay_s: 5.44 },
       { label: "rsna-n5", spawnKey: "Romulan:R-SNA", turn: "normal", target_speed: 5, mean_rate_deg_per_game_s_10_90: 7.67 },
-      { label: "lcc-h15", spawnKey: "Lyran:L-CC", turn: "het", target_speed: 15, total_turn_deg: -137.6, mean_rate_deg_per_game_s_10_90: 52.02, order_delay_s: 5.84 },
-      { label: "hhn-h5", spawnKey: "Hydran:H-HN", turn: "het", target_speed: 5, total_turn_deg: -88.3, mean_rate_deg_per_game_s_10_90: 54.57, order_delay_s: 5.53 },
-      { label: "gca-h31", spawnKey: "Gorn:G-CA", turn: "het", target_speed: 31, total_turn_deg: -135.1, mean_rate_deg_per_game_s_10_90: 40.74, order_delay_s: 5.89 },
+      { label: "rbh-h15", spawnKey: "Romulan:R-BH", turn: "het", target_speed: 15, total_turn_deg: -90.0, mean_rate_deg_per_game_s_10_90: 50.0, order_delay_s: 5.7 },
+      { label: "hhn-h5", spawnKey: "Hydran:H-HN", turn: "het", target_speed: 5, total_turn_deg: -87.2, mean_rate_deg_per_game_s_10_90: 66.2, order_delay_s: 6.12 },
+      { label: "gca-h31", spawnKey: "Gorn:G-CA", turn: "het", target_speed: 31, total_turn_deg: -89.1, mean_rate_deg_per_game_s_10_90: 50.51, order_delay_s: 5.75 },
       { label: "iff-n5", spawnKey: "ISC:I-FF", turn: "normal", target_speed: 5, mean_rate_deg_per_game_s_10_90: 5.37 },
       { label: "zca-h5", spawnKey: "Mirak:Z-CA", turn: "het", target_speed: 5, total_turn_deg: -90.3, mean_rate_deg_per_game_s_10_90: 52.39, order_delay_s: 5.59 },
       { label: "zdd-n10-noop", spawnKey: "Mirak:Z-DD", turn: "normal", noop: true, target_speed: 10, mean_rate_deg_per_game_s_10_90: 234.48 },
@@ -532,12 +533,12 @@ test("table expect covers Tier-2 non-Fed hulls and skips omitted cells", () => {
   assert.equal(summary.harness?.turnNoop, 1);
   assert.equal(summary.harness?.fields["turn.normal.10.degPerSecond"]?.pass, 1);
   assert.equal(summary.harness?.fields["turn.normal.5.degPerSecond"]?.pass, 2);
-  // K-D7 s31 keeps measured audit deg (97.3); G-CA s31 was a 135° pad capture so deg is omitted (skip).
-  assert.equal(summary.harness?.fields["turn.het.31.deg"]?.pass, 1);
-  assert.equal(summary.harness?.fields["turn.het.31.deg"]?.skip, 1);
+  // K-D7 s31 and G-CA s31 are 90° preset captures (G-CA refreshed from the 90-pad rerun).
+  assert.equal(summary.harness?.fields["turn.het.31.deg"]?.pass, 2);
+  assert.equal(summary.harness?.fields["turn.het.31.deg"]?.skip ?? 0, 0);
   assert.equal(summary.harness?.fields["turn.het.31.delayS"]?.pass, 2);
   assert.equal(summary.harness?.fields["turn.het.31.degPerSecond"]?.pass, 2);
-  // H-HN s5 and Z-CA s5 are 90° preset captures; L-CC s15 was a 135° pad capture so deg is omitted (skip).
+  // H-HN s5 and Z-CA s5 are 90° preset captures; R-BH has no usable 90-pad expect, so s15 deg is omitted (skip).
   assert.equal(summary.harness?.fields["turn.het.5.deg"]?.pass, 2);
   assert.equal(summary.harness?.fields["turn.het.15.deg"]?.skip, 1);
   assert.equal(summaryFailed(summary), false);
