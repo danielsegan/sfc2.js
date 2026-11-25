@@ -65,7 +65,7 @@ pnpm install --frozen-lockfile
 pnpm dev:web
 ```
 
-The tactical page listens on http://127.0.0.1:5174 . With no install path, it boots the synthetic Federation cruiser against the synthetic Klingon cruiser. `pnpm dev:viewer` is the ship catalog on port 4174. `pnpm build:web` writes `web/dist/`. `pnpm test` runs the format parsers, the ship-audit fixtures, and the engine suites.
+The tactical page listens on http://127.0.0.1:1701 . With no install path, it boots the synthetic Federation cruiser against the synthetic Klingon cruiser. `pnpm dev:viewer` is the ship catalog on port 4174. `pnpm build:web` writes `web/dist/`. `pnpm test` runs the format parsers, the ship-audit fixtures, and the engine suites.
 
 ## Bring your own files
 

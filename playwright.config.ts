@@ -15,8 +15,8 @@ export default defineConfig({
       timeout: 60_000,
     },
     {
-      command: 'pnpm exec vite --config web/vite.config.ts --host 127.0.0.1 --port 5174 --strictPort',
-      url: 'http://127.0.0.1:5174',
+      command: 'pnpm exec vite --config web/vite.config.ts --host 127.0.0.1 --port 1701 --strictPort',
+      url: 'http://127.0.0.1:1701',
       reuseExistingServer: !process.env.CI,
       timeout: 60_000,
     },
@@ -28,7 +28,7 @@ export default defineConfig({
     {
       name: 'tactical',
       testMatch: /tactical\.spec\.ts/,
-      use: { browserName: 'chromium', baseURL: 'http://127.0.0.1:5174', viewport: { width: 1280, height: 720 } },
+      use: { browserName: 'chromium', baseURL: 'http://127.0.0.1:1701', viewport: { width: 1280, height: 720 } },
     },
   ],
 });

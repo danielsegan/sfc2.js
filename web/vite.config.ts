@@ -12,7 +12,7 @@ export default defineConfig({
   plugins: [devInstallPlugin()],
   server: {
     host: '127.0.0.1',
-    port: 5174,
+    port: 1701,
     strictPort: true,
     fs: { allow: [repo] },
   },

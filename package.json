@@ -22,7 +22,7 @@
     "replay:record": "node --experimental-strip-types engine/replay/cli.ts record replays",
     "replay:browsers": "playwright test",
     "dev:viewer": "vite --config web/ship-viewer/vite.config.ts",
-    "dev:web": "vite --config web/vite.config.ts --host 127.0.0.1 --port 5174 --strictPort",
+    "dev:web": "vite --config web/vite.config.ts --host 127.0.0.1 --port 1701 --strictPort",
     "build:web": "vite build --config web/vite.config.ts",
     "desktop:dev": "pnpm exec tauri dev",
     "desktop:build": "pnpm exec tauri build",
