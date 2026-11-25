@@ -14,6 +14,7 @@ import { FIXTURE_MODEL_DIR } from '../../engine/duel/placeholder-mod.ts';
 import {
   candidatesFromShiplist,
   chooseDefaultPair,
+  shipPlateName,
   type DuelCandidate,
 } from '../../engine/duel/roster.ts';
 
@@ -127,7 +128,7 @@ export async function assembleDuel(
 
 function rosterOf(candidate: DuelCandidate): RosterEntry {
   return {
-    name: candidate.className.length > 0 ? candidate.className : candidate.spawnKey,
+    name: shipPlateName(candidate),
     empire: candidate.race.length > 0 ? candidate.race : 'Empire',
     accent: accentFor(candidate.race),
     modelFile: candidate.geometry,

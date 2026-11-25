@@ -26,6 +26,8 @@ export interface DuelCandidate {
   readonly race: string;
   readonly hullType: string;
   readonly className: string;
+  /** Shiplist full name. Empty when the file has no name column. */
+  readonly displayName: string;
   readonly geometry: string;
   /** At least one phaser or photon the duel slice can charge. */
   readonly supported: boolean;
@@ -70,6 +72,7 @@ export function candidatesFromShiplist(rows: readonly ShiplistRow[], columns: re
       race: shiplistText(columns, row.raw, ['race']),
       hullType: shiplistText(columns, row.raw, ['hull type', 'hulltype', 'hull']),
       className: shiplistText(columns, row.raw, ['class', 'class name', 'classname']),
+      displayName: shiplistText(columns, row.raw, ['full name', 'name', 'display name']),
       geometry: shiplistText(columns, row.raw, ['geometry']),
       supported: supportedMount(setup),
       setup,
@@ -78,9 +81,17 @@ export function candidatesFromShiplist(rows: readonly ShiplistRow[], columns: re
   return out;
 }
 
+/** Plate and target-list name. A real install uses the shiplist name. Synthetic rows keep the class token. */
+export function shipPlateName(candidate: DuelCandidate): string {
+  const named = candidate.displayName.trim();
+  if (named.length > 0) return named;
+  if (candidate.className.length > 0) return candidate.className;
+  return candidate.spawnKey;
+}
+
 export function candidateLabel(candidate: DuelCandidate): string {
   const weapon = candidate.supported ? 'phaser or photon' : 'no phaser or photon';
-  return `${candidate.race} ${candidate.className} (${candidate.hullType}) — ${weapon}`;
+  return `${candidate.race} ${shipPlateName(candidate)} (${candidate.hullType}) — ${weapon}`;
 }
 
 function describeRow(candidate: DuelCandidate): string {

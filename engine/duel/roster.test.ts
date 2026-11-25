@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { parseShiplist } from '../../tools/formats/shiplist.ts';
-import { candidatesFromShiplist, candidateLabel, chooseDefaultPair } from './roster.ts';
+import { candidatesFromShiplist, candidateLabel, chooseDefaultPair, shipPlateName } from './roster.ts';
+import { syntheticRoster } from './catalog.ts';
 
 const HEADER = [
   'Race',
@@ -73,6 +74,25 @@ describe('duel roster', () => {
     expect(choice?.note).toContain('Fallback');
     expect(choice?.note).toContain('Federation:TEST-DD');
     expect(choice?.note).toContain('Romulan:R-CA');
+  });
+
+  it('uses the shiplist full name on the plate and keeps the class when that column is empty', () => {
+    const named = parseShiplist(
+      ['Race\tHull Type\tClass\tName\tNum\tHeavy Weapon 1\tArc', 'Federation\tCA\tF-CA\tConstitution\t1\tPh1\tFA'].join('\n'),
+      { file: 'Assets/Specs/shiplist.txt' },
+    );
+    const namedShip = candidatesFromShiplist(named.data.rows, named.data.columns)[0];
+    expect(namedShip?.displayName).toBe('Constitution');
+    expect(namedShip ? shipPlateName(namedShip) : '').toBe('Constitution');
+
+    const plain = parseShiplist(
+      [HEADER, row(['Federation', 'CA', 'F-CA', 'C', '1', 'Ph1', 'FA'])].join('\n'),
+      { file: 'Assets/Specs/shiplist.txt' },
+    );
+    const plainShip = candidatesFromShiplist(plain.data.rows, plain.data.columns)[0];
+    expect(plainShip?.displayName).toBe('');
+    expect(plainShip ? shipPlateName(plainShip) : '').toBe('F-CA');
+    expect(syntheticRoster('federation', 'cruiser').name).toBe('Federation Fixture cruiser');
   });
 
   it('returns nothing when two supported empires are not in the table', () => {
