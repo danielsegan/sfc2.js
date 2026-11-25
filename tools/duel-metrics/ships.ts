@@ -10,6 +10,7 @@ import {
   DEFAULT_RULES_TURN_TICKS,
   ENERGY_SCALE,
   MODE_NORMAL,
+  MODE_OVERLOAD,
   TICK_HZ,
   turnModeId,
   weaponDef,
@@ -54,6 +55,9 @@ export const PHASER_RANGES = [0, 1, 3, 4, 5, 8, 12, 20, 28, 31] as const;
 
 /** One range in each observed photon group, plus one step past the reach. */
 export const PHOTON_RANGES = [1, 2, 3, 4, 8, 11, 20, 31] as const;
+/** Thousands of range units. 1 here is 1000 range units. */
+export const DISRUPTOR_RANGES = [0, 1, 2, 3, 4, 8, 11, 15, 20, 25, 31, 32] as const;
+export const DISRUPTOR_OVERLOAD_RANGES = [0, 2, 4, 9, 10] as const;
 
 export interface ProbeShip {
   readonly id: 'F-CA-like' | 'K-D7-like';
@@ -127,6 +131,15 @@ export function motionSetup(turnHull: string): ShipSetup {
 export function weaponSetup(turnHull: string): ShipSetup {
   const heavy = turnHull === 'K-D7' ? DISRUPTOR_CODE : PHOTON_CODE;
   const ship = base(turnHull, [mount(0, PHASER_CODE, 4), mount(1, heavy, 0)], 0);
+  return { ...ship, fcPaid: 1 };
+}
+
+/** A disruptor that is already armed, so a damage probe does not wait out arming. */
+export function armedDisruptorSetup(mode: number): ShipSetup {
+  const armTicks = weaponDef(weaponId(DISRUPTOR_CODE))?.armTicks ?? 0;
+  const charge = mode === MODE_OVERLOAD ? 4 : 2;
+  const heavy = mount(0, DISRUPTOR_CODE, charge, armTicks);
+  const ship = base('K-D7', [{ ...heavy, mode }], 0);
   return { ...ship, fcPaid: 1 };
 }
 

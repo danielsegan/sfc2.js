@@ -313,10 +313,27 @@
       "armPerTurn": 2,
       "armTurns": 1,
       "holdCost": 2,
+      "overloadArmCost": 4,
+      "overloadArmPerTurn": 4,
+      "overloadArmTurns": 1,
       "directDamage": 0,
-      "maxRange": 30,
+      "maxRange": 31000,
       "projectileSpeed": 0,
-      "note": "2 energy per rules-turn, drawn across the turn by the drip. Ready after armTurns (1) times RULES_TURN_SECONDS, which is 33 s. The same 2 keeps it armed. Damage was not in the observation, so a shot in range applies 0."
+      "rangeBands": [
+        { "maxRange": 1099, "damage": 5, "hitNum": 1, "hitDen": 1 },
+        { "maxRange": 2099, "damage": 5, "hitNum": 4, "hitDen": 5 },
+        { "maxRange": 3099, "damage": 4, "hitNum": 3, "hitDen": 4 },
+        { "maxRange": 5099, "damage": 4, "hitNum": 5, "hitDen": 8 },
+        { "maxRange": 16099, "damage": 3, "hitNum": 667, "hitDen": 1000 },
+        { "maxRange": 31000, "damage": 2, "hitNum": 1, "hitDen": 2 }
+      ],
+      "overloadRangeBands": [
+        { "maxRange": 1099, "damage": 10, "hitNum": 1, "hitDen": 1 },
+        { "maxRange": 2099, "damage": 10, "hitNum": 4, "hitDen": 5 },
+        { "maxRange": 4999, "damage": 8, "hitNum": 81, "hitDen": 100 },
+        { "maxRange": 9000, "damage": 6, "hitNum": 83, "hitDen": 100 }
+      ],
+      "note": "Normal draws 2 per rules-turn and is ready after one rules-turn (33 s). Overload draws 4 and is ready after the same turn. Damage is fixed per band. A miss is 0 and does not roll damage. 66.7% is 667/1000. Bands are 0–1, 1.1–2, 2.1–3, 3.1–5, 5.1–16, and 16.1–31k (100 range units per tenth). A labeled start such as 1.1k stays on the later band, and the range below that start stays on the inner band. The normal cutoff is the measured DISRUPTOR_MAX_RANGE, 31000. Overload bands are 0–1, 1.1–2, 2.1–4.9, and 5–9k. Past 9000 an overload shot does nothing."
     }
   },
   "reloadCountTokens": ["1", "2", "3"],

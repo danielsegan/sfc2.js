@@ -254,6 +254,9 @@ describe('facing, range, and arcs', () => {
     expect(weaponDef(weaponId('Phot'))?.armTicks).toBe(2 * DEFAULT_RULES_TURN_TICKS);
     expect(weaponDef(weaponId('Phot'))?.overloadArmTicks).toBe(2 * DEFAULT_RULES_TURN_TICKS);
     expect(weaponDef(weaponId('Dis1'))?.armTicks).toBe(DEFAULT_RULES_TURN_TICKS);
+    expect(weaponDef(weaponId('Dis1'))?.maxRange).toBe(31000);
+    expect(weaponDef(weaponId('Dis1'))?.overloadArmCost).toBe(4);
+    expect(weaponDef(weaponId('Dis1'))?.overloadArmTicks).toBe(DEFAULT_RULES_TURN_TICKS);
     expect(REASON_NAME).toHaveLength(35);
     expect(REASON_NAME[R.outOfArc]).toBe('outOfArc');
     expect(parseHundredths('0.75')).toBe(75);

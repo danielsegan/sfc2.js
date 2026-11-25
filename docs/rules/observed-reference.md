@@ -53,7 +53,9 @@ Expected damage per tube: 8 inside range 2, 6.5 at 3, 5 at 4–5, 4 at 6–10, 2
 
 ## Disruptor
 
-Cost confidence M, time confidence L. It draws 2 per rules-turn, spread across the turn, and is ready after one rules-turn (33 seconds). The same 2 keeps it armed. Damage was not part of the reading, so a shot in range applies 0.
+Cost confidence M, time confidence L. It draws 2 per rules-turn, spread across the turn, and is ready after one rules-turn (33 seconds). The same 2 keeps it armed. Overload draws 4 per rules-turn and is ready after that same turn.
+
+Damage on a hit is fixed. A miss deals 0 and does not roll damage. One tenth of a k is 100 range units. A labeled band start belongs to that band, and the range below it stays on the inner band. Normal damage and hit chance: 0–1k is 5 at 100%, 1.1–2k is 5 at 80%, 2.1–3k is 4 at 75%, 3.1–5k is 4 at 62.5% (5/8), 5.1–16k is 3 at 66.7% (stored as 667/1000), and 16.1–31k is 2 at 50%. The check ranges 0, 1, 2, 3, 4, 8, 11, 15, 20, and 25 deal 5, 5, 5, 4, 4, 3, 3, 3, 2, and 2 when the shot hits. Certainty does not draw. The normal cutoff is measured at exactly 31.0k (`DISRUPTOR_MAX_RANGE` is 31000). Overload is unchanged: 0–1k is 10 at 100%, 1.1–2k is 10 at 80%, 2.1–4.9k is 8 at 81%, and 5–9k is 6 at 83%. Past exactly 9.0k an overload shot does nothing. Energy is 2 per mount for normal and 4 per mount for overload.
 
 ## Shields
 

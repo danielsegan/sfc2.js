@@ -145,6 +145,33 @@ function phaserScore(probe: PhaserProbe): Scored {
   return scoreNone(probe.damage, 'M');
 }
 
+const DISRUPTOR_HIT = [5, 5, 5, 4, 4, 3, 3, 3, 2, 2, 2] as const;
+const DISRUPTOR_RANGE_K = [0, 1, 2, 3, 4, 8, 11, 15, 20, 25, 31] as const;
+
+function disruptorExpected(rangeK: number): number {
+  for (let i = 0; i < DISRUPTOR_RANGE_K.length; i++) {
+    if (DISRUPTOR_RANGE_K[i] === rangeK) return DISRUPTOR_HIT[i]!;
+  }
+  return 0;
+}
+
+function disruptorScore(probe: PhaserProbe, expected: number, certain: boolean): Scored {
+  if (certain) return scorePoint(probe.damage, expected, 'M');
+  const text = `0 or ${String(expected)}`;
+  if (probe.damage === null || (probe.damage !== 0 && probe.damage !== expected)) {
+    return { text, confidence: 'M', result: 'fail' };
+  }
+  return { text, confidence: 'M', result: 'pass' };
+}
+
+function overloadExpected(rangeK: number): number | null {
+  if (rangeK <= 1) return 10;
+  if (rangeK <= 2) return 10;
+  if (rangeK <= 4) return 8;
+  if (rangeK <= 9) return 6;
+  return null;
+}
+
 function photonScore(probe: PhaserProbe): Scored {
   const points = probe.damage === null ? null : pointsNumber(probe.damage);
   if (probe.range <= 2) return scorePoint(points, 8, 'M');
@@ -295,6 +322,37 @@ function pushShip(rows: TableRow[], ship: ShipReport): void {
       ),
     );
   }
+  for (const probe of ship.disruptorDamage) {
+    const expected = disruptorExpected(probe.range);
+    const ours = probe.damage === null ? `none (${probe.reason})` : String(probe.damage);
+    const scored = probe.range > 31
+      ? scoreNone(probe.damage, 'M')
+      : disruptorScore(probe, expected, probe.range <= 1);
+    rows.push(
+      row(
+        ship.id,
+        'disruptor damage',
+        `range ${probe.range}k`,
+        ours,
+        scored,
+        'fixed damage on a hit, or 0 on a miss. Past 31k the shot is out of range',
+      ),
+    );
+  }
+  for (const probe of ship.disruptorOverload) {
+    const expected = overloadExpected(probe.range);
+    const ours = probe.damage === null ? `none (${probe.reason})` : String(probe.damage);
+    rows.push(
+      row(
+        ship.id,
+        'disruptor overload',
+        `range ${probe.range}k`,
+        ours,
+        expected === null ? scoreNone(probe.damage, 'M') : disruptorScore(probe, expected, probe.range === 0),
+        'fixed overload damage on a hit. Past 9k the shot does nothing',
+      ),
+    );
+  }
   for (const probe of ship.photonDamage) {
     const ours = probe.damage === null ? `none (${probe.reason})` : fixed(probe.damage, 100, 2);
     rows.push(
@@ -389,7 +447,7 @@ function scenarioText(report: MetricsReport): string {
     `- deg/s = BAM/tick × 10800 / 65536. A full circle is 65536.`,
     `- Phaser: \`${PHASER_CODE}\`, one combat-stream roll per shot. Range 0 is grouped with 1–2. A shared edge stays on the inner band. Nothing past 30.`,
     `- Photon: \`${PHOTON_CODE}\` on the F-CA-like hull. Arming accepts 2 per rules-turn and is ready after ${report.rulesTurnTicks * 2} ticks (two rules-turns), then hold is 1. Damage is hundredths of a point by range.`,
-    `- Disruptor: the K-D7-like heavy mount. 2 per rules-turn, ready after ${report.rulesTurnTicks} ticks (one rules-turn), and the same 2 holds it. Damage was not in the observation.`,
+    `- Disruptor: the K-D7-like heavy mount. 2 per rules-turn, ready after ${report.rulesTurnTicks} ticks (one rules-turn), and the same 2 holds it. Overload is 4. Damage is fixed by range. A miss is 0. Normal bands run 0–1, 1.1–2, 2.1–3, 3.1–5, 5.1–16, and 16.1–31k. The cutoff is the measured 31000 range units.`,
     '- Shields: six 60° facings. Bearing 0 is the bow center. The other five bearings are the clockwise bin centers.',
     '',
   ].join('\n');

@@ -198,6 +198,9 @@ interface BandJson {
   damageMin?: number;
   damageMax?: number;
   damageHundredths?: number;
+  /** Inclusive hit chance as an integer fraction. 1/1 does not draw. */
+  hitNum?: number;
+  hitDen?: number;
 }
 
 interface WeaponJson {
@@ -221,6 +224,7 @@ interface WeaponJson {
   projectileSpeed?: number;
   maxRange?: number;
   rangeBands?: readonly BandJson[];
+  overloadRangeBands?: readonly BandJson[];
   reloadCounted?: boolean;
   omnidirectional?: boolean;
 }
@@ -240,6 +244,9 @@ export interface RangeBand {
   readonly roll: number;
   /** 1 = `damage` / `min` / `max` are hundredths of a point. */
   readonly hundredths: number;
+  /** Hit chance numerator. A value at least `hitDen` does not draw. */
+  readonly hitNum: number;
+  readonly hitDen: number;
 }
 
 export interface WeaponDef {
@@ -261,8 +268,15 @@ export interface WeaponDef {
   readonly projectileSpeed: number;
   readonly maxRange: number;
   readonly bands: readonly RangeBand[];
+  readonly overloadBands: readonly RangeBand[];
   readonly omni: number;
 }
+
+/** Measured normal disruptor cutoff. 31.0k is in range. One range unit past it is not. */
+export const DISRUPTOR_MAX_RANGE = 31000;
+
+/** Overload disruptor cutoff. Past this the overload shot does nothing. */
+export const DISRUPTOR_OVERLOAD_MAX_RANGE = 9000;
 
 export interface ArcDef {
   readonly code: string;
@@ -325,6 +339,31 @@ function withCostFallback(row: WeaponJson, fallback: CostFallback | undefined): 
   return row;
 }
 
+function bandsFrom(rows: readonly BandJson[] | undefined): RangeBand[] {
+  const bands: RangeBand[] = [];
+  for (const band of rows ?? []) {
+    const hundredths = band.damageHundredths !== undefined ? 1 : 0;
+    const fixed = hundredths === 1 ? num(band.damageHundredths) : num(band.damage);
+    const rolled = band.damageMin !== undefined || band.damageMax !== undefined;
+    const min = rolled ? num(band.damageMin) : fixed;
+    const max = rolled ? num(band.damageMax) : fixed;
+    const hitDen = band.hitDen ?? 1;
+    const hitNum = band.hitNum ?? hitDen;
+    if (!Number.isInteger(hitNum) || !Number.isInteger(hitDen) || hitDen <= 0) throw new Error('hit chance');
+    bands.push({
+      maxRange: num(band.maxRange),
+      damage: rolled ? max : fixed,
+      min,
+      max,
+      roll: rolled && max > min ? 1 : 0,
+      hundredths,
+      hitNum,
+      hitDen,
+    });
+  }
+  return bands;
+}
+
 function buildWeapons(): readonly WeaponDef[] {
   const ship = table.ship.weapons as Record<string, WeaponJson>;
   const fighter = table.fighter.weapons as Record<string, WeaponJson>;
@@ -334,22 +373,8 @@ function buildWeapons(): readonly WeaponDef[] {
     const source = ship[code] ?? fighter[code];
     if (!source) throw new Error(`missing weapon ${code}`);
     const row = withCostFallback(source, fallback);
-    const bands: RangeBand[] = [];
-    for (const band of row.rangeBands ?? []) {
-      const hundredths = band.damageHundredths !== undefined ? 1 : 0;
-      const fixed = hundredths === 1 ? num(band.damageHundredths) : num(band.damage);
-      const rolled = band.damageMin !== undefined || band.damageMax !== undefined;
-      const min = rolled ? num(band.damageMin) : fixed;
-      const max = rolled ? num(band.damageMax) : fixed;
-      bands.push({
-        maxRange: num(band.maxRange),
-        damage: rolled ? max : fixed,
-        min,
-        max,
-        roll: rolled && max > min ? 1 : 0,
-        hundredths,
-      });
-    }
+    const bands = bandsFrom(row.rangeBands);
+    const overloadBands = bandsFrom(row.overloadRangeBands);
     const reload = row.reloadCounted === true || row.omnidirectional === true;
     const internal = internalId(row.internal);
     const chargeCost = num(row.chargeCost);
@@ -357,6 +382,16 @@ function buildWeapons(): readonly WeaponDef[] {
     if (internal === INTERNAL_PHASER && chargeCost <= 0) throw new Error(`phaser ${code} has no cost`);
     if (internal === INTERNAL_PHOTON && armCost <= 0) throw new Error(`photon ${code} has no cost`);
     if (internal === INTERNAL_DISRUPTOR && armCost <= 0) throw new Error(`disruptor ${code} has no cost`);
+    if (internal === INTERNAL_DISRUPTOR && num(row.maxRange) !== DISRUPTOR_MAX_RANGE) {
+      throw new Error(`disruptor ${code} maxRange`);
+    }
+    if (internal === INTERNAL_DISRUPTOR && bands.length > 0 && bands[bands.length - 1]!.maxRange !== DISRUPTOR_MAX_RANGE) {
+      throw new Error(`disruptor ${code} band range`);
+    }
+    if (internal === INTERNAL_DISRUPTOR && overloadBands.length > 0) {
+      const last = overloadBands[overloadBands.length - 1]!;
+      if (last.maxRange !== DISRUPTOR_OVERLOAD_MAX_RANGE) throw new Error(`disruptor ${code} overload range`);
+    }
     out.push({
       code,
       internal,
@@ -375,6 +410,7 @@ function buildWeapons(): readonly WeaponDef[] {
       projectileSpeed: num(row.projectileSpeed),
       maxRange: num(row.maxRange),
       bands,
+      overloadBands,
       omni: reload ? 1 : 0,
     });
   }
