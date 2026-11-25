@@ -1,0 +1,64 @@
+# Public CI: cargo test for the Tauri v2 desktop shell.
+# Same trigger as the other public workflows (push to main, and
+# pull_request with no branch filter) so a pull request runs this once.
+name: Desktop shell
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  cargo-test:
+    name: Desktop shell tests (cargo)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Tauri's generate_context! checks that frontendDist exists at compile time.
+      - name: Build the web app
+        run: pnpm build:web
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@df2a88e9fe4098bad09cb42c3dec7187f15861fc # master 2026-11-15
+        with:
+          toolchain: stable
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          workspaces: desktop/src-tauri
+
+      - name: Install Tauri Linux system dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            curl \
+            file \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libssl-dev \
+            libwebkit2gtk-4.1-dev \
+            libxdo-dev \
+            patchelf \
+            wget
+
+      - name: Run cargo test
+        run: cargo test --manifest-path desktop/src-tauri/Cargo.toml

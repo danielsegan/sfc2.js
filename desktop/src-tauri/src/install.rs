@@ -275,6 +275,7 @@ mod tests {
         }
     }
 
+    #[cfg(unix)]
     #[test]
     fn lists_nested_files_without_reading_them_and_skips_symlinks() {
         let tree = TempTree::new();
