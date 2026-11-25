@@ -155,10 +155,29 @@
       </section>
       <section class="plate" aria-label="Shields">
         <h2>Shields</h2>
-        <canvas id="shields" width="180" height="180" aria-hidden="true"></canvas>
+        <div class="shield-layout">
+          <canvas id="shields" width="180" height="180" aria-hidden="true"></canvas>
+          <div class="shield-controls">
+            <p class="shield-status">Selected <span id="shield-selection">None</span></p>
+            <p class="shield-status">Committed <span id="shield-committed">None</span></p>
+            <label class="shield-amount" title="Amount is in integer energy points, step 1. The original CE 2.670 slider detent is TO VERIFY.">Reinforcement
+              <input id="reinforce-slider" type="range" min="0" max="100" step="1" value="1" />
+              <input id="reinforce-amount" type="number" min="0" max="100" step="1" value="1" />
+            </label>
+            <div class="presets">
+              <button type="button" data-action="shields.reinforce">Reinforce</button>
+              <button type="button" data-action="shields.reinforceAll">Reinforce all</button>
+            </div>
+            <div class="presets" role="group" aria-label="Shield state">
+              <button type="button" disabled title="Down, Minimal, and Up have no DuelMatch verb yet. Tracked on issue #145.">Down</button>
+              <button type="button" disabled title="Down, Minimal, and Up have no DuelMatch verb yet. Tracked on issue #145.">Minimal</button>
+              <button type="button" disabled title="Down, Minimal, and Up have no DuelMatch verb yet. Tracked on issue #145.">Up</button>
+            </div>
+          </div>
+        </div>
         <table id="shield-table">
-          <caption class="sr">Six shield facings, bow first, clockwise, with ordered reinforcement</caption>
-          <thead><tr><th>Facing</th><th>Strength</th><th>Order</th></tr></thead>
+          <caption class="sr">Six shield facings, bow first, clockwise, with committed and pending reinforcement</caption>
+          <thead><tr><th>Facing</th><th>Strength</th><th>Committed</th><th>Pending</th></tr></thead>
           <tbody></tbody>
         </table>
       </section>

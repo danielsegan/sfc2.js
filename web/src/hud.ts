@@ -4,6 +4,7 @@ import { MODE_OVERLOAD, MODE_PROXIMITY } from '../../engine/sim/rules-tables.ts'
 import { toDisplayHeading } from '../../engine/view/units.ts';
 import type { HelmView, HudEvent, ViewModel, WeaponReadout } from '../../engine/view/view-model.ts';
 import { mapOffset } from './map-geom.ts';
+import { FACING_NAMES, formatFacingList, normalizeFacings } from './shield-select.ts';
 import { supportsProximity } from './weapon-select.ts';
 
 /** Sim ticks are 30 Hz. HET delay is shown in seconds. */
@@ -14,8 +15,6 @@ export function formatHetDelay(helm: Pick<HelmView, 'mode' | 'hetDelayTicks'> | 
   return `${(helm.hetDelayTicks / TICKS_PER_SECOND).toFixed(1)} s`;
 }
 
-const FACING = ['Bow', 'Forward starboard', 'Aft starboard', 'Stern', 'Aft port', 'Forward port'];
-
 export interface HudHandles {
   selectedSlot: number;
   selectedSlots: readonly number[];
@@ -25,6 +24,8 @@ export interface HudHandles {
   headingUp: boolean;
   mapFull: boolean;
   targetId: number | null;
+  selectedFacings: readonly number[];
+  reinforceAmount: number;
   onSelect(slot: number, additive?: boolean): void;
   onTarget?(id: number): void;
 }
@@ -96,12 +97,12 @@ export function updateHud(vm: ViewModel, roster: readonly RosterEntry[], hud: Hu
   const alert = latestAlert(vm.events, vm.self?.id);
   text('alert', alert);
   appendLog(vm);
-  drawShields(vm, plan, now);
+  drawShields(vm, plan, hud, now);
   drawMap(vm, hud);
   renderWeapons(vm, hud, plan);
   syncProximityButton(vm, hud, plan);
   renderContacts(vm, roster);
-  renderShieldTable(vm, plan);
+  renderShieldTable(vm, plan, hud);
 }
 
 function barWidth(id: string, points: number): void {
@@ -343,17 +344,33 @@ function renderContacts(vm: ViewModel, roster: readonly RosterEntry[]): void {
   }
 }
 
-function renderShieldTable(vm: ViewModel, plan: DuelPlan): void {
+function renderShieldTable(vm: ViewModel, plan: DuelPlan, hud: HudHandles): void {
   const body = document.querySelector('#shield-table tbody');
   if (!body || !vm.self) return;
+  const selected = new Set(normalizeFacings(hud.selectedFacings));
   body.replaceChildren();
   vm.self.shields.forEach((facing, index) => {
     const row = document.createElement('tr');
-    row.append(cell(FACING[index] ?? String(index)));
+    if (selected.has(index)) row.className = 'selected';
+    row.append(cell(FACING_NAMES[index] ?? String(index)));
     row.append(cell(`${String(facing.current)} / ${String(facing.max)}`));
     row.append(cell(String(plan.specific[index] ?? 0)));
+    const pending = selected.has(index) ? cell(String(hud.reinforceAmount)) : cell('—');
+    if (selected.has(index) && hud.reinforceAmount !== (plan.specific[index] ?? 0)) pending.classList.add('pending');
+    row.append(pending);
     body.append(row);
   });
+  text('shield-selection', formatFacingList(hud.selectedFacings));
+  text('shield-committed', formatCommitted(plan));
+}
+
+function formatCommitted(plan: DuelPlan): string {
+  const parts: string[] = [];
+  if (plan.general > 0) parts.push(`General ${String(plan.general)}`);
+  plan.specific.forEach((points, index) => {
+    if ((points ?? 0) > 0) parts.push(`${FACING_NAMES[index] ?? String(index)} ${String(points)}`);
+  });
+  return parts.length > 0 ? parts.join(' · ') : 'None';
 }
 
 function cell(value: string): HTMLTableCellElement {
@@ -364,7 +381,7 @@ function cell(value: string): HTMLTableCellElement {
 
 const flashes = new Map<number, number>();
 
-function drawShields(vm: ViewModel, plan: DuelPlan, now: number): void {
+function drawShields(vm: ViewModel, plan: DuelPlan, hud: HudHandles, now: number): void {
   const canvas = document.getElementById('shields');
   if (!(canvas instanceof HTMLCanvasElement)) return;
   const ctx = canvas.getContext('2d');
@@ -385,6 +402,14 @@ function drawShields(vm: ViewModel, plan: DuelPlan, now: number): void {
   ctx.lineTo(cx, cy + 8);
   ctx.lineTo(cx - 16, cy + 18);
   ctx.closePath();
+  const selected = new Set(normalizeFacings(hud.selectedFacings));
+  const allSelected = selected.size === 6;
+  if (allSelected) {
+    ctx.fillStyle = 'rgba(79, 143, 214, 0.28)';
+    ctx.fill();
+  }
+  ctx.strokeStyle = allSelected ? '#ffffff' : '#8a9aab';
+  ctx.lineWidth = allSelected ? 2 : 1;
   ctx.stroke();
   const shields = vm.self?.shields ?? [];
   for (let i = 0; i < 6; i++) {
@@ -392,29 +417,53 @@ function drawShields(vm: ViewModel, plan: DuelPlan, now: number): void {
     const start = -Math.PI / 2 - Math.PI / 6 + i * (Math.PI / 3);
     const end = start + Math.PI / 3;
     const ratio = facing && facing.max > 0 ? facing.current / facing.max : 0;
-    ctx.beginPath();
     const gap = 0.06;
+    const mid = (start + end) / 2;
+    if (selected.has(i)) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, start + gap, end - gap);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+      ctx.lineWidth = 14;
+      ctx.stroke();
+    }
+    ctx.beginPath();
     ctx.arc(cx, cy, radius, start + gap, end - gap);
     ctx.strokeStyle = ratio <= 0 ? '#e5484d' : ratio < 0.25 ? '#f2b33d' : '#5fd3a0';
-    ctx.lineWidth = flashes.get(i) !== undefined && (flashes.get(i) ?? 0) > now ? 8 : 4;
+    ctx.lineWidth = flashes.get(i) !== undefined && (flashes.get(i) ?? 0) > now ? 8 : selected.has(i) ? 6 : 4;
     if (ratio > 0 && ratio < 0.25) ctx.setLineDash([3, 3]);
     else ctx.setLineDash([]);
     ctx.stroke();
     ctx.setLineDash([]);
-    const mid = (start + end) / 2;
+    if (selected.has(i)) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, start + gap, end - gap);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
     const labelAt = radius - 18;
-    ctx.fillStyle = '#d8e2ec';
+    ctx.fillStyle = selected.has(i) ? '#ffffff' : '#d8e2ec';
     ctx.font = '11px ui-monospace, monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(String(facing?.current ?? 0), cx + Math.cos(mid) * labelAt, cy + Math.sin(mid) * labelAt);
-    const extra = (plan.specific[i] ?? 0) > 0 || (facing?.reinforced ?? 0) > 0;
+    const committed = plan.specific[i] ?? 0;
+    const extra = committed > 0 || (facing?.reinforced ?? 0) > 0;
     if (extra) {
       ctx.beginPath();
       ctx.arc(cx, cy, radius + 8, start + gap, end - gap);
       ctx.strokeStyle = '#f2b33d';
       ctx.lineWidth = 2;
       ctx.stroke();
+    }
+    if (selected.has(i) && hud.reinforceAmount > 0 && hud.reinforceAmount !== committed) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius + 12, start + gap, end - gap);
+      ctx.strokeStyle = '#4f8fd6';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([3, 3]);
+      ctx.stroke();
+      ctx.setLineDash([]);
     }
   }
 }

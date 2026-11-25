@@ -20,6 +20,7 @@ import { DuelScene } from './scene.ts';
 import { hudScaleFromLocation, paintFieldHud } from './field-hud.ts';
 import { speedScale } from './tactical/frame.ts';
 import { barFractionFromClientX, speedBarGesture, speedFromBarFraction } from './speed-bar.ts';
+import { clampReinforceAmount, selectFacing, toggleAllFacings } from './shield-select.ts';
 import { toggleSlot } from './weapon-select.ts';
 import { fieldRelease, orbitOnPress } from './tactical/pointer.ts';
 import { pickContact } from './tactical/tags.ts';
@@ -31,7 +32,7 @@ import { nearestContact, mapWorldAt } from './map-geom.ts';
 import { headingToward } from './helm-aim.ts';
 import { applyEmpireSkin } from './skins/apply.ts';
 import { fitUiScale, formatUiScale } from './skins/scale.ts';
-import { shieldFacingAt } from './shield-hit.ts';
+import { shieldHitAt } from './shield-hit.ts';
 import { applyChromeBudget, fieldChromeBudget } from './tactical/chrome.ts';
 import {
   fillShiplist,
@@ -58,6 +59,8 @@ let roster: readonly RosterEntry[] = opening.roster;
 let selectedSlot = 0;
 let selectedSlots: number[] = [0];
 let selectedGroup = 0;
+let selectedFacings: number[] = [];
+let reinforceAmount = 1;
 let mapZoom = 8;
 let headingUp = false;
 let mapFull = false;
@@ -109,6 +112,12 @@ const hud = {
   },
   get selectedSlots() {
     return selectedSlots;
+  },
+  get selectedFacings() {
+    return selectedFacings;
+  },
+  get reinforceAmount() {
+    return reinforceAmount;
   },
   onSelect(slot: number, additive = false) {
     selectedSlots = additive ? toggleSlot(selectedSlots, slot) : [slot];
@@ -178,6 +187,14 @@ const host: CommandHost = {
   setInterfaceCollapsed(on) {
     interfaceCollapsed = on;
     applyLayout();
+  },
+  getShieldSelection: () => selectedFacings,
+  setShieldSelection(facings) {
+    selectedFacings = [...facings];
+  },
+  getReinforceAmount: () => reinforceAmount,
+  setReinforceAmount(points) {
+    setPendingReinforce(points);
   },
   view: () => latest,
 };
@@ -304,11 +321,33 @@ document.getElementById('shields')?.addEventListener('click', (event) => {
   const rect = canvas.getBoundingClientRect();
   const x = ((event.clientX - rect.left) / rect.width) * canvas.width;
   const y = ((event.clientY - rect.top) / rect.height) * canvas.height;
-  const facing = shieldFacingAt(x, y, canvas.width, canvas.height);
-  if (facing === null) return;
-  if (event.shiftKey) match.setFacing(facing, 0);
-  else match.setFacing(facing, (match.plan.specific[facing] ?? 0) + 1);
+  const hit = shieldHitAt(x, y, canvas.width, canvas.height);
+  if (!hit) return;
+  if (hit.kind === 'centre') selectedFacings = toggleAllFacings(selectedFacings);
+  else selectedFacings = selectFacing(selectedFacings, hit.facing, event.shiftKey);
 });
+
+function setPendingReinforce(value: number): void {
+  reinforceAmount = clampReinforceAmount(value);
+  const amount = document.getElementById('reinforce-amount');
+  const slider = document.getElementById('reinforce-slider');
+  if (amount instanceof HTMLInputElement && document.activeElement !== amount) {
+    amount.value = String(reinforceAmount);
+  }
+  if (slider instanceof HTMLInputElement) slider.value = String(reinforceAmount);
+}
+
+function onReinforceInput(event: Event): void {
+  const target = event.target;
+  if (!(target instanceof HTMLInputElement)) return;
+  if (event.type === 'input' && target.id === 'reinforce-amount' && target.value === '') return;
+  setPendingReinforce(Number(target.value));
+}
+
+document.getElementById('reinforce-amount')?.addEventListener('input', onReinforceInput);
+document.getElementById('reinforce-amount')?.addEventListener('change', onReinforceInput);
+document.getElementById('reinforce-slider')?.addEventListener('input', onReinforceInput);
+document.getElementById('reinforce-slider')?.addEventListener('change', onReinforceInput);
 
 const stage = document.getElementById('stage');
 let orbiting = false;

@@ -277,9 +277,37 @@ section[aria-label="Helm"] .read span:first-child {
 section[aria-label="Helm"] .step { margin: 2px 0; }
 section[aria-label="Helm"] .presets { margin: 2px 0; }
 
-#shields { display: block; margin: 0 auto; width: 160px; height: 160px; }
-#shield-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-#shield-table td { padding: 1px 4px; }
+.shield-layout { display: flex; align-items: center; gap: 8px; }
+#shields { display: block; margin: 0; width: 124px; height: 124px; flex: 0 0 auto; }
+.shield-controls { flex: 1; min-width: 0; }
+.shield-status {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.shield-status span { color: var(--text); }
+.shield-amount {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0;
+  font-size: 12px;
+}
+.shield-amount input[type="range"] { flex: 1; width: auto; min-width: 0; accent-color: var(--accent); }
+.shield-amount input[type="number"] { width: 56px; }
+section[aria-label="Shields"] .presets { margin: 2px 0; }
+#shield-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+#shield-table td, #shield-table th { padding: 1px 4px; }
+#shield-table tr.selected td { background: rgba(79, 143, 214, 0.28); color: var(--focus); }
+#shield-table td.pending { color: var(--accent); }
+section[aria-label="Shields"] button:disabled {
+  color: var(--state-disabled);
+  cursor: not-allowed;
+  opacity: 0.65;
+}
 
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 .sr-table { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
