@@ -19,6 +19,7 @@ import {
 } from './tactical/frame.ts';
 import { avoidObstacles, formatRangeTag, offscreenPoint, stackTags, type Rect, type StackedTag } from './tactical/tags.ts';
 import { TAG_HIT_UNITS, TAG_STACK_UNITS } from './tactical/tokens.ts';
+import { formatSpeed } from './speed-bar.ts';
 
 interface Projected {
   readonly x: number;
@@ -81,11 +82,11 @@ export function paintFieldHud(input: FieldHudInput): void {
   text('field-countdown', soonestCountdown(input.vm.mission.timers));
   const name = target ? input.roster[target.index]?.name ?? 'Contact' : 'No target';
   text('field-target-name', name);
-  text('field-speed', self ? String(self.speed) : '0');
+  text('field-speed', formatSpeed(self ? self.speed : 0));
   const speedBar = document.getElementById('field-speed-bar');
   if (speedBar) {
-    speedBar.setAttribute('aria-valuenow', String(input.planSpeed));
-    speedBar.setAttribute('aria-valuetext', `Desired speed ${String(input.planSpeed)}`);
+    speedBar.setAttribute('aria-valuenow', formatSpeed(input.planSpeed));
+    speedBar.setAttribute('aria-valuetext', `Desired speed ${formatSpeed(input.planSpeed)}`);
   }
   const speeds = speedScale(self);
   setBar('field-speed-fill', self ? Math.max(0, Math.min(1, self.speed / speeds.max)) : 0);
