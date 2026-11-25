@@ -14,6 +14,15 @@ export type SpeedBarGesture = 'start' | 'move' | 'end' | 'ignore';
 /** Native resolution of `DuelMatch.setSpeed`: tenths of a speed point. */
 export const SPEED_ORDER_STEP = 0.1;
 
+/** Helm number field. An empty or non-finite box is not an order. */
+export function orderedSpeedFromField(raw: string): number | null {
+  const text = raw.trim();
+  if (text.length === 0) return null;
+  const speed = Number(text);
+  if (!Number.isFinite(speed)) return null;
+  return speed;
+}
+
 /** Left-button pointerdown starts a capture-drag; later moves/up apply only while captured. */
 export function speedBarGesture(type: string, button: number, captured: boolean): SpeedBarGesture {
   if (type === 'pointerdown' && button === 0) return 'start';

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { barFractionFromClientX, formatSpeed, SPEED_ORDER_STEP, speedBarGesture, speedFromBarFraction } from './speed-bar.ts';
+import { barFractionFromClientX, formatSpeed, orderedSpeedFromField, SPEED_ORDER_STEP, speedBarGesture, speedFromBarFraction } from './speed-bar.ts';
 
 describe('speed bar mapping', () => {
   it('maps a click or drag position to 0..max at tenths', () => {
@@ -13,6 +13,14 @@ describe('speed bar mapping', () => {
     expect(speedFromBarFraction(1.4, 32)).toBe(32);
     expect(speedFromBarFraction(0.5, 0)).toBe(0);
     expect(speedFromBarFraction(Number.NaN, 32)).toBe(0);
+  });
+
+  it('ignores an empty ordered-speed field and keeps an explicit zero', () => {
+    expect(orderedSpeedFromField('')).toBeNull();
+    expect(orderedSpeedFromField('   ')).toBeNull();
+    expect(orderedSpeedFromField('nope')).toBeNull();
+    expect(orderedSpeedFromField('0')).toBe(0);
+    expect(orderedSpeedFromField('4.2')).toBe(4.2);
   });
 
   it('converts a client X into a 0–1 fraction of the bar', () => {
