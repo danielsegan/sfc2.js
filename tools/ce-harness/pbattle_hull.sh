@@ -21,7 +21,7 @@ if [ -z "$hud" ]; then
     5) hud=gorn ;;
     6) hud=isc ;;
     7) hud=mirak ;;
-    8) hud=orion ;;
+    8) hud=orion ;;  # Your Fleet arrow wraps here; click 8 is Federation, not Orion
     *) hud=federation ;;
   esac
 fi

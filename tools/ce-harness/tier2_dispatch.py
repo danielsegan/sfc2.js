@@ -40,6 +40,21 @@ def save_status(st):
     tmp.write_text(json.dumps(st, indent=1))
     tmp.replace(STATUS)
 
+def live_workers():
+    """Map copy -> (pid, seq, spawnKey) for running tier2_one.sh processes."""
+    out = {}
+    r = sh("ps -eo pid,cmd")
+    for ln in (r.stdout or "").splitlines():
+        if "tier2_one.sh" not in ln or "bash -c" in ln:
+            continue
+        parts = ln.split()
+        try:
+            i = next(i for i, tok in enumerate(parts) if tok.endswith("tier2_one.sh"))
+            out[str(parts[i + 1])] = (parts[0], parts[i + 2], parts[i + 3])
+        except (StopIteration, IndexError, ValueError):
+            continue
+    return out
+
 def designation(hull):
     # F-CA -> CA, O-PR1 -> PR1, K-D7 -> D7, H-PAL -> PAL
     return hull.split("-", 1)[1]
@@ -74,6 +89,16 @@ def main():
                 alive[copy] = pid
             except (ProcessLookupError, ValueError, PermissionError):
                 pass
+        # Adopt live workers started outside the dispatcher (manual restart).
+        for copy, (pid, seq, spawn) in live_workers().items():
+            alive[copy] = pid
+            rec = st["hulls"].get(spawn, {})
+            if rec.get("finished") and rec.get("status") == "ok":
+                continue
+            rec.update({"status": "running", "seq": int(seq), "copy": int(copy),
+                        "pid": pid, "finished": False})
+            rec["tries"] = rec.get("tries") or 1
+            st["hulls"][spawn] = rec
         st["pids"] = alive
         # any running copies from docker
         used = set(game_copies())
@@ -108,7 +133,9 @@ def main():
                 gated.append(it)
                 continue
             rec = st["hulls"].get(first["spawnKey"], {})
-            if rec.get("status") == "ok" or rec.get("finished"):
+            # Only an ok first hull unblocks the rest. finished=True on
+            # select_failed used to leak later hulls of the same empire.
+            if rec.get("status") == "ok":
                 gated.append(it)
             elif rec.get("status") in ("select_failed", "worker_failed", "battle_check_failed"):
                 log(f"hold {it['spawnKey']}: first {first['spawnKey']} is {rec.get('status')}")

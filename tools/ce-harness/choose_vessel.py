@@ -56,15 +56,18 @@ SKINS = {
         "title_crop": "320x50+430+200",
     },
     "romulan": {
-        # Class + DONE live in a right-hand block, not the bottom-centre bar.
-        # Ship arrows sit on a low bar under the bird-of-prey diagram (~y 600).
-        "ship_prev": (360, 600),
-        "ship_next": (440, 600),
-        "class_prev": (590, 550),
-        "class_next": (810, 550),
-        "done": (740, 600),
+        # Class + DONE live in a right-hand block. The left green arrow in that
+        # block is BACK (leaves CHOOSE VESSEL), not ship-prev. Ship arrows are
+        # the two plates under the bird-of-prey diagram; (440, 600) only grazed
+        # the top-right corner of ship-next. The previous stats crop started at
+        # x=640 and cut off "DESIGNATION:".
+        "ship_prev": (342, 606),
+        "ship_next": (427, 606),
+        "class_prev": (598, 557),
+        "class_next": (806, 557),
+        "done": (746, 606),
         "stats_side": "right",
-        "stats_crop": "220x400+640+150",
+        "stats_crop": "300x400+520+130",
         "title_crop": "320x50+230+200",
     },
     "hydran": {
@@ -89,12 +92,13 @@ SKINS = {
     },
     "mirak": {
         # Class arrows flank the HEAVY CRUISER bone plaque. Ship prev/next are
-        # the two bronze plates in the skull frame above that plaque (best
-        # candidates on the screenshot; first Mirak hull will confirm).
+        # the two bronze plates in the skull frame above that plaque.
+        # class_next (498, 516) is the bronze chevron fill, confirmed on Z-FF
+        # (not (510, 510) in the gap or (524, 516) in the bone to the right).
         "ship_prev": (390, 485),
         "ship_next": (450, 485),
-        "class_prev": (350, 510),
-        "class_next": (510, 510),
+        "class_prev": (352, 516),
+        "class_next": (498, 516),
         "done": (770, 600),
         "stats_side": "right",
         "stats_crop": "180x400+650+160",
@@ -120,6 +124,13 @@ SKINS = {
 # those empires run in the queue; pbattle_hull still requires a battle-UI check.
 ALIASES = {}
 
+# The Your Fleet race arrow at (306, 242) on Advanced Custom Skirmish
+# cycles exactly 8 empires: Federation, Klingon, Romulan, Lyran, Hydran,
+# Gorn, ISC, Mirak, then wraps back to Federation. race_clicks=8 does
+# not reach Orion (map_cv customize-r8 is the Federation CA screen
+# again). Orion stays in this list as the intended 9th skin for a later
+# reachability path (enemy STAR EMPIRE slot, another skirmish picker,
+# or Vessel Library).
 RACE_ORDER = [
     "federation", "klingon", "romulan", "lyran", "hydran",
     "gorn", "isc", "mirak", "orion",
