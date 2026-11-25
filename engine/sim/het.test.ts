@@ -110,7 +110,7 @@ describe('orderHet (verb 13)', () => {
     expect(hetHandler.kind).toBe(VERB_ORDER_HET);
   });
 
-  it('turns an F-CA 90° to starboard after the 171-tick delay at 285 units/tick', () => {
+  it('turns an F-CA 90° to starboard after the 171-tick delay at 276 units/tick', () => {
     const { sim, events } = run([setup('F-CA', 20)], 2, { 2: [[VERB_ORDER_HET, hetPayload(SHIP, 1)]] });
     expect(hetEvents(events)).toEqual([{ tick: 2, kind: EVENT_HET, entity: SHIP, a: HET_ORDERED, b: 16384 }].map((e) => expect.objectContaining(e)));
     // Order tick: one delay tick already spent.
@@ -127,20 +127,20 @@ describe('orderHet (verb 13)', () => {
     expect(heading(sim, 0)).toBe(0);
   });
 
-  it('runs the worked timing from het.md §5 (229 ticks, last step 139)', () => {
+  it('runs the F-CA timing (90° sweep, 276 units/tick, last step 100)', () => {
     const order = 2;
-    const { sim, events } = run([setup('F-CA', 20)], order + 228, { [order]: [[VERB_ORDER_HET, hetPayload(SHIP, 1)]] });
+    const { sim, events } = run([setup('F-CA', 20)], order + 230, { [order]: [[VERB_ORDER_HET, hetPayload(SHIP, 1)]] });
     expect(heading(sim, 0)).toBe(16384);
     expect(helm(sim, 0).mode).toBe('heading');
     expect(helm(sim, 0).remainingTurn16).toBe(0);
     const done = hetEvents(events).find((e) => e.a === HET_DONE);
-    expect(done?.tick).toBe(order + 228);
+    expect(done?.tick).toBe(order + 230);
     expect(done?.b).toBe(16384);
     const order2 = run([setup('F-CA', 20)], order + 171, { [order]: [[VERB_ORDER_HET, hetPayload(SHIP, 1)]] });
-    expect(heading(order2.sim, 0)).toBe(285);
+    expect(heading(order2.sim, 0)).toBe(276);
     expect(helm(order2.sim, 0)).toEqual({
       mode: 'het',
-      remainingTurn16: 16384 - 285,
+      remainingTurn16: 16384 - 276,
       hetDelayTicks: 0,
       hetSuccessChance: 100,
       hetBreakdown: false,
@@ -160,8 +160,8 @@ describe('orderHet (verb 13)', () => {
       emerDecelTicksLeft: 0,
       erraticActive: false,
     });
-    const last = run([setup('F-CA', 20)], order + 227, { [order]: [[VERB_ORDER_HET, hetPayload(SHIP, 1)]] });
-    expect(helm(last.sim, 0).remainingTurn16).toBe(139);
+    const last = run([setup('F-CA', 20)], order + 229, { [order]: [[VERB_ORDER_HET, hetPayload(SHIP, 1)]] });
+    expect(helm(last.sim, 0).remainingTurn16).toBe(100);
   });
 
   it('turns to port with dir -1 and holds the new heading', () => {
@@ -172,7 +172,7 @@ describe('orderHet (verb 13)', () => {
     expect(order.data[1]).toBe(49152);
   });
 
-  it('uses Tier-2 HET rates for F-CA (5/15/31) and F-CL/F-CC/F-DN/F-DD, leaving F-FF on default', () => {
+  it('uses measured HET rates for F-CA, F-CL, F-CC, F-DN, F-DD, and F-FF', () => {
     const { sim } = run([
       setup('F-CA', 15),
       setup('F-CL', 5),
@@ -190,12 +190,12 @@ describe('orderHet (verb 13)', () => {
         [VERB_ORDER_HET, hetPayload(SHIP + 5, 1)],
       ],
     });
-    expect(heading(sim, 0)).toBe(255);
+    expect(heading(sim, 0)).toBe(256);
     expect(heading(sim, 1)).toBe(313);
     expect(heading(sim, 2)).toBe(283);
-    expect(heading(sim, 3)).toBe(253);
+    expect(heading(sim, 3)).toBe(253 * 4);
     expect(heading(sim, 4)).toBe(335);
-    expect(heading(sim, 5)).toBe(285);
+    expect(heading(sim, 5)).toBe(297 * 11);
   });
 
   it('gives K-D7 the 90° preset baseline sweep and unknown hulls the default row', () => {
@@ -278,9 +278,9 @@ describe('orderHet (verb 13)', () => {
   });
 
   it('accepts a new HET once the last one has finished', () => {
-    const { sim, events } = run([setup('F-CA', 10)], 2 + 228 + 229, {
+    const { sim, events } = run([setup('F-CA', 10)], 2 + 233 + 240, {
       2: [[VERB_ORDER_HET, hetPayload(SHIP, 1)]],
-      231: [[VERB_ORDER_HET, hetPayload(SHIP, 1)]],
+      236: [[VERB_ORDER_HET, hetPayload(SHIP, 1)]],
     });
     expect(hetEvents(events).filter((e) => e.a === HET_ORDERED)).toHaveLength(2);
     expect(heading(sim, 0)).toBe(32768);

@@ -132,12 +132,12 @@ describe('turn curve tables', () => {
     const fca = curveId(NORMAL_CURVE, 'F-CA');
     expect(curvePoint(NORMAL_CURVE, fca, 0).rate).toBe(24);
     expect(curvePoint(NORMAL_CURVE, fca, q(3)).rate).toBe(24);
-    expect(curvePoint(NORMAL_CURVE, fca, q(40)).rate).toBe(44);
+    expect(curvePoint(NORMAL_CURVE, fca, q(40)).rate).toBe(45);
     const d7 = curveId(NORMAL_CURVE, 'K-D7');
-    expect(curvePoint(NORMAL_CURVE, d7, q(0))).toMatchObject({ rate: 30, delay: 42 });
-    expect(curvePoint(NORMAL_CURVE, d7, q(5))).toMatchObject({ rate: 30, delay: 42 });
-    expect(curvePoint(NORMAL_CURVE, d7, q(10))).toMatchObject({ rate: 52, delay: 42 });
-    expect(curvePoint(NORMAL_CURVE, d7, q(15))).toMatchObject({ rate: 51, delay: 42 });
+    expect(curvePoint(NORMAL_CURVE, d7, q(0))).toMatchObject({ rate: 33, delay: 42 });
+    expect(curvePoint(NORMAL_CURVE, d7, q(5))).toMatchObject({ rate: 33, delay: 42 });
+    expect(curvePoint(NORMAL_CURVE, d7, q(10))).toMatchObject({ rate: 56, delay: 42 });
+    expect(curvePoint(NORMAL_CURVE, d7, q(15))).toMatchObject({ rate: 56, delay: 42 });
     expect(curvePoint(NORMAL_CURVE, d7, q(20))).toMatchObject({ rate: 56, delay: 42 });
     expect(curvePoint(NORMAL_CURVE, d7, q(31))).toMatchObject({ rate: 57, delay: 42 });
     const nonFedWant: [string, number, number, number][] = [
@@ -277,9 +277,9 @@ describe('normal turn in the sim', () => {
   it('caps manual yaw at the curve rate', () => {
     const sim = build([setup('F-CA', 31)]);
     const { headings, events } = run(sim, 1, 2, { 2: [[VERB_ORDER_HELM, helmPayload(SHIP, 5000)]] });
-    expect(headings[1]![0]).toBe(44);
+    expect(headings[1]![0]).toBe(45);
     const helm = events.find((e) => e.kind === EVENT_HELM)!;
-    expect([helm.a, helm.b]).toEqual([HELM_YAW_CLAMPED, 44]);
+    expect([helm.a, helm.b]).toEqual([HELM_YAW_CLAMPED, 45]);
   });
 
   it('leaves hulls without a turn hull, and sims without the table, on the letter cap', () => {

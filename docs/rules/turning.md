@@ -42,11 +42,11 @@ A start-of-turn delay of `delayTicks` applies before the ship begins rotating on
 | Hull key | Speed points | `turnRate16PerTick` (from measured °/s) | `delayTicks` | Status |
 | --- | --- | --- | --- | --- |
 | `F-CA` | `4, 5, 7, 8, 10, 13, 14, 20, 25`, and `29.5` (`speedHundredths` `2950`) | `24, 29, 39, 42, 47, 46, 46, 46, 48, 49` | `44` (range `39–48`) | **Measured**. Tier-1 game-clock curve reconciled with Tier-2 speed `5` (`4.70°/s → 29`). The `13–14` band is a midpoint; the `13–20` dip is real data and is kept. |
-| `F-FF` | `5, 10, 20` | `31, 57, 60` (`5.13, 9.45, 9.96°/s`) | `44` (**TO VERIFY**) | Tier-2 rates **measured** at `5, 10, 20`; speeds `<5` / `>20` clamp to endpoints (**TO VERIFY**); delay reuses `F-CA` (**TO VERIFY**). |
+| `F-FF` | `5, 10, 15, 20` | `31, 57, 60, 60` (`5.11, 9.39, 9.89, 9.89°/s`) | `33` (1.1 s) [H] | Checkpoint 1. Speeds outside 5–20 clamp to the endpoints. |
 | `F-DD` | `5, 10, 20` | `33, 50, 52` (`5.44, 8.16, 8.51°/s`) | `44` (**TO VERIFY**) | Tier-2 rates **measured** at `5, 10, 20`; speeds `<5` / `>20` clamp to endpoints (**TO VERIFY**); delay reuses `F-CA` (**TO VERIFY**). |
 | `F-CL` | `5, 10, 20` | `32, 51, 58` (`5.35, 8.36, 9.51°/s`) | `44` (**TO VERIFY**) | Tier-2 rates **measured** at `5, 10, 20`; speeds `<5` / `>20` clamp to endpoints (**TO VERIFY**); delay reuses `F-CA` (**TO VERIFY**). |
 | `F-CC` | `5, 10, 20` | `28, 44, 48` (`4.65, 7.24, 7.92°/s`) | `44` (**TO VERIFY**) | Tier-2 rates **measured** at `5, 10, 20`; speeds `<5` / `>20` clamp to endpoints (**TO VERIFY**); delay reuses `F-CA` (**TO VERIFY**). |
-| `F-DN` | `5, 10, 20` | `26, 38, 45` (`4.26, 6.19, 7.42°/s`) | `44` (**TO VERIFY**) | Tier-2 rates **measured** at `5, 10, 20`; speeds `<5` / `>20` clamp to endpoints (**TO VERIFY**); delay reuses `F-CA` (**TO VERIFY**). |
+| `F-DN` | `5, 10, 16, 20` | `26, 38, 42, 45` (`4.28, 6.26, 6.92, 7.42°/s`) | `36` (1.2 s) [H] | Checkpoint 1. Speeds outside 5–20 clamp to the endpoints. |
 | `K-D7` | `5, 10, 20` | `32, 61, 57` (`5.34, 10.1, 9.44°/s`) | `69, 27, 54` | Tier-2 measured; wall-clock at 5, 20 (**TO VERIFY** game-clock). |
 | `K-E4` | `5, 20` | `29, 65` (`4.76, 10.74°/s`) | `141, 15` | Tier-2 measured; omitted (speed 10: null, null). |
 | `K-F5` | `5, 10, 20` | `34, 70, 59` (`5.63, 11.47, 9.7°/s`) | `108, 24, 21` | Tier-2 measured; wall-clock at 10 (**TO VERIFY** game-clock). |

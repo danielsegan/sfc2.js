@@ -86,62 +86,84 @@ function row(
 
 function turnRateScore(ship: ShipReport, sample: TurnSample): Scored {
   const ours = degNumber(sample.turnRate16PerTick);
+  const speed = sample.speedHundredths;
   if (ship.turnHull === 'F-CA') {
-    if (sample.speedHundredths === 500) return scorePoint(ours, 4.65, 'H');
-    if (sample.speedHundredths === 1000) return scorePoint(ours, 7.85, 'H');
-    if (sample.speedHundredths === 1500) return scorePoint(ours, 7.42, 'H');
-    if (sample.speedHundredths === 3050 || sample.speedHundredths === 3100) return scorePoint(ours, 7.29, 'H');
+    if (speed === 500) return scorePoint(ours, 4.65, 'H');
+    if (speed === 1000 || speed === 1500 || speed === 2000 || speed === 3050) return scoreRange(ours, 7.3, 7.9, 'H');
     return scoreNa();
   }
-  if (sample.speedHundredths === 500) return scorePoint(ours, 5, 'M');
-  if (sample.speedHundredths === 1000) return scorePoint(ours, 8.6, 'M');
-  if (sample.speedHundredths === 1500) return scorePoint(ours, 8.4, 'M');
-  if (sample.speedHundredths === 2000) return scorePoint(ours, 9.3, 'M');
-  if (sample.speedHundredths === 3100) return scorePoint(ours, 9.4, 'M');
+  if (ship.turnHull === 'F-FF') {
+    if (speed === 500) return scorePoint(ours, 5.1, 'H');
+    if (speed === 1000) return scorePoint(ours, 9.5, 'H');
+    if (speed === 1500) return scorePoint(ours, 9.9, 'H');
+    if (speed === 2000) return scorePoint(ours, 10, 'H');
+    return scoreNa();
+  }
+  if (ship.turnHull === 'F-DN') {
+    if (speed === 500) return scorePoint(ours, 4.3, 'H');
+    if (speed === 1000) return scorePoint(ours, 6.2, 'H');
+    if (speed === 1600) return scorePoint(ours, 6.9, 'H');
+    if (speed === 2000) return scorePoint(ours, 7.4, 'H');
+    return scoreNa();
+  }
+  if (speed === 500) return scorePoint(ours, 5.4, 'M');
+  if (speed === 1000 || speed === 1500 || speed === 2000 || speed === 3100) return scoreRange(ours, 9, 9.4, 'M');
   return scoreNa();
 }
 
 function hetRateScore(ship: ShipReport, sample: HetSample): Scored {
   const ours = degNumber(sample.turnRate16PerTick);
   if (ship.turnHull === 'F-CA') {
-    if (sample.speedHundredths === 3100) return scorePoint(ours, 48, 'H/M');
-    return scoreRange(ours, 42, 52, 'H/M');
+    if (sample.speedHundredths >= 3050) return scorePoint(ours, 52, 'M');
+    return scoreRange(ours, 42, 46, 'M');
   }
-  return scoreRange(ours, 46, 65, 'L-M');
+  if (ship.turnHull === 'F-FF') return scorePoint(ours, 49, 'H');
+  if (ship.turnHull === 'F-DN') return scorePoint(ours, 41.7, 'M');
+  return scoreRange(ours, 57.8, 59, 'H');
 }
 
 function timeScore(ship: ShipReport, sample: SpeedSample): Scored {
   const seconds = secondsNumber(sample.ticksFromRest);
-  const fca: Readonly<Record<number, number>> = {
-    500: 11,
-    1000: 19,
-    1500: 30,
-    2000: 43,
-    2500: 61,
-    3000: 77,
+  const tables: Readonly<Record<string, Readonly<Record<number, number>>>> = {
+    'F-CA': { 500: 16.7, 1000: 31.7, 1500: 46.7, 2000: 61, 2500: 70, 3000: 78.3 },
+    'F-FF': { 500: 6.1, 1000: 12.2, 1500: 18.3, 2000: 24.4, 2500: 30.5, 3000: 36.6, 3100: 38 },
+    'F-DN': { 500: 16.1, 1000: 32.3, 1500: 48.4, 2000: 64.5, 2500: 80.6, 3000: 96.8 },
+    'K-D7': { 500: 18, 1000: 30, 1500: 42, 2000: 54, 2500: 66, 3000: 78, 3100: 79.6 },
   };
-  const d7: Readonly<Record<number, number>> = {
-    500: 10,
-    1000: 18.5,
-    1500: 28,
-    2000: 41,
-    2500: 57,
-    3000: 76,
-    3100: 79,
-  };
-  const table = ship.turnHull === 'F-CA' ? fca : d7;
+  const table = tables[ship.turnHull] ?? {};
   const ref = table[sample.speedHundredths];
   if (ref === undefined) return scoreNa();
   return scorePoint(seconds, ref, 'M');
 }
 
-function phaserScore(probe: PhaserProbe): Scored {
-  if (probe.range <= 2) return scoreRoll(probe.damage, 4, 8, 5, 'M');
-  if (probe.range <= 4) return scoreRoll(probe.damage, 3, 6, 4, 'M');
-  if (probe.range <= 5) return scoreRoll(probe.damage, 2, 5, 3.5, 'M');
-  if (probe.range <= 10) return scoreRoll(probe.damage, 0, 4, 2, 'M');
-  if (probe.range <= 15) return scoreRoll(probe.damage, 0, 3, 1, 'M');
-  if (probe.range <= 30) return scoreRoll(probe.damage, 0, 2, 0.4, 'M');
+function phaserScore(ship: ShipReport, probe: PhaserProbe): Scored {
+  if (ship.turnHull === 'K-D7') return phaser2Score(probe);
+  return phaser1Score(probe);
+}
+
+function phaser1Score(probe: PhaserProbe): Scored {
+  if (probe.range === 0) return scoreRoll(probe.damage, 6, 7, 6.5, 'M');
+  if (probe.range === 1 || probe.range === 2) return scoreRoll(probe.damage, 4, 5, 4.5, 'M');
+  if (probe.range === 4) return scorePoint(probe.damage, 4, 'M');
+  if (probe.range === 8) return scoreRoll(probe.damage, 1, 2, 1.5, 'M');
+  if (probe.range === 12 || probe.range === 16 || probe.range === 20 || probe.range === 26) {
+    return scoreRoll(probe.damage, 0, 1, 0.5, 'M');
+  }
+  return scoreNone(probe.damage, 'M');
+}
+
+function phaser2Score(probe: PhaserProbe): Scored {
+  if (probe.range === 0) return scoreRoll(probe.damage, 5, 6, 5.25, 'M');
+  if (probe.range === 1) return scoreRoll(probe.damage, 3, 5, 4, 'M');
+  if (probe.range === 2) return scoreRoll(probe.damage, 3, 4, 3.5, 'M');
+  if (probe.range === 4) return scoreRoll(probe.damage, 0, 1, 0.5, 'M');
+  if (probe.range === 8 || probe.range === 12 || probe.range === 16) return scorePoint(probe.damage, 0, 'M');
+  return scoreNone(probe.damage, 'M');
+}
+
+function phaser3Score(probe: PhaserProbe): Scored {
+  if (probe.range === 0 || probe.range === 2) return scoreRoll(probe.damage, 1, 2, 1.5, 'M');
+  if (probe.range === 4 || probe.range === 8) return scorePoint(probe.damage, 0, 'M');
   return scoreNone(probe.damage, 'M');
 }
 
@@ -174,18 +196,17 @@ function overloadExpected(rangeK: number): number | null {
 
 function photonScore(probe: PhaserProbe): Scored {
   const points = probe.damage === null ? null : pointsNumber(probe.damage);
-  if (probe.range <= 2) return scorePoint(points, 8, 'M');
-  if (probe.range <= 3) return scorePoint(points, 6.5, 'M');
-  if (probe.range <= 5) return scorePoint(points, 5, 'M');
-  if (probe.range <= 10) return scorePoint(points, 4, 'M');
-  if (probe.range <= 12) return scorePoint(points, 2.5, 'M');
-  if (probe.range <= 30) return scorePoint(points, 1, 'M');
-  return scoreNone(probe.damage, 'M');
+  if (probe.range === 0) return scorePoint(points, 8, 'M');
+  if (probe.range === 31) return scoreNone(probe.damage, 'M');
+  if (points === null || (points !== 0 && points !== 8)) {
+    return { text: '0 or 8', confidence: 'M', result: 'fail' };
+  }
+  return { text: '0 or 8', confidence: 'M', result: 'pass' };
 }
 
 function heavyTimeScore(sample: HeavySample): Scored {
   const seconds = secondsNumber(sample.ticksUntilReady);
-  if (sample.weapon === PHOTON_CODE) return scorePoint(seconds, 66, 'M');
+  if (sample.weapon === PHOTON_CODE) return scorePoint(seconds, 64, 'M');
   return scorePoint(seconds, 33, 'L');
 }
 
@@ -206,6 +227,18 @@ function firepowerScore(ship: ShipReport, sample: FirepowerSample): Scored {
     if (sample.speedHundredths === 1000) return scorePoint(ours, 21.5, 'H');
     if (sample.speedHundredths === 2000) return scorePoint(ours, 11.5, 'H');
     if (sample.speedHundredths === 3050) return scorePoint(ours, 1, 'H');
+  }
+  if (ship.turnHull === 'F-FF') {
+    if (sample.speedHundredths === 0) return scorePoint(ours, 31.5, 'H');
+    if (sample.speedHundredths === 1000) return scorePoint(ours, 21.5, 'H');
+    if (sample.speedHundredths === 2000) return scorePoint(ours, 11.5, 'H');
+    if (sample.speedHundredths === 3100) return scorePoint(ours, 0.5, 'H');
+  }
+  if (ship.turnHull === 'F-DN') {
+    if (sample.speedHundredths === 0) return scorePoint(ours, 50.5, 'H');
+    if (sample.speedHundredths === 1000) return scorePoint(ours, 40.5, 'H');
+    if (sample.speedHundredths === 2000) return scorePoint(ours, 30.5, 'H');
+    if (sample.speedHundredths === 3100) return scorePoint(ours, 19.5, 'H');
   }
   if (sample.speedHundredths === 0) return scorePoint(ours, 36.5, 'H');
   if (sample.speedHundredths === 1000) return scorePoint(ours, 26.5, 'H');
@@ -228,9 +261,14 @@ export function tableRows(report: MetricsReport): readonly TableRow[] {
 
 function pushShip(rows: TableRow[], ship: ShipReport): void {
   for (const sample of ship.turns) {
+    const delaySeconds = secondsNumber(sample.delayTicks);
     const delayJudged = ship.turnHull === 'F-CA'
-      ? scoreRange(secondsNumber(sample.delayTicks), 1, 1.9, 'H')
-      : scoreRange(secondsNumber(sample.delayTicks), 1, 1.8, 'M');
+      ? scoreRange(delaySeconds, 1, 1.9, 'H')
+      : ship.turnHull === 'F-FF'
+        ? scorePoint(delaySeconds, 1.1, 'H')
+        : ship.turnHull === 'F-DN'
+          ? scorePoint(delaySeconds, 1.2, 'H')
+          : scoreRange(delaySeconds, 0.7, 1.8, 'M');
     rows.push(
       row(
         ship.id,
@@ -258,11 +296,20 @@ function pushShip(rows: TableRow[], ship: ShipReport): void {
       row(ship.id, 'HET rate', speedLabel(sample.speedHundredths), `${degPerSec(sample.turnRate16PerTick)} deg/s`, rate, 'deg/s at 30 Hz'),
     );
     const sweep = (sample.sweep16 * 360) / 65536;
-    const sweepScore = ship.turnHull === 'F-CA' ? scorePoint(sweep, 89, 'H/M') : scoreRange(sweep, 82, 98, 'L-M');
+    const sweepScore = ship.turnHull === 'F-CA'
+      ? scorePoint(sweep, 89, 'M')
+      : ship.turnHull === 'K-D7'
+        ? scoreRange(sweep, 82, 98, 'M')
+        : scoreNa();
     rows.push(row(ship.id, 'HET sweep', speedLabel(sample.speedHundredths), `${fixed(sample.sweep16 * 360, 65536, 2)} deg`, sweepScore, 'degrees'));
+    const hetDelay = secondsNumber(sample.delayTicks);
     const delayScore = ship.turnHull === 'F-CA'
-      ? scoreRange(secondsNumber(sample.delayTicks), 5.5, 5.8, 'H/M')
-      : scoreNa();
+      ? scoreRange(hetDelay, 5.5, 6, 'M')
+      : ship.turnHull === 'F-FF'
+        ? scorePoint(hetDelay, 5.35, 'H')
+        : ship.turnHull === 'F-DN'
+          ? scorePoint(hetDelay, 5.6, 'M')
+          : scoreRange(hetDelay, 5.45, 5.93, 'H');
     rows.push(
       row(
         ship.id,
@@ -315,10 +362,22 @@ function pushShip(rows: TableRow[], ship: ShipReport): void {
       row(
         ship.id,
         'phaser damage',
-        `range ${probe.range}`,
+        `range ${probe.range}k`,
         probe.damage === null ? `none (${probe.reason})` : String(probe.damage),
-        phaserScore(probe),
-        'damage points on one seeded Ph1 roll, or the reject reason',
+        phaserScore(ship, probe),
+        'damage points on one seeded roll, or the reject reason',
+      ),
+    );
+  }
+  for (const probe of ship.phaser3) {
+    rows.push(
+      row(
+        ship.id,
+        'phaser-3 damage',
+        `range ${probe.range}k`,
+        probe.damage === null ? `none (${probe.reason})` : String(probe.damage),
+        phaser3Score(probe),
+        'F-FF Phaser-3. About 1.5 under 4k and 0 through 10.3k',
       ),
     );
   }
@@ -356,7 +415,7 @@ function pushShip(rows: TableRow[], ship: ShipReport): void {
   for (const probe of ship.photonDamage) {
     const ours = probe.damage === null ? `none (${probe.reason})` : fixed(probe.damage, 100, 2);
     rows.push(
-      row(ship.id, 'photon damage', `range ${probe.range}`, ours, photonScore(probe), 'damage points per tube'),
+      row(ship.id, 'photon damage', `range ${probe.range}k`, ours, photonScore(probe), '8 points on a hit, or 0 on a miss'),
     );
   }
   rows.push(
@@ -440,7 +499,7 @@ function scenarioText(report: MetricsReport): string {
     `- Tick rate: ${report.tickHz} Hz. One second is ${report.tickHz} ticks. \`step\` has no dt.`,
     `- Rules-turn: ${report.rulesTurnTicks} ticks (${report.rulesTurnTicks / report.tickHz} s), the named \`RULES_TURN_SECONDS\`. A photon is ready after two turns and a disruptor after one.`,
     `- Input delay: ${report.inputDelay}. Seed ${report.seed} (0x${report.seed.toString(16)}).`,
-    '- Hulls: F-CA-like uses turn curve `F-CA` and warp 34. K-D7-like uses `K-D7` and warp 39. Actual speed ramps toward the ordered speed on those two hulls. Other hulls still change speed on the order.',
+    '- Hulls: F-CA-like and F-FF-like use warp 34. F-DN-like uses warp 53. K-D7-like uses warp 39. Actual speed ramps on F-CA, F-FF, F-DN, and K-D7. Other hulls still change speed on the order.',
     '- Systems load when life support and fire control are on: 2.5. Movement stays 1 per ordered speed point. Weapon power is plant minus that load.',
     `- Heading order: verb 12, target ${HEADING_TARGET} (90° clockwise), after actual speed has reached the sample.`,
     '- HET: verb 13, starboard. Delay, rate, and sweep are measured from the sim, not copied off the table.',

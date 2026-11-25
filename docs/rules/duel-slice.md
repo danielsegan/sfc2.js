@@ -89,7 +89,7 @@ Incoming bearing relative to the target's heading maps to a facing by:
 
 `facing = floor((rel × 6 + 32768) / 65536) mod 6`
 
-with `rel` in `[0, 65536)`. Facing 0 is centred on the bow. A heading that lands on a boundary belongs to the clockwise-next facing. The resulting bins are listed in the [mapping](shiplist-mapping.md). This equal-sector split is a design choice. CE may use the model's shield cones instead.
+with `rel` in `[0, 65536)`. Facing 0 is centred on the bow. A heading that lands on a boundary belongs to the clockwise-next facing. The resulting bins are the measured F-CA arcs: forward 330–30°, then 60° steps clockwise through starboard-forward, starboard-aft, rear, port-aft, and port-forward. A hit on a boundary can drop both adjacent facings; the sim still picks one. The bins are listed in the [mapping](shiplist-mapping.md).
 
 **General reinforcement.** Whole energy points are split across the six facings. Base share is `floor(points / 6)`. The remainder is handed out one point at a time from facing 0 clockwise. Fractional energy under one point is not spent.
 

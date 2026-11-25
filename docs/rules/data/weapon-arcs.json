@@ -48,15 +48,15 @@
         "proxRadius": 2,
         "proxDamage": 4,
         "projectileSpeed": 2,
-        "maxRange": 30,
-        "note": "Normal arming accepts 2 per rules-turn until 4 is stored. The mount is not ready before armTurns (2) times RULES_TURN_SECONDS, which is 66 s. Hold is 1 per rules-turn after that. Overload armTurns is the same two turns; the overload energy and damage numbers are still unverified. Normal damage is hundredths of a point by range; a shared edge stays on the inner band.",
+        "maxRange": 30000,
+        "note": "Normal arming accepts 2 per rules-turn until 4 is stored. The mount is not ready before armTurns (2) times RULES_TURN_SECONDS, which is 66 s. A full-allocation reading is about 64 s, inside that two-turn gate. Hold is 1 per rules-turn after that. A hit is 8 points at every range. Chance: 100% to 1k, 81% to 3k, 62.5% (5/8) to 5k, 40% (inside 31-50%) to 10k, 25% (inside 12.5-31%) to 15k, and 12.5% (1/8) out to 30k. A shared edge stays on the inner band. Nothing past 30k. The reading puts the cutoff somewhere in 26-30k. Overload numbers are still unverified.",
         "rangeBands": [
-          { "maxRange": 2, "damageHundredths": 800 },
-          { "maxRange": 3, "damageHundredths": 650 },
-          { "maxRange": 5, "damageHundredths": 500 },
-          { "maxRange": 10, "damageHundredths": 400 },
-          { "maxRange": 12, "damageHundredths": 250 },
-          { "maxRange": 30, "damageHundredths": 100 }
+          { "maxRange": 999, "damageHundredths": 800, "hitNum": 1, "hitDen": 1 },
+          { "maxRange": 2999, "damageHundredths": 800, "hitNum": 81, "hitDen": 100 },
+          { "maxRange": 4999, "damageHundredths": 800, "hitNum": 5, "hitDen": 8 },
+          { "maxRange": 9999, "damageHundredths": 800, "hitNum": 2, "hitDen": 5 },
+          { "maxRange": 14999, "damageHundredths": 800, "hitNum": 1, "hitDen": 4 },
+          { "maxRange": 30000, "damageHundredths": 800, "hitNum": 1, "hitDen": 8 }
         ]
       },
       "Dis1": { "internal": "disruptor", "weaponId": "disruptor-1", "verification": "to-verify" },
@@ -90,18 +90,49 @@
         "verification": "observed-reference",
         "chargeCost": 4,
         "holdCost": 0,
-        "note": "One seeded combat-stream roll per shot, uniform on the inclusive integer band. Range 0 is grouped with 1–2. A shared edge stays on the inner band, so 4 is still 3–6 and 5 is 2–5. Nothing past 30.",
+        "maxRange": 30000,
+        "note": "Federation Phaser-1 [M]. One seeded combat-stream roll per shot, uniform on the inclusive integer band, fitted to the expected damage. 0-1k is 6-7 (mean 6.5). 1-3k is 4-5 (mean 4.5, inside 4.5-5). 3-5k is 4. 5-10k is 1-2. 10-15k is 0-1 (the uniform mean is 0.5, under the 0.7-1.0 center). 15k through 30k is 0-1 (mean 0.5). A shared edge stays on the inner band. Nothing past 30k. The reading puts the cutoff somewhere in 26-30k. Capacitor fill of about 35 s is not a separate clock.",
         "rangeBands": [
-          { "maxRange": 2, "damageMin": 4, "damageMax": 8 },
-          { "maxRange": 4, "damageMin": 3, "damageMax": 6 },
-          { "maxRange": 5, "damageMin": 2, "damageMax": 5 },
-          { "maxRange": 10, "damageMin": 0, "damageMax": 4 },
-          { "maxRange": 15, "damageMin": 0, "damageMax": 3 },
-          { "maxRange": 30, "damageMin": 0, "damageMax": 2 }
+          { "maxRange": 999, "damageMin": 6, "damageMax": 7 },
+          { "maxRange": 2999, "damageMin": 4, "damageMax": 5 },
+          { "maxRange": 4999, "damageMin": 4, "damageMax": 4 },
+          { "maxRange": 9999, "damageMin": 1, "damageMax": 2 },
+          { "maxRange": 14999, "damageMin": 0, "damageMax": 1 },
+          { "maxRange": 30000, "damageMin": 0, "damageMax": 1 }
         ]
       },
-      "Ph2": { "internal": "phaser", "weaponId": "phaser-2", "verification": "to-verify" },
-      "Ph3": { "internal": "phaser", "weaponId": "phaser-3", "verification": "to-verify" },
+      "Ph2": {
+        "internal": "phaser",
+        "weaponId": "phaser-2",
+        "verification": "observed-reference",
+        "chargeCost": 4,
+        "holdCost": 0,
+        "maxRange": 16000,
+        "note": "K-D7 Phaser-2 [M]. One seeded combat-stream roll per shot, uniform on the inclusive integer band. The band is the narrow roll whose mean is the expected damage, and it sits inside the observed envelope. A shared edge stays on the inner band, so 1000 is still 3-5. Nothing past 16000. Re-arm is about 17-18.5 s in the reading; the charge still fills from the energy plan, so that clock is not a separate gate.",
+        "rangeBands": [
+          { "maxRange": 999, "damageMin": 5, "damageMax": 6 },
+          { "maxRange": 1999, "damageMin": 3, "damageMax": 5 },
+          { "maxRange": 2999, "damageMin": 3, "damageMax": 4 },
+          { "maxRange": 3999, "damageMin": 3, "damageMax": 4 },
+          { "maxRange": 4999, "damageMin": 0, "damageMax": 1 },
+          { "maxRange": 7999, "damageMin": 0, "damageMax": 1 },
+          { "maxRange": 8999, "damageMin": 0, "damageMax": 0 },
+          { "maxRange": 16000, "damageMin": 0, "damageMax": 0 }
+        ]
+      },
+      "Ph3": {
+        "internal": "phaser",
+        "weaponId": "phaser-3",
+        "verification": "observed-reference",
+        "chargeCost": 4,
+        "holdCost": 0,
+        "maxRange": 10300,
+        "note": "F-FF Phaser-3 [M]. Under 4k the roll is 1-2 (mean 1.5). From 4k through 10.3k the shot is 0. Nothing past 10.3k.",
+        "rangeBands": [
+          { "maxRange": 3999, "damageMin": 1, "damageMax": 2 },
+          { "maxRange": 10300, "damageMin": 0, "damageMax": 0 }
+        ]
+      },
       "Ph4": { "internal": "phaser", "weaponId": "phaser-4", "verification": "to-verify" },
       "PhG": { "internal": "phaser", "weaponId": "phaser-g", "verification": "to-verify" }
     },

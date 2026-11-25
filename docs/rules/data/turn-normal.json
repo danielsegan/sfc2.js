@@ -133,7 +133,7 @@
         {
           "speedHundredths": 3050,
           "delayTicks": 44,
-          "turnRate16PerTick": 44
+          "turnRate16PerTick": 45
         }
       ],
       "audit": {
@@ -187,29 +187,29 @@
     },
     "K-D7": {
       "status": "partial",
-      "note": "Synthetic D7-like normal turn tuned to later observed gameplay: about 5.0 / 8.6 / 8.4 / 9.3 / 9.4 deg/s at speeds 5 / 10 / 15 / 20 / 31, with the start delay held at 1.4 s (inside the observed 1.0–1.8 s). Rates are the nearest integer BAM/tick. An earlier curve was about 15% fast at speeds 10 and 15.",
+      "note": "Wintermute aggregate 2026-11-25 [M]: about 5.4 deg/s at speed 5 (33 BAM/tick) and 9.0-9.4 deg/s from speed 10 to 31 (56 BAM/tick, 9.23 deg/s, through speed 20; 57 at speed 31). Delay stays 42 ticks (1.4 s), inside 0.7-1.8 s. Speeds 10 and 15 were below 9.0 and were raised.",
       "verification": {
-        "turnRate16PerTick": "observed gameplay, clean-room integer fit (see docs/rules/observed-reference.md)",
-        "delayTicks": "constant 42 ticks (1.4 s), inside the observed 1.0–1.8 s band"
+        "turnRate16PerTick": "measured [M]: ~5.4 at speed 5, 9.0-9.4 from 10 to 31",
+        "delayTicks": "constant 42 ticks (1.4 s), inside the observed 0.7-1.8 s band [M]"
       },
       "speedPoints": [
         {
           "speed": 5,
           "speedHundredths": 500,
           "delayTicks": 42,
-          "turnRate16PerTick": 30
+          "turnRate16PerTick": 33
         },
         {
           "speed": 10,
           "speedHundredths": 1000,
           "delayTicks": 42,
-          "turnRate16PerTick": 52
+          "turnRate16PerTick": 56
         },
         {
           "speed": 15,
           "speedHundredths": 1500,
           "delayTicks": 42,
-          "turnRate16PerTick": 51
+          "turnRate16PerTick": 56
         },
         {
           "speed": 20,
@@ -228,9 +228,9 @@
         "source": "observed gameplay, clean-room (docs/rules/observed-reference.md)",
         "verification": "integer fit to the observed deg/s at speeds 5, 10, 15, 20, and 31; delay is not scored here",
         "expect": {
-          "turn.normal.5.degPerSecond": 5.0,
-          "turn.normal.10.degPerSecond": 8.6,
-          "turn.normal.15.degPerSecond": 8.4,
+          "turn.normal.5.degPerSecond": 5.4,
+          "turn.normal.10.degPerSecond": 9.2,
+          "turn.normal.15.degPerSecond": 9.2,
           "turn.normal.20.degPerSecond": 9.3,
           "turn.normal.31.degPerSecond": 9.4
         },
@@ -307,44 +307,52 @@
       ]
     },
     "F-FF": {
-      "status": "partial",
-      "note": "CE Tier-2 in-battle 10-90% capture 2026-11-24 (Wintermute) at speeds 5, 10, and 20. Speeds below 5 clamp to 5; speeds above 20 clamp to 20 (out-of-range speeds TO VERIFY). Per-hull delayTicks is not measured yet and reuses the F-CA 44-tick (1.45 s) midpoint (TO VERIFY).",
+      "status": "measured",
+      "note": "Wintermute aggregate 2026-11-25 [H]: 5.1 / 9.5 / 9.9 / 10.0 deg/s at speeds 5 / 10 / 15 / 20. Delay 1.1 s (33 ticks). Speed 15 is the new mid point (60 BAM/tick, 9.89 deg/s).",
       "verification": {
-        "turnRate16PerTick": "measured at speeds 5, 10, 20 (CE Tier-2 capture 2026-11-24); speeds <5 and >20 clamp to endpoints (TO VERIFY)",
-        "delayTicks": "TO VERIFY (reuses F-CA midpoint 44 ticks / 1.45 s; per-hull delay not measured)"
+        "turnRate16PerTick": "measured [H] at speeds 5, 10, 15, 20",
+        "delayTicks": "measured 1.1 s [H] -> 33 ticks"
       },
       "speedPoints": [
         {
           "speed": 5,
           "speedHundredths": 500,
-          "delayTicks": 44,
+          "delayTicks": 33,
           "turnRate16PerTick": 31
         },
         {
           "speed": 10,
           "speedHundredths": 1000,
-          "delayTicks": 44,
+          "delayTicks": 33,
           "turnRate16PerTick": 57
+        },
+        {
+          "speed": 15,
+          "speedHundredths": 1500,
+          "delayTicks": 33,
+          "turnRate16PerTick": 60
         },
         {
           "speed": 20,
           "speedHundredths": 2000,
-          "delayTicks": 44,
+          "delayTicks": 33,
           "turnRate16PerTick": 60
         }
       ],
       "audit": {
         "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.normal.{5,10,20}.degPerSecond measured (10-90%); speeds <5 and >20 and delayS TO VERIFY",
+        "verification": "checkpoint 1 Federation [H]",
         "expect": {
-          "turn.normal.5.degPerSecond": 5.13,
-          "turn.normal.10.degPerSecond": 9.45,
-          "turn.normal.20.degPerSecond": 9.96
+          "turn.normal.5.degPerSecond": 5.1,
+          "turn.normal.10.degPerSecond": 9.5,
+          "turn.normal.15.degPerSecond": 9.9,
+          "turn.normal.20.degPerSecond": 10.0
         },
         "tolerances": {
-          "turn.normal.5.degPerSecond": 0.5,
-          "turn.normal.10.degPerSecond": 0.5,
-          "turn.normal.20.degPerSecond": 0.5
+          "turn.normal.5.degPerSecond": 0.3,
+          "turn.normal.10.degPerSecond": 0.3,
+          "turn.normal.15.degPerSecond": 0.3,
+          "turn.normal.20.degPerSecond": 0.3
         }
       }
     },
@@ -475,44 +483,52 @@
       }
     },
     "F-DN": {
-      "status": "partial",
-      "note": "CE Tier-2 in-battle 10-90% capture 2026-11-24 (Wintermute) at speeds 5, 10, and 20. Speeds below 5 clamp to 5; speeds above 20 clamp to 20 (out-of-range speeds TO VERIFY). Per-hull delayTicks is not measured yet and reuses the F-CA 44-tick (1.45 s) midpoint (TO VERIFY).",
+      "status": "measured",
+      "note": "Wintermute aggregate 2026-11-25 [H] for the turn, delay 1.2 s: 4.3 / 6.2 / 6.9 / 7.4 deg/s at speeds 5 / 10 / 16 / 20. Speed 16 is 42 BAM/tick (6.92 deg/s).",
       "verification": {
-        "turnRate16PerTick": "measured at speeds 5, 10, 20 (CE Tier-2 capture 2026-11-24); speeds <5 and >20 clamp to endpoints (TO VERIFY)",
-        "delayTicks": "TO VERIFY (reuses F-CA midpoint 44 ticks / 1.45 s; per-hull delay not measured)"
+        "turnRate16PerTick": "measured [H] at speeds 5, 10, 16, 20",
+        "delayTicks": "measured 1.2 s [H] -> 36 ticks"
       },
       "speedPoints": [
         {
           "speed": 5,
           "speedHundredths": 500,
-          "delayTicks": 44,
+          "delayTicks": 36,
           "turnRate16PerTick": 26
         },
         {
           "speed": 10,
           "speedHundredths": 1000,
-          "delayTicks": 44,
+          "delayTicks": 36,
           "turnRate16PerTick": 38
+        },
+        {
+          "speed": 16,
+          "speedHundredths": 1600,
+          "delayTicks": 36,
+          "turnRate16PerTick": 42
         },
         {
           "speed": 20,
           "speedHundredths": 2000,
-          "delayTicks": 44,
+          "delayTicks": 36,
           "turnRate16PerTick": 45
         }
       ],
       "audit": {
         "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.normal.{5,10,20}.degPerSecond measured (10-90%); speeds <5 and >20 and delayS TO VERIFY",
+        "verification": "checkpoint 1 Federation [H]",
         "expect": {
-          "turn.normal.5.degPerSecond": 4.26,
-          "turn.normal.10.degPerSecond": 6.19,
-          "turn.normal.20.degPerSecond": 7.42
+          "turn.normal.5.degPerSecond": 4.3,
+          "turn.normal.10.degPerSecond": 6.2,
+          "turn.normal.16.degPerSecond": 6.9,
+          "turn.normal.20.degPerSecond": 7.4
         },
         "tolerances": {
-          "turn.normal.5.degPerSecond": 0.5,
-          "turn.normal.10.degPerSecond": 0.5,
-          "turn.normal.20.degPerSecond": 0.5
+          "turn.normal.5.degPerSecond": 0.3,
+          "turn.normal.10.degPerSecond": 0.3,
+          "turn.normal.16.degPerSecond": 0.3,
+          "turn.normal.20.degPerSecond": 0.3
         }
       }
     },

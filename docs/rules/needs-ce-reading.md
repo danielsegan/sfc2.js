@@ -19,3 +19,11 @@ Placeholder numbers in the Phase 2 duel. Each one stays until a Community Editio
 | HET breakdown | 60 ticks of helm lock and 1 shield point on a combat-stream facing. | `hetBreakdownTicks` |
 | HET success and damage | The chance does not fall when hull boxes are missing. A hull maximum is not on the view yet. | — |
 | Capacitor rate steps | The order is a 0–1000 permille. Whether CE detents at 25, 50, and 100 percent is unread. | `capacitorRateScale` |
+| F-FF plant | POWER 15 [H]. The same checkpoint flew speed 20 and a top of 31, which this plant cannot pay at 1 point per speed, so the probe keeps warp 34. | — |
+| F-FF HET slope | 55.5 was reported next to the 49°/s rate [H]. The table stores the rate, not the slope. | `F-FF` HET |
+| F-FF accel window | About 0.82 speed/s and 38 s to speed 31 are in the curve. The sample that started at 6.6 is not a second segment. | `accel.json` |
+| F-DN accel window | About 0.31 speed/s is in the curve. The 64 s sample that started at 7.8 is not a second segment. | `accel.json` |
+| Hull top speeds | F-FF 31.0, F-DN 30.46, F-CA 30.5, K-D7 31.09. Not a per-hull cap. The probe still orders up to the plant, then 32. | — |
+| Phaser capacitor fill | About 35 s [M]. The capacitor still fills from overflow on the energy plan. | — |
+| Phaser-2 re-arm | About 17–18.5 s [M]. The charge still fills from the energy plan. | `Ph2` |
+| Shield boundary | A hit on a facing boundary can drop both adjacent facings [M–H]. The sim still assigns the clockwise-next facing only. | `facingForRelative` |
