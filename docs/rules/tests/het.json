@@ -1,7 +1,7 @@
 {
   "id": "het",
   "mode": "ticks",
-  "note": "Per-hull, speed-keyed HET spec fixture using data/het.json (171-tick delay, no speed cutoff; F-CA 16384 at 251 units/tick at speed 15 and 285 at speed 20, K-D7 15110; fixed-point integer interpolation and endpoint clamping).",
+  "note": "Per-hull, speed-keyed HET spec fixture using data/het.json (171-tick delay, no speed cutoff; F-CA 16384 at 251 units/tick at speed 15 and 285 at speed 20, K-D7 16384 90\u00b0 baseline at speed 31; fixed-point integer interpolation and endpoint clamping).",
   "endTick": 236,
   "ships": [
     {
@@ -253,7 +253,7 @@
         "token": 3,
         "status": "applied",
         "reason": "ok",
-        "appliedValue": 15110
+        "appliedValue": 16384
       },
       {
         "tick": 0,
@@ -309,7 +309,7 @@
         }
       },
       "test-empire-b:test-d7-03": {
-        "heading16": 15110,
+        "heading16": 16384,
         "helm": {
           "mode": "none",
           "remainingTurn16": 0,

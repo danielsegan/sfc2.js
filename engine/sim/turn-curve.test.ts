@@ -134,7 +134,30 @@ describe('turn curve tables', () => {
     expect(curvePoint(NORMAL_CURVE, fca, q(3)).rate).toBe(24);
     expect(curvePoint(NORMAL_CURVE, fca, q(40)).rate).toBe(49);
     const d7 = curveId(NORMAL_CURVE, 'K-D7');
-    for (const speed of [0, 7, 15, 31, 40]) expect(curvePoint(NORMAL_CURVE, d7, q(speed)).rate).toBe(52);
+    expect(curvePoint(NORMAL_CURVE, d7, q(0))).toMatchObject({ rate: 32, delay: 69 });
+    expect(curvePoint(NORMAL_CURVE, d7, q(5))).toMatchObject({ rate: 32, delay: 69 });
+    expect(curvePoint(NORMAL_CURVE, d7, q(10))).toMatchObject({ rate: 61, delay: 27 });
+    expect(curvePoint(NORMAL_CURVE, d7, q(20))).toMatchObject({ rate: 57, delay: 54 });
+    expect(curvePoint(NORMAL_CURVE, d7, q(31))).toMatchObject({ rate: 57, delay: 54 });
+    const nonFedWant: [string, number, number, number][] = [
+      ['R-SNA', 47, 44, 46],
+      ['L-DD', 33, 46, 60],
+      ['G-CC', 28, 46, 44],
+      ['I-CC', 26, 47, 49],
+      ['Z-CA', 31, 51, 50],
+    ];
+    for (const [hull, r5, r10, r20] of nonFedWant) {
+      const id = curveId(NORMAL_CURVE, hull);
+      expect(curvePoint(NORMAL_CURVE, id, q(0)).rate).toBe(r5);
+      expect(curvePoint(NORMAL_CURVE, id, q(5)).rate).toBe(r5);
+      expect(curvePoint(NORMAL_CURVE, id, q(10)).rate).toBe(r10);
+      expect(curvePoint(NORMAL_CURVE, id, q(20)).rate).toBe(r20);
+      expect(curvePoint(NORMAL_CURVE, id, q(31)).rate).toBe(r20);
+    }
+    // Omitted suspect/noop cells clamp or fall back to default.
+    expect(curvePoint(NORMAL_CURVE, curveId(NORMAL_CURVE, 'G-FF'), q(5)).rate).toBe(83);
+    expect(curveId(NORMAL_CURVE, 'L-FF')).toBe(NORMAL_CURVE.defaultId);
+    expect(curveId(NORMAL_CURVE, 'H-LN')).toBe(NORMAL_CURVE.defaultId);
     const fedWant: [string, number, number, number][] = [
       ['F-FF', 31, 57, 60],
       ['F-DD', 33, 50, 52],
@@ -240,13 +263,14 @@ describe('normal turn in the sim', () => {
 
   it('keeps turning without a new delay when re-ordered mid-turn', () => {
     const sim = build([setup('K-D7', 20)]);
-    const { headings } = run(sim, 1, 60, {
+    const { headings } = run(sim, 1, 70, {
       2: [[VERB_ORDER_HEADING, headingPayload(SHIP, 5000)]],
-      50: [[VERB_ORDER_HEADING, headingPayload(SHIP, 6000)]],
+      60: [[VERB_ORDER_HEADING, headingPayload(SHIP, 6000)]],
     });
-    expect(headings[45]![0]).toBe(52);
-    expect(headings[49]![0]).toBe(52 * 5);
-    expect(headings[50]![0]).toBe(52 * 6);
+    expect(headings[54]![0]).toBe(0);
+    expect(headings[55]![0]).toBe(57);
+    expect(headings[59]![0]).toBe(57 * 5);
+    expect(headings[60]![0]).toBe(57 * 6);
   });
 
   it('caps manual yaw at the curve rate', () => {

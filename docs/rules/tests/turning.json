@@ -212,7 +212,8 @@
       "hull": "K-D7",
       "speedHundredths": 700,
       "expect": {
-        "turnRate16PerTick": 52
+        "turnRate16PerTick": 44,
+        "delayTicks": 52
       }
     },
     {
@@ -220,7 +221,8 @@
       "hull": "K-D7",
       "speedHundredths": 3100,
       "expect": {
-        "turnRate16PerTick": 52
+        "turnRate16PerTick": 57,
+        "delayTicks": 54
       }
     },
     {
@@ -228,7 +230,8 @@
       "hull": "K-D7",
       "speedHundredths": 1500,
       "expect": {
-        "turnRate16PerTick": 52
+        "turnRate16PerTick": 59,
+        "delayTicks": 41
       }
     },
     {
@@ -236,7 +239,8 @@
       "hull": "K-D7",
       "speedHundredths": 0,
       "expect": {
-        "turnRate16PerTick": 52
+        "turnRate16PerTick": 32,
+        "delayTicks": 69
       }
     },
     {
@@ -488,6 +492,78 @@
       "expect": {
         "turnRate16PerTick": 45,
         "delayTicks": 44
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "K-D7",
+      "speedHundredths": 500,
+      "expect": {
+        "turnRate16PerTick": 32,
+        "delayTicks": 69
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "K-D7",
+      "speedHundredths": 1000,
+      "expect": {
+        "turnRate16PerTick": 61,
+        "delayTicks": 27
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "K-D7",
+      "speedHundredths": 2000,
+      "expect": {
+        "turnRate16PerTick": 57,
+        "delayTicks": 54
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "R-SNA",
+      "speedHundredths": 1000,
+      "expect": {
+        "turnRate16PerTick": 44,
+        "delayTicks": 31
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "L-CW",
+      "speedHundredths": 1250,
+      "expect": {
+        "turnRate16PerTick": 41,
+        "delayTicks": 78
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "L-FF",
+      "speedHundredths": 1000,
+      "expect": {
+        "turnRate16PerTick": 47,
+        "delayTicks": 44
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "G-FF",
+      "speedHundredths": 500,
+      "expect": {
+        "turnRate16PerTick": 83,
+        "delayTicks": 105
+      }
+    },
+    {
+      "op": "lookup",
+      "hull": "Z-CA",
+      "speedHundredths": 1000,
+      "expect": {
+        "turnRate16PerTick": 51,
+        "delayTicks": 45
       }
     }
   ]
