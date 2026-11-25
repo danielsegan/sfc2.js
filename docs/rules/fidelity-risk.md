@@ -10,14 +10,14 @@ The duel slice in [`duel-slice.md`](duel-slice.md) is a mechanism spec with synt
 
 Uncertain, and marked pending playtest in the spec:
 
-- How many seconds one CE rules-turn lasts. The unit is seconds, and sim-core converts at 30 ticks per second into a whole number of ticks. The placeholder is 30 seconds.
+- The rules-turn length is the observed 33 seconds (`RULES_TURN_SECONDS`). Sim-core converts it at 30 ticks per second into 990 ticks. A photon is ready after two turns and a disruptor after one.
 - Shield 1:1 mapping and pairing are verified on CE 2.670 (CE in-battle capture 2026-11-24): [`data/measured.json`](data/measured.json) sets `sideColumnFactor = 1`, `endFactor = 1`, and the 4-to-6 pairing (`Shield 1` → 0, `Shield 2 _ 6` / `shieldForwardSide` → 1 and 5, `Shield 3 _ 5` / `shieldAftSide` → 2 and 4, `Shield 4` → 3), and `Shield Total = S1 + 2·S2_6 + 2·S3_5 + S4` held on all 1,157 CE rows. Note: the CE Vessel Library screen is unreliable for shields (some rear values, e.g. on D7/POL/E4 rows, disagree with the table), whereas the in-battle six-segment ring and the table agree.
 - Whether side-warp ratings (`warpSide` ×2) are doubled in CE 2.670 remains unverified, and `turnModeUnverified` still fires for a letter with no measured yaw.
 - Pay order when the ship asks for more energy than it has, and whether batteries dump freely or on a delay.
 - Whether specific (per-facing) reinforcement exists in CE, or only a general pool. The HUD asks the same question.
 - Shield facing edges. The duel slice bins the uint16 circle into six facings. CE may use model-specific cones.
 - Phaser capacitor amounts. The rule is settled: a phaser feeds the capacitor because of its code, in any slot. The energy each real phaser code stores is still empty.
-- Phaser hold cost, photon arming time, overload risk, proximity distance, and whether phasers are instantaneous. Until those are measured, `Ph1`–`Ph4`, `PhG`, `Phot` and `PhoF` arm on `costFallback` (the same integers as `TEST-PH` and `TEST-PHOT`).
+- Phaser hold cost, photon overload risk, proximity distance, and whether phasers are instantaneous. Normal photon arming is two rules-turns (66 s) and a disruptor is one (33 s). `Ph1`–`Ph4` and `PhG` still take the phaser `costFallback`. `PhoF` still takes the short photon fallback when it omits `armCost`. `Phot` names its own arm cost and `armTurns`.
 - Turn-mode rates for letters `AA` and `A`–`G`. Ships bound from a shiplist now turn on the measured speed-keyed **normal** curve ([turning.md](turning.md) §5), with the letter cap kept as an upper bound. The fallback yaw and its `turnModeUnverified` warning remain only for hulls with no turn hull. `F-CA` is measured; `K-D7` is a flat rate band (Tier-2 points pending); per-speed `K-D7` points, its delay, and every other hull (on `default`) remain **TO VERIFY**.
 - Damage-chart contents, armor-before-chart, and which hull section a facing feeds.
 - Fighter arc widths and the F / G / roman suffixes on the ftrlist weapon codes. The code strings themselves are from the metadata inventory ([#6](https://github.com/danielsegan/sfc2.js/issues/6)); the angles are a working geometry.

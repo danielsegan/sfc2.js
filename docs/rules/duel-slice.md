@@ -9,7 +9,7 @@ The engine contract is [`docs/engine/sim-core.md`](../engine/sim-core.md) (Engin
 | Rule | Duel slice |
 | --- | --- |
 | Tick | Fixed 30 Hz. One displayed second is 30 ticks. |
-| Rules-turn | Written in seconds. Sim-core multiplies by 30. The product must be a whole number of ticks. The seconds value is still TO VERIFY; the default placeholder is 30 seconds. |
+| Rules-turn | Written in seconds as `RULES_TURN_SECONDS` in [`data/constants.json`](data/constants.json). Sim-core multiplies by 30. The product must be a whole number of ticks. The observed length is 33 seconds (990 ticks). A photon is ready after two turns (66 s) and a disruptor after one (33 s). |
 | Numbers | 16.16 fixed point, `FX_SHIFT = 16`. One unit is one range unit. A value that is not on that grid is `precisionExceeded`. |
 | Headings | `uint16`. 0 is the bow. Increasing heading is clockwise from above. 65536 is a full circle. |
 | Randomness | Named seeded streams. The `combat` stream is registered in sim-core. Rules read only that stream. Tests may inject `scriptedDraws` / `warheadRolls`; the sim does not. The checker uses mulberry32 as a test double until sim-core names the generator. |
@@ -127,7 +127,7 @@ The one heavy weapon. Internal type `photon`. Placeholder `TEST-PHOT`:
 | `projectileSpeed` | 2 | Range units per tick. |
 | `maxRange` | 30 | Synthetic launch limit for `TEST-PHOT` only. Not the 75-unit probe. |
 
-`Phot` and `PhoF` are the same internal type. A photon row that omits `armCost` takes `costFallback.photon`, the same integers as `TEST-PHOT`. A row that names `armCost` keeps its own numbers. The fallback is not a measured CE arming cost.
+`Phot` and `PhoF` are the same internal type. A photon row that omits `armCost` takes `costFallback.photon`, the same integers as `TEST-PHOT`. A row that names `armCost` keeps its own numbers. The fallback is not a measured CE arming cost. `Phot` itself names `armTurns: 2`, so its gate is two rules-turns (66 s) rather than the 4-tick fixture. Overload uses the same two-turn gate; the overload energy and damage on that row are still unverified.
 
 Modes are `normal`, `overload`, and `proximity`. Proximity uses the normal arming cost and the proximity damage row. Overload uses the overload cost and damage. Combining them is `notInDuelSlice`. Switching mode zeroes charge.
 
@@ -174,6 +174,6 @@ The CE 2.670 shiplist has 15 `FTR` hull rows and no PF rows. The `class: "pf"` f
 
 ## 10. Pending playtest (values)
 
-Every balance number in `data/constants.json`, `data/turn-modes.json`, `data/smallcraft.json`, the `TEST-*` rows, and `costFallback`. How many seconds a CE rules-turn lasts. The `warpSide` ×2 scale factor (shield 1:1 was confirmed by CE in-battle capture 2026-11-24). Shield bins versus model cones, and every arc facing set. Whether the numeric Arc on `Dro*` and ADD means reloads or rack capacity. Pay order. Battery dump and refill. Phaser hold cost and travel time. Photon arming, overload odds, proximity radius. Chart rows and the hull-section map. In-place yaw. ftrlist `Shots` versus reloads. The 75-unit range probe.
+Every balance number in `data/constants.json` except the observed rules-turn length and the observed life-support and fire-control costs, plus `data/turn-modes.json`, `data/smallcraft.json`, the `TEST-*` rows, and `costFallback`. The `warpSide` ×2 scale factor (shield 1:1 was confirmed by CE in-battle capture 2026-11-24). Shield bins versus model cones, and every arc facing set. Whether the numeric Arc on `Dro*` and ADD means reloads or rack capacity. Pay order. Battery dump and refill. Phaser hold cost and travel time. Photon overload odds and proximity radius. Chart rows and the hull-section map. In-place yaw. ftrlist `Shots` versus reloads. The 75-unit range probe.
 
 Verification method: [`fidelity-risk.md`](fidelity-risk.md).

@@ -74,7 +74,18 @@ export const MODE_PROXIMITY = 2;
 export const MODE_KEEP = -1;
 
 export const TICK_HZ = 30;
-export const RULES_TURN_SECONDS = 30;
+
+function tableInt(value: number | undefined, name: string, min: number, max: number): number {
+  if (value === undefined || !Number.isInteger(value) || value < min || value > max) throw new Error(name);
+  return value;
+}
+
+/**
+ * Length of one rules-turn, in seconds. The only copy of that length:
+ * `docs/rules/data/constants.json` `rulesTurnSeconds`. 33 × 30 Hz = 990 ticks.
+ * A photon's arming gate is two of these turns. A disruptor's is one.
+ */
+export const RULES_TURN_SECONDS = tableInt(constants.rulesTurnSeconds, 'rulesTurnSeconds', 1, 10000);
 export const DEFAULT_RULES_TURN_TICKS = TICK_HZ * RULES_TURN_SECONDS;
 
 /** Life support and fire control, in energy hundredths. 150 + 100 = 2.5 points. */
@@ -90,11 +101,6 @@ export const DEFAULT_FC_HUNDREDTHS = tableInt(
   0,
   100000,
 );
-
-function tableInt(value: number | undefined, name: string, min: number, max: number): number {
-  if (value === undefined || !Number.isInteger(value) || value < min || value > max) throw new Error(name);
-  return value;
-}
 
 /** Synthetic EW, cloak, and tractor numbers. See docs/rules/phase3-systems.md. */
 export const EW_HIT_DENOM = tableInt(constants.ewHitDenom, 'ewHitDenom', 1, 1000000);
@@ -200,9 +206,13 @@ interface WeaponJson {
   holdCost?: number;
   armCost?: number;
   armTicks?: number;
+  /** Arming gate as a count of rules-turns. Wins over `armTicks` and uses `RULES_TURN_SECONDS`. */
+  armTurns?: number;
   armPerTurn?: number;
   overloadArmCost?: number;
   overloadArmTicks?: number;
+  /** Overload arming gate as a count of rules-turns. */
+  overloadArmTurns?: number;
   overloadArmPerTurn?: number;
   directDamage?: number;
   overloadDamage?: number;
@@ -273,6 +283,24 @@ function num(value: number | undefined): number {
   return value ?? 0;
 }
 
+/**
+ * Tick gate for arming. `armTurns` / `overloadArmTurns` multiply the single
+ * rules-turn length. A row may also name raw `armTicks` for a short fixture.
+ * Naming both is an error so the length cannot fork.
+ */
+function armTickCount(
+  turns: number | undefined,
+  ticks: number | undefined,
+  name: string,
+): number {
+  if (turns !== undefined) {
+    if (ticks !== undefined) throw new Error(`${name} names both turns and ticks`);
+    if (!Number.isInteger(turns) || turns < 0 || turns > 100) throw new Error(name);
+    return turns * DEFAULT_RULES_TURN_TICKS;
+  }
+  return num(ticks);
+}
+
 interface CostFallback {
   phaser?: WeaponJson;
   photon?: WeaponJson;
@@ -335,10 +363,10 @@ function buildWeapons(): readonly WeaponDef[] {
       chargeCost,
       holdCost: num(row.holdCost),
       armCost,
-      armTicks: num(row.armTicks),
+      armTicks: armTickCount(row.armTurns, row.armTicks, `${code} arm`),
       armPerTurn: num(row.armPerTurn),
       overloadArmCost: num(row.overloadArmCost),
-      overloadArmTicks: num(row.overloadArmTicks),
+      overloadArmTicks: armTickCount(row.overloadArmTurns, row.overloadArmTicks, `${code} overload arm`),
       overloadArmPerTurn: num(row.overloadArmPerTurn),
       directDamage: num(row.directDamage),
       overloadDamage: num(row.overloadDamage),
