@@ -25,6 +25,15 @@ HUD_BUTTONS = {
 hud = (os.environ.get("HUD") or "federation").strip().lower()
 if hud in HUD_BUTTONS:
     BUTTONS = HUD_BUTTONS[hud]
+# Commanded HET preset in degrees. port/stbd are the 90-deg arrows;
+# hard_port/hard_stbd are the 135-deg presets. There is no named 45-deg
+# pad in HUD_BUTTONS. u_turn is the centre/180 control (not a 45/90/135
+# rate-sample pad).
+HET_PAD_DEG = {
+    "port": 90, "stbd": 90,
+    "hard_port": 135, "hard_stbd": 135,
+    "u_turn": 180,
+}
 # Normal (mouse) turns: left-click a bearing in the overhead tactical view (camera centre ~612,384).
 MOUSE = {"mouse_n": (612, 150), "mouse_s": (612, 650), "mouse_w": (330, 384), "mouse_e": (900, 384)}
 PARK = ("100", "700")
@@ -66,7 +75,9 @@ while time.time() - start < secs:
         pad_name, pad_xy = button, [int(x), int(y)]
         sh("xdotool", "mousemove", str(x), str(y), "click", "1", "mousemove", *PARK); acted = time.time()
     p = f"{fdir}/{i:04d}.png"; t = time.time(); grab(p); idx.append([round(t, 4), p]); i += 1
+het_pad_deg = HET_PAD_DEG.get(button)
 json.dump({"label": label, "target_speed": target, "button": button, "hud": hud,
-           "pad": pad_name, "pad_coords": pad_xy, "speed_history": hist,
+           "pad": pad_name, "pad_coords": pad_xy, "het_pad_deg": het_pad_deg,
+           "speed_history": hist,
            "action_wall": acted, "frames": idx}, open(f"{fdir}/capture.json", "w"), indent=1)
 print(label, "settled", hist[-1], "frames", len(idx))

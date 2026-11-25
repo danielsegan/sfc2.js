@@ -60,7 +60,7 @@ if __name__ == "__main__":
     for label in sys.argv[1:]:
       try:
         cap = json.load(open(f"/out/frames/{label}/capture.json")); a0 = cap["action_wall"]
-        pad_meta = {k: cap[k] for k in ("hud", "pad", "pad_coords") if k in cap}
+        pad_meta = {k: cap[k] for k in ("hud", "pad", "pad_coords", "het_pad_deg") if k in cap}
         rows = []
         for k, (t, p) in enumerate(cap["frames"]):
             a = axis(p)

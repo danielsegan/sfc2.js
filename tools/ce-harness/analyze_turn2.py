@@ -36,7 +36,7 @@ for label in sys.argv[1:]:
         }
         if os.environ.get("SPAWN_KEY"):
             base["spawnKey"] = os.environ["SPAWN_KEY"]
-        for k in ("hud", "pad", "pad_coords"):
+        for k in ("hud", "pad", "pad_coords", "het_pad_deg"):
             if k in cap:
                 base[k] = cap[k]
         if len(raw) < 2:
