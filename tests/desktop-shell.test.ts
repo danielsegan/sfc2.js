@@ -42,26 +42,19 @@ describe('desktop shell scaffold', () => {
     expect(cargo).not.toContain('tauri-plugin-updater');
   });
 
-  it('grants dialog open and read-only filesystem commands, and nothing broader', () => {
+  it('allows only the three install commands', () => {
     const capability = JSON.parse(
       readFileSync(join(tauriDir, 'capabilities', 'default.json'), 'utf8'),
     ) as { windows: string[]; permissions: string[] };
+    const cargo = readFileSync(join(tauriDir, 'Cargo.toml'), 'utf8');
     expect(capability.windows).toEqual(['main']);
     expect(capability.permissions).toEqual([
-      'dialog:allow-open',
-      'fs:allow-exists',
-      'fs:allow-read-dir',
-      'fs:allow-read-file',
-      'fs:allow-stat',
       'allow-pick-install-directory',
       'allow-list-install-files',
       'allow-read-install-file',
     ]);
-    const joined = capability.permissions.join('\n');
-    expect(joined).not.toContain('write');
-    expect(joined).not.toContain('shell');
-    expect(joined).not.toContain('updater');
-    expect(joined).not.toContain('allow-save');
+    expect(cargo).not.toContain('tauri-plugin-fs');
+    expect(cargo).not.toContain('tauri-plugin-updater');
   });
 
   it('keeps the generated icon set small and original', () => {

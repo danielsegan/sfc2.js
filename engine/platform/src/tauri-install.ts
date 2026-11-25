@@ -14,18 +14,18 @@ export interface InstallFolderEntry {
 
 /**
  * Opaque handle for one player-chosen folder.
- * `root` is a token from `pickFolder`, not a filesystem path.
+ * `root` is a random token from `pickFolder`, not a filesystem path.
+ * `list` and `read` must send that same token. A later pick replaces the
+ * grant and the previous token is rejected.
  */
 export interface InstallFolderBridge {
   /** Null when the player cancels the dialog. */
   pickFolder(): Promise<string | null>;
-  /** Names and sizes only. Paths are relative to the chosen folder. */
+  /** Names and sizes only. Paths keep the install's spelling. */
   list(root: string): Promise<readonly InstallFolderEntry[]>;
-  /** Bytes of one relative path. Called only when something reads that file. */
+  /** Whole file. Called only when something reads that path. */
   read(root: string, relativePath: string): Promise<Uint8Array>;
 }
-
-const GRANTED = 'granted';
 
 export function isTauriRuntime(scope: object = globalThis): boolean {
   const internals = (scope as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__;
@@ -84,16 +84,17 @@ async function createTauriInstallBridge(): Promise<InstallFolderBridge> {
   const { invoke } = await import('@tauri-apps/api/core');
   return {
     async pickFolder() {
-      const picked = await invoke<boolean>('pick_install_directory');
-      return picked === true ? GRANTED : null;
+      const token = await invoke<string | null>('pick_install_directory');
+      return typeof token === 'string' && token.length > 0 ? token : null;
     },
-    async list(root) {
-      if (root !== GRANTED) return [];
-      return invoke<InstallFolderEntry[]>('list_install_files');
+    list(root) {
+      return invoke<InstallFolderEntry[]>('list_install_files', { token: root });
     },
     async read(root, relativePath) {
-      if (root !== GRANTED) throw new Error('unreadable');
-      const bytes = await invoke<ArrayBuffer | number[]>('read_install_file', { relativePath });
+      const bytes = await invoke<ArrayBuffer | number[]>('read_install_file', {
+        token: root,
+        relativePath,
+      });
       return bytes instanceof ArrayBuffer ? new Uint8Array(bytes) : Uint8Array.from(bytes);
     },
   };

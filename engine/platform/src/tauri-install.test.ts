@@ -91,6 +91,43 @@ describe('tauri install adapter', () => {
     expect(failed.status).toBe('unavailable');
   });
 
+  it('keeps install spelling and binds each read to that pick token', async () => {
+    const calls: string[] = [];
+    let current = '';
+    const bridge: InstallFolderBridge = {
+      pickFolder: () => {
+        current = current === 'alpha' ? 'beta' : 'alpha';
+        return Promise.resolve(current);
+      },
+      list: (root) => {
+        calls.push(`list ${root}`);
+        if (root !== current) return Promise.reject(new Error('stale'));
+        return Promise.resolve([{ path: 'Assets/Specs/ShipList.TXT', size: 3 }]);
+      },
+      read: (root, relativePath) => {
+        calls.push(`read ${root} ${relativePath}`);
+        if (root !== current) return Promise.reject(new Error('stale /home/player/secret'));
+        return Promise.resolve(new TextEncoder().encode('abc'));
+      },
+    };
+    const first = await tauriDirectoryPicker(bridge).pick();
+    expect(first.status).toBe('picked');
+    if (first.status !== 'picked') return;
+    expect(first.files[0]?.path).toBe('Assets/Specs/ShipList.TXT');
+    const second = await tauriDirectoryPicker(bridge).pick();
+    expect(second.status).toBe('picked');
+    if (second.status !== 'picked') return;
+    await expect(first.files[0]?.read()).rejects.toThrow('unreadable');
+    expect(Array.from((await second.files[0]?.read()) ?? [])).toEqual([97, 98, 99]);
+    expect(calls).toEqual([
+      'list alpha',
+      'list beta',
+      'read alpha Assets/Specs/ShipList.TXT',
+      'read beta Assets/Specs/ShipList.TXT',
+    ]);
+    expect(calls.join('\n')).not.toContain('/home/player');
+  });
+
   it('hides the bridge error text when a later read fails', async () => {
     const bridge: InstallFolderBridge = {
       pickFolder: () => Promise.resolve('token'),

@@ -1,15 +1,10 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "main",
-  "description": "Open a native file or folder dialog, then read only the install directory the player chose. The filesystem scope starts empty and grows only when pick_install_directory grants that folder. No write, shell, updater, or signing.",
+  "description": "The main window may call the three install commands. It cannot open the filesystem or dialog plugins, so page JavaScript cannot read an install by absolute path.",
   "windows": ["main"],
   "platforms": ["linux", "macOS", "windows"],
   "permissions": [
-    "dialog:allow-open",
-    "fs:allow-exists",
-    "fs:allow-read-dir",
-    "fs:allow-read-file",
-    "fs:allow-stat",
     "allow-pick-install-directory",
     "allow-list-install-files",
     "allow-read-install-file"

@@ -56,21 +56,23 @@ The Tauri bundler fetches NSIS when it is not already installed. This scaffold s
 
 ## What the window is allowed to do
 
-`src-tauri/capabilities/default.json` is the whole permission set for the `main` window:
+`src-tauri/capabilities/default.json` allows only three commands for the `main` window:
 
-- `dialog:allow-open`, so the page can open a native dialog for a folder or a file
-- read-only filesystem commands (`exists`, `read-dir`, `read-file`, `stat`) with no path granted up front
-- three app commands: `pick_install_directory`, `list_install_files`, `read_install_file`
+- `allow-pick-install-directory`
+- `allow-list-install-files`
+- `allow-read-install-file`
 
-`pick_install_directory` is the install flow. It opens a folder dialog, canonicalizes the choice, and adds only that directory to the filesystem scope for this process. The scope starts empty. Picking another folder adds that folder too; Tauri's scope API does not remove an earlier grant without a permanent deny, so earlier choices stay readable until the process exits. Listing and reading go through the app commands, which accept install-relative paths only, skip symlinks, and return fixed error strings so an absolute path never reaches the page.
+The filesystem plugin is not registered, and the capability does not grant `dialog:allow-open` or any `fs:*` permission. Page JavaScript cannot read the install by an absolute path. The folder dialog runs inside `pick_install_directory`.
+
+That command returns a random token, or nothing if the player cancels. `list_install_files` and `read_install_file` take the token and reject any other value with `unavailable`. Picking again replaces the grant, and the previous token stops working. A read that already passed the token check can finish. Listing keeps the spelling on disk. The virtual file system folds case later. `read_install_file` returns the whole file as raw bytes. Paths are install-relative. Symlinks are skipped. Failures use the fixed strings `unreadable` and `unavailable`, so a machine path never reaches the page.
 
 Nothing in the capability grants writes, a shell, a process spawn, or the updater.
 
 ## Native install adapter
 
-`@sfc2js/platform` keeps the browser folder picker and the zip importer. `preferredDirectoryPicker()` checks `globalThis.__TAURI_INTERNALS__` and, only then, returns a picker of kind `tauri`. The picked files use the same `PickedFile` shape as the browser importer: a relative path, a size, and a `read()` that loads bytes on demand. `importInstall` is unchanged.
+`@sfc2js/platform` keeps the browser folder picker and the zip importer. `preferredDirectoryPicker()` checks `globalThis.__TAURI_INTERNALS__` and, only then, returns a picker of kind `tauri`. The picked files use the same `PickedFile` shape as the browser importer: a relative path, a size, and a `read()` that loads the whole file on demand. `importInstall` is unchanged.
 
-The bridge the shell implements is `InstallFolderBridge` in `engine/platform/src/tauri-install.ts`. Tests inject a synthetic bridge. They do not read a real install.
+The bridge is `InstallFolderBridge` in `engine/platform/src/tauri-install.ts`. `pickFolder` returns the token. `list` and `read` send it back. Tests inject a synthetic bridge. They do not read a real install.
 
 ## Icons
 

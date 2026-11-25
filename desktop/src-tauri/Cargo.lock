@@ -2997,11 +2997,12 @@ dependencies = [
 name = "sfc2js"
 version = "0.0.0"
 dependencies = [
+ "getrandom 0.3.4",
  "serde",
  "tauri",
  "tauri-build",
  "tauri-plugin-dialog",
- "tauri-plugin-fs",
+ "tokio",
 ]
 
 [[package]]

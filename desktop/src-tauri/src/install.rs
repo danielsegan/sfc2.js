@@ -1,21 +1,62 @@
 //! Player-chosen install folder.
 //!
-//! The dialog runs in-process. On success the folder is canonicalized and
-//! added to the read-only `fs` scope. Listing and reading go through these
-//! commands so the webview never receives an absolute path. Errors are fixed
-//! strings for the same reason. Symlinks are skipped, not followed.
+//! The page never receives an absolute path. `pick_install_directory` returns
+//! a random token. `list_install_files` and `read_install_file` accept that
+//! token only. Picking again replaces the grant and the previous token
+//! returns `unavailable`. Listing keeps the filesystem's spelling. The
+//! virtual file system folds case itself. A read returns the whole file.
+//! Errors are the fixed strings `unreadable` and `unavailable`.
 
 use std::fs;
 use std::path::{Component, Path, PathBuf};
+use std::sync::{Arc, Mutex};
 
 use serde::Serialize;
 use tauri::State;
 use tauri_plugin_dialog::DialogExt;
-use tauri_plugin_fs::FsExt;
 
-#[derive(Default)]
-pub struct GrantedInstall {
-    root: Option<PathBuf>,
+pub struct InstallGrant {
+    current: Mutex<Option<ActiveGrant>>,
+}
+
+struct ActiveGrant {
+    token: String,
+    root: PathBuf,
+}
+
+impl Default for InstallGrant {
+    fn default() -> Self {
+        Self {
+            current: Mutex::new(None),
+        }
+    }
+}
+
+impl InstallGrant {
+    pub fn shared() -> Arc<Self> {
+        Arc::new(Self::default())
+    }
+
+    fn replace(&self, root: PathBuf) -> Result<String, &'static str> {
+        let token = random_token()?;
+        let mut guard = self.current.lock().map_err(|_| "unavailable")?;
+        *guard = Some(ActiveGrant {
+            token: token.clone(),
+            root,
+        });
+        Ok(token)
+    }
+
+    fn root_for(&self, token: &str) -> Result<PathBuf, &'static str> {
+        if token.is_empty() {
+            return Err("unavailable");
+        }
+        let guard = self.current.lock().map_err(|_| "unavailable")?;
+        match guard.as_ref() {
+            Some(active) if active.token == token => Ok(active.root.clone()),
+            _ => Err("unavailable"),
+        }
+    }
 }
 
 #[derive(Serialize)]
@@ -25,56 +66,69 @@ pub struct ListedFile {
 }
 
 #[tauri::command]
-pub fn pick_install_directory(
+pub async fn pick_install_directory(
     app: tauri::AppHandle,
-    grant: State<'_, std::sync::Mutex<GrantedInstall>>,
-) -> Result<bool, &'static str> {
-    let picked = app
-        .dialog()
+    grant: State<'_, Arc<InstallGrant>>,
+) -> Result<Option<String>, &'static str> {
+    let (sender, receiver) = tokio::sync::oneshot::channel();
+    app.dialog()
         .file()
         .set_title("Choose your SFC2 install folder")
-        .blocking_pick_folder();
-    let Some(picked) = picked else {
-        return Ok(false);
+        .pick_folder(move |folder| {
+            let _ = sender.send(folder);
+        });
+    let Some(picked) = receiver.await.map_err(|_| "unavailable")? else {
+        return Ok(None);
     };
     let path = picked.into_path().map_err(|_| "unreadable")?;
+    let canonical = tauri::async_runtime::spawn_blocking(move || canonicalize_directory(path))
+        .await
+        .map_err(|_| "unreadable")??;
+    Ok(Some(grant.replace(canonical)?))
+}
+
+#[tauri::command]
+pub async fn list_install_files(
+    token: String,
+    grant: State<'_, Arc<InstallGrant>>,
+) -> Result<Vec<ListedFile>, &'static str> {
+    let root = grant.root_for(&token)?;
+    tauri::async_runtime::spawn_blocking(move || list_install_tree(&root))
+        .await
+        .map_err(|_| "unreadable")?
+}
+
+#[tauri::command]
+pub async fn read_install_file(
+    token: String,
+    relative_path: String,
+    grant: State<'_, Arc<InstallGrant>>,
+) -> Result<tauri::ipc::Response, &'static str> {
+    let root = grant.root_for(&token)?;
+    let bytes = tauri::async_runtime::spawn_blocking(move || read_relative(&root, &relative_path))
+        .await
+        .map_err(|_| "unreadable")??;
+    Ok(tauri::ipc::Response::new(bytes))
+}
+
+fn canonicalize_directory(path: PathBuf) -> Result<PathBuf, &'static str> {
     let canonical = fs::canonicalize(&path).map_err(|_| "unreadable")?;
     if !canonical.is_dir() {
         return Err("unreadable");
     }
-    app.fs_scope()
-        .allow_directory(&canonical, true)
-        .map_err(|_| "unreadable")?;
-    grant.lock().map_err(|_| "unreadable")?.root = Some(canonical);
-    Ok(true)
+    Ok(canonical)
 }
 
-#[tauri::command]
-pub fn list_install_files(
-    grant: State<'_, std::sync::Mutex<GrantedInstall>>,
-) -> Result<Vec<ListedFile>, &'static str> {
-    let root = grant
-        .lock()
-        .map_err(|_| "unreadable")?
-        .root
-        .clone()
-        .ok_or("unavailable")?;
-    list_install_tree(&root)
-}
-
-#[tauri::command]
-pub fn read_install_file(
-    relative_path: String,
-    grant: State<'_, std::sync::Mutex<GrantedInstall>>,
-) -> Result<tauri::ipc::Response, &'static str> {
-    let root = grant
-        .lock()
-        .map_err(|_| "unreadable")?
-        .root
-        .clone()
-        .ok_or("unavailable")?;
-    let bytes = read_relative(&root, &relative_path)?;
-    Ok(tauri::ipc::Response::new(bytes))
+fn random_token() -> Result<String, &'static str> {
+    let mut bytes = [0u8; 32];
+    getrandom::fill(&mut bytes).map_err(|_| "unavailable")?;
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    let mut token = String::with_capacity(bytes.len() * 2);
+    for byte in bytes {
+        token.push(HEX[(byte >> 4) as usize] as char);
+        token.push(HEX[(byte & 0x0f) as usize] as char);
+    }
+    Ok(token)
 }
 
 fn list_install_tree(root: &Path) -> Result<Vec<ListedFile>, &'static str> {
@@ -191,7 +245,7 @@ mod tests {
     use std::sync::atomic::{AtomicU64, Ordering};
     use std::time::{SystemTime, UNIX_EPOCH};
 
-    use super::{list_install_tree, read_relative};
+    use super::{list_install_tree, read_relative, InstallGrant};
 
     struct TempTree {
         path: PathBuf,
@@ -228,13 +282,25 @@ mod tests {
         fs::create_dir_all(&specs).unwrap();
         let shiplist = specs.join("shiplist.txt");
         fs::write(&shiplist, b"synthetic").unwrap();
+        fs::write(specs.join("ShipList.TXT"), b"Kept").unwrap();
         fs::write(tree.path.join("Starfleet2CE.exe"), [0x4d, 0x5a]).unwrap();
         std::os::unix::fs::symlink("/etc/hostname", tree.path.join("outside")).unwrap();
 
         let listed = list_install_tree(&tree.path).unwrap();
         let paths: Vec<&str> = listed.iter().map(|file| file.path.as_str()).collect();
-        assert_eq!(paths, vec!["Assets/Specs/shiplist.txt", "Starfleet2CE.exe"]);
-        assert_eq!(listed[0].size, b"synthetic".len() as u64);
+        assert_eq!(
+            paths,
+            vec![
+                "Assets/Specs/ShipList.TXT",
+                "Assets/Specs/shiplist.txt",
+                "Starfleet2CE.exe",
+            ]
+        );
+        assert_eq!(listed[1].size, b"synthetic".len() as u64);
+        assert_eq!(
+            read_relative(&tree.path, "Assets/Specs/ShipList.TXT").unwrap(),
+            b"Kept"
+        );
         assert_eq!(
             read_relative(&tree.path, "Assets/Specs/shiplist.txt").unwrap(),
             b"synthetic"
@@ -244,5 +310,22 @@ mod tests {
         assert!(read_relative(&tree.path, "Assets/../../etc/hostname").is_err());
         assert!(read_relative(&tree.path, "/etc/hostname").is_err());
         assert!(read_relative(&tree.path, "C:/Windows/note.txt").is_err());
+    }
+
+    #[test]
+    fn a_new_grant_invalidates_the_previous_token() {
+        let grant = InstallGrant::default();
+        assert!(grant.root_for("").is_err());
+        assert!(grant.root_for("missing").is_err());
+        let first = grant.replace(PathBuf::from("/tmp/first")).unwrap();
+        let second = grant.replace(PathBuf::from("/tmp/second")).unwrap();
+        assert_ne!(first, second);
+        assert_eq!(first.len(), 64);
+        assert!(grant.root_for(&first).is_err());
+        assert_eq!(
+            grant.root_for(&second).unwrap(),
+            PathBuf::from("/tmp/second")
+        );
+        assert!(grant.root_for("").is_err());
     }
 }
