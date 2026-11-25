@@ -6,6 +6,7 @@ export default defineConfig({
     include: [
       'tools/formats/src/**/*.test.ts',
       'tools/viewer-check/**/*.test.ts',
+      'tools/duel-metrics/**/*.test.ts',
       'engine/platform/src/**/*.test.ts',
       'engine/render/src/**/*.test.ts',
       'engine/**/*.test.ts',
