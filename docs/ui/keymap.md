@@ -14,7 +14,7 @@ Mouse actions on the 3D view follow the original grammar, and a left-click there
 | Turn left / right | `A` / `D` (hold) |
 | All stop | `X` |
 | Reverse | `R` (not in this duel; the key explains that) |
-| Erratic maneuvers | `E` (not in this duel) |
+| Erratic maneuvers | `E` (toggles erratic maneuvers) |
 | High-energy turn port / starboard | `Q` / `F` |
 | Fire groups 1–6 | `1`–`6` |
 | Assign the selected mount(s) to a group | Ctrl+`1`–`6` |
