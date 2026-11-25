@@ -506,10 +506,16 @@
     <dialog id="keymap" aria-label="Key bindings">
       <form method="dialog">
         <h2>Keys</h2>
-        <p class="read">Modern profile. Bindings use the physical key, so they survive a different keyboard layout.</p>
+        <label class="keymap-preset">Preset
+          <select id="keymap-preset" aria-label="Keymap preset">
+            <option value="modern" selected>Modern</option>
+            <option value="classic">SFC2 Classic</option>
+          </select>
+        </label>
+        <p id="keymap-blurb" class="read">Modern profile (default). Bindings use the physical key, so they survive a different keyboard layout.</p>
         <div id="keymap-list"></div>
         <div class="presets">
-          <button type="button" id="keys-reset">Reset modern</button>
+          <button type="button" id="keys-reset">Reset Modern</button>
           <button type="button" id="keys-close">Close</button>
         </div>
       </form>

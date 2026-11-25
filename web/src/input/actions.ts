@@ -25,7 +25,7 @@ export interface ActionDef {
 
 export type Profile = Record<string, Chord | null>;
 
-function chord(code: string, mods: Partial<Pick<Chord, 'ctrl' | 'shift' | 'alt' | 'meta'>> = {}): Chord {
+export function chord(code: string, mods: Partial<Pick<Chord, 'ctrl' | 'shift' | 'alt' | 'meta'>> = {}): Chord {
   return { code, ctrl: mods.ctrl === true, shift: mods.shift === true, alt: mods.alt === true, meta: mods.meta === true };
 }
 
@@ -104,6 +104,8 @@ export const ACTIONS: readonly ActionDef[] = [
   { id: 'view.mapOrientation', label: 'Toggle map orientation', group: 'View', binding: chord('KeyH') },
   { id: 'view.mapZoomIn', label: 'Map zoom in', group: 'View', binding: chord('Equal', { shift: true }) },
   { id: 'view.mapZoomOut', label: 'Map zoom out', group: 'View', binding: chord('Minus', { shift: true }) },
+  { id: 'view.zoomIn', label: 'Viewport zoom in', group: 'View', repeat: true, binding: null },
+  { id: 'view.zoomOut', label: 'Viewport zoom out', group: 'View', repeat: true, binding: null },
   { id: 'mfd.page.helm', label: 'Officer page: Helm', group: 'Officer', binding: null },
   { id: 'mfd.page.repair', label: 'Officer page: Repair', group: 'Officer', binding: null },
   { id: 'mfd.page.science', label: 'Officer page: Science', group: 'Officer', binding: null },
