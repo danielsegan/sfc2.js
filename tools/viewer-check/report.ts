@@ -25,12 +25,18 @@ export interface ShipResult {
   pass: boolean;
   stage_failed: Stage | null;
   error: string | null;
+  /** Expected non-ship or empty dummy. Not graded, and not a failure. */
+  skip?: true;
+  /** Placeholder textures on a row that still passed. */
+  warnings?: number;
 }
 
 export interface ViewerCheckTotals {
   rows: number;
   passed: number;
   failed: number;
+  skipped: number;
+  warnings: number;
   byStage: Record<Stage, number>;
   elapsedMs: number;
 }
@@ -86,6 +92,8 @@ export function failureResult(spawnKey: string, reason: string): ShipResult {
 /**
  * Load stages for a hull that produced a mesh. A pass here still has to
  * render. Texture and self-illum fail when a named map did not bind.
+ * An empty luminance name is not a failure. A texture that is still
+ * missing after the install search is `texturePlaceholder`, a warning.
  */
 export function loadedResult(input: {
   spawnKey: string;
@@ -96,35 +104,67 @@ export function loadedResult(input: {
   diagnostics: readonly DiagnosticSnap[];
 }): ShipResult {
   const identity = shipIdentity(input.spawnKey);
+  let warnings = 0;
   for (const item of input.diagnostics) {
     const reason = `${item.source}.${item.code}`;
+    if (reason === 'bmp.texturePlaceholder') {
+      warnings += 1;
+      continue;
+    }
+    if (reason === 'mod.missingTextureName' && item.which === 'luminance') continue;
     if (item.severity === 'error') {
       return fail(identity, stageForLoadedError(reason, input), reason);
     }
     if (reason === 'mod.textureNameRejected') return fail(identity, 'texture', reason);
-    if (reason === 'mod.missingTextureName') {
-      return fail(identity, item.which === 'luminance' ? 'selfIllum' : 'texture', reason);
-    }
+    if (reason === 'mod.missingTextureName') return fail(identity, 'texture', reason);
   }
   if (!input.placeholder && input.unboundSelfIllum) return fail(identity, 'selfIllum', 'bmp.selfIllumUnbound');
-  return { ...identity, pass: true, stage_failed: null, error: null };
+  return {
+    ...identity,
+    pass: true,
+    stage_failed: null,
+    error: null,
+    ...(warnings > 0 ? { warnings } : {}),
+  };
+}
+
+/** A known non-ship, or a model with no paintable surface. */
+export function skippedResult(spawnKey: string): ShipResult {
+  const identity = shipIdentity(spawnKey);
+  return { ...identity, pass: true, stage_failed: null, error: null, skip: true };
+}
+
+export function gradeRenderedShip(loaded: ShipResult, outcome: RenderError | 'degenerate' | null): ShipResult {
+  if (!loaded.pass) return loaded;
+  if (outcome === 'degenerate') {
+    return { id: loaded.id, empire: loaded.empire, pass: true, stage_failed: null, error: null, skip: true };
+  }
+  if (outcome === null) return loaded;
+  return withRenderError(loaded, outcome);
 }
 
 export function withRenderError(result: ShipResult, error: RenderError): ShipResult {
-  return { ...result, pass: false, stage_failed: 'render', error };
+  return { id: result.id, empire: result.empire, pass: false, stage_failed: 'render', error };
 }
 
 export function totalsFor(ships: readonly ShipResult[], elapsedMs: number): ViewerCheckTotals {
   const byStage = emptyStages();
   let passed = 0;
+  let skipped = 0;
+  let warnings = 0;
   for (const ship of ships) {
-    if (ship.pass) passed += 1;
-    else if (ship.stage_failed) byStage[ship.stage_failed] += 1;
+    if (ship.skip === true) skipped += 1;
+    else if (ship.pass) {
+      passed += 1;
+      warnings += ship.warnings ?? 0;
+    } else if (ship.stage_failed) byStage[ship.stage_failed] += 1;
   }
   return {
     rows: ships.length,
     passed,
-    failed: ships.length - passed,
+    failed: ships.length - passed - skipped,
+    skipped,
+    warnings,
     byStage,
     elapsedMs: Math.max(0, Math.round(elapsedMs)),
   };
@@ -172,7 +212,7 @@ export function publicSummary(report: ViewerCheckReport): ViewerPublicSummary {
 export function formatPublicSummary(summary: ViewerPublicSummary): string {
   const totals = summary.totals;
   const lines = [
-    `viewer result=${summary.result} rows=${totals.rows} passed=${totals.passed} failed=${totals.failed}`,
+    `viewer result=${summary.result} rows=${totals.rows} passed=${totals.passed} failed=${totals.failed} skipped=${totals.skipped} warnings=${totals.warnings}`,
   ];
   if (summary.errors.length === 0) lines.push('viewer errors=0');
   for (const item of summary.errors) lines.push(`viewer class=${item.class} count=${item.count}`);
@@ -245,7 +285,13 @@ function emptyStages(): Record<Stage, number> {
 
 function totalsMatch(report: ViewerCheckReport): boolean {
   const again = totalsFor(report.ships, report.totals.elapsedMs);
-  if (again.rows !== report.totals.rows || again.passed !== report.totals.passed || again.failed !== report.totals.failed) {
+  if (
+    again.rows !== report.totals.rows ||
+    again.passed !== report.totals.passed ||
+    again.failed !== report.totals.failed ||
+    again.skipped !== report.totals.skipped ||
+    again.warnings !== report.totals.warnings
+  ) {
     return false;
   }
   if (again.elapsedMs !== report.totals.elapsedMs) return false;
@@ -269,14 +315,39 @@ function asReport(value: unknown): ViewerCheckReport | null {
 
 function asShip(value: unknown): ShipResult | null {
   if (!isRecord(value)) return null;
-  if (!exactKeys(value, ['id', 'empire', 'pass', 'stage_failed', 'error'])) return null;
+  const allowed = new Set(['id', 'empire', 'pass', 'stage_failed', 'error', 'skip', 'warnings']);
+  const keys = Object.keys(value);
+  if (keys.length < 5 || keys.some((key) => !allowed.has(key))) return null;
+  for (const key of ['id', 'empire', 'pass', 'stage_failed', 'error']) {
+    if (!Object.prototype.hasOwnProperty.call(value, key)) return null;
+  }
   if (typeof value.id !== 'string' || typeof value.empire !== 'string') return null;
   if (value.id.length === 0 || value.id.length > ID_MAX || value.empire.length > ID_MAX) return null;
   if (typeof value.pass !== 'boolean') return null;
+  let skip = false;
+  if ('skip' in value) {
+    if (value.skip !== true) return null;
+    skip = true;
+  }
+  let warnings: number | undefined;
+  if ('warnings' in value) {
+    if (!isCount(value.warnings) || value.warnings < 1) return null;
+    warnings = value.warnings;
+  }
+  if (skip && warnings !== undefined) return null;
   if (value.pass) {
     if (value.stage_failed !== null || value.error !== null) return null;
-    return { id: value.id, empire: value.empire, pass: true, stage_failed: null, error: null };
+    return {
+      id: value.id,
+      empire: value.empire,
+      pass: true,
+      stage_failed: null,
+      error: null,
+      ...(skip ? { skip: true as const } : {}),
+      ...(warnings === undefined ? {} : { warnings }),
+    };
   }
+  if (skip || warnings !== undefined) return null;
   if (!isStage(value.stage_failed)) return null;
   if (typeof value.error !== 'string' || !ERROR_CODE.test(value.error) || value.error.length > ID_MAX) return null;
   return { id: value.id, empire: value.empire, pass: false, stage_failed: value.stage_failed, error: value.error };
@@ -284,9 +355,18 @@ function asShip(value: unknown): ShipResult | null {
 
 function asTotals(value: unknown, rows: number): ViewerCheckTotals | null {
   if (!isRecord(value)) return null;
-  if (!exactKeys(value, ['rows', 'passed', 'failed', 'byStage', 'elapsedMs'])) return null;
-  if (!isCount(value.rows) || !isCount(value.passed) || !isCount(value.failed) || !isCount(value.elapsedMs)) return null;
-  if (value.rows !== rows || value.passed + value.failed !== rows) return null;
+  if (!exactKeys(value, ['rows', 'passed', 'failed', 'skipped', 'warnings', 'byStage', 'elapsedMs'])) return null;
+  if (
+    !isCount(value.rows) ||
+    !isCount(value.passed) ||
+    !isCount(value.failed) ||
+    !isCount(value.skipped) ||
+    !isCount(value.warnings) ||
+    !isCount(value.elapsedMs)
+  ) {
+    return null;
+  }
+  if (value.rows !== rows || value.passed + value.failed + value.skipped !== rows) return null;
   if (!isRecord(value.byStage) || !exactKeys(value.byStage, STAGES)) return null;
   const byStage = emptyStages();
   for (const stage of STAGES) {
@@ -294,7 +374,15 @@ function asTotals(value: unknown, rows: number): ViewerCheckTotals | null {
     if (!isCount(count)) return null;
     byStage[stage] = count;
   }
-  return { rows: value.rows, passed: value.passed, failed: value.failed, byStage, elapsedMs: value.elapsedMs };
+  return {
+    rows: value.rows,
+    passed: value.passed,
+    failed: value.failed,
+    skipped: value.skipped,
+    warnings: value.warnings,
+    byStage,
+    elapsedMs: value.elapsedMs,
+  };
 }
 
 function isStage(value: unknown): value is Stage {

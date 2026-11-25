@@ -90,6 +90,8 @@ A non-power-of-two image is loaded and reported with `nonPowerOfTwo` (info). Web
 
 `loadShipTexture` does not throw. A missing or undecodable base yields `missingTexture` (or the parser's error) and `material: null`. A missing glow map yields `missingTexture` for that path and a base material with black emissive, so the ship still draws.
 
+The ship mesh builder does not call `loadShipTexture` for a name it could not find. It searches the model directory, parent directories, and `common`, `shared`, and `textures` folders (see [mod.md](mod.md)). A miss after that search is `texturePlaceholder` (warning) and a neutral material, not `missingTexture`. An empty luminance name adds no self-illum layer and is not a failure.
+
 ## 5. Diagnostics
 
 Codes are registered in [docs/engine/diagnostics.md](../engine/diagnostics.md). BMP codes use `source: "bmp"`. Install-index codes use `source: "importer"`, except `specsMetaassetsDiffer`, which stays `source: "shiplist"`.

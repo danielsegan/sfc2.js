@@ -520,9 +520,7 @@ function resolveNames(ctx: Ctx): void {
     }
     if (material.luminanceTexture !== null) {
       material.luminanceTexture.name = resolve(material.luminanceTexture.nameOffset);
-      if (material.luminanceTexture.name === '' && offsetInPool(ctx, material.luminanceTexture.nameOffset)) {
-        emit(ctx, 'missingTextureName', 'warning', { which: 'luminance' });
-      }
+      // An empty luminance name is optional. No name means no self-illum layer.
     }
   }
   for (const point of ctx.model.namedPoints) {

@@ -20,9 +20,10 @@ import { filesFromDevInstall } from '../../web/src/dev-install-client.ts';
 import {
   buildReport,
   failureResult,
+  gradeRenderedShip,
   inspectReport,
   loadedResult,
-  withRenderError,
+  skippedResult,
   type DiagnosticSnap,
   type RenderError,
   type ShipResult,
@@ -107,6 +108,7 @@ function assessShip(
   webgl: boolean,
   frames: number,
 ): ShipResult {
+  if (ship.expectedNoModel) return skippedResult(ship.spawnKey);
   const loaded = loadedResult({
     spawnKey: ship.spawnKey,
     placeholder: ship.placeholder,
@@ -116,12 +118,11 @@ function assessShip(
     diagnostics: ship.diagnostics.map(snapDiagnostic),
   });
   if (!loaded.pass) return loaded;
-  if (!webgl || stage === null) return withRenderError(loaded, 'render.noWebGL');
-  const rendered = renderFrames(stage, ship, frames);
-  return rendered === null ? loaded : withRenderError(loaded, rendered);
+  if (!webgl || stage === null) return gradeRenderedShip(loaded, 'render.noWebGL');
+  return gradeRenderedShip(loaded, renderFrames(stage, ship, frames));
 }
 
-function renderFrames(stage: ShipStage, ship: LoadedShip, frames: number): RenderError | null {
+function renderFrames(stage: ShipStage, ship: LoadedShip, frames: number): RenderError | 'degenerate' | null {
   try {
     stage.show(null);
     stage.setPose(0, 0);
@@ -130,7 +131,8 @@ function renderFrames(stage: ShipStage, ship: LoadedShip, frames: number): Rende
     if (baseline.width < 16 || baseline.height < 16) return 'render.failed';
     if (baseline.glError !== 0) return 'render.glError';
 
-    stage.show(ship);
+    const framing = stage.show(ship);
+    if (framing.degenerate) return 'degenerate';
     let turn = createTurntable(false);
     let previous: Uint8Array | null = null;
     let sawShip = false;
@@ -161,8 +163,26 @@ function renderFrames(stage: ShipStage, ship: LoadedShip, frames: number): Rende
 
 function unboundSelfIllum(ship: LoadedShip, vfs: Vfs): boolean {
   if (ship.placeholder || ship.geometry.length === 0) return false;
-  const slash = ship.geometry.lastIndexOf('/');
-  const dir = slash >= 0 ? ship.geometry.slice(0, slash) : '';
+  for (const material of ship.mesh.materials) {
+    const mapped = material as {
+      map?: { userData?: { installPath?: unknown } } | null;
+      emissiveMap?: { image?: { width?: number } } | null;
+      userData?: { texturePlaceholder?: unknown };
+    };
+    if (mapped.userData?.texturePlaceholder === true) continue;
+    const emissive = mapped.emissiveMap;
+    if (emissive && !(typeof emissive.image?.width === 'number' && emissive.image.width > 0)) return true;
+    const basePath = mapped.map?.userData?.installPath;
+    if (typeof basePath !== 'string') continue;
+    const pair = glowBesideBase(vfs, basePath);
+    if (pair !== undefined && !emissive) return true;
+  }
+  return false;
+}
+
+function glowBesideBase(vfs: Vfs, basePath: string): string | undefined {
+  const slash = basePath.lastIndexOf('/');
+  const dir = slash >= 0 ? basePath.slice(0, slash) : '';
   const prefix = dir.length > 0 ? `${dir}/` : '';
   const local = vfs
     .list()
@@ -173,20 +193,7 @@ function unboundSelfIllum(ship: LoadedShip, vfs: Vfs): boolean {
       if (!path.toLowerCase().startsWith(prefix.toLowerCase())) return false;
       return !path.slice(prefix.length).includes('/');
     });
-  const pairs = pairSelfIllumination(local).pairs;
-  for (const material of ship.mesh.materials) {
-    const mapped = material as {
-      map?: { userData?: { installPath?: unknown } } | null;
-      emissiveMap?: { image?: { width?: number } } | null;
-    };
-    const emissive = mapped.emissiveMap;
-    if (emissive && !(typeof emissive.image?.width === 'number' && emissive.image.width > 0)) return true;
-    const basePath = mapped.map?.userData?.installPath;
-    if (typeof basePath !== 'string') continue;
-    const pair = pairs.find((item) => item.basePath.toLowerCase() === basePath.toLowerCase());
-    if (pair?.selfIllumPath !== undefined && !emissive) return true;
-  }
-  return false;
+  return pairSelfIllumination(local).pairs.find((item) => item.basePath.toLowerCase() === basePath.toLowerCase())?.selfIllumPath;
 }
 
 function snapDiagnostic(item: { source: string; code: string; severity: string; details?: Record<string, unknown> }): DiagnosticSnap {

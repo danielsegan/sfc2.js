@@ -3,11 +3,14 @@ import { parseArgs } from './cli.ts';
 import {
   buildReport,
   failureResult,
+  formatPublicSummary,
+  gradeRenderedShip,
   inspectPublicSummary,
   inspectReport,
   loadedResult,
   publicSummary,
   shipIdentity,
+  skippedResult,
   totalsFor,
   withRenderError,
 } from './report.ts';
@@ -84,12 +87,41 @@ describe('viewer check summary', () => {
       loadedResult({
         spawnKey: 'Federation:TEST-CA-01',
         placeholder: false,
-        textured: false,
+        textured: true,
         selfIlluminated: false,
         unboundSelfIllum: false,
         diagnostics: [{ source: 'mod', code: 'missingTextureName', severity: 'warning', which: 'luminance' }],
+      }),
+    ).toMatchObject({ pass: true, stage_failed: null, error: null });
+
+    expect(
+      loadedResult({
+        spawnKey: 'Federation:TEST-CA-01',
+        placeholder: false,
+        textured: false,
+        selfIlluminated: false,
+        unboundSelfIllum: false,
+        diagnostics: [{ source: 'mod', code: 'missingTextureName', severity: 'warning', which: 'diffuse' }],
       }).stage_failed,
-    ).toBe('selfIllum');
+    ).toBe('texture');
+
+    expect(
+      loadedResult({
+        spawnKey: 'Federation:TEST-CA-01',
+        placeholder: false,
+        textured: false,
+        selfIlluminated: false,
+        unboundSelfIllum: false,
+        diagnostics: [{ source: 'bmp', code: 'texturePlaceholder', severity: 'warning', which: 'diffuse' }],
+      }),
+    ).toEqual({
+      id: 'TEST-CA-01',
+      empire: 'Federation',
+      pass: true,
+      stage_failed: null,
+      error: null,
+      warnings: 1,
+    });
 
     expect(
       loadedResult({
@@ -138,6 +170,8 @@ describe('viewer check summary', () => {
       rows: 2,
       passed: 1,
       failed: 1,
+      skipped: 0,
+      warnings: 0,
       byStage: { resolve: 1, geometry: 0, texture: 0, selfIllum: 0, render: 0 },
       elapsedMs: 12,
     });
@@ -163,8 +197,57 @@ describe('viewer check summary', () => {
     expect(text).not.toContain('Federation');
     expect(summary.errors).toEqual([{ class: 'loader.missingModel', count: 1 }]);
     expect(summary.result).toBe('fail');
+    expect(formatPublicSummary(summary)).toContain('skipped=0');
+    expect(formatPublicSummary(summary)).toContain('warnings=0');
+    expect(formatPublicSummary(summary)).not.toContain('TEST-CL-02');
     expect(inspectPublicSummary(summary).problem).toBeNull();
     expect(inspectPublicSummary({ ...summary, ships: report.ships }).problem).toBe('leak');
+  });
+
+  it('counts skipped rows and placeholder warnings without failing the gate', () => {
+    const warned = loadedResult({
+      spawnKey: 'Lyran:TEST-MISS',
+      placeholder: false,
+      textured: false,
+      selfIlluminated: false,
+      unboundSelfIllum: false,
+      diagnostics: [
+        { source: 'bmp', code: 'texturePlaceholder', severity: 'warning', which: 'diffuse' },
+        { source: 'bmp', code: 'texturePlaceholder', severity: 'warning', which: 'luminance' },
+      ],
+    });
+    const skipped = skippedResult('Neutral:CY');
+    const degenerate = gradeRenderedShip(
+      loadedResult({
+        spawnKey: 'Neutral:TEST-DUMMY',
+        placeholder: false,
+        textured: false,
+        selfIlluminated: false,
+        unboundSelfIllum: false,
+        diagnostics: [],
+      }),
+      'degenerate',
+    );
+    const stillMissing = failureResult('Orion:TEST-STILL', 'loader.missingModel');
+    const report = buildReport([skipped, warned, degenerate, stillMissing], 4);
+    expect(report.totals).toMatchObject({
+      rows: 4,
+      passed: 1,
+      failed: 1,
+      skipped: 2,
+      warnings: 2,
+      byStage: { resolve: 1, geometry: 0, texture: 0, selfIllum: 0, render: 0 },
+    });
+    expect(inspectReport(report).problem).toBeNull();
+    expect(publicSummary(report).result).toBe('fail');
+    expect(publicSummary(report).errors).toEqual([{ class: 'loader.missingModel', count: 1 }]);
+    const text = JSON.stringify(publicSummary(report));
+    expect(text).not.toContain('TEST-DUMMY');
+    expect(text).not.toContain('Neutral');
+
+    const passed = buildReport([skipped, warned], 1);
+    expect(publicSummary(passed).result).toBe('pass');
+    expect(inspectReport({ ...report, ships: [{ ...skipped, warnings: 1 }] }).problem).toBe('shape');
   });
 
   it('parses the cli flags', () => {

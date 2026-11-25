@@ -6,27 +6,70 @@
 import {
   ACESFilmicToneMapping,
   AmbientLight,
+  Box3,
   BufferGeometry,
   Color,
   DirectionalLight,
   Float32BufferAttribute,
   Group,
   HemisphereLight,
+  Mesh,
   NoToneMapping,
   PerspectiveCamera,
   Points,
   PointsMaterial,
   Scene,
   SRGBColorSpace,
+  Vector3,
   WebGLRenderer,
   type Object3D,
 } from 'three';
 import type { LoadedShip } from './ship-catalog.ts';
 import type { RenderTier } from './ship-texture.ts';
 
+/** A mesh this thin on two axes does not paint a surface that can spin. */
+export const PAINTABLE_EXTENT = 1e-4;
+
+export interface ShipFrame {
+  radius: number;
+  /** Empty, a point, or a line. The every-ship check skips the row. */
+  degenerate: boolean;
+}
+
 export function frameDistance(radius: number): number {
   const safe = radius > 0 && Number.isFinite(radius) ? radius : 1;
   return safe * 3;
+}
+
+/** Camera distance, near, and far for a bounding-sphere radius. Near stays in front of the hull. */
+export function frameCameraFit(radius: number): { distance: number; near: number; far: number } {
+  const distance = frameDistance(radius);
+  const near = Math.min(Math.max(distance / 100, 1e-6), distance * 0.5);
+  const far = Math.max(distance * 40, 400);
+  return { distance, near, far };
+}
+
+/**
+ * World bounds of the visible meshes under `root`. The center is in the
+ * same space as `root` when `root` has an identity world matrix.
+ */
+export function measureShipFrame(root: Object3D): { frame: ShipFrame; center: Vector3 } {
+  const box = new Box3();
+  const corner = new Vector3();
+  walkBounds(root, box, corner);
+  if (box.isEmpty()) return { frame: { radius: 0, degenerate: true }, center: new Vector3() };
+  const size = box.getSize(new Vector3());
+  const center = box.getCenter(new Vector3());
+  if (![size.x, size.y, size.z, center.x, center.y, center.z].every((value) => Number.isFinite(value))) {
+    return { frame: { radius: 0, degenerate: true }, center: new Vector3() };
+  }
+  const dims = [size.x, size.y, size.z].sort((left, right) => left - right);
+  const degenerate = (dims[1] ?? 0) < PAINTABLE_EXTENT;
+  const radius = 0.5 * Math.hypot(size.x, size.y, size.z);
+  return {
+    frame: { radius: degenerate || !Number.isFinite(radius) ? 0 : radius, degenerate },
+    center,
+  };
 }
 
 export function applyShipPose(root: Object3D, yaw: number, pitch: number): void {
@@ -50,7 +93,7 @@ export interface FrameSample {
 }
 
 export interface ShipStage {
-  show(ship: LoadedShip | null): void;
+  show(ship: LoadedShip | null): ShipFrame;
   setPose(yaw: number, pitch: number): void;
   setTier(tier: RenderTier): void;
   resize(): void;
@@ -97,12 +140,21 @@ export function createShipStage(
       pivot.clear();
       if (ship === null) {
         frameCamera(camera, 1);
-        return;
+        return { radius: 1, degenerate: false };
       }
-      pivot.add(ship.mesh.root);
-      const declared = ship.mesh.root.userData.radius;
-      const radius = typeof declared === 'number' && declared > 0 ? declared : 1;
-      frameCamera(camera, radius);
+      const root = ship.mesh.root;
+      root.removeFromParent();
+      root.position.set(0, 0, 0);
+      root.rotation.set(0, 0, 0);
+      root.scale.set(1, 1, 1);
+      root.updateMatrixWorld(true);
+      const measured = measureShipFrame(root);
+      if (!measured.frame.degenerate) {
+        root.position.set(-measured.center.x, -measured.center.y, -measured.center.z);
+      }
+      pivot.add(root);
+      frameCamera(camera, measured.frame.degenerate ? 1 : measured.frame.radius);
+      return measured.frame;
     },
     setPose(yaw, pitch) {
       applyShipPose(pivot, yaw, pitch);
@@ -151,13 +203,34 @@ function applyTier(renderer: WebGLRenderer, fill: HemisphereLight, tier: RenderT
 }
 
 function frameCamera(camera: PerspectiveCamera, radius: number): void {
-  const distance = frameDistance(radius);
+  const fit = frameCameraFit(radius);
   camera.fov = 40;
-  camera.position.set(0, distance * 0.18, distance);
-  camera.near = Math.max(distance / 200, 0.01);
-  camera.far = Math.max(distance * 40, 400);
+  camera.position.set(0, fit.distance * 0.18, fit.distance);
+  camera.near = fit.near;
+  camera.far = fit.far;
   camera.lookAt(0, 0, 0);
   camera.updateProjectionMatrix();
+}
+
+function walkBounds(obj: Object3D, box: Box3, corner: Vector3): void {
+  if (!obj.visible) return;
+  if (obj instanceof Mesh) {
+    const geometry = obj.geometry;
+    if (geometry.boundingBox === null) geometry.computeBoundingBox();
+    const local = geometry.boundingBox;
+    if (local !== null && !local.isEmpty()) {
+      for (const x of [local.min.x, local.max.x]) {
+        for (const y of [local.min.y, local.max.y]) {
+          for (const z of [local.min.z, local.max.z]) {
+            corner.set(x, y, z);
+            obj.localToWorld(corner);
+            box.expandByPoint(corner);
+          }
+        }
+      }
+    }
+  }
+  for (const child of obj.children) walkBounds(child, box, corner);
 }
 
 function makeStars(): Points {

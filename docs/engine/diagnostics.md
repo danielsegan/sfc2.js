@@ -50,7 +50,7 @@ interface Diagnostic {
 | loader | `fixedPointSaturated` | warning | Engine | `{ spawnKey, field, raw }` |
 | loader | `buildUnknown` | warning | Engine | `{}`. Neither exe was found while loading the database |
 | loader | `missingModel` | error | Engine | `{ spawnKey }`. The shiplist geometry path is not in the install index. `location.file` is that install-relative path |
-| loader | `noHullModel` | warning | Engine | `{ spawnKey, hullType, race }`. A neutral `CY`, `CR`, or `CW` hull has no model. The viewer shows a placeholder and keeps the row. `location.file` is the shiplist |
+| loader | `noHullModel` | warning | Engine | `{ spawnKey, hullType, race, className }`. A neutral row whose class name or hull token is `CY`, `CR`, or `CW` has no model. The ship viewer shows a placeholder. The every-ship check counts the row as skipped. `location.file` is the shiplist |
 | loader | `noDrawableMesh` | warning | Engine | `{ spawnKey }`. The model parsed and produced no triangles, so the viewer lists the row and continues. `location.file` is the model |
 | loader | `shipLoadFailed` | error | Engine | `{ spawnKey }`. One row threw while loading. The exception text is not copied. The viewer continues with the next row |
 | loader | `geometryColumnMissing` | error | Engine | `{ columns }`. The shiplist header has no column that binds to `geometry`. Each row is still listed. `location.file` is the shiplist |
@@ -77,7 +77,8 @@ interface Diagnostic {
 | bmp | `paletteIndexOutOfRange` | warning | Formats | `{ count }`. Pixel uses palette entry 0 |
 | bmp | `nonPowerOfTwo` | info | Formats | `{ width, height }`. The image is still loaded |
 | bmp | `orphanSelfIllum` | warning | Formats | `{ illumPath }`. A `_<token>i` file with no base in the same directory |
-| bmp | `missingTexture` | error | Formats | `{ path }`. Requested install-relative path is not in the VFS |
+| bmp | `missingTexture` | error | Formats | `{ path }`. Requested install-relative path is not in the VFS. The mesh builder does not emit this after its texture search; a miss there is `texturePlaceholder` |
+| bmp | `texturePlaceholder` | warning | Engine | `{ which }`. `diffuse` or `luminance`. The named map was not in the ship folder, a parent, or a `common` / `shared` / `textures` folder. The material is a neutral stand-in, or the glow layer is omitted. The name is not stored |
 | bmp | `selfIllumSizeMismatch` | info | Formats | `{ baseWidth, baseHeight, illumWidth, illumHeight }`. Both maps are kept and sampled by UV |
 | mod | `emptyFile` | error | Formats | Zero-byte `.mod`. No `location` |
 | mod | `fileTooLarge` | error | Formats | `{ size, limit }`. Over 8 MiB; nothing is parsed |
@@ -95,11 +96,11 @@ interface Diagnostic {
 | mod | `vertexIndexOutOfRange` | warning | Formats | `{ count }` |
 | mod | `materialIndexOutOfRange` | warning | Formats | `{ count }` |
 | mod | `badStringOffset` | warning | Formats | `{ count }`. Name offset outside the string pool, or no NUL |
-| mod | `missingTextureName` | warning | Formats | `{ which }`. `diffuse` or `luminance` flag set and the resolved name is empty |
+| mod | `missingTextureName` | warning | Formats | `{ which: 'diffuse' }`. Textured flag set and the resolved diffuse name is empty. An empty luminance name is not a diagnostic |
 | mod | `badNumber` | warning | Formats | `{ count }`. Non-finite floats are kept; the mesh builder writes 0 |
 | mod | `orphanChunk` | warning | Formats | `{ type }`. `VTXS` or `POLY` outside a `MOD0` |
 | mod | `modelPathRejected` | warning | Formats | The `.mod` path is not install-relative. The path is omitted |
-| mod | `textureNameRejected` | warning | Formats | `{ reason: 'texture-name' }`. The pool string is not a single basename. The name is omitted |
+| mod | `textureNameRejected` | warning | Formats | `{ reason: 'texture-name' }`. The pool string is not a relative path inside the install. The name is omitted |
 | mod | `lodOutOfRange` | warning | Formats | `{ requested, lods }` |
 | sounds | `emptyFile` | error | Formats | Zero-byte or whitespace-only index. No `location` |
 | sounds | `badNumber` | warning | Formats | `{ value? }`. A numeric column is not a plain decimal. `location.field` names the column |
