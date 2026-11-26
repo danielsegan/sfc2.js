@@ -178,7 +178,8 @@ function turnRateScore(ship: ShipReport, sample: TurnSample): Scored {
   if (extra) return speed === extra.speed ? scorePoint(ours, extra.deg, extra.conf) : scoreNa();
   if (ship.turnHull !== 'K-D7') return scoreNa();
   if (speed === 500) return scorePoint(ours, 5.4, 'M');
-  if (speed === 1000 || speed === 1500 || speed === 2000 || speed === 3100) return scoreRange(ours, 9, 9.4, 'M');
+  if (speed === 1500) return scorePoint(ours, 8.4, 'H');
+  if (speed === 1000 || speed === 2000 || speed === 3100) return scoreRange(ours, 9, 9.4, 'M');
   return scoreNa();
 }
 
@@ -186,6 +187,7 @@ function hetRateScore(ship: ShipReport, sample: HetSample): Scored {
   const ours = degNumber(sample.turnRate16PerTick);
   if (ship.turnHull === 'F-CA') {
     if (sample.speedHundredths >= 3050) return scorePoint(ours, 52, 'M');
+    if (sample.speedHundredths === 1500) return scorePoint(ours, 49.1, 'H');
     return scoreRange(ours, 42, 46, 'M');
   }
   if (ship.turnHull === 'F-FF') return scorePoint(ours, 49, 'H');
@@ -199,7 +201,7 @@ function hetRateScore(ship: ShipReport, sample: HetSample): Scored {
 function timeScore(ship: ShipReport, sample: SpeedSample): Scored {
   const seconds = secondsNumber(sample.ticksFromRest);
   const tables: Readonly<Record<string, Readonly<Record<number, number>>>> = {
-    'F-CA': { 500: 16.7, 1000: 31.7, 1500: 46.7, 2000: 61, 2500: 70, 3000: 78.3 },
+    'F-CA': { 500: 9.27, 1000: 18.8, 1500: 29.9, 2000: 41.5, 2500: 59.1, 3000: 76.97, 3050: 78.7 },
     'F-FF': { 500: 6.1, 1000: 12.2, 1500: 18.3, 2000: 24.4, 2500: 30.5, 3000: 36.6, 3100: 38 },
     'F-DN': { 500: 16.1, 1000: 32.3, 1500: 48.4, 2000: 64.5, 2500: 80.6, 3000: 96.8 },
     'K-D7': { 500: 18, 1000: 30, 1500: 42, 2000: 54, 2500: 66, 3000: 78, 3100: 79.6 },
@@ -221,11 +223,11 @@ function phaserScore(ship: ShipReport, probe: PhaserProbe): Scored {
 }
 
 function phaser1Score(probe: PhaserProbe): Scored {
-  if (probe.range === 0 || probe.range === 1) return scoreRoll(probe.damage, 3, 6, 4.5, 'H');
-  if (probe.range === 2) return scoreRoll(probe.damage, 2, 4, 3, 'H');
-  if (probe.range === 4) return scoreRoll(probe.damage, 2, 3, 2.5, 'H');
+  if (probe.range === 0 || probe.range === 1) return scoreRoll(probe.damage, 4, 6, 5, 'H');
+  if (probe.range === 2 || probe.range === 4) return scoreRoll(probe.damage, 3, 5, 4, 'H');
   if (probe.range === 8) return scoreRoll(probe.damage, 1, 2, 1.5, 'H');
-  if (probe.range === 12 || probe.range === 16 || probe.range === 20) return scoreRoll(probe.damage, 0, 1, 0.5, 'H');
+  if (probe.range === 12) return scoreRoll(probe.damage, 0, 2, 1, 'H');
+  if (probe.range === 16 || probe.range === 20) return scoreRoll(probe.damage, 0, 1, 0.5, 'H');
   if (probe.range === 26) return scorePoint(probe.damage, 0, 'H');
   return scoreNone(probe.damage, 'H');
 }
@@ -233,8 +235,7 @@ function phaser1Score(probe: PhaserProbe): Scored {
 function phaser2Score(probe: PhaserProbe): Scored {
   if (probe.range === 0) return scoreRoll(probe.damage, 5, 6, 5.25, 'M');
   if (probe.range === 1) return scoreRoll(probe.damage, 3, 5, 4, 'M');
-  if (probe.range === 2) return scoreRoll(probe.damage, 3, 4, 3.5, 'M');
-  if (probe.range === 4) return scoreRoll(probe.damage, 0, 1, 0.5, 'M');
+  if (probe.range === 2 || probe.range === 4) return scoreRoll(probe.damage, 3, 4, 3.5, 'H');
   if (probe.range === 8 || probe.range === 12 || probe.range === 16) return scorePoint(probe.damage, 0, 'M');
   return scoreNone(probe.damage, 'M');
 }

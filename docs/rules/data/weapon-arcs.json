@@ -122,7 +122,9 @@
         "armTicks": 3060,
         "directDamage": 20,
         "maxRange": 25400,
-        "note": "Launch yield 20. Arm time about 102 s. Provisional max launch range 25.4k. directDamage is the launch yield, not impact damage."
+        "projectileSpeed": 33,
+        "flightTicks": 360,
+        "note": "Launch yield 20. The fire rule reports that yield. The bolt flies at 33 range units per tick and dies after 360 ticks (12 s, about 11.9k). Impact damage is the yield times the life still left, a provisional straight line. A 1.7k flight still reads near a full 20; the line predicts about 17. An 8k flight of a 60-point volley predicts about 20, against a reading of about 19. Arm time about 102 s. Max launch range stays 25.4k."
       },
       "PlaI": { "internal": "plasma", "weaponId": "plasma-i", "verification": "to-verify" },
       "PlaR": {
@@ -260,13 +262,13 @@
         "chargeCost": 4,
         "holdCost": 0,
         "maxRange": 26400,
-        "note": "Common Phaser-1 uses the Gorn G-DN curve [H]. A shared edge stays on the inner band. 0-2k is 3-6, 2-4k is 2-4, 4-6k is 2-3, 6-9k is 1-2, 9-15k is 0-1, 15-26k is 0-1 (the expected center there is 0.2-0.3). Damage is 0 from 26k through 26.4k. Nothing past 26.4k. ISC runs slightly longer, about 30k [M]; that longer tail is not a second table.",
+        "note": "Common Phaser-1 [H]. n=3 envelopes: 4-8 (mean 5) at 1.5k, 3-6 (mean 4) through exactly 4.00k, 2-5 (mean 3.5) just past 4k, 0-3 (mean 1) at 10k. The stored rolls are the narrow bands whose means match those centers and sit inside the envelopes. 4.00k stays on the inner band. 6-9k and the tail past 15k were not in this run and stay the earlier Gorn curve. Nothing past 26.4k.",
         "rangeBands": [
-          { "maxRange": 1999, "damageMin": 3, "damageMax": 6 },
-          { "maxRange": 3999, "damageMin": 2, "damageMax": 4 },
-          { "maxRange": 5999, "damageMin": 2, "damageMax": 3 },
+          { "maxRange": 1999, "damageMin": 4, "damageMax": 6 },
+          { "maxRange": 4000, "damageMin": 3, "damageMax": 5 },
+          { "maxRange": 5999, "damageMin": 2, "damageMax": 5 },
           { "maxRange": 8999, "damageMin": 1, "damageMax": 2 },
-          { "maxRange": 14999, "damageMin": 0, "damageMax": 1 },
+          { "maxRange": 14999, "damageMin": 0, "damageMax": 2 },
           { "maxRange": 25999, "damageMin": 0, "damageMax": 1 },
           { "maxRange": 26400, "damageMin": 0, "damageMax": 0 }
         ]
@@ -278,12 +280,12 @@
         "chargeCost": 4,
         "holdCost": 0,
         "maxRange": 16000,
-        "note": "K-D7 Phaser-2 [M]. One seeded combat-stream roll per shot, uniform on the inclusive integer band. The band is the narrow roll whose mean is the expected damage, and it sits inside the observed envelope. A shared edge stays on the inner band, so 1000 is still 3-5. Nothing past 16000. Re-arm is about 17-18.5 s in the reading; the charge still fills from the energy plan, so that clock is not a separate gate.",
+        "note": "K-D7 Phaser-2 [H] at the n=3 points that match this curve. 1.5k is 3-5 (mean 4). Through exactly 4.00k is 3-4 (mean 3.2); 4.00k stays on that band. Just past 4k the envelope is 0-3 with mean under 0.6, so the roll stays 0-1 (mean 0.5). At 10k the envelope is 0-2 with mean 0, so the stored damage stays 0. Nothing past 16000. Re-arm is about 17-18.5 s; the charge still fills from the energy plan.",
         "rangeBands": [
           { "maxRange": 999, "damageMin": 5, "damageMax": 6 },
           { "maxRange": 1999, "damageMin": 3, "damageMax": 5 },
           { "maxRange": 2999, "damageMin": 3, "damageMax": 4 },
-          { "maxRange": 3999, "damageMin": 3, "damageMax": 4 },
+          { "maxRange": 4000, "damageMin": 3, "damageMax": 4 },
           { "maxRange": 4999, "damageMin": 0, "damageMax": 1 },
           { "maxRange": 7999, "damageMin": 0, "damageMax": 1 },
           { "maxRange": 8999, "damageMin": 0, "damageMax": 0 },
@@ -538,7 +540,7 @@
       "rangeBands": [
         { "maxRange": 1099, "damage": 5, "hitNum": 1, "hitDen": 1 },
         { "maxRange": 2099, "damage": 5, "hitNum": 4, "hitDen": 5 },
-        { "maxRange": 3099, "damage": 4, "hitNum": 3, "hitDen": 4 },
+        { "maxRange": 3999, "damage": 4, "hitNum": 3, "hitDen": 4 },
         { "maxRange": 5099, "damage": 4, "hitNum": 5, "hitDen": 8 },
         { "maxRange": 16099, "damage": 3, "hitNum": 667, "hitDen": 1000 },
         { "maxRange": 31000, "damage": 2, "hitNum": 1, "hitDen": 2 }
@@ -549,7 +551,7 @@
         { "maxRange": 4999, "damage": 8, "hitNum": 81, "hitDen": 100 },
         { "maxRange": 9000, "damage": 6, "hitNum": 83, "hitDen": 100 }
       ],
-      "note": "Normal draws 2 per rules-turn and is ready after one rules-turn (33 s). Overload draws 4 and is ready after the same turn. Damage is fixed per band. A miss is 0 and does not roll damage. 66.7% is 667/1000. Bands are 0–1, 1.1–2, 2.1–3, 3.1–5, 5.1–16, and 16.1–31k (100 range units per tenth). A labeled start such as 1.1k stays on the later band, and the range below that start stays on the inner band. The normal cutoff is the measured DISRUPTOR_MAX_RANGE, 31000. Overload bands are 0–1, 1.1–2, 2.1–4.9, and 5–9k. Past 9000 an overload shot does nothing."
+      "note": "Normal draws 2 per rules-turn and is ready after one rules-turn (33 s). Overload draws 4 and is ready after the same turn. Damage is fixed per band. A miss is 0 and does not roll damage. 66.7% is 667/1000. Bands are 0-1, 1.1-2, 2.1-4, 4-5, 5.1-16, and 16.1-31k. The n=3 means (4.0 at 1.5k, 2.5 at 4k, 2.0 at 10k, 1.0 at 20k) match those hit chances, so the damage model stays. The 4.00k edge is exact: 4000 is the first range of the 4-at-62.5% band. A labeled start stays on the later band. The normal cutoff is DISRUPTOR_MAX_RANGE, 31000. Overload bands are unchanged. Past 9000 an overload shot does nothing."
     }
   },
   "reloadCountTokens": ["1", "2", "3"],

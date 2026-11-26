@@ -110,6 +110,16 @@ Checkpoint 6. Z-FF turns at 6.8 degrees per second at speed 5. Its 15–19 degre
 
 Racks A, B, and C deal 12 per drone, the same yield as Rack F. A and C hold 7, B holds 11. AMD-6 cuts off at 4k and is drone-only. Disruptor-1, Disruptor-3, Disruptor-4, Phaser-1, and Phaser-3 stay the global tables. Across the eight empires, a shared weapon keeps one per-mount table [M–H].
 
+## Plasma-G flight
+
+The HUD volley is the warhead at launch, 20 per tube. The bolt then decays and dies. Speed is 33 range units per tick, so 360 ticks (12 s) is about 11.9k of travel. Impact damage is the yield times the fraction of that life still left. That line is provisional: a short hit read a full 20 where the line says about 17, and an 8k flight of a 60-point volley read about 19 where the line says about 20. F, S, and R do not use this life.
+
+## n=3 motion
+
+F-CA at speed 15 turns at 7.59±0.16 deg/s, which the existing 7.58 point already matches. The delay at that speed is 1.11±0.10 s. The HET there is 49.1 deg/s on the game clock (48.1±3.8 wall) after 5.70±0.09 s. Acceleration is speed 10 at 18.8 s, speed 20 at 41.5 s, and speed 30.5 at 78.70 s.
+
+K-D7 at speed 15 turns at 8.40±0.03 deg/s with a 0.99 s delay. Its HET mean 56.6±2.6 still overlaps 57.8–59, so that rate stays. The speed-15 HET delay is 5.50±0.08 s. The 80.1±0.7 s run to speed 31.09 matches the existing clock.
+
 ## Alert
 
 Phasers, disruptors, and plasma take charge only while the ship is at Red Alert and the weapon is in normal mode. Green Alert does not charge those mounts. Drone racks still can. `setEnergy` flag bit 16 orders Green Alert. The default is Red, so an order that omits the flag keeps charging. The HUD does not send the flag yet.

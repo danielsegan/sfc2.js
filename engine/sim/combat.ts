@@ -528,6 +528,10 @@ function heavyFamily(internal: number): boolean {
   return internal === INTERNAL_PHOTON || internal === INTERNAL_DISRUPTOR;
 }
 
+function plasmaFlight(def: WeaponDef): boolean {
+  return def.internal === INTERNAL_PLASMA && def.flightTicks > 0;
+}
+
 function overloadHeavy(def: WeaponDef, mode: number): boolean {
   return mode === MODE_OVERLOAD && (def.internal === INTERNAL_PHOTON || def.internal === INTERNAL_DISRUPTOR);
 }
@@ -535,7 +539,7 @@ function overloadHeavy(def: WeaponDef, mode: number): boolean {
 function armCostPoints(def: WeaponDef, mode: number): number {
   if (def.internal === INTERNAL_PHASER) return def.chargeCost;
   if (overloadHeavy(def, mode)) return def.overloadArmCost;
-  if (heavyFamily(def.internal)) return def.armCost;
+  if (heavyFamily(def.internal) || plasmaFlight(def)) return def.armCost;
   return 0;
 }
 
@@ -593,7 +597,7 @@ function acceptedEnergy(
     const room = need + scaleByCapacitorRate(capRoom, rate);
     return request100 < room ? request100 : room;
   }
-  if (heavyFamily(def.internal)) {
+  if (heavyFamily(def.internal) || plasmaFlight(def)) {
     const cost = armCostPoints(def, mode);
     if (cost <= 0) return 0;
     const need = scale(cost) - mount.charge100;
@@ -819,7 +823,7 @@ function applySetEnergy(world: World, cmd: Command, ctx: TickContext, options: R
       return;
     }
     const def = weaponDef(mounts[ask.slot]!.weaponId);
-    if (!def || (def.internal !== INTERNAL_PHASER && !heavyFamily(def.internal))) {
+    if (!def || (def.internal !== INTERNAL_PHASER && !heavyFamily(def.internal) && !plasmaFlight(def))) {
       emitRule(ctx, id as number, R.notInDuelSlice, -1);
       return;
     }
@@ -1046,6 +1050,10 @@ function mountReady(mount: MountMem, def: WeaponDef): boolean {
     if (cost <= 0) return false;
     return mount.charge100 >= scale(cost) && mount.ticksCharging >= ticks;
   }
+  if (plasmaFlight(def)) {
+    if (def.armCost <= 0) return false;
+    return mount.charge100 >= scale(def.armCost) && mount.ticksCharging >= def.armTicks;
+  }
   if (def.bands.length > 0 && def.armCost <= 0 && def.chargeCost <= 0) return true;
   return false;
 }
@@ -1134,7 +1142,7 @@ function applyFire(world: World, cmd: Command, ctx: TickContext): void {
   }
   const mount = mounts[slotIndex]!;
   const def = weaponDef(mount.weaponId);
-  if (!def || (def.internal !== INTERNAL_PHASER && !heavyFamily(def.internal))) {
+  if (!def || (def.internal !== INTERNAL_PHASER && !heavyFamily(def.internal) && !plasmaFlight(def))) {
     emitRule(ctx, id as number, R.notInDuelSlice, -1);
     return;
   }
@@ -1180,6 +1188,38 @@ function applyFire(world: World, cmd: Command, ctx: TickContext): void {
     emitRule(ctx, id as number, R.outOfArc, -1);
     return;
   }
+  if (plasmaFlight(def)) {
+    if (!withinRange(dx, dy, def.maxRange) || def.directDamage <= 0 || def.projectileSpeed <= 0) {
+      emitRule(ctx, id as number, R.outOfRange, -1);
+      return;
+    }
+    const seq = fields[H.shotSeq]! + 1;
+    if (seq <= 0) throw new Error('shot seq');
+    fields[H.shotSeq] = seq;
+    const shotId = world.alloc('seeker');
+    world.setPosition(shotId, from.x, from.y);
+    const shot: ShotMem = {
+      live: 1,
+      owner: id as number,
+      target: targetId as number,
+      remaining: launchRange(dx, dy),
+      speed: fx(def.projectileSpeed) as number,
+      damage: def.directDamage,
+      prox: def.flightTicks,
+      mode: mount.mode,
+      seq,
+      unit: 1,
+      life: def.flightTicks,
+    };
+    mount.charge100 = 0;
+    mount.ticksCharging = 0;
+    writeShot(world, shotId, shot);
+    writeMounts(world, id, mounts);
+    remember(fields, VERB_FIRE, R.ok, def.directDamage);
+    writeHull(world, id, fields);
+    emitRule(ctx, id as number, R.ok, def.directDamage);
+    return;
+  }
   const shotHit = shotDamage(def, mount.mode, dx, dy, ctx);
   if (!shotHit) {
     emitRule(ctx, id as number, R.outOfRange, -1);
@@ -1211,6 +1251,7 @@ function applyFire(world: World, cmd: Command, ctx: TickContext): void {
       mode: mount.mode,
       seq,
       unit,
+      life: 0,
     };
     writeShot(world, shotId, shot);
     writeMounts(world, id, mounts);
@@ -1291,19 +1332,23 @@ function flyShots(world: World, ctx: TickContext): void {
   for (const id of ids) {
     const shot = readShot(world, id);
     if (shot.live !== 1) continue;
+    const timed = shot.life > 0;
+    if (timed) shot.life -= 1;
     const remaining = sub(fxRaw(shot.remaining), fxRaw(shot.speed)) as number;
     const prox = shot.mode === MODE_PROXIMITY && remaining <= shot.prox;
     const direct = shot.mode !== MODE_PROXIMITY && remaining <= 0;
-    if (!prox && !direct) {
+    const faded = timed && shot.life <= 0 && !direct && !prox;
+    if (!prox && !direct && !faded) {
       shot.remaining = remaining;
       writeShot(world, id, shot);
       continue;
     }
     shot.live = 0;
     shot.remaining = remaining;
+    if (direct && timed && shot.prox > 0) shot.damage = rulesDiv(shot.damage * shot.life, shot.prox);
     writeShot(world, id, shot);
     world.despawn(id);
-    impactShot(world, shot, ctx);
+    if (!faded) impactShot(world, shot, ctx);
   }
 }
 

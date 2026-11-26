@@ -89,7 +89,7 @@ export const HULL_FIELDS = 82;
 
 /** One in-flight heavy weapon. Rows live on seeker entities, not on the ship. */
 export const SHOT = 'shot';
-export const SHOT_FIELDS = 10;
+export const SHOT_FIELDS = 11;
 
 export const S = {
   live: 0,
@@ -103,6 +103,8 @@ export const S = {
   seq: 8,
   /** 1 = damage is whole points. 100 = damage is hundredths of a point. */
   unit: 9,
+  /** Ticks of flight left. 0 means the shot is not on a life clock. */
+  life: 10,
 } as const;
 
 export const M = {
@@ -142,6 +144,7 @@ export interface ShotMem {
   mode: number;
   seq: number;
   unit: number;
+  life: number;
 }
 
 export interface ShipSystems {
@@ -223,6 +226,7 @@ export function readShot(world: World, id: EntityId): ShotMem {
     mode: raw[S.mode]!,
     seq: raw[S.seq]!,
     unit: raw[S.unit]! > 0 ? raw[S.unit]! : 1,
+    life: raw[S.life] ?? 0,
   };
 }
 
@@ -238,6 +242,7 @@ export function writeShot(world: World, id: EntityId, shot: ShotMem): void {
     shot.mode,
     shot.seq,
     shot.unit > 0 ? shot.unit : 1,
+    shot.life > 0 ? shot.life : 0,
   ]);
 }
 
@@ -440,6 +445,7 @@ function shotFrom(raw: readonly number[], base: number): ShotMem {
     mode: raw[base + S.mode]!,
     seq: raw[base + S.seq]!,
     unit: raw[base + S.unit]! > 0 ? raw[base + S.unit]! : 1,
+    life: raw[base + S.life] ?? 0,
   };
 }
 
