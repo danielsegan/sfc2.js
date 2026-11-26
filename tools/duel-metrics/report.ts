@@ -84,7 +84,7 @@ function row(
   };
 }
 
-const EXTRA_TURN: Readonly<Record<string, { speed: number; deg: number; delay: number; timeTo10: number; conf: 'H' | 'M' }>> = {
+const EXTRA_TURN: Readonly<Record<string, { speed: number; deg: number; delay: number; timeTo10: number; conf: 'H' | 'M'; scoreDelay?: boolean }>> = {
   'K-E4': { speed: 1000, deg: 10.1, delay: 0.75, timeTo10: 17.9, conf: 'M' },
   'K-F5': { speed: 1000, deg: 10.4, delay: 1, timeTo10: 25, conf: 'H' },
   'K-C8': { speed: 1000, deg: 8, delay: 1.1, timeTo10: 28.6, conf: 'H' },
@@ -103,6 +103,9 @@ const EXTRA_TURN: Readonly<Record<string, { speed: number; deg: number; delay: n
   'I-FF': { speed: 500, deg: 5.3, delay: 1, timeTo10: 12.5, conf: 'M' },
   'I-CA': { speed: 1000, deg: 7.25, delay: 1.95, timeTo10: 26.3, conf: 'M' },
   'I-DN': { speed: 1000, deg: 6.85, delay: 1.3, timeTo10: 20.8, conf: 'M' },
+  'Z-FF': { speed: 500, deg: 6.8, delay: 3.6, timeTo10: 12.5, conf: 'M', scoreDelay: false },
+  'Z-CA': { speed: 1000, deg: 8.25, delay: 1.45, timeTo10: 27, conf: 'H' },
+  'Z-DN': { speed: 2000, deg: 6.5, delay: 0, timeTo10: 24.4, conf: 'M', scoreDelay: false },
 };
 
 const PLANT_AT_REST: Readonly<Record<string, { left: number; conf: 'H' | 'M' }>> = {
@@ -117,9 +120,11 @@ const PLANT_AT_REST: Readonly<Record<string, { left: number; conf: 'H' | 'M' }>>
   'G-DN': { left: 55.5, conf: 'M' },
   'I-CA': { left: 37.5, conf: 'M' },
   'I-DN': { left: 53.5, conf: 'M' },
+  'Z-CA': { left: 30.5, conf: 'H' },
+  'Z-DN': { left: 52.5, conf: 'M' },
 };
 
-const EXTRA_HET: Readonly<Record<string, { deg: number; delay: number; conf: 'H' | 'M' }>> = {
+const EXTRA_HET: Readonly<Record<string, { deg: number; delay?: number; conf: 'H' | 'M' }>> = {
   'K-E4': { deg: 70, delay: 5.7, conf: 'H' },
   'K-F5': { deg: 65.7, delay: 5.5, conf: 'H' },
   'K-C8': { deg: 47, delay: 5.7, conf: 'H' },
@@ -138,6 +143,8 @@ const EXTRA_HET: Readonly<Record<string, { deg: number; delay: number; conf: 'H'
   'I-FF': { deg: 58.5, delay: 5.7, conf: 'M' },
   'I-CA': { deg: 44, delay: 5.7, conf: 'M' },
   'I-DN': { deg: 39.25, delay: 5.55, conf: 'M' },
+  'Z-CA': { deg: 49.44, delay: 5.7, conf: 'H' },
+  'Z-DN': { deg: 37.08, conf: 'M' },
 };
 
 function turnRateScore(ship: ShipReport, sample: TurnSample): Scored {
@@ -160,6 +167,11 @@ function turnRateScore(ship: ShipReport, sample: TurnSample): Scored {
     if (speed === 1000) return scorePoint(ours, 6.2, 'H');
     if (speed === 1600) return scorePoint(ours, 6.9, 'H');
     if (speed === 2000) return scorePoint(ours, 7.4, 'H');
+    return scoreNa();
+  }
+  if (ship.turnHull === 'Z-DN') {
+    if (speed === 500) return scorePoint(ours, 4, 'M');
+    if (speed === 2000) return scorePoint(ours, 6.5, 'M');
     return scoreNa();
   }
   const extra = EXTRA_TURN[ship.turnHull];
@@ -342,7 +354,9 @@ function pushShip(rows: TableRow[], ship: ShipReport): void {
         : ship.turnHull === 'F-DN'
           ? scorePoint(delaySeconds, 1.2, 'H')
           : extraTurn
-            ? scorePoint(delaySeconds, extraTurn.delay, extraTurn.conf)
+            ? extraTurn.scoreDelay === false
+              ? scoreNa()
+              : scorePoint(delaySeconds, extraTurn.delay, extraTurn.conf)
             : ship.turnHull === 'K-D7'
               ? scoreRange(delaySeconds, 0.7, 1.8, 'M')
               : scoreNa();
@@ -388,7 +402,9 @@ function pushShip(rows: TableRow[], ship: ShipReport): void {
         : ship.turnHull === 'F-DN'
           ? scorePoint(hetDelay, 5.6, 'M')
           : extraHet
-            ? scorePoint(hetDelay, extraHet.delay, extraHet.conf)
+            ? extraHet.delay === undefined
+              ? scoreNa()
+              : scorePoint(hetDelay, extraHet.delay, extraHet.conf)
             : ship.turnHull === 'K-D7'
               ? scoreRange(hetDelay, 5.45, 5.93, 'H')
               : scoreNa();

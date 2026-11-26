@@ -506,7 +506,8 @@ function turnSpeeds(ship: ProbeShip): number[] {
   if (isCheckpointHull(ship.turnHull)) {
     if (ship.turnHull === 'G-FF' || ship.turnHull === 'G-CA') return [2000];
     if (ship.turnHull === 'G-DN') return [1500];
-    if (ship.turnHull === 'I-FF') return [500];
+    if (ship.turnHull === 'I-FF' || ship.turnHull === 'Z-FF') return [500];
+    if (ship.turnHull === 'Z-DN') return [500, 2000];
     return [1000];
   }
   const out: number[] = [];
@@ -537,6 +538,9 @@ function measureShip(ship: ProbeShip): ShipReport {
   const energy: EnergySample[] = [];
   for (const speedHundredths of turnSpeeds(ship)) {
     turns.push(measureTurn(ship.turnHull, speedHundredths));
+  }
+  const hetAt = ship.turnHull === 'Z-DN' ? [1760] : turnSpeeds(ship);
+  for (const speedHundredths of hetAt) {
     hets.push(measureHet(ship.turnHull, speedHundredths));
   }
   for (const speedHundredths of timeSpeeds(ship)) {

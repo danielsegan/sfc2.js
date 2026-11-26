@@ -151,9 +151,36 @@
       "PLaG": { "internal": "plasma", "weaponId": "plasma-g", "sameAs": "PlaG", "verification": "to-verify" },
       "PLaR": { "internal": "plasma", "weaponId": "plasma-r", "sameAs": "PlaR", "verification": "to-verify" },
       "PLaS": { "internal": "plasma", "weaponId": "plasma-s", "sameAs": "PlaS", "verification": "to-verify" },
-      "DroA": { "internal": "drone", "weaponId": "drone-a", "reloadCounted": true, "omnidirectional": true, "verification": "to-verify" },
-      "DroB": { "internal": "drone", "weaponId": "drone-b", "reloadCounted": true, "omnidirectional": true, "verification": "to-verify" },
-      "DroC": { "internal": "drone", "weaponId": "drone-c", "reloadCounted": true, "omnidirectional": true, "verification": "to-verify" },
+      "DroA": {
+        "internal": "drone",
+        "weaponId": "drone-a",
+        "reloadCounted": true,
+        "omnidirectional": true,
+        "verification": "observed-reference",
+        "directDamage": 12,
+        "maxRange": 33500,
+        "note": "Rack A [M]. 12 per drone, flat from 0.8k through at least 29.8k, the same yield as Rack F. The Mirak run did not cross the cutoff. 33.5k is the Klingon Rack F figure. Seven drones per rack. That count is not a clock."
+      },
+      "DroB": {
+        "internal": "drone",
+        "weaponId": "drone-b",
+        "reloadCounted": true,
+        "omnidirectional": true,
+        "verification": "observed-reference",
+        "directDamage": 12,
+        "maxRange": 33500,
+        "note": "Rack B [M]. Same 12-point drone as Rack A. Eleven drones per rack. That count is not a clock. Max range was not crossed on Mirak."
+      },
+      "DroC": {
+        "internal": "drone",
+        "weaponId": "drone-c",
+        "reloadCounted": true,
+        "omnidirectional": true,
+        "verification": "observed-reference",
+        "directDamage": 12,
+        "maxRange": 33500,
+        "note": "Rack C [M]. Same 12-point drone as Rack A. Seven drones per rack. That count is not a clock. Max range was not crossed on Mirak."
+      },
       "DroF": {
         "internal": "drone",
         "weaponId": "drone-f",
@@ -215,7 +242,16 @@
           { "maxRange": 30400, "damage": 2 }
         ]
       },
-      "ADD6": { "internal": "add", "weaponId": "add-6", "reloadCounted": true, "omnidirectional": true, "verification": "to-verify", "note": "Observed Arc values are only 1. Whether that number is reloads or rack capacity is TO VERIFY." },
+      "ADD6": {
+        "internal": "add",
+        "weaponId": "add-6",
+        "reloadCounted": true,
+        "omnidirectional": true,
+        "verification": "observed-reference",
+        "directDamage": 0,
+        "maxRange": 4000,
+        "note": "AMD-6 on the Z-DN [M-H]. 0-6 per mount at 0.8-4.0k and expected 0 against ships, so it is drone-only. Hard cutoff 4.0k. The sim has no drone interception, so this entry does not deal that roll to a ship."
+      },
       "ADD12": { "internal": "add", "weaponId": "add-12", "reloadCounted": true, "omnidirectional": true, "verification": "to-verify", "note": "Observed Arc values are only 1. Whether that number is reloads or rack capacity is TO VERIFY." },
       "Ph1": {
         "internal": "phaser",

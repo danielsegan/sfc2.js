@@ -61,7 +61,8 @@
     "I-DN",
     "R-KR",
     "F-FF",
-    "G-DN"
+    "G-DN",
+    "Z-DN"
   ],
   "hullOrderNote": "Stable sim ids: engine/sim numbers hull rows by their position in this list, so append new hull keys at the end. Every key under hulls must be listed. default is the row for hulls with no entry of their own. Editing a row's speedPoints needs no code change.",
   "hulls": {
@@ -1475,56 +1476,38 @@
       }
     },
     "Z-CA": {
-      "status": "partial",
-      "note": "CE Tier-2 in-battle capture 2026-11-24 (Wintermute, Mirak): usable HET data at speed(s) 5, 15, 31. sim `turnAngle16` is the 90\u00b0 preset baseline (`16384`), not the captured pad sweep; measured sweep at speed(s) 5, 15, 31 is 90.3\u00b0, 89.7\u00b0, 89.7\u00b0, treated as 90\u00b0 preset overshoot/undershoot; sim uses 16384 and audit keeps the measured `deg` (TO VERIFY). Wall-clock rate fallback at speed(s) 5, 15, 31 (TO VERIFY game-clock). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "status": "measured",
+      "note": "Checkpoint 6 [H]. 47-52 deg/s, delay 5.6-5.7 s. Stored as the midpoint 49.4 deg/s and 171 ticks (5.7 s). Sweep stays the 90 deg baseline.",
       "verification": {
-        "delayTicks": "measured Tier-2 capture 2026-11-24 (171 ticks / 5.7 s baseline where within 5.4-6.0 s, else per-speed rounded); multi-run confirmation TO VERIFY",
-        "turnAngle16": "90 deg preset baseline (16384); captured pad sweep is not a hull property (TO VERIFY); audit deg keeps measured overshoot/undershoot of the 90\u00b0 preset",
-        "turnRate16PerTick": "measured at speed(s) 5, 15, 31"
+        "delayTicks": "171 ticks [5.7 s]",
+        "turnAngle16": "90 deg preset baseline (16384)",
+        "turnRate16PerTick": "Checkpoint 6 [H]. 47-52 deg/s."
       },
       "speedPoints": [
         {
-          "speed": 5,
+          "speed": 10,
           "delayTicks": 171,
           "turnAngle16": 16384,
-          "turnRate16PerTick": 318
-        },
-        {
-          "speed": 15,
-          "delayTicks": 171,
-          "turnAngle16": 16384,
-          "turnRate16PerTick": 296
-        },
-        {
-          "speed": 31,
-          "delayTicks": 171,
-          "turnAngle16": 16384,
-          "turnRate16PerTick": 284
+          "turnRate16PerTick": 300
         }
       ],
       "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.het.{5,15,31} measured; omitted/missing speeds TO VERIFY",
+        "source": "Wintermute checkpoint 6",
+        "verification": "Checkpoint 6 [H]. 47-52 deg/s, delay 5.6-5.7 s.",
         "expect": {
-          "turn.het.5.deg": 90.3,
+          "turn.het.5.deg": 90,
           "turn.het.5.delayS": 5.7,
-          "turn.het.5.degPerSecond": 52.39,
-          "turn.het.15.deg": 89.7,
-          "turn.het.15.delayS": 5.7,
-          "turn.het.15.degPerSecond": 48.85,
-          "turn.het.31.deg": 89.7,
+          "turn.het.5.degPerSecond": 49.44,
+          "turn.het.31.deg": 90,
           "turn.het.31.delayS": 5.7,
-          "turn.het.31.degPerSecond": 46.86
+          "turn.het.31.degPerSecond": 49.44
         },
         "tolerances": {
           "turn.het.5.deg": 6,
-          "turn.het.5.delayS": 0.3,
+          "turn.het.5.delayS": 0.35,
           "turn.het.5.degPerSecond": 6,
-          "turn.het.15.deg": 6,
-          "turn.het.15.delayS": 0.3,
-          "turn.het.15.degPerSecond": 6,
           "turn.het.31.deg": 6,
-          "turn.het.31.delayS": 0.3,
+          "turn.het.31.delayS": 0.35,
           "turn.het.31.degPerSecond": 6
         }
       }
@@ -1699,6 +1682,44 @@
           "turn.het.31.deg": 6,
           "turn.het.31.delayS": 0.35,
           "turn.het.31.degPerSecond": 6
+        }
+      }
+    },
+    "Z-DN": {
+      "status": "measured",
+      "note": "Checkpoint 6 [M]. About 37 deg/s at speed 17.6. Speeds 5 and 31 were not sampled; this one point clamps to them. Delay is the shared 171-tick baseline because this checkpoint did not read a Z-DN delay. Sweep stays the 90 deg baseline.",
+      "verification": {
+        "delayTicks": "171 ticks, the shared baseline, not a Mirak reading",
+        "turnAngle16": "90 deg preset baseline (16384)",
+        "turnRate16PerTick": "Checkpoint 6 [M]. About 37 deg/s at speed 17.6."
+      },
+      "speedPoints": [
+        {
+          "speed": 18,
+          "speedHundredths": 1760,
+          "delayTicks": 171,
+          "turnAngle16": 16384,
+          "turnRate16PerTick": 225
+        }
+      ],
+      "audit": {
+        "source": "Wintermute checkpoint 6",
+        "verification": "About 37 deg/s at speed 17.6 [M]. Speeds 5 and 31 clamp to that point and were not sampled.",
+        "expect": {
+          "turn.het.5.deg": 90,
+          "turn.het.5.delayS": 5.7,
+          "turn.het.5.degPerSecond": 37.08,
+          "turn.het.31.deg": 90,
+          "turn.het.31.delayS": 5.7,
+          "turn.het.31.degPerSecond": 37.08
+        },
+        "tolerances": {
+          "turn.het.5.deg": 6,
+          "turn.het.5.delayS": 0.35,
+          "turn.het.5.degPerSecond": 4,
+          "turn.het.31.deg": 6,
+          "turn.het.31.delayS": 0.35,
+          "turn.het.31.degPerSecond": 4
         }
       }
     }
