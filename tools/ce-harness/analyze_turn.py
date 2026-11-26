@@ -21,15 +21,18 @@ def speed(img):
     try: v = float(s)
     except ValueError: return None
     return v if 0 <= v <= 40 else None
-# Energy panel (Federation HUD skin): value boxes inside the 200x232 panel crop.
-# Wider/taller POWER/SYSTEMS/OTHER/EXCESS boxes (the old 26x13+56+7 box clipped
-# "15.0" / "19.0" on small hulls and tesseract returned 115 / 119). Scale and a
-# white border help; values outside 0-80 are treated as OCR junk and stored as null.
+# Energy panel (per-skin HUD coordinates inside the 200x232 panel crop).
+# Wider/taller POWER/SYSTEMS/OTHER/EXCESS boxes avoid clipping leading digits.
+# Scale and a white border help; values outside 0-80 are treated as OCR junk and stored as null.
 ENERGY_BOXES = {"power": "40x16+52+5", "systems": "40x16+52+16", "other": "40x16+52+170", "excess": "40x16+52+182"}
 for i, y in enumerate((37, 64, 91, 118, 145)):
     ENERGY_BOXES[f"row{i+1}_level"] = f"18x14+14+{y}"
     ENERGY_BOXES[f"row{i+1}_a"] = f"32x14+85+{y}"
     ENERGY_BOXES[f"row{i+1}_b"] = f"32x14+126+{y}"
+KLINGON_ENERGY_BOXES = {"systems": "34x14+58+22", "other": "30x14+58+165", "excess": "30x14+58+184"}
+for i, y in enumerate((43, 69, 95, 121, 147)):
+    KLINGON_ENERGY_BOXES[f"row{i+1}_a"] = f"30x14+86+{y}"
+ENERGY_BOXES_BY_HUD = {"federation": ENERGY_BOXES, "klingon": KLINGON_ENERGY_BOXES}
 def _ocr_energy(path, box):
     subprocess.run(["convert", path, "-crop", box, "+repage", "-resize", "600%",
                     "-separate", "-evaluate-sequence", "max", "-negate",
@@ -43,10 +46,11 @@ def _sane_energy(name, v):
     if name in ("power", "systems", "other", "excess") and (v < 0 or v > 80):
         return None
     return v
-def energy(path):
+def energy(path, hud="federation"):
     if not os.path.exists(path): return None
+    boxes = ENERGY_BOXES_BY_HUD.get((hud or "federation").lower(), ENERGY_BOXES)
     out = {}
-    for k, box in ENERGY_BOXES.items():
+    for k, box in boxes.items():
         raw = _ocr_energy(path, box) if k in ("power", "systems", "other", "excess") else ocr(path, box, "0123456789.")
         try: v = float(raw)
         except ValueError: v = None
@@ -84,7 +88,7 @@ if __name__ == "__main__":
         tail = [v for t, v in sm[-10:]]
         if len(raw) < 2 or not tail:
             from turn_tags import speed_key as _speed_key
-            res = {"label": label, "energy_panel": energy(f"/out/frames/{label}/energy.png"), "button": cap["button"], "kind": turn_kind(cap["button"]), "target_speed": cap["target_speed"],
+            res = {"label": label, "energy_panel": energy(f"/out/frames/{label}/energy.png", hud=cap.get("hud", "federation")), "button": cap["button"], "kind": turn_kind(cap["button"]), "target_speed": cap["target_speed"],
                    "settled_speed": cap["speed_history"][-1] if cap["speed_history"] else None,
                    "speed_during_run": None, "fps": None, "game_s_per_wall_s": None,
                    "total_turn_deg": None, "order_delay_s": None, "t10_s": None, "t50_s": None, "t90_s": None,
@@ -112,7 +116,7 @@ if __name__ == "__main__":
         cl = [(r["t"], r["clock"]) for r in rows if r["clock"] is not None]
         gr = sane_clock_ratio((cl[-1][1] - cl[0][1]) / (cl[-1][0] - cl[0][0]) if len(cl) > 3 and cl[-1][0] > cl[0][0] else None)
         spd = [r["speed"] for r in rows if r["speed"] is not None]
-        res = {"label": label, "energy_panel": energy(f"/out/frames/{label}/energy.png"), "button": cap["button"], "kind": turn_kind(cap["button"]), "target_speed": cap["target_speed"],
+        res = {"label": label, "energy_panel": energy(f"/out/frames/{label}/energy.png", hud=cap.get("hud", "federation")), "button": cap["button"], "kind": turn_kind(cap["button"]), "target_speed": cap["target_speed"],
                "settled_speed": cap["speed_history"][-1] if cap["speed_history"] else None,
                "speed_during_run": [min(spd), max(spd)] if spd else None,
                "fps": round(len(rows) / (rows[-1]["t"] - rows[0]["t"]), 2),
