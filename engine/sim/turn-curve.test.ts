@@ -145,7 +145,7 @@ describe('turn curve tables', () => {
       ['L-DD', 33, 46, 60],
       ['G-CC', 28, 46, 44],
       ['I-CC', 26, 47, 49],
-      ['Z-CA', 31, 51, 50],
+      ['Z-CA', 31, 50, 50],
     ];
     for (const [hull, r5, r10, r20] of nonFedWant) {
       const id = curveId(NORMAL_CURVE, hull);

@@ -231,7 +231,7 @@ describe('orderHet (verb 13)', () => {
         [VERB_ORDER_HET, hetPayload(SHIP + 5, 1)],
       ],
     });
-    expect(heading(sim, 0)).toBe(318);
+    expect(heading(sim, 0)).toBe(300);
     expect(heading(sim, 1)).toBe(0);
     expect(heading(sim, 2)).toBe(267);
     expect(heading(sim, 3)).toBe(0);

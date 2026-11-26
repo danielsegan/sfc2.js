@@ -562,8 +562,8 @@
       "hull": "Z-CA",
       "speedHundredths": 1000,
       "expect": {
-        "turnRate16PerTick": 51,
-        "delayTicks": 45
+        "turnRate16PerTick": 50,
+        "delayTicks": 44
       }
     }
   ]

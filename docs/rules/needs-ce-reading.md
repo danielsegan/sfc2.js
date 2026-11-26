@@ -29,7 +29,7 @@ Placeholder numbers in the Phase 2 duel. Each one stays until a Community Editio
 | Shield boundary | A hit on a facing boundary can drop both adjacent facings [M–H]. The sim still assigns the clockwise-next facing only. | `facingForRelative` |
 | K-D7 checkpoint 2 | Single-run turn 9.0–9.1 °/s and HET 52–58 °/s. The #161 aggregates stay. POWER 39 [H] matches the probe. | — |
 | K-E4 HET retry | A second HET sample was 50 °/s. The table stores 70 °/s. | `K-E4` HET |
-| Low POWER vs top speed | K-E4, K-F5, L-FF, H-HN, G-FF, and I-FF read POWER 15 or 20 while the top speed is about 31. R-SNA POWER 7 is energy-capped at 22. The probes keep warp 34 so the turn can be ordered. | — |
+| Low POWER vs top speed | K-E4, K-F5, L-FF, H-HN, G-FF, I-FF, and Z-FF read POWER 15 or 20 while the top speed is about 31. R-SNA POWER 7 is energy-capped at 22. The probes keep warp 34 so the turn can be ordered. | — |
 | L-CA mis-tag | The live 14.9 °/s with a 5.2 s delay looks like a HET [L]. Ignored. | `L-CA` |
 | L-DN HET outlier | One 19.9 °/s HET reading is ignored. | `L-DN` |
 | L-FF outlier | One 28 °/s run is ignored. Gold hull tracking is poor [M–L]. | `L-FF` |
@@ -47,3 +47,11 @@ Placeholder numbers in the Phase 2 duel. Each one stays until a Community Editio
 | Phaser capacitor 32–34 s | Klingon about 32 s, Lyran about 32–34 s. Still not a separate clock. | — |
 | Drone reload | Rack F reload is about 65–68 s. Initial arm is 44 s. Reload is not a second clock. | `DroF` |
 | Red Alert charge | Phasers, disruptors, and plasma charge only at Red Alert in NORMAL. Green Alert leaves drone racks able to charge. `setEnergy` flag bit 16 orders Green. The HUD does not send it yet. | `H.alert` |
+| Z-FF high-speed turn | 15.5–18.7 °/s at speed 10–20 is [L]. Other frigates sit at 9–11. The curve keeps 6.8 °/s at speed 5. | `Z-FF` |
+| Z-FF HET | About 68–87 °/s from short bursts [L–M], including speed 15. Not encoded. The hull stays on the default HET row. | `Z-FF` |
+| Z-FF turn delay | Checkpoint 6 did not restate a delay. The speed-5 row keeps the earlier delay. | `Z-FF` |
+| Z-DN turn gaps | Normal turn at speed 10 was not sampled. The table interpolates between speed 5 and speed 20. HET at speeds 5 and 31 was not sampled; the speed-17.6 rate clamps to them. The HET delay was not read, so the row uses the shared 171-tick baseline. | `Z-DN` |
+| Z-DN top speed | About 30.6 is not fully confirmed. The accel band uses that figure as its end [M]. | `Z-DN` |
+| Drone rack max on Mirak | Racks A, B, and C stayed flat through 29.8k. The run did not cross a cutoff. 33.5k is the Klingon Rack F figure, shared because the yield matched. | `DroA` `DroB` `DroC` |
+| Mirak disruptor tails | Disruptor-3 was not read past 22k on Mirak, and Disruptor-4 was not read past 17k. The global tables are unchanged. Disruptor-1 and Disruptor-4 overload were not read. | `Dis3` `Dis4` `Dis1` |
+| ADD interception | AMD-6 is 0–6 at 0.8–4.0k and expected 0 against ships [M–H]. The sim does not intercept drones, so the roll is not applied to a ship. | `ADD6` |

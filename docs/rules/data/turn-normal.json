@@ -1594,11 +1594,11 @@
       }
     },
     "Z-FF": {
-      "status": "partial",
-      "note": "CE Tier-2 in-battle 10-90% capture 2026-11-24 (Wintermute, Mirak) at speed(s) 5, 10, 20, with per-hull measured normal delayTicks (30 Hz). Wall-clock rate fallback at speed(s) 5, 10, 20 (TO VERIFY game-clock). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "status": "measured",
+      "note": "Checkpoint 6 [M]. 6.8 deg/s at speed 5. The 15.5-18.7 deg/s readings at speed 10-20 are [L] and are not in this curve. Delay ticks are the earlier speed-5 row; checkpoint 6 did not restate a delay.",
       "verification": {
-        "turnRate16PerTick": "measured at speed(s) 5, 10, 20 (CE Tier-2 capture 2026-11-24); speeds <5 and >20 clamp to endpoints (TO VERIFY)",
-        "delayTicks": "measured single-run order_delay_s at speed(s) 5, 10, 20 (30 Hz); multi-run confirmation TO VERIFY"
+        "turnRate16PerTick": "checkpoint 6 speed 5 [M]; speeds 10-20 ignored [L]",
+        "delayTicks": "earlier speed-5 row, not restated in checkpoint 6"
       },
       "speedPoints": [
         {
@@ -1606,32 +1606,16 @@
           "speedHundredths": 500,
           "delayTicks": 108,
           "turnRate16PerTick": 41
-        },
-        {
-          "speed": 10,
-          "speedHundredths": 1000,
-          "delayTicks": 52,
-          "turnRate16PerTick": 94
-        },
-        {
-          "speed": 20,
-          "speedHundredths": 2000,
-          "delayTicks": 53,
-          "turnRate16PerTick": 113
         }
       ],
       "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.normal.{5,10,20}.degPerSecond measured (10-90%); omitted speeds and delayS TO VERIFY",
+        "source": "Wintermute checkpoint 6",
+        "verification": "6.8 deg/s at speed 5 [M]. Speeds 10-20 are [L] and are not expected.",
         "expect": {
-          "turn.normal.5.degPerSecond": 6.81,
-          "turn.normal.10.degPerSecond": 15.5,
-          "turn.normal.20.degPerSecond": 18.69
+          "turn.normal.5.degPerSecond": 6.8
         },
         "tolerances": {
-          "turn.normal.5.degPerSecond": 0.5,
-          "turn.normal.10.degPerSecond": 0.5,
-          "turn.normal.20.degPerSecond": 0.5
+          "turn.normal.5.degPerSecond": 0.5
         }
       }
     },
@@ -1689,10 +1673,10 @@
     },
     "Z-CA": {
       "status": "partial",
-      "note": "CE Tier-2 in-battle 10-90% capture 2026-11-24 (Wintermute, Mirak) at speed(s) 5, 10, 20, with per-hull measured normal delayTicks (30 Hz). Wall-clock rate fallback at speed(s) 20 (TO VERIFY game-clock). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "note": "Checkpoint 6 [H]. 8.2-8.3 deg/s at speed 10-20, delay 1.4-1.5 s. Stored as 50 units/tick and 44 ticks. The earlier speed-5 point is kept; this checkpoint did not remeasure it.",
       "verification": {
-        "turnRate16PerTick": "measured at speed(s) 5, 10, 20 (CE Tier-2 capture 2026-11-24); speeds <5 and >20 clamp to endpoints (TO VERIFY)",
-        "delayTicks": "measured single-run order_delay_s at speed(s) 5, 10, 20 (30 Hz); multi-run confirmation TO VERIFY"
+        "turnRate16PerTick": "checkpoint 6 [H] at speed 10-20; speed 5 is the earlier tier-2 point",
+        "delayTicks": "44 ticks (1.45 s) at speed 10-20 [H]"
       },
       "speedPoints": [
         {
@@ -1704,13 +1688,13 @@
         {
           "speed": 10,
           "speedHundredths": 1000,
-          "delayTicks": 45,
-          "turnRate16PerTick": 51
+          "delayTicks": 44,
+          "turnRate16PerTick": 50
         },
         {
           "speed": 20,
           "speedHundredths": 2000,
-          "delayTicks": 43,
+          "delayTicks": 44,
           "turnRate16PerTick": 50
         }
       ],
@@ -1719,8 +1703,8 @@
         "verification": "turn.normal.{5,10,20}.degPerSecond measured (10-90%); omitted speeds and delayS TO VERIFY",
         "expect": {
           "turn.normal.5.degPerSecond": 5.16,
-          "turn.normal.10.degPerSecond": 8.35,
-          "turn.normal.20.degPerSecond": 8.18
+          "turn.normal.10.degPerSecond": 8.25,
+          "turn.normal.20.degPerSecond": 8.25
         },
         "tolerances": {
           "turn.normal.5.degPerSecond": 0.5,
@@ -1756,11 +1740,11 @@
       }
     },
     "Z-DN": {
-      "status": "partial",
-      "note": "CE Tier-2 in-battle 10-90% capture 2026-11-24 (Wintermute, Mirak) at speed(s) 5, with per-hull measured normal delayTicks (30 Hz). Omitted (TO VERIFY): speed 10: null, null (already_facing); speed 20: null, null (already_facing). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "status": "measured",
+      "note": "Checkpoint 6 [M]. 4.0 deg/s at speed 5 and 6.5 deg/s at speed 20. Speed 10 was not sampled; the table interpolates between those points. Delay ticks stay the earlier speed-5 row because checkpoint 6 did not read a delay.",
       "verification": {
-        "turnRate16PerTick": "measured at speed(s) 5 (CE Tier-2 capture 2026-11-24); omitted/missing speeds TO VERIFY",
-        "delayTicks": "measured single-run order_delay_s at speed(s) 5 (30 Hz); multi-run confirmation TO VERIFY"
+        "turnRate16PerTick": "checkpoint 6 [M] at speed 5 and 20; speed 10 is interpolated",
+        "delayTicks": "earlier speed-5 row, not restated in checkpoint 6"
       },
       "speedPoints": [
         {
@@ -1768,16 +1752,24 @@
           "speedHundredths": 500,
           "delayTicks": 99,
           "turnRate16PerTick": 24
+        },
+        {
+          "speed": 20,
+          "speedHundredths": 2000,
+          "delayTicks": 99,
+          "turnRate16PerTick": 39
         }
       ],
       "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.normal.{5}.degPerSecond measured (10-90%); omitted speeds and delayS TO VERIFY",
+        "source": "Wintermute checkpoint 6",
+        "verification": "4.0 deg/s at speed 5 and 6.5 deg/s at speed 20 [M]. Speed 10 was not sampled, so the table interpolates it. Delay ticks are the earlier speed-5 row.",
         "expect": {
-          "turn.normal.5.degPerSecond": 4.0
+          "turn.normal.5.degPerSecond": 4.0,
+          "turn.normal.20.degPerSecond": 6.5
         },
         "tolerances": {
-          "turn.normal.5.degPerSecond": 0.5
+          "turn.normal.5.degPerSecond": 0.5,
+          "turn.normal.20.degPerSecond": 0.5
         }
       }
     },

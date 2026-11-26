@@ -104,6 +104,12 @@ Plasma tubes store a launch yield and an arm time only. F and G are 20 and arm i
 
 Fusion, hellbore, Phaser-G, and the PPD are range rolls in the weapon table. Hellbore stops at the last measured band, 21.4k. The PPD is 0 under 4k, then 6, 5, 4, an unsampled gap from 18k to 25.5k, then 3 and 2, and nothing past 30.4k. A shot in the gap does not pick a damage. Drone rack F is 12 per drone, arms in 44 seconds, and reaches about 33.5k. ESG contact damage is unmeasured.
 
+## Mirak
+
+Checkpoint 6. Z-FF turns at 6.8 degrees per second at speed 5. Its 15–19 degree readings at speed 10–20, and its HET, stay out of the tables. Z-CA turns at 8.2–8.3 degrees per second at speed 10–20, delay 1.4–1.5 seconds, and its HET is 47–52 degrees per second after 5.6–5.7 seconds [H]. Z-DN turns at 4.0 degrees per second at speed 5 and 6.5 at speed 20, and its HET is about 37 degrees per second at speed 17.6 [M]. Z-CA’s plant is 33 and Z-DN’s is 55. Z-FF’s POWER 15 cannot pay speed 31, so that probe stays at warp 34.
+
+Racks A, B, and C deal 12 per drone, the same yield as Rack F. A and C hold 7, B holds 11. AMD-6 cuts off at 4k and is drone-only. Disruptor-1, Disruptor-3, Disruptor-4, Phaser-1, and Phaser-3 stay the global tables. Across the eight empires, a shared weapon keeps one per-mount table [M–H].
+
 ## Alert
 
 Phasers, disruptors, and plasma take charge only while the ship is at Red Alert and the weapon is in normal mode. Green Alert does not charge those mounts. Drone racks still can. `setEnergy` flag bit 16 orders Green Alert. The default is Red, so an order that omits the flag keeps charging. The HUD does not send the flag yet.

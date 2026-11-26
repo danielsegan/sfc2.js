@@ -25,7 +25,10 @@
     "G-DN",
     "I-FF",
     "I-CA",
-    "I-DN"
+    "I-DN",
+    "Z-FF",
+    "Z-CA",
+    "Z-DN"
   ],
   "hulls": {
     "F-CA": {
@@ -259,6 +262,36 @@
         {
           "upToHundredths": 3100,
           "gainHundredths": 48,
+          "overTicks": 30
+        }
+      ]
+    },
+    "Z-FF": {
+      "note": "Checkpoint 6. About 0.80 speed/s, about 39 s to speed 31. POWER 15 cannot pay that top speed.",
+      "bands": [
+        {
+          "upToHundredths": 3100,
+          "gainHundredths": 80,
+          "overTicks": 30
+        }
+      ]
+    },
+    "Z-CA": {
+      "note": "Checkpoint 6 [H]. About 76 s to the power-capped top of 28, about 0.37 speed/s.",
+      "bands": [
+        {
+          "upToHundredths": 2800,
+          "gainHundredths": 37,
+          "overTicks": 30
+        }
+      ]
+    },
+    "Z-DN": {
+      "note": "Checkpoint 6 [M]. About 65-83 s to about 30.6. The band is the midpoint, about 0.41 speed/s. The 30.6 top is not fully confirmed.",
+      "bands": [
+        {
+          "upToHundredths": 3060,
+          "gainHundredths": 41,
           "overTicks": 30
         }
       ]

@@ -75,6 +75,7 @@ const EXTRA_HULLS = [
   'K-E4', 'K-F5', 'K-C8', 'R-SNA', 'R-KRC', 'R-CON',
   'L-FF', 'L-CA', 'L-DN', 'H-HN', 'H-RN', 'H-PAL',
   'G-FF', 'G-CA', 'G-DN', 'I-FF', 'I-CA', 'I-DN',
+  'Z-FF', 'Z-CA', 'Z-DN',
 ] as const;
 
 /** Measured plant when it can pay the flown top speed. The rest stay at 34 so a turn is not energy-capped. */
@@ -97,6 +98,9 @@ const CHECKPOINT_WARP: Readonly<Record<string, number>> = {
   'I-FF': 34,
   'I-CA': 40,
   'I-DN': 56,
+  'Z-FF': 34,
+  'Z-CA': 33,
+  'Z-DN': 55,
 };
 
 export function isCheckpointHull(turnHull: string): boolean {
