@@ -1197,6 +1197,77 @@ describe('energy, shields, and fire', () => {
   });
 });
 
+describe('plasma flight', () => {
+  function plasmaShip(): ShipSetup {
+    return cruiser({
+      fcPaid: 1,
+      mounts: [
+        {
+          slotIndex: 0,
+          weapon: 'PlaG',
+          arc: 'TEST-ALL',
+          chargePoints: 2,
+          boxes: 1,
+          mode: MODE_NORMAL,
+          ticksCharging: 3060,
+        },
+      ],
+    });
+  }
+
+  it('reports the Plasma-G warhead at launch and hits one facing for less than that', () => {
+    const sim = boot([
+      plasmaShip(),
+      cruiser({
+        shields: [40, 40, 40, 40, 40, 40],
+        shieldsMax: [40, 40, 40, 40, 40, 40],
+        mounts: [],
+      }),
+    ]);
+    const spawned = play(sim, [
+      { kind: VERB_SPAWN, payload: spawnPayload(0, 0, 0, 0) },
+      { kind: VERB_SPAWN, payload: spawnPayload(1, 1400, 0, 32768) },
+    ]);
+    const ids = spawned.events.filter((event) => event.kind === EVENT_SPAWN).map((event) => event.entity);
+    const launched = play(sim, [{ kind: VERB_FIRE, payload: firePayload(ids[0]!, 0, ids[1]!) }]);
+    expect(launched.events.find((event) => event.kind === EVENT_RULE)).toMatchObject({ a: R.ok, b: 20 });
+    expect(launched.events.find((event) => event.kind === EVENT_HIT)).toBeUndefined();
+    let hit = launched.events.find((event) => event.kind === EVENT_HIT);
+    for (let i = 0; i < 80 && !hit; i++) hit = play(sim).events.find((event) => event.kind === EVENT_HIT);
+    expect(hit).toBeTruthy();
+    const shields = viewAt(sim, 1).shields;
+    const lost = shields.map((value) => 40 - value).filter((value) => value > 0);
+    expect(lost).toEqual([hit!.b]);
+    expect(hit!.b).toBeGreaterThanOrEqual(15);
+    expect(hit!.b).toBeLessThan(20);
+    expect(viewAt(sim, 1).destroyed).toBe(0);
+  });
+
+  it('fades a Plasma-G bolt after 12 seconds when the target is farther than the flight', () => {
+    const sim = boot([
+      plasmaShip(),
+      cruiser({
+        shields: [40, 40, 40, 40, 40, 40],
+        shieldsMax: [40, 40, 40, 40, 40, 40],
+        mounts: [],
+      }),
+    ]);
+    const spawned = play(sim, [
+      { kind: VERB_SPAWN, payload: spawnPayload(0, 0, 0, 0) },
+      { kind: VERB_SPAWN, payload: spawnPayload(1, 23700, 0, 32768) },
+    ]);
+    const ids = spawned.events.filter((event) => event.kind === EVENT_SPAWN).map((event) => event.entity);
+    play(sim, [{ kind: VERB_FIRE, payload: firePayload(ids[0]!, 0, ids[1]!) }]);
+    let hit = false;
+    for (let i = 0; i < 400; i++) {
+      if (play(sim).events.some((event) => event.kind === EVENT_HIT)) hit = true;
+    }
+    expect(hit).toBe(false);
+    expect(liveShots(sim.snapshot().world)).toEqual([]);
+    expect(viewAt(sim, 1).shields).toEqual([40, 40, 40, 40, 40, 40]);
+  });
+});
+
 describe('CE weapon codes', () => {
   it('arms and fires a CA-shaped cruiser, and diagnoses an unknown code', () => {
     const text = [
@@ -1271,5 +1342,5 @@ describe('CE weapon codes', () => {
   });
 });
 
-const GOLDEN_HASHES = [2434342527, 1507241040, 3476217933, 2671815856];
+const GOLDEN_HASHES = [3668986402, 4195808852, 2966950304, 3134674332];
 const GOLDEN_EVENTS = [304015889, 2539086287, 4167057522];

@@ -32,22 +32,22 @@
   ],
   "hulls": {
     "F-CA": {
-      "note": "Wintermute aggregate 2026-11-25 [M]. Low speed is 0.30 speed/s (inside 0.285-0.31): 10 hundredths every 10 ticks through speed 5. Then 10 hundredths every 9 ticks through speed 20, about 61.7 s from rest. Then 2 hundredths per tick, so speed 30 is about 78.3 s and 30.5 about 79.2 s (reading: 30.5 in about 78.7 s, and 0-20 in about 61 s). The quoted 0.356 average from 3.5 to 30.5 does not also fit those two clocks and the low-speed rate, so the clocks and the low rate are the fit.",
+      "note": "n=3 [H]. Speed 10 at 18.8 s, speed 20 at 41.5 s, speed 30.5 at 78.70 s. Bands are 54, 44, and 28 hundredths per 30 ticks. The quoted 0.356 speed/s is not the from-rest rate; 30.5/78.70 is about 0.39.",
       "bands": [
         {
-          "upToHundredths": 500,
-          "gainHundredths": 10,
-          "overTicks": 10
+          "upToHundredths": 1000,
+          "gainHundredths": 54,
+          "overTicks": 30
         },
         {
           "upToHundredths": 2000,
-          "gainHundredths": 10,
-          "overTicks": 9
+          "gainHundredths": 44,
+          "overTicks": 30
         },
         {
           "upToHundredths": 3050,
-          "gainHundredths": 2,
-          "overTicks": 1
+          "gainHundredths": 28,
+          "overTicks": 30
         }
       ]
     },

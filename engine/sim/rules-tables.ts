@@ -225,6 +225,8 @@ interface WeaponJson {
   proxRadius?: number;
   proxDamage?: number;
   projectileSpeed?: number;
+  /** Ticks the bolt lives after launch. 0 means this row does not fly. */
+  flightTicks?: number;
   maxRange?: number;
   rangeBands?: readonly BandJson[];
   overloadRangeBands?: readonly BandJson[];
@@ -269,6 +271,8 @@ export interface WeaponDef {
   readonly proxDamage: number;
   readonly proxRadius: number;
   readonly projectileSpeed: number;
+  /** Ticks of flight. 0 means the weapon does not fly a decaying bolt. */
+  readonly flightTicks: number;
   readonly maxRange: number;
   readonly bands: readonly RangeBand[];
   readonly overloadBands: readonly RangeBand[];
@@ -423,6 +427,7 @@ function buildWeapons(): readonly WeaponDef[] {
       proxDamage: num(row.proxDamage),
       proxRadius: num(row.proxRadius),
       projectileSpeed: num(row.projectileSpeed),
+      flightTicks: num(row.flightTicks),
       maxRange: num(row.maxRange),
       bands,
       overloadBands,

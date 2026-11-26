@@ -115,6 +115,12 @@
           "turnRate16PerTick": 46
         },
         {
+          "speed": 15,
+          "speedHundredths": 1500,
+          "delayTicks": 33,
+          "turnRate16PerTick": 46
+        },
+        {
           "speed": 20,
           "speedHundredths": 2000,
           "delayTicks": 44,
@@ -188,7 +194,7 @@
     },
     "K-D7": {
       "status": "partial",
-      "note": "Wintermute aggregate 2026-11-25 [M]: about 5.4 deg/s at speed 5 (33 BAM/tick) and 9.0-9.4 deg/s from speed 10 to 31 (56 BAM/tick, 9.23 deg/s, through speed 20; 57 at speed 31). Delay stays 42 ticks (1.4 s), inside 0.7-1.8 s. Speeds 10 and 15 were below 9.0 and were raised.",
+      "note": "Wintermute aggregate 2026-11-25 [M]: about 5.4 deg/s at speed 5 and 9.0-9.4 deg/s from speed 10 to 31, except speed 15. n=3 at speed 15 is 8.40 deg/s (51 BAM/tick) and delay 0.99 s (30 ticks) [H]. Other speeds keep delay 42 ticks.",
       "verification": {
         "turnRate16PerTick": "measured [M]: ~5.4 at speed 5, 9.0-9.4 from 10 to 31",
         "delayTicks": "constant 42 ticks (1.4 s), inside the observed 0.7-1.8 s band [M]"
@@ -209,8 +215,8 @@
         {
           "speed": 15,
           "speedHundredths": 1500,
-          "delayTicks": 42,
-          "turnRate16PerTick": 56
+          "delayTicks": 30,
+          "turnRate16PerTick": 51
         },
         {
           "speed": 20,
@@ -231,7 +237,7 @@
         "expect": {
           "turn.normal.5.degPerSecond": 5.4,
           "turn.normal.10.degPerSecond": 9.2,
-          "turn.normal.15.degPerSecond": 9.2,
+          "turn.normal.15.degPerSecond": 8.4,
           "turn.normal.20.degPerSecond": 9.3,
           "turn.normal.31.degPerSecond": 9.4
         },

@@ -137,7 +137,7 @@ describe('turn curve tables', () => {
     expect(curvePoint(NORMAL_CURVE, d7, q(0))).toMatchObject({ rate: 33, delay: 42 });
     expect(curvePoint(NORMAL_CURVE, d7, q(5))).toMatchObject({ rate: 33, delay: 42 });
     expect(curvePoint(NORMAL_CURVE, d7, q(10))).toMatchObject({ rate: 56, delay: 42 });
-    expect(curvePoint(NORMAL_CURVE, d7, q(15))).toMatchObject({ rate: 56, delay: 42 });
+    expect(curvePoint(NORMAL_CURVE, d7, q(15))).toMatchObject({ rate: 51, delay: 30 });
     expect(curvePoint(NORMAL_CURVE, d7, q(20))).toMatchObject({ rate: 56, delay: 42 });
     expect(curvePoint(NORMAL_CURVE, d7, q(31))).toMatchObject({ rate: 57, delay: 42 });
     const nonFedWant: [string, number, number, number][] = [

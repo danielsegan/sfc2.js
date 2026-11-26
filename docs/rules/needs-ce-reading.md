@@ -35,7 +35,8 @@ Placeholder numbers in the Phase 2 duel. Each one stays until a Community Editio
 | L-FF outlier | One 28 °/s run is ignored. Gold hull tracking is poor [M–L]. | `L-FF` |
 | G-FF and I-FF mis-tags | Speed-5 G-FF runs of 14–17 °/s and the I-FF 15.5 °/s at speed 10 look like mis-tagged HETs [L]. Ignored. | — |
 | I-CA mis-tags | 22–25 °/s at speeds 15 and 31 are [L]. Ignored. | `I-CA` |
-| Plasma falloff | HUD readouts stay flat. One ISC Plasma-G volley that read 60 hit for about 19 shield points at 14.4k [L–M]. No in-flight falloff table. | `PlaF` `PlaG` `PlaR` `PlaS` |
+| Plasma-G decay | Provisional straight line from the launch yield to 0 at 12 s (about 11.9k). The 1.7k hit read a full 20; the line predicts about 17. The 8k travel of a 60-point volley read about 19; the line predicts about 20. The exact curve is still open. | `PlaG` |
+| Plasma F/S/R flight | Flight life was read for Plasma-G only. F, S, and R still store a launch yield and do not fly. | `PlaF` `PlaS` `PlaR` |
 | Plasma-D | Defensive. The HUD read 0. No damage table. | `PlaD` |
 | Plasma both tubes | Plasma-S both tubes together were about 135 s. Each tube is about 95 s. | `PlaS` |
 | ESG damage | The volley HUD reads 0 and each mount draws 3 power continuously. Contact damage is unmeasured, and the 3-power draw is not a sim consumer yet. | `ESG` |

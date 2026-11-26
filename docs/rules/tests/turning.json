@@ -230,8 +230,8 @@
       "hull": "K-D7",
       "speedHundredths": 1500,
       "expect": {
-        "turnRate16PerTick": 56,
-        "delayTicks": 42
+        "turnRate16PerTick": 51,
+        "delayTicks": 30
       }
     },
     {

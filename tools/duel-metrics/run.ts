@@ -523,6 +523,7 @@ function timeSpeeds(ship: ProbeShip): number[] {
   if (ship.turnHull === 'K-D7' || ship.turnHull === 'F-FF') out.push(31);
   const hundredths: number[] = [];
   for (const speed of out) hundredths.push(speed * 100);
+  if (ship.turnHull === 'F-CA') hundredths.push(3050);
   return hundredths;
 }
 
