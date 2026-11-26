@@ -3,7 +3,10 @@
 Usage: analyze_turn2.py <label> ... -> /out/runs/<label>.r2.json (same summary fields as analyze_turn.py)"""
 import json, os, sys, statistics
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from heading2 import track
+if os.environ.get("HEADING_MOD") == "heading2":
+    from heading2 import track
+else:
+    from heading_clean import track
 from analyze_turn import clock
 from turn_tags import apply_noop, sane_clock_ratio, turn_kind, speed_key
 

@@ -45,6 +45,18 @@ licensed install lives at `/srv/sfc2/reference/2.670`.
 | `helm_status.py` | OCR `CHANCE FOR HET` and a "hull integrity has Broken Down" flag, used to skip later HETs. |
 | `tier2_one.sh` | One queued hull: normal turns, then HETs only while chance/integrity allow, weapons probe from speed 0. |
 | `library_sweep.py` | Vessel Library / CHOOSE VESSEL census using the same per-skin navigation and both-side stats OCR. |
+| `heading_clean.py` | Star-free rotation registration (`numpy` + `PIL`), filtering background stars with connected components and lowering the green floor (`g>=15`) for shadowed hulls. |
+| `duel_accel.py` | Phase-2 acceleration, game-clock, and energy-panel capture (`CIRCLE` mode keeps the ship near map centre via N/W/S/E clicks). |
+| `duel_weapons.py` | Phase-2 weapon-readout OCR (`vollyinfo`), range parser, per-skin Alert/Arm clicks (`auto` -> `63,431;63,431` Federation, `75,436` Klingon), contrast-boosted volley OCR, multi-word weapon regex, and Fed bar / Klingon dial arming readout. |
+| `p2_turns.sh` | Runs closed-loop `duel_accel.py` (`CIRCLE=24`) speed changes followed by `capture_turn.py` turn specs (`speed:button:secs`). |
+| `p2run.sh`, `p2run2.sh` | Convenience runners: start an isolated battle via `pbattle_hull.sh` and execute `p2_turns.sh`. |
+| `p2_hc_battle.sh` | Starts an isolated Heavy Cruiser skirmish (`EARLY` era, `CAPTAIN` skill) in overhead view with enemy selected. |
+| `p2_turn_agg.py` | Summarizes `analyze_turn2.py` results with pre-freeze game-clock outlier rejection and clock-freeze detection. |
+| `p2_accel_agg.py` | Aggregates `duel_accel.py` ramps, speed crossing times, hold clock, and optional per-skin energy OCR. |
+| `p2_energy_timeline.py` | Produces run-length energy-panel segments from kept frames using per-skin Federation/Klingon energy boxes. |
+| `p2_wpn_agg.py`, `p2_kd7_wpn_agg.py` | Aggregate weapon-readout damage ranges per weapon type and range band, plus arm/re-arm timing (with contrast-stretched volley OCR and circular gauge fill for Klingon HUD). |
+| `p2_shield_capture.py` | Arms weapons (shields UP) and turns slowly at speed 3 to sweep enemy bearings 360 deg without firing. |
+| `p2_shield_agg.py`, `p2_shield_hit_agg.py` | Map enemy relative bearing (using `heading_clean.py` in `p2_shield_hit_agg.py`) against HUD shield white-arc facets and dot-brightness drops. |
 
 ## Combat tagging
 
@@ -64,6 +76,48 @@ Weapons probes start from speed 0 (the wp4 setup), not leftover combat speed. La
 
 POWER / SYSTEMS / OTHER / EXCESS OCR uses a wider crop, 600% scale and a white border. Values outside 0–80 are stored as `null` rather than three-digit misreads (for example 15.0 read as 115 on a frigate).
 
+
+## Run against your own legally owned copy
+
+Nothing in this directory includes game files or assets. To run the harness against your own legally owned *Starfleet Command II: Community Edition* installation:
+
+1. Create a writable working copy (never point the container directly at your reference install) and build the container image:
+
+```sh
+tools/ce-harness/prepare_workcopy.sh /path/to/your/sfc2ce /path/to/workcopy
+docker build -t sfc2-ce-harness:dev tools/ce-harness/docker
+```
+
+2. Export the target directories and run a scenario or Phase-2 duel capture:
+
+```sh
+export CE_GAME_DIR=/path/to/workcopy
+export CE_OUT_DIR=/path/to/out
+export CE_PREFIX=/path/to/wineprefix
+
+# Basic turn scenario
+tools/ce-harness/run_scenario.sh fed ca 5 10 15 20 31
+python3 tools/ce-harness/summarize.py "$CE_OUT_DIR/runs" "$CE_OUT_DIR/results-ca" 'ca-*'
+
+# Phase-2 Heavy Cruiser skirmish + accel / weapons / turn captures inside the container
+tools/ce-harness/p2_hc_battle.sh 1
+docker exec -e DISPLAY=:99 ceh-c1 python3 /h/duel_accel.py accel-run "0:15,5:20,0:10,31:45" federation
+docker exec -e DISPLAY=:99 ceh-c1 python3 /h/duel_weapons.py wpn-run 120 none auto federation
+bash tools/ce-harness/p2_turns.sh 1 federation fca 5:mouse_n:32 5:port:16 15:mouse_n:30 15:port:16
+```
+
+3. Run offline analysis against `$CE_OUT_DIR`:
+
+```sh
+CE_OUT_DIR=/path/to/out python3 tools/ce-harness/p2_accel_agg.py "$CE_OUT_DIR" accel-run energy federation
+CE_OUT_DIR=/path/to/out python3 tools/ce-harness/p2_wpn_agg.py "$CE_OUT_DIR/runs/wpn-run.weapons.json"
+CE_OUT_DIR=/path/to/out python3 tools/ce-harness/p2_energy_timeline.py "$CE_OUT_DIR/runs/wpn-run.weapons.json" weapons federation
+CE_OUT_DIR=/path/to/out python3 tools/ce-harness/p2_turn_agg.py fca-s5-mouse_n fca-s5-port
+```
+
+Notes on per-skin HUD coordinates and weapon OCR:
+- `analyze_turn.py` and `p2_energy_timeline.py` include energy-panel boxes for both `federation` and `klingon`.
+- `duel_weapons.py` defaults `arm_clicks` to `auto` (`63,431;63,431` for `federation`, `75,436` for `klingon`), uses contrast-stretched volley OCR (`-level 15%,85%` over `340x135+200+550`) so dark-red text OCRs cleanly, and parses multi-word weapon names (`Photon`, `Phaser 1/2/3`, `Disruptor 3`, `Missile Rack F`).
 
 ## Run on the VM by hand
 
@@ -92,9 +146,9 @@ gh workflow run "Private CE harness capture" -f scenario=fed -f speeds="5 10 15 
 
 - The heading comes from pixels, so it has a few degrees of noise. The
   analysis uses a 5-sample median and the 10% to 90% part of each turn.
-- The HUD skins differ by empire. Helm and energy-panel coordinates are
-  mapped for the Federation skin. The Klingon helm buttons are mapped, but
-  the Klingon energy panel is not, so those values come out `null`.
+- The HUD skins differ by empire. Helm buttons are mapped across skins,
+  and energy-panel / weapon-arming coordinates are mapped for both the
+  Federation and Klingon skins (`federation` and `klingon`).
 - The frame rate is about 8 to 12 fps under software rendering, which gives
   turn timings to about ±0.1 s.
 - The game's own Vessel Library shows six shield facing values. For some
