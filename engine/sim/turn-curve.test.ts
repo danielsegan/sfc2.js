@@ -141,7 +141,7 @@ describe('turn curve tables', () => {
     expect(curvePoint(NORMAL_CURVE, d7, q(20))).toMatchObject({ rate: 56, delay: 42 });
     expect(curvePoint(NORMAL_CURVE, d7, q(31))).toMatchObject({ rate: 57, delay: 42 });
     const nonFedWant: [string, number, number, number][] = [
-      ['R-SNA', 47, 44, 46],
+      ['R-SNA', 45, 45, 45],
       ['L-DD', 33, 46, 60],
       ['G-CC', 28, 46, 44],
       ['I-CC', 26, 47, 49],
@@ -156,8 +156,8 @@ describe('turn curve tables', () => {
       expect(curvePoint(NORMAL_CURVE, id, q(31)).rate).toBe(r20);
     }
     // Omitted suspect/noop cells clamp or fall back to default.
-    expect(curvePoint(NORMAL_CURVE, curveId(NORMAL_CURVE, 'G-FF'), q(5)).rate).toBe(83);
-    expect(curveId(NORMAL_CURVE, 'L-FF')).toBe(NORMAL_CURVE.defaultId);
+    expect(curvePoint(NORMAL_CURVE, curveId(NORMAL_CURVE, 'G-FF'), q(5)).rate).toBe(57);
+    expect(curvePoint(NORMAL_CURVE, curveId(NORMAL_CURVE, 'L-FF'), q(10)).rate).toBe(69);
     expect(curveId(NORMAL_CURVE, 'H-LN')).toBe(NORMAL_CURVE.defaultId);
     const fedWant: [string, number, number, number][] = [
       ['F-FF', 31, 57, 60],

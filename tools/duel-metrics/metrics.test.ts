@@ -7,7 +7,7 @@ const report = collectMetrics();
 describe('duel metrics', () => {
   it('repeats on the synthetic hulls', () => {
     expect(renderJson(collectMetrics())).toBe(renderJson(report));
-  }, 30_000);
+  }, 60_000);
 
   it('scores every observed row and does not fail one', () => {
     const rows = tableRows(report);

@@ -30,10 +30,14 @@ import { disruptorShot } from './disruptor.ts';
 const RANGES = [0, 1, 2, 3, 4, 8, 11, 15, 20, 25] as const;
 const NORMAL_DAMAGE = [5, 5, 5, 4, 4, 3, 3, 3, 2, 2] as const;
 
-function always(hit: boolean): { chance: (num: number, den: number) => boolean; calls: number[] } {
+function always(hit: boolean): { chance: (num: number, den: number) => boolean; int: (span: number) => number; calls: number[] } {
   const calls: number[] = [];
   return {
     calls,
+    int(span: number) {
+      calls.push(span);
+      return 0;
+    },
     chance(num: number, den: number) {
       calls.push(num, den);
       return hit;
@@ -42,7 +46,7 @@ function always(hit: boolean): { chance: (num: number, den: number) => boolean; 
 }
 
 function shotAt(rangeUnits: number, mode: number, hit: boolean) {
-  const def = weaponDef(weaponId('Dis1'));
+  const def = weaponDef(weaponId('Dis3'));
   if (!def) throw new Error('Dis1');
   const roll = always(hit);
   const dx = fx(rangeUnits) as number;
@@ -51,7 +55,7 @@ function shotAt(rangeUnits: number, mode: number, hit: boolean) {
 
 describe('disruptor table', () => {
   it('deals the measured normal damage at each listed range, with the edge on the inner band', () => {
-    const def = weaponDef(weaponId('Dis1'));
+    const def = weaponDef(weaponId('Dis3'));
     expect(def?.maxRange).toBe(DISRUPTOR_MAX_RANGE);
     expect(def?.bands[def.bands.length - 1]?.maxRange).toBe(DISRUPTOR_MAX_RANGE);
     expect(def?.overloadArmCost).toBe(4);
@@ -130,7 +134,7 @@ function disruptorShip(mode: number, charge: number): ShipSetup {
     mounts: [
       {
         slotIndex: 0,
-        weapon: 'Dis1',
+        weapon: 'Dis3',
         arc: 'ALL',
         chargePoints: charge,
         boxes: 1,

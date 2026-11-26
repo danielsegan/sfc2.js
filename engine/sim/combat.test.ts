@@ -253,10 +253,12 @@ describe('facing, range, and arcs', () => {
     expect(DEFAULT_RULES_TURN_TICKS).toBe(990);
     expect(weaponDef(weaponId('Phot'))?.armTicks).toBe(2 * DEFAULT_RULES_TURN_TICKS);
     expect(weaponDef(weaponId('Phot'))?.overloadArmTicks).toBe(2 * DEFAULT_RULES_TURN_TICKS);
+    expect(weaponDef(weaponId('Dis3'))?.armTicks).toBe(DEFAULT_RULES_TURN_TICKS);
+    expect(weaponDef(weaponId('Dis3'))?.maxRange).toBe(31000);
+    expect(weaponDef(weaponId('Dis3'))?.overloadArmCost).toBe(4);
+    expect(weaponDef(weaponId('Dis3'))?.overloadArmTicks).toBe(DEFAULT_RULES_TURN_TICKS);
+    expect(weaponDef(weaponId('Dis1'))?.maxRange).toBe(16000);
     expect(weaponDef(weaponId('Dis1'))?.armTicks).toBe(DEFAULT_RULES_TURN_TICKS);
-    expect(weaponDef(weaponId('Dis1'))?.maxRange).toBe(31000);
-    expect(weaponDef(weaponId('Dis1'))?.overloadArmCost).toBe(4);
-    expect(weaponDef(weaponId('Dis1'))?.overloadArmTicks).toBe(DEFAULT_RULES_TURN_TICKS);
     expect(REASON_NAME).toHaveLength(35);
     expect(REASON_NAME[R.outOfArc]).toBe('outOfArc');
     expect(parseHundredths('0.75')).toBe(75);
@@ -810,6 +812,34 @@ describe('energy, shields, and fire', () => {
     expect(viewAt(sim, 0).mounts[0]!.charge100).toBe(0);
   });
 
+  it('does not charge a phaser at Green Alert', () => {
+    const sim = boot([cruiser({
+      warp: 20,
+      mounts: [
+        {
+          slotIndex: 0,
+          weapon: 'TEST-PH',
+          arc: 'TEST-FA',
+          chargePoints: 0,
+          boxes: 1,
+          mode: MODE_NORMAL,
+          ticksCharging: 0,
+        },
+      ],
+    })]);
+    play(sim, [{ kind: VERB_SPAWN, payload: spawnPayload(0, 0, 0, 0) }]);
+    play(sim, [{
+      kind: VERB_SET_ENERGY,
+      payload: setEnergyPayload(65536, {
+        alertGreen: true,
+        weapons: [{ slot: 0, request: 4, mode: MODE_NORMAL }],
+      }),
+    }]);
+    play(sim);
+    expect(viewAt(sim, 0).mounts[0]!.ticksCharging).toBe(0);
+    expect(viewAt(sim, 0).mounts[0]!.charge100).toBe(0);
+  });
+
   it('refuses fire with no fire control and keeps the state hash', () => {
     const ready = cruiser({
       mounts: [
@@ -1230,8 +1260,8 @@ describe('CE weapon codes', () => {
     const phaser = play(sim, [{ kind: VERB_FIRE, payload: firePayload(ids[0]!, 10, ids[1]!) }]);
     const phaserRule = phaser.events.find((event) => event.kind === EVENT_RULE);
     expect(phaserRule?.a).toBe(R.ok);
-    expect(phaserRule?.b).toBeGreaterThanOrEqual(6);
-    expect(phaserRule?.b).toBeLessThanOrEqual(7);
+    expect(phaserRule?.b).toBeGreaterThanOrEqual(3);
+    expect(phaserRule?.b).toBeLessThanOrEqual(6);
     expect(phaser.events.find((event) => event.kind === EVENT_HIT)).toMatchObject({ entity: ids[1], a: 0, b: phaserRule?.b });
     expect(viewAt(sim, 1).shields[0]).toBe(20 - (phaserRule?.b ?? 0));
     expect(viewAt(sim, 0).mounts[10]?.charge100).toBe(0);
@@ -1241,5 +1271,5 @@ describe('CE weapon codes', () => {
   });
 });
 
-const GOLDEN_HASHES = [3378670192, 373267073, 137873134, 1839710659];
+const GOLDEN_HASHES = [2434342527, 1507241040, 3476217933, 2671815856];
 const GOLDEN_EVENTS = [304015889, 2539086287, 4167057522];

@@ -48,6 +48,8 @@ export const PHASER2_CODE = 'Ph2';
 export const PHASER3_CODE = 'Ph3';
 export const PHOTON_CODE = 'Phot';
 export const DISRUPTOR_CODE = 'Dis1';
+/** K-D7 heavy weapon. The measured 31k table lives here. Dis1 is the shorter E4/F5 mount. */
+export const DISRUPTOR3_CODE = 'Dis3';
 export const ARC_CODE = 'ALL';
 /** How many phasers the firepower probe mounts, so the weapon budget can absorb the leftover. */
 export const PHASER_COUNT = 10;
@@ -63,10 +65,42 @@ export const DISRUPTOR_RANGES = [0, 1, 2, 3, 4, 8, 11, 15, 20, 25, 31, 32] as co
 export const DISRUPTOR_OVERLOAD_RANGES = [0, 2, 4, 9, 10] as const;
 
 export interface ProbeShip {
-  readonly id: 'F-CA-like' | 'F-FF-like' | 'F-DN-like' | 'K-D7-like';
-  readonly turnHull: 'F-CA' | 'F-FF' | 'F-DN' | 'K-D7';
+  readonly id: string;
+  readonly turnHull: string;
   readonly warp: number;
   readonly heavy: typeof PHOTON_CODE | typeof DISRUPTOR_CODE;
+}
+
+const EXTRA_HULLS = [
+  'K-E4', 'K-F5', 'K-C8', 'R-SNA', 'R-KRC', 'R-CON',
+  'L-FF', 'L-CA', 'L-DN', 'H-HN', 'H-RN', 'H-PAL',
+  'G-FF', 'G-CA', 'G-DN', 'I-FF', 'I-CA', 'I-DN',
+] as const;
+
+/** Measured plant when it can pay the flown top speed. The rest stay at 34 so a turn is not energy-capped. */
+const CHECKPOINT_WARP: Readonly<Record<string, number>> = {
+  'K-E4': 34,
+  'K-F5': 34,
+  'K-C8': 57,
+  'R-SNA': 34,
+  'R-KRC': 39,
+  'R-CON': 60,
+  'L-FF': 34,
+  'L-CA': 37,
+  'L-DN': 55,
+  'H-HN': 34,
+  'H-RN': 34,
+  'H-PAL': 54,
+  'G-FF': 34,
+  'G-CA': 38,
+  'G-DN': 58,
+  'I-FF': 34,
+  'I-CA': 40,
+  'I-DN': 56,
+};
+
+export function isCheckpointHull(turnHull: string): boolean {
+  return (EXTRA_HULLS as readonly string[]).includes(turnHull);
 }
 
 export const PROBE_SHIPS: readonly ProbeShip[] = [
@@ -74,6 +108,12 @@ export const PROBE_SHIPS: readonly ProbeShip[] = [
   { id: 'F-FF-like', turnHull: 'F-FF', warp: 34, heavy: PHOTON_CODE },
   { id: 'F-DN-like', turnHull: 'F-DN', warp: 53, heavy: PHOTON_CODE },
   { id: 'K-D7-like', turnHull: 'K-D7', warp: 39, heavy: DISRUPTOR_CODE },
+  ...EXTRA_HULLS.map((turnHull): ProbeShip => ({
+    id: `${turnHull}-like`,
+    turnHull,
+    warp: CHECKPOINT_WARP[turnHull] ?? 34,
+    heavy: DISRUPTOR_CODE,
+  })),
 ];
 
 export function phaserCode(turnHull: string): string {
@@ -145,9 +185,9 @@ export function weaponSetup(turnHull: string): ShipSetup {
 
 /** A disruptor that is already armed, so a damage probe does not wait out arming. */
 export function armedDisruptorSetup(mode: number): ShipSetup {
-  const armTicks = weaponDef(weaponId(DISRUPTOR_CODE))?.armTicks ?? 0;
+  const armTicks = weaponDef(weaponId(DISRUPTOR3_CODE))?.armTicks ?? 0;
   const charge = mode === MODE_OVERLOAD ? 4 : 2;
-  const heavy = mount(0, DISRUPTOR_CODE, charge, armTicks);
+  const heavy = mount(0, DISRUPTOR3_CODE, charge, armTicks);
   const ship = base('K-D7', [{ ...heavy, mode }], 0);
   return { ...ship, fcPaid: 1 };
 }

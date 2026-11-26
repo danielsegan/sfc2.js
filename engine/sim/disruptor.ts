@@ -8,6 +8,7 @@ import { MODE_NORMAL, MODE_OVERLOAD, type RangeBand, type WeaponDef } from './ru
 
 export interface HitRoll {
   chance(num: number, den: number): boolean;
+  int(span: number): number;
 }
 
 export function disruptorShot(
@@ -27,6 +28,10 @@ export function disruptorShot(
 }
 
 function bandDamage(band: RangeBand, roll: HitRoll): number {
+  if (band.roll === 1) {
+    const span = band.max - band.min + 1;
+    return band.min + roll.int(span);
+  }
   if (band.hitNum >= band.hitDen) return band.damage;
   if (band.hitNum <= 0) return 0;
   return roll.chance(band.hitNum, band.hitDen) ? band.damage : 0;

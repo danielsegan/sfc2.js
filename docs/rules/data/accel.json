@@ -7,7 +7,25 @@
     "F-CA",
     "K-D7",
     "F-FF",
-    "F-DN"
+    "F-DN",
+    "K-E4",
+    "K-F5",
+    "K-C8",
+    "R-SNA",
+    "R-KRC",
+    "R-CON",
+    "L-FF",
+    "L-CA",
+    "L-DN",
+    "H-HN",
+    "H-RN",
+    "H-PAL",
+    "G-FF",
+    "G-CA",
+    "G-DN",
+    "I-FF",
+    "I-CA",
+    "I-DN"
   ],
   "hulls": {
     "F-CA": {
@@ -61,6 +79,186 @@
         {
           "upToHundredths": 3046,
           "gainHundredths": 31,
+          "overTicks": 30
+        }
+      ]
+    },
+    "K-E4": {
+      "note": "About 0.56 speed/s so the 41 s span from speed 8 reaches about 31.",
+      "bands": [
+        {
+          "upToHundredths": 3109,
+          "gainHundredths": 56,
+          "overTicks": 30
+        }
+      ]
+    },
+    "K-F5": {
+      "note": "About 0.40 speed/s. 62 s from speed 6.3 toward 31.",
+      "bands": [
+        {
+          "upToHundredths": 3109,
+          "gainHundredths": 40,
+          "overTicks": 30
+        }
+      ]
+    },
+    "K-C8": {
+      "note": "About 0.35 speed/s. 63 s from speed 8.9 toward about 31.",
+      "bands": [
+        {
+          "upToHundredths": 3100,
+          "gainHundredths": 35,
+          "overTicks": 30
+        }
+      ]
+    },
+    "R-SNA": {
+      "note": "About 0.63 speed/s. 20 s from speed 9.4 toward the energy-capped top of 22.",
+      "bands": [
+        {
+          "upToHundredths": 2200,
+          "gainHundredths": 63,
+          "overTicks": 30
+        }
+      ]
+    },
+    "R-KRC": {
+      "note": "About 0.34 speed/s. 80 s from speed 4.2 toward 31.",
+      "bands": [
+        {
+          "upToHundredths": 3100,
+          "gainHundredths": 34,
+          "overTicks": 30
+        }
+      ]
+    },
+    "R-CON": {
+      "note": "About 0.33 speed/s. 65 s from speed 9.8 toward 31.",
+      "bands": [
+        {
+          "upToHundredths": 3100,
+          "gainHundredths": 33,
+          "overTicks": 30
+        }
+      ]
+    },
+    "L-FF": {
+      "note": "About 0.82 speed/s. 38 s from speed 9.5 is the sample window; the curve is the constant rate.",
+      "bands": [
+        {
+          "upToHundredths": 3100,
+          "gainHundredths": 82,
+          "overTicks": 30
+        }
+      ]
+    },
+    "L-CA": {
+      "note": "About 0.32 speed/s. 79 s from speed 5.9 toward 31.",
+      "bands": [
+        {
+          "upToHundredths": 3100,
+          "gainHundredths": 32,
+          "overTicks": 30
+        }
+      ]
+    },
+    "L-DN": {
+      "note": "About 0.28 speed/s. 64 s from speed 12.8 toward 30.46.",
+      "bands": [
+        {
+          "upToHundredths": 3046,
+          "gainHundredths": 28,
+          "overTicks": 30
+        }
+      ]
+    },
+    "H-HN": {
+      "note": "About 1.55 speed/s. About 20 s from rest to 31.",
+      "bands": [
+        {
+          "upToHundredths": 3100,
+          "gainHundredths": 155,
+          "overTicks": 30
+        }
+      ]
+    },
+    "H-RN": {
+      "note": "About 0.34 speed/s. About 83 s to the 28 peak.",
+      "bands": [
+        {
+          "upToHundredths": 2800,
+          "gainHundredths": 34,
+          "overTicks": 30
+        }
+      ]
+    },
+    "H-PAL": {
+      "note": "About 0.33 speed/s. About 91.5 s to speed 30.",
+      "bands": [
+        {
+          "upToHundredths": 3000,
+          "gainHundredths": 33,
+          "overTicks": 30
+        }
+      ]
+    },
+    "G-FF": {
+      "note": "About 0.82 speed/s. About 38 s to speed 31.",
+      "bands": [
+        {
+          "upToHundredths": 3100,
+          "gainHundredths": 82,
+          "overTicks": 30
+        }
+      ]
+    },
+    "G-CA": {
+      "note": "About 0.39 speed/s. About 80 s to speed 31.",
+      "bands": [
+        {
+          "upToHundredths": 3100,
+          "gainHundredths": 39,
+          "overTicks": 30
+        }
+      ]
+    },
+    "G-DN": {
+      "note": "About 0.48 speed/s. About 65 s to speed 31.",
+      "bands": [
+        {
+          "upToHundredths": 3100,
+          "gainHundredths": 48,
+          "overTicks": 30
+        }
+      ]
+    },
+    "I-FF": {
+      "note": "About 0.80 speed/s. About 39 s to speed 31.",
+      "bands": [
+        {
+          "upToHundredths": 3100,
+          "gainHundredths": 80,
+          "overTicks": 30
+        }
+      ]
+    },
+    "I-CA": {
+      "note": "About 0.38 speed/s. About 81 s to speed 31.",
+      "bands": [
+        {
+          "upToHundredths": 3100,
+          "gainHundredths": 38,
+          "overTicks": 30
+        }
+      ]
+    },
+    "I-DN": {
+      "note": "About 0.48 speed/s. About 64 s to speed 31.",
+      "bands": [
+        {
+          "upToHundredths": 3100,
+          "gainHundredths": 48,
           "overTicks": 30
         }
       ]
