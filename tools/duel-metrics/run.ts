@@ -58,6 +58,7 @@ import {
   SHIELD_RANGE,
   SPEEDS,
   TICK_HZ,
+  isCheckpointHull,
   armedPhaser3Setup,
   armedPhotonSetup,
   motionSetup,
@@ -502,6 +503,12 @@ function measureFirepower(turnHull: string, speedHundredths: number): FirepowerS
 }
 
 function turnSpeeds(ship: ProbeShip): number[] {
+  if (isCheckpointHull(ship.turnHull)) {
+    if (ship.turnHull === 'G-FF' || ship.turnHull === 'G-CA') return [2000];
+    if (ship.turnHull === 'G-DN') return [1500];
+    if (ship.turnHull === 'I-FF') return [500];
+    return [1000];
+  }
   const out: number[] = [];
   for (const speed of SPEEDS) out.push(speed * 100);
   if (ship.turnHull === 'F-CA') out.push(FCA_HIGH_SPEED_HUNDREDTHS);
@@ -510,6 +517,7 @@ function turnSpeeds(ship: ProbeShip): number[] {
 }
 
 function timeSpeeds(ship: ProbeShip): number[] {
+  if (isCheckpointHull(ship.turnHull)) return [1000];
   const out = [5, 10, 15, 20, 25, 30];
   if (ship.turnHull === 'K-D7' || ship.turnHull === 'F-FF') out.push(31);
   const hundredths: number[] = [];
@@ -560,7 +568,7 @@ function measureShip(ship: ProbeShip): ShipReport {
       photonDamage.push({ range, damage: shot.damage, reason: shot.reason });
     }
   }
-  if (ship.heavy === DISRUPTOR_CODE) {
+  if (ship.heavy === DISRUPTOR_CODE && !isCheckpointHull(ship.turnHull)) {
     for (const range of DISRUPTOR_RANGES) {
       const shot = measureDisruptor(range, MODE_NORMAL);
       disruptorDamage.push({ range, damage: shot.damage, reason: shot.reason });

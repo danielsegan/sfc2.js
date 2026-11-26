@@ -59,7 +59,8 @@
     "Z-CL",
     "Z-CA",
     "Z-BC",
-    "Z-DN"
+    "Z-DN",
+    "L-FF"
   ],
   "hullOrderNote": "Stable sim ids: engine/sim numbers hull rows by their position in this list, so append new hull keys at the end. Every key under hulls must be listed. default is the row for hulls with no entry of their own. Editing a row's speedPoints needs no code change.",
   "hulls": {
@@ -533,78 +534,54 @@
       }
     },
     "K-E4": {
-      "status": "partial",
-      "note": "CE Tier-2 in-battle 10-90% capture 2026-11-24 (Wintermute, Klingon) at speed(s) 5, 20, with per-hull measured normal delayTicks (30 Hz). Omitted (TO VERIFY): speed 10: null, null. Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "status": "measured",
+      "note": "Checkpoint 2 [M]. About 10.1 deg/s. Delay 0.5-1.0 s, table uses the midpoint.",
       "verification": {
-        "turnRate16PerTick": "measured at speed(s) 5, 20 (CE Tier-2 capture 2026-11-24); omitted/missing speeds TO VERIFY",
-        "delayTicks": "measured single-run order_delay_s at speed(s) 5, 20 (30 Hz); multi-run confirmation TO VERIFY"
+        "turnRate16PerTick": "checkpoint aggregate [M]",
+        "delayTicks": "22 ticks (0.75 s) [M]"
       },
       "speedPoints": [
         {
-          "speed": 5,
-          "speedHundredths": 500,
-          "delayTicks": 141,
-          "turnRate16PerTick": 29
-        },
-        {
-          "speed": 20,
-          "speedHundredths": 2000,
-          "delayTicks": 15,
-          "turnRate16PerTick": 65
+          "speed": 10,
+          "speedHundredths": 1000,
+          "delayTicks": 22,
+          "turnRate16PerTick": 61
         }
       ],
       "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.normal.{5,20}.degPerSecond measured (10-90%); omitted speeds and delayS TO VERIFY",
+        "source": "Wintermute checkpoints 2-5",
+        "verification": "Checkpoint 2 [M]. About 10.1 deg/s. Delay 0.5-1.0 s, table uses the midpoint.",
         "expect": {
-          "turn.normal.5.degPerSecond": 4.76,
-          "turn.normal.20.degPerSecond": 10.74
+          "turn.normal.10.degPerSecond": 10.05
         },
         "tolerances": {
-          "turn.normal.5.degPerSecond": 0.5,
-          "turn.normal.20.degPerSecond": 0.5
+          "turn.normal.10.degPerSecond": 0.6
         }
       }
     },
     "K-F5": {
-      "status": "partial",
-      "note": "CE Tier-2 in-battle 10-90% capture 2026-11-24 (Wintermute, Klingon) at speed(s) 5, 10, 20, with per-hull measured normal delayTicks (30 Hz). Wall-clock rate fallback at speed(s) 10 (TO VERIFY game-clock). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "status": "measured",
+      "note": "Checkpoint 2 [H]. 10.4 deg/s, delay 1.0 s.",
       "verification": {
-        "turnRate16PerTick": "measured at speed(s) 5, 10, 20 (CE Tier-2 capture 2026-11-24); speeds <5 and >20 clamp to endpoints (TO VERIFY)",
-        "delayTicks": "measured single-run order_delay_s at speed(s) 5, 10, 20 (30 Hz); multi-run confirmation TO VERIFY"
+        "turnRate16PerTick": "checkpoint aggregate [H]",
+        "delayTicks": "30 ticks (1.0 s) [H]"
       },
       "speedPoints": [
         {
-          "speed": 5,
-          "speedHundredths": 500,
-          "delayTicks": 108,
-          "turnRate16PerTick": 34
-        },
-        {
           "speed": 10,
           "speedHundredths": 1000,
-          "delayTicks": 24,
-          "turnRate16PerTick": 70
-        },
-        {
-          "speed": 20,
-          "speedHundredths": 2000,
-          "delayTicks": 21,
-          "turnRate16PerTick": 59
+          "delayTicks": 30,
+          "turnRate16PerTick": 63
         }
       ],
       "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.normal.{5,10,20}.degPerSecond measured (10-90%); omitted speeds and delayS TO VERIFY",
+        "source": "Wintermute checkpoints 2-5",
+        "verification": "Checkpoint 2 [H]. 10.4 deg/s, delay 1.0 s.",
         "expect": {
-          "turn.normal.5.degPerSecond": 5.63,
-          "turn.normal.10.degPerSecond": 11.47,
-          "turn.normal.20.degPerSecond": 9.7
+          "turn.normal.10.degPerSecond": 10.38
         },
         "tolerances": {
-          "turn.normal.5.degPerSecond": 0.5,
-          "turn.normal.10.degPerSecond": 0.5,
-          "turn.normal.20.degPerSecond": 0.5
+          "turn.normal.10.degPerSecond": 0.6
         }
       }
     },
@@ -693,86 +670,56 @@
       }
     },
     "K-C8": {
-      "status": "partial",
-      "note": "CE Tier-2 in-battle 10-90% capture 2026-11-24 (Wintermute, Klingon) at speed(s) 5, 10, 20, with per-hull measured normal delayTicks (30 Hz). Wall-clock rate fallback at speed(s) 20 (TO VERIFY game-clock). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "status": "measured",
+      "note": "Checkpoint 2 [H]. 8.0 deg/s, delay 1.1 s.",
       "verification": {
-        "turnRate16PerTick": "measured at speed(s) 5, 10, 20 (CE Tier-2 capture 2026-11-24); speeds <5 and >20 clamp to endpoints (TO VERIFY)",
-        "delayTicks": "measured single-run order_delay_s at speed(s) 5, 10, 20 (30 Hz); multi-run confirmation TO VERIFY"
+        "turnRate16PerTick": "checkpoint aggregate [H]",
+        "delayTicks": "33 ticks (1.1 s) [H]"
       },
       "speedPoints": [
         {
-          "speed": 5,
-          "speedHundredths": 500,
-          "delayTicks": 88,
-          "turnRate16PerTick": 22
-        },
-        {
           "speed": 10,
           "speedHundredths": 1000,
-          "delayTicks": 35,
-          "turnRate16PerTick": 69
-        },
-        {
-          "speed": 20,
-          "speedHundredths": 2000,
-          "delayTicks": 35,
-          "turnRate16PerTick": 47
+          "delayTicks": 33,
+          "turnRate16PerTick": 49
         }
       ],
       "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.normal.{5,10,20}.degPerSecond measured (10-90%); omitted speeds and delayS TO VERIFY",
+        "source": "Wintermute checkpoints 2-5",
+        "verification": "Checkpoint 2 [H]. 8.0 deg/s, delay 1.1 s.",
         "expect": {
-          "turn.normal.5.degPerSecond": 3.65,
-          "turn.normal.10.degPerSecond": 11.38,
-          "turn.normal.20.degPerSecond": 7.73
+          "turn.normal.10.degPerSecond": 8.07
         },
         "tolerances": {
-          "turn.normal.5.degPerSecond": 0.5,
-          "turn.normal.10.degPerSecond": 0.5,
-          "turn.normal.20.degPerSecond": 0.5
+          "turn.normal.10.degPerSecond": 0.6
         }
       }
     },
     "R-SNA": {
-      "status": "partial",
-      "note": "CE Tier-2 in-battle 10-90% capture 2026-11-24 (Wintermute, Romulan) at speed(s) 5, 10, 20, with per-hull measured normal delayTicks (30 Hz). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "status": "measured",
+      "note": "Checkpoint 2 [M]. 7.0-7.7 deg/s, delay 1.0-1.2 s. Table uses the midpoints.",
       "verification": {
-        "turnRate16PerTick": "measured at speed(s) 5, 10, 20 (CE Tier-2 capture 2026-11-24); speeds <5 and >20 clamp to endpoints (TO VERIFY)",
-        "delayTicks": "measured single-run order_delay_s at speed(s) 5, 10, 20 (30 Hz); multi-run confirmation TO VERIFY"
+        "turnRate16PerTick": "checkpoint aggregate [M]",
+        "delayTicks": "33 ticks (1.1 s) [M]"
       },
       "speedPoints": [
         {
-          "speed": 5,
-          "speedHundredths": 500,
-          "delayTicks": 81,
-          "turnRate16PerTick": 47
-        },
-        {
           "speed": 10,
           "speedHundredths": 1000,
-          "delayTicks": 31,
-          "turnRate16PerTick": 44
-        },
-        {
-          "speed": 20,
-          "speedHundredths": 2000,
-          "delayTicks": 36,
-          "turnRate16PerTick": 46
+          "delayTicks": 33,
+          "turnRate16PerTick": 45
         }
       ],
       "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.normal.{5,10,20}.degPerSecond measured (10-90%); omitted speeds and delayS TO VERIFY",
+        "source": "Wintermute checkpoints 2-5",
+        "verification": "Checkpoint 2 [M]. 7.0-7.7 deg/s, delay 1.0-1.2 s. Table uses the midpoints.",
         "expect": {
-          "turn.normal.5.degPerSecond": 7.67,
-          "turn.normal.10.degPerSecond": 7.32,
-          "turn.normal.20.degPerSecond": 7.66
+          "turn.normal.10.degPerSecond": 7.42,
+          "turn.normal.5.degPerSecond": 7.35
         },
         "tolerances": {
-          "turn.normal.5.degPerSecond": 0.5,
-          "turn.normal.10.degPerSecond": 0.5,
-          "turn.normal.20.degPerSecond": 0.5
+          "turn.normal.10.degPerSecond": 0.6,
+          "turn.normal.5.degPerSecond": 0.5
         }
       }
     },
@@ -879,86 +826,54 @@
       }
     },
     "R-KRC": {
-      "status": "partial",
-      "note": "CE Tier-2 in-battle 10-90% capture 2026-11-24 (Wintermute, Romulan) at speed(s) 5, 10, 20, with per-hull measured normal delayTicks (30 Hz). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "status": "measured",
+      "note": "Checkpoint 2 [M]. 10-11.8 deg/s, delay 2.1-2.4 s.",
       "verification": {
-        "turnRate16PerTick": "measured at speed(s) 5, 10, 20 (CE Tier-2 capture 2026-11-24); speeds <5 and >20 clamp to endpoints (TO VERIFY)",
-        "delayTicks": "measured single-run order_delay_s at speed(s) 5, 10, 20 (30 Hz); multi-run confirmation TO VERIFY"
+        "turnRate16PerTick": "checkpoint aggregate [M]",
+        "delayTicks": "68 ticks (2.25 s) [M]"
       },
       "speedPoints": [
         {
-          "speed": 5,
-          "speedHundredths": 500,
-          "delayTicks": 64,
-          "turnRate16PerTick": 54
-        },
-        {
           "speed": 10,
           "speedHundredths": 1000,
-          "delayTicks": 66,
-          "turnRate16PerTick": 73
-        },
-        {
-          "speed": 20,
-          "speedHundredths": 2000,
-          "delayTicks": 71,
-          "turnRate16PerTick": 63
+          "delayTicks": 68,
+          "turnRate16PerTick": 66
         }
       ],
       "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.normal.{5,10,20}.degPerSecond measured (10-90%); omitted speeds and delayS TO VERIFY",
+        "source": "Wintermute checkpoints 2-5",
+        "verification": "Checkpoint 2 [M]. 10-11.8 deg/s, delay 2.1-2.4 s.",
         "expect": {
-          "turn.normal.5.degPerSecond": 8.84,
-          "turn.normal.10.degPerSecond": 12.07,
-          "turn.normal.20.degPerSecond": 10.33
+          "turn.normal.10.degPerSecond": 10.88
         },
         "tolerances": {
-          "turn.normal.5.degPerSecond": 0.5,
-          "turn.normal.10.degPerSecond": 0.5,
-          "turn.normal.20.degPerSecond": 0.5
+          "turn.normal.10.degPerSecond": 0.6
         }
       }
     },
     "R-CON": {
-      "status": "partial",
-      "note": "CE Tier-2 in-battle 10-90% capture 2026-11-24 (Wintermute, Romulan) at speed(s) 5, 10, 20, with per-hull measured normal delayTicks (30 Hz). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "status": "measured",
+      "note": "Checkpoint 2 [H]. 6.5 deg/s, delay 0.6 s.",
       "verification": {
-        "turnRate16PerTick": "measured at speed(s) 5, 10, 20 (CE Tier-2 capture 2026-11-24); speeds <5 and >20 clamp to endpoints (TO VERIFY)",
-        "delayTicks": "measured single-run order_delay_s at speed(s) 5, 10, 20 (30 Hz); multi-run confirmation TO VERIFY"
+        "turnRate16PerTick": "checkpoint aggregate [H]",
+        "delayTicks": "18 ticks (0.6 s) [H]"
       },
       "speedPoints": [
         {
-          "speed": 5,
-          "speedHundredths": 500,
-          "delayTicks": 66,
-          "turnRate16PerTick": 36
-        },
-        {
           "speed": 10,
           "speedHundredths": 1000,
-          "delayTicks": 43,
-          "turnRate16PerTick": 57
-        },
-        {
-          "speed": 20,
-          "speedHundredths": 2000,
-          "delayTicks": 13,
-          "turnRate16PerTick": 45
+          "delayTicks": 18,
+          "turnRate16PerTick": 39
         }
       ],
       "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.normal.{5,10,20}.degPerSecond measured (10-90%); omitted speeds and delayS TO VERIFY",
+        "source": "Wintermute checkpoints 2-5",
+        "verification": "Checkpoint 2 [H]. 6.5 deg/s, delay 0.6 s.",
         "expect": {
-          "turn.normal.5.degPerSecond": 5.87,
-          "turn.normal.10.degPerSecond": 9.34,
-          "turn.normal.20.degPerSecond": 7.34
+          "turn.normal.10.degPerSecond": 6.43
         },
         "tolerances": {
-          "turn.normal.5.degPerSecond": 0.5,
-          "turn.normal.10.degPerSecond": 0.5,
-          "turn.normal.20.degPerSecond": 0.5
+          "turn.normal.10.degPerSecond": 0.6
         }
       }
     },
@@ -1039,44 +954,28 @@
       }
     },
     "L-CA": {
-      "status": "partial",
-      "note": "CE Tier-2 in-battle 10-90% capture 2026-11-24 (Wintermute, Lyran) at speed(s) 5, 10, 20, with per-hull measured normal delayTicks (30 Hz). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "status": "measured",
+      "note": "Checkpoint 3 [M]. 7.3-8.2 deg/s from the tier-2 runs, delay 1.3 s. The 14.9 deg/s live reading is ignored.",
       "verification": {
-        "turnRate16PerTick": "measured at speed(s) 5, 10, 20 (CE Tier-2 capture 2026-11-24); speeds <5 and >20 clamp to endpoints (TO VERIFY)",
-        "delayTicks": "measured single-run order_delay_s at speed(s) 5, 10, 20 (30 Hz); multi-run confirmation TO VERIFY"
+        "turnRate16PerTick": "checkpoint aggregate [M]",
+        "delayTicks": "39 ticks (1.3 s) [M]"
       },
       "speedPoints": [
         {
-          "speed": 5,
-          "speedHundredths": 500,
-          "delayTicks": 70,
-          "turnRate16PerTick": 29
-        },
-        {
           "speed": 10,
           "speedHundredths": 1000,
-          "delayTicks": 41,
-          "turnRate16PerTick": 50
-        },
-        {
-          "speed": 20,
-          "speedHundredths": 2000,
-          "delayTicks": 38,
-          "turnRate16PerTick": 45
+          "delayTicks": 39,
+          "turnRate16PerTick": 47
         }
       ],
       "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.normal.{5,10,20}.degPerSecond measured (10-90%); omitted speeds and delayS TO VERIFY",
+        "source": "Wintermute checkpoints 2-5",
+        "verification": "Checkpoint 3 [M]. 7.3-8.2 deg/s from the tier-2 runs, delay 1.3 s. The 14.9 deg/s live reading is ignored.",
         "expect": {
-          "turn.normal.5.degPerSecond": 4.85,
-          "turn.normal.10.degPerSecond": 8.18,
-          "turn.normal.20.degPerSecond": 7.44
+          "turn.normal.10.degPerSecond": 7.75
         },
         "tolerances": {
-          "turn.normal.5.degPerSecond": 0.5,
-          "turn.normal.10.degPerSecond": 0.5,
-          "turn.normal.20.degPerSecond": 0.5
+          "turn.normal.10.degPerSecond": 0.6
         }
       }
     },
@@ -1123,78 +1022,54 @@
       }
     },
     "L-DN": {
-      "status": "partial",
-      "note": "CE Tier-2 in-battle 10-90% capture 2026-11-24 (Wintermute, Lyran) at speed(s) 5, 10, 20, with per-hull measured normal delayTicks (30 Hz). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "status": "measured",
+      "note": "Checkpoint 3 [M]. 7.5 deg/s, delay 1.0 s.",
       "verification": {
-        "turnRate16PerTick": "measured at speed(s) 5, 10, 20 (CE Tier-2 capture 2026-11-24); speeds <5 and >20 clamp to endpoints (TO VERIFY)",
-        "delayTicks": "measured single-run order_delay_s at speed(s) 5, 10, 20 (30 Hz); multi-run confirmation TO VERIFY"
+        "turnRate16PerTick": "checkpoint aggregate [M]",
+        "delayTicks": "30 ticks (1.0 s) [M]"
       },
       "speedPoints": [
         {
-          "speed": 5,
-          "speedHundredths": 500,
-          "delayTicks": 92,
-          "turnRate16PerTick": 21
-        },
-        {
           "speed": 10,
           "speedHundredths": 1000,
-          "delayTicks": 89,
-          "turnRate16PerTick": 8
-        },
-        {
-          "speed": 20,
-          "speedHundredths": 2000,
-          "delayTicks": 31,
-          "turnRate16PerTick": 47
+          "delayTicks": 30,
+          "turnRate16PerTick": 46
         }
       ],
       "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.normal.{5,10,20}.degPerSecond measured (10-90%); omitted speeds and delayS TO VERIFY",
+        "source": "Wintermute checkpoints 2-5",
+        "verification": "Checkpoint 3 [M]. 7.5 deg/s, delay 1.0 s.",
         "expect": {
-          "turn.normal.5.degPerSecond": 3.54,
-          "turn.normal.10.degPerSecond": 1.27,
-          "turn.normal.20.degPerSecond": 7.67
+          "turn.normal.10.degPerSecond": 7.58
         },
         "tolerances": {
-          "turn.normal.5.degPerSecond": 0.5,
-          "turn.normal.10.degPerSecond": 0.5,
-          "turn.normal.20.degPerSecond": 0.5
+          "turn.normal.10.degPerSecond": 0.6
         }
       }
     },
     "H-HN": {
-      "status": "partial",
-      "note": "CE Tier-2 in-battle 10-90% capture 2026-11-24 (Wintermute, Hydran) at speed(s) 10, 20, with per-hull measured normal delayTicks (30 Hz). Omitted (TO VERIFY): speed 5: null, null (already_facing). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "status": "measured",
+      "note": "Checkpoint 3 [M]. 9.8 deg/s, delay 0.5 s.",
       "verification": {
-        "turnRate16PerTick": "measured at speed(s) 10, 20 (CE Tier-2 capture 2026-11-24); omitted/missing speeds TO VERIFY",
-        "delayTicks": "measured single-run order_delay_s at speed(s) 10, 20 (30 Hz); multi-run confirmation TO VERIFY"
+        "turnRate16PerTick": "checkpoint aggregate [M]",
+        "delayTicks": "15 ticks (0.5 s) [M]"
       },
       "speedPoints": [
         {
           "speed": 10,
           "speedHundredths": 1000,
-          "delayTicks": 13,
-          "turnRate16PerTick": 35
-        },
-        {
-          "speed": 20,
-          "speedHundredths": 2000,
           "delayTicks": 15,
           "turnRate16PerTick": 59
         }
       ],
       "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.normal.{10,20}.degPerSecond measured (10-90%); omitted speeds and delayS TO VERIFY",
+        "source": "Wintermute checkpoints 2-5",
+        "verification": "Checkpoint 3 [M]. 9.8 deg/s, delay 0.5 s.",
         "expect": {
-          "turn.normal.10.degPerSecond": 5.85,
-          "turn.normal.20.degPerSecond": 9.74
+          "turn.normal.10.degPerSecond": 9.72
         },
         "tolerances": {
-          "turn.normal.10.degPerSecond": 0.5,
-          "turn.normal.20.degPerSecond": 0.5
+          "turn.normal.10.degPerSecond": 0.6
         }
       }
     },
@@ -1233,36 +1108,28 @@
       }
     },
     "H-RN": {
-      "status": "partial",
-      "note": "CE Tier-2 in-battle 10-90% capture 2026-11-24 (Wintermute, Hydran) at speed(s) 5, 20, with per-hull measured normal delayTicks (30 Hz). Omitted (TO VERIFY): speed 10: null, null (already_facing). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "status": "measured",
+      "note": "Checkpoint 3 [M]. 8.7 deg/s, delay 1.3 s.",
       "verification": {
-        "turnRate16PerTick": "measured at speed(s) 5, 20 (CE Tier-2 capture 2026-11-24); omitted/missing speeds TO VERIFY",
-        "delayTicks": "measured single-run order_delay_s at speed(s) 5, 20 (30 Hz); multi-run confirmation TO VERIFY"
+        "turnRate16PerTick": "checkpoint aggregate [M]",
+        "delayTicks": "39 ticks (1.3 s) [M]"
       },
       "speedPoints": [
         {
-          "speed": 5,
-          "speedHundredths": 500,
-          "delayTicks": 99,
-          "turnRate16PerTick": 11
-        },
-        {
-          "speed": 20,
-          "speedHundredths": 2000,
-          "delayTicks": 38,
-          "turnRate16PerTick": 55
+          "speed": 10,
+          "speedHundredths": 1000,
+          "delayTicks": 39,
+          "turnRate16PerTick": 53
         }
       ],
       "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.normal.{5,20}.degPerSecond measured (10-90%); omitted speeds and delayS TO VERIFY",
+        "source": "Wintermute checkpoints 2-5",
+        "verification": "Checkpoint 3 [M]. 8.7 deg/s, delay 1.3 s.",
         "expect": {
-          "turn.normal.5.degPerSecond": 1.81,
-          "turn.normal.20.degPerSecond": 9.06
+          "turn.normal.10.degPerSecond": 8.73
         },
         "tolerances": {
-          "turn.normal.5.degPerSecond": 0.5,
-          "turn.normal.20.degPerSecond": 0.5
+          "turn.normal.10.degPerSecond": 0.6
         }
       }
     },
@@ -1301,70 +1168,54 @@
       }
     },
     "H-PAL": {
-      "status": "partial",
-      "note": "CE Tier-2 in-battle 10-90% capture 2026-11-24 (Wintermute, Hydran) at speed(s) 5, 20, with per-hull measured normal delayTicks (30 Hz). Omitted (TO VERIFY): speed 10: null, null (already_facing). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "status": "measured",
+      "note": "Checkpoint 3 [H]. 7.9 deg/s, delay 1.7 s.",
       "verification": {
-        "turnRate16PerTick": "measured at speed(s) 5, 20 (CE Tier-2 capture 2026-11-24); omitted/missing speeds TO VERIFY",
-        "delayTicks": "measured single-run order_delay_s at speed(s) 5, 20 (30 Hz); multi-run confirmation TO VERIFY"
-      },
-      "speedPoints": [
-        {
-          "speed": 5,
-          "speedHundredths": 500,
-          "delayTicks": 89,
-          "turnRate16PerTick": 11
-        },
-        {
-          "speed": 20,
-          "speedHundredths": 2000,
-          "delayTicks": 50,
-          "turnRate16PerTick": 49
-        }
-      ],
-      "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.normal.{5,20}.degPerSecond measured (10-90%); omitted speeds and delayS TO VERIFY",
-        "expect": {
-          "turn.normal.5.degPerSecond": 1.88,
-          "turn.normal.20.degPerSecond": 8.07
-        },
-        "tolerances": {
-          "turn.normal.5.degPerSecond": 0.5,
-          "turn.normal.20.degPerSecond": 0.5
-        }
-      }
-    },
-    "G-FF": {
-      "status": "partial",
-      "note": "CE Tier-2 in-battle 10-90% capture 2026-11-24 (Wintermute, Gorn) at speed(s) 10, 20, with per-hull measured normal delayTicks (30 Hz). Wall-clock rate fallback at speed(s) 20 (TO VERIFY game-clock). Omitted (TO VERIFY): speed 5: suspect ~7 s delay and wall-clock rate (14.43w deg/s, 7.3 s). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
-      "verification": {
-        "turnRate16PerTick": "measured at speed(s) 10, 20 (CE Tier-2 capture 2026-11-24); omitted/missing speeds TO VERIFY",
-        "delayTicks": "measured single-run order_delay_s at speed(s) 10, 20 (30 Hz); multi-run confirmation TO VERIFY"
+        "turnRate16PerTick": "checkpoint aggregate [H]",
+        "delayTicks": "51 ticks (1.7 s) [H]"
       },
       "speedPoints": [
         {
           "speed": 10,
           "speedHundredths": 1000,
-          "delayTicks": 105,
-          "turnRate16PerTick": 83
+          "delayTicks": 51,
+          "turnRate16PerTick": 48
+        }
+      ],
+      "audit": {
+        "source": "Wintermute checkpoints 2-5",
+        "verification": "Checkpoint 3 [H]. 7.9 deg/s, delay 1.7 s.",
+        "expect": {
+          "turn.normal.10.degPerSecond": 7.91
         },
+        "tolerances": {
+          "turn.normal.10.degPerSecond": 0.6
+        }
+      }
+    },
+    "G-FF": {
+      "status": "measured",
+      "note": "Checkpoint 4 [M]. 9.4 deg/s at speed 20, delay 1.3 s. Speed-5 tier-2 runs that look like a mis-tagged HET are ignored.",
+      "verification": {
+        "turnRate16PerTick": "checkpoint aggregate [M]",
+        "delayTicks": "39 ticks (1.3 s) [M]"
+      },
+      "speedPoints": [
         {
           "speed": 20,
           "speedHundredths": 2000,
-          "delayTicks": 40,
+          "delayTicks": 39,
           "turnRate16PerTick": 57
         }
       ],
       "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.normal.{10,20}.degPerSecond measured (10-90%); omitted speeds and delayS TO VERIFY",
+        "source": "Wintermute checkpoints 2-5",
+        "verification": "Checkpoint 4 [M]. 9.4 deg/s at speed 20, delay 1.3 s. Speed-5 tier-2 runs that look like a mis-tagged HET are ignored.",
         "expect": {
-          "turn.normal.10.degPerSecond": 13.72,
-          "turn.normal.20.degPerSecond": 9.37
+          "turn.normal.20.degPerSecond": 9.39
         },
         "tolerances": {
-          "turn.normal.10.degPerSecond": 0.5,
-          "turn.normal.20.degPerSecond": 0.5
+          "turn.normal.20.degPerSecond": 0.6
         }
       }
     },
@@ -1437,36 +1288,36 @@
       }
     },
     "G-CA": {
-      "status": "partial",
-      "note": "CE Tier-2 in-battle 10-90% capture 2026-11-24 (Wintermute, Gorn) at speed(s) 5, 20, with per-hull measured normal delayTicks (30 Hz). Wall-clock rate fallback at speed(s) 5, 20 (TO VERIFY game-clock). Omitted (TO VERIFY): speed 10: null, null (already_facing). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "status": "measured",
+      "note": "Checkpoint 4 [M]. 9.3 deg/s at speed 20 and 3.6 at speed 5.",
       "verification": {
-        "turnRate16PerTick": "measured at speed(s) 5, 20 (CE Tier-2 capture 2026-11-24); omitted/missing speeds TO VERIFY",
-        "delayTicks": "measured single-run order_delay_s at speed(s) 5, 20 (30 Hz); multi-run confirmation TO VERIFY"
+        "turnRate16PerTick": "checkpoint aggregate [M]",
+        "delayTicks": "39 ticks (1.3 s) [M]"
       },
       "speedPoints": [
         {
           "speed": 5,
           "speedHundredths": 500,
-          "delayTicks": 51,
+          "delayTicks": 39,
           "turnRate16PerTick": 22
         },
         {
           "speed": 20,
           "speedHundredths": 2000,
-          "delayTicks": 76,
+          "delayTicks": 39,
           "turnRate16PerTick": 56
         }
       ],
       "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.normal.{5,20}.degPerSecond measured (10-90%); omitted speeds and delayS TO VERIFY",
+        "source": "Wintermute checkpoints 2-5",
+        "verification": "Checkpoint 4 [M]. 9.3 deg/s at speed 20 and 3.6 at speed 5.",
         "expect": {
           "turn.normal.5.degPerSecond": 3.63,
-          "turn.normal.20.degPerSecond": 9.27
+          "turn.normal.20.degPerSecond": 9.23
         },
         "tolerances": {
-          "turn.normal.5.degPerSecond": 0.5,
-          "turn.normal.20.degPerSecond": 0.5
+          "turn.normal.5.degPerSecond": 0.6,
+          "turn.normal.20.degPerSecond": 0.6
         }
       }
     },
@@ -1513,78 +1364,62 @@
       }
     },
     "G-DN": {
-      "status": "partial",
-      "note": "CE Tier-2 in-battle 10-90% capture 2026-11-24 (Wintermute, Gorn) at speed(s) 5, 10, 20, with per-hull measured normal delayTicks (30 Hz). Wall-clock rate fallback at speed(s) 5, 10, 20 (TO VERIFY game-clock). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "status": "measured",
+      "note": "Checkpoint 4 [M]. 7.2-7.4 deg/s at speed 10-20, 4.3 at speed 5, delay 1.2-1.6 s.",
       "verification": {
-        "turnRate16PerTick": "measured at speed(s) 5, 10, 20 (CE Tier-2 capture 2026-11-24); speeds <5 and >20 clamp to endpoints (TO VERIFY)",
-        "delayTicks": "measured single-run order_delay_s at speed(s) 5, 10, 20 (30 Hz); multi-run confirmation TO VERIFY"
+        "turnRate16PerTick": "checkpoint aggregate [M]",
+        "delayTicks": "42 ticks (1.4 s) [M]"
       },
       "speedPoints": [
         {
           "speed": 5,
           "speedHundredths": 500,
-          "delayTicks": 67,
+          "delayTicks": 42,
           "turnRate16PerTick": 26
         },
         {
-          "speed": 10,
-          "speedHundredths": 1000,
-          "delayTicks": 47,
-          "turnRate16PerTick": 45
-        },
-        {
-          "speed": 20,
-          "speedHundredths": 2000,
-          "delayTicks": 36,
+          "speed": 15,
+          "speedHundredths": 1500,
+          "delayTicks": 42,
           "turnRate16PerTick": 44
         }
       ],
       "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.normal.{5,10,20}.degPerSecond measured (10-90%); omitted speeds and delayS TO VERIFY",
+        "source": "Wintermute checkpoints 2-5",
+        "verification": "Checkpoint 4 [M]. 7.2-7.4 deg/s at speed 10-20, 4.3 at speed 5, delay 1.2-1.6 s.",
         "expect": {
-          "turn.normal.5.degPerSecond": 4.32,
-          "turn.normal.10.degPerSecond": 7.38,
-          "turn.normal.20.degPerSecond": 7.23
+          "turn.normal.5.degPerSecond": 4.28,
+          "turn.normal.15.degPerSecond": 7.25
         },
         "tolerances": {
-          "turn.normal.5.degPerSecond": 0.5,
-          "turn.normal.10.degPerSecond": 0.5,
-          "turn.normal.20.degPerSecond": 0.5
+          "turn.normal.5.degPerSecond": 0.6,
+          "turn.normal.15.degPerSecond": 0.6
         }
       }
     },
     "I-FF": {
-      "status": "partial",
-      "note": "CE Tier-2 in-battle 10-90% capture 2026-11-24 (Wintermute, ISC) at speed(s) 5, 10, with per-hull measured normal delayTicks (30 Hz). Omitted (TO VERIFY): speed 20: null, null (already_facing). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "status": "measured",
+      "note": "Checkpoint 5 [M]. 5.3 deg/s at speed 5. The 15.5 deg/s at speed 10 is ignored.",
       "verification": {
-        "turnRate16PerTick": "measured at speed(s) 5, 10 (CE Tier-2 capture 2026-11-24); omitted/missing speeds TO VERIFY",
-        "delayTicks": "measured single-run order_delay_s at speed(s) 5, 10 (30 Hz); multi-run confirmation TO VERIFY"
+        "turnRate16PerTick": "checkpoint aggregate [M]",
+        "delayTicks": "30 ticks (1.0 s) [M]"
       },
       "speedPoints": [
         {
           "speed": 5,
           "speedHundredths": 500,
-          "delayTicks": 92,
-          "turnRate16PerTick": 33
-        },
-        {
-          "speed": 10,
-          "speedHundredths": 1000,
-          "delayTicks": 74,
-          "turnRate16PerTick": 92
+          "delayTicks": 30,
+          "turnRate16PerTick": 32
         }
       ],
       "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.normal.{5,10}.degPerSecond measured (10-90%); omitted speeds and delayS TO VERIFY",
+        "source": "Wintermute checkpoints 2-5",
+        "verification": "Checkpoint 5 [M]. 5.3 deg/s at speed 5. The 15.5 deg/s at speed 10 is ignored.",
         "expect": {
-          "turn.normal.5.degPerSecond": 5.37,
-          "turn.normal.10.degPerSecond": 15.15
+          "turn.normal.5.degPerSecond": 5.3
         },
         "tolerances": {
-          "turn.normal.5.degPerSecond": 0.5,
-          "turn.normal.10.degPerSecond": 0.5
+          "turn.normal.5.degPerSecond": 0.5
         }
       }
     },
@@ -1665,44 +1500,28 @@
       }
     },
     "I-CA": {
-      "status": "partial",
-      "note": "CE Tier-2 in-battle 10-90% capture 2026-11-24 (Wintermute, ISC) at speed(s) 5, 10, 20, with per-hull measured normal delayTicks (30 Hz). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "status": "measured",
+      "note": "Checkpoint 5 [M]. 7.0-7.5 deg/s at speed 5-10, delay 1.6-2.3 s. The 22-25 deg/s readings are ignored.",
       "verification": {
-        "turnRate16PerTick": "measured at speed(s) 5, 10, 20 (CE Tier-2 capture 2026-11-24); speeds <5 and >20 clamp to endpoints (TO VERIFY)",
-        "delayTicks": "measured single-run order_delay_s at speed(s) 5, 10, 20 (30 Hz); multi-run confirmation TO VERIFY"
+        "turnRate16PerTick": "checkpoint aggregate [M]",
+        "delayTicks": "58 ticks (1.95 s) [M]"
       },
       "speedPoints": [
         {
-          "speed": 5,
-          "speedHundredths": 500,
-          "delayTicks": 70,
-          "turnRate16PerTick": 42
-        },
-        {
-          "speed": 10,
-          "speedHundredths": 1000,
-          "delayTicks": 49,
-          "turnRate16PerTick": 45
-        },
-        {
-          "speed": 20,
-          "speedHundredths": 2000,
-          "delayTicks": 88,
-          "turnRate16PerTick": 9
+          "speed": 8,
+          "speedHundredths": 800,
+          "delayTicks": 58,
+          "turnRate16PerTick": 44
         }
       ],
       "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.normal.{5,10,20}.degPerSecond measured (10-90%); omitted speeds and delayS TO VERIFY",
+        "source": "Wintermute checkpoints 2-5",
+        "verification": "Checkpoint 5 [M]. 7.0-7.5 deg/s at speed 5-10, delay 1.6-2.3 s. The 22-25 deg/s readings are ignored.",
         "expect": {
-          "turn.normal.5.degPerSecond": 6.91,
-          "turn.normal.10.degPerSecond": 7.39,
-          "turn.normal.20.degPerSecond": 1.46
+          "turn.normal.8.degPerSecond": 7.25
         },
         "tolerances": {
-          "turn.normal.5.degPerSecond": 0.5,
-          "turn.normal.10.degPerSecond": 0.5,
-          "turn.normal.20.degPerSecond": 0.5
+          "turn.normal.8.degPerSecond": 0.6
         }
       }
     },
@@ -1749,44 +1568,28 @@
       }
     },
     "I-DN": {
-      "status": "partial",
-      "note": "CE Tier-2 in-battle 10-90% capture 2026-11-24 (Wintermute, ISC) at speed(s) 5, 10, 20, with per-hull measured normal delayTicks (30 Hz). Missing speeds interpolate or clamp to endpoints (TO VERIFY).",
+      "status": "measured",
+      "note": "Checkpoint 5 [M]. 6.7-7.0 deg/s at speed 10-20, delay 1.2-1.4 s.",
       "verification": {
-        "turnRate16PerTick": "measured at speed(s) 5, 10, 20 (CE Tier-2 capture 2026-11-24); speeds <5 and >20 clamp to endpoints (TO VERIFY)",
-        "delayTicks": "measured single-run order_delay_s at speed(s) 5, 10, 20 (30 Hz); multi-run confirmation TO VERIFY"
+        "turnRate16PerTick": "checkpoint aggregate [M]",
+        "delayTicks": "39 ticks (1.3 s) [M]"
       },
       "speedPoints": [
         {
-          "speed": 5,
-          "speedHundredths": 500,
-          "delayTicks": 70,
-          "turnRate16PerTick": 23
-        },
-        {
           "speed": 10,
           "speedHundredths": 1000,
-          "delayTicks": 42,
-          "turnRate16PerTick": 43
-        },
-        {
-          "speed": 20,
-          "speedHundredths": 2000,
-          "delayTicks": 36,
-          "turnRate16PerTick": 40
+          "delayTicks": 39,
+          "turnRate16PerTick": 42
         }
       ],
       "audit": {
-        "source": "CE Tier-2 in-battle audit (Wintermute, 2026-11-24)",
-        "verification": "turn.normal.{5,10,20}.degPerSecond measured (10-90%); omitted speeds and delayS TO VERIFY",
+        "source": "Wintermute checkpoints 2-5",
+        "verification": "Checkpoint 5 [M]. 6.7-7.0 deg/s at speed 10-20, delay 1.2-1.4 s.",
         "expect": {
-          "turn.normal.5.degPerSecond": 3.87,
-          "turn.normal.10.degPerSecond": 7.16,
-          "turn.normal.20.degPerSecond": 6.57
+          "turn.normal.10.degPerSecond": 6.92
         },
         "tolerances": {
-          "turn.normal.5.degPerSecond": 0.5,
-          "turn.normal.10.degPerSecond": 0.5,
-          "turn.normal.20.degPerSecond": 0.5
+          "turn.normal.10.degPerSecond": 0.6
         }
       }
     },
@@ -1977,6 +1780,32 @@
           "turn.normal.5.degPerSecond": 0.5
         }
       }
+    },
+    "L-FF": {
+      "status": "measured",
+      "audit": {
+        "source": "Wintermute checkpoints 2-5",
+        "verification": "Checkpoint 3 [M]. About 11.4 deg/s, delay 1.6 s. The 28 deg/s run is ignored.",
+        "expect": {
+          "turn.normal.10.degPerSecond": 11.37
+        },
+        "tolerances": {
+          "turn.normal.10.degPerSecond": 0.6
+        }
+      },
+      "note": "Checkpoint 3 [M]. About 11.4 deg/s, delay 1.6 s. The 28 deg/s run is ignored.",
+      "verification": {
+        "turnRate16PerTick": "checkpoint aggregate [M]",
+        "delayTicks": "48 ticks (1.6 s) [M]"
+      },
+      "speedPoints": [
+        {
+          "speed": 10,
+          "speedHundredths": 1000,
+          "delayTicks": 48,
+          "turnRate16PerTick": 69
+        }
+      ]
     }
   }
 }

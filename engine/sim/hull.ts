@@ -81,9 +81,11 @@ export const H = {
   shieldFrac0: 74,
   /** Leftover penetrating hundredths, promoted to a chart point at 100. */
   damageFrac: 80,
+  /** 0 is Red Alert. 1 is Green Alert. */
+  alert: 81,
 } as const;
 
-export const HULL_FIELDS = 81;
+export const HULL_FIELDS = 82;
 
 /** One in-flight heavy weapon. Rows live on seeker entities, not on the ship. */
 export const SHOT = 'shot';

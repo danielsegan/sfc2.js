@@ -59,16 +59,94 @@
           { "maxRange": 30000, "damageHundredths": 800, "hitNum": 1, "hitDen": 8 }
         ]
       },
-      "Dis1": { "internal": "disruptor", "weaponId": "disruptor-1", "verification": "to-verify" },
+      "Dis1": {
+        "internal": "disruptor",
+        "weaponId": "disruptor-1",
+        "verification": "observed-reference",
+        "armCost": 2,
+        "armPerTurn": 2,
+        "armTurns": 1,
+        "holdCost": 2,
+        "directDamage": 0,
+        "maxRange": 16000,
+        "note": "Klingon and Lyran Disruptor-1 [H]. 5 through 1.6k, 0-4 from 1.6k to 4.8k, 0-3 through 16k. Arms on one rules-turn, inside the 31-36 s reading.",
+        "rangeBands": [
+          { "maxRange": 1599, "damage": 5 },
+          { "maxRange": 4799, "damageMin": 0, "damageMax": 4 },
+          { "maxRange": 16000, "damageMin": 0, "damageMax": 3 }
+        ]
+      },
       "Dis2": { "internal": "disruptor", "weaponId": "disruptor-2", "verification": "to-verify" },
       "Dis3": { "internal": "disruptor", "weaponId": "disruptor-3", "verification": "to-verify" },
-      "Dis4": { "internal": "disruptor", "weaponId": "disruptor-4", "verification": "to-verify" },
-      "PlaD": { "internal": "plasma", "weaponId": "plasma-d", "verification": "to-verify" },
-      "PlaF": { "internal": "plasma", "weaponId": "plasma-f", "verification": "to-verify" },
-      "PlaG": { "internal": "plasma", "weaponId": "plasma-g", "verification": "to-verify" },
+      "Dis4": {
+        "internal": "disruptor",
+        "weaponId": "disruptor-4",
+        "verification": "observed-reference",
+        "armCost": 2,
+        "armPerTurn": 2,
+        "armTicks": 960,
+        "holdCost": 2,
+        "directDamage": 0,
+        "maxRange": 31000,
+        "note": "K-C8 Disruptor-4 [H]. 0-4 at 2.4-3.9k, 0-3 at 6-15k, 0-2 at 16.5-31k. Ranges under 2.4k were not sampled, so they share the 0-4 band. Arm time 32 s (960 ticks). The Lyran close-range 0-5 at 1.4k is a separate reading and is not merged into this table.",
+        "rangeBands": [
+          { "maxRange": 3999, "damageMin": 0, "damageMax": 4 },
+          { "maxRange": 15000, "damageMin": 0, "damageMax": 3 },
+          { "maxRange": 31000, "damageMin": 0, "damageMax": 2 }
+        ]
+      },
+      "PlaD": {
+        "internal": "plasma",
+        "weaponId": "plasma-d",
+        "verification": "observed-reference",
+        "directDamage": 0,
+        "note": "Defensive plasma. The HUD read 0 throughout. No damage table."
+      },
+      "PlaF": {
+        "internal": "plasma",
+        "weaponId": "plasma-f",
+        "verification": "observed-reference",
+        "armCost": 2,
+        "armPerTurn": 2,
+        "armTicks": 3060,
+        "directDamage": 20,
+        "maxRange": 17000,
+        "note": "Launch yield 20. Arm time about 102 s. Provisional max launch range 17k from the flat HUD samples. This directDamage is the launch yield, not impact damage. In-flight falloff is unmeasured."
+      },
+      "PlaG": {
+        "internal": "plasma",
+        "weaponId": "plasma-g",
+        "verification": "observed-reference",
+        "armCost": 2,
+        "armPerTurn": 2,
+        "armTicks": 3060,
+        "directDamage": 20,
+        "maxRange": 25400,
+        "note": "Launch yield 20. Arm time about 102 s. Provisional max launch range 25.4k. directDamage is the launch yield, not impact damage."
+      },
       "PlaI": { "internal": "plasma", "weaponId": "plasma-i", "verification": "to-verify" },
-      "PlaR": { "internal": "plasma", "weaponId": "plasma-r", "verification": "to-verify" },
-      "PlaS": { "internal": "plasma", "weaponId": "plasma-s", "verification": "to-verify" },
+      "PlaR": {
+        "internal": "plasma",
+        "weaponId": "plasma-r",
+        "verification": "observed-reference",
+        "armCost": 2,
+        "armPerTurn": 2,
+        "armTicks": 3720,
+        "directDamage": 50,
+        "maxRange": 29500,
+        "note": "Launch yield 50. Arm time about 124 s. The cutoff is above 29.5k and was not crossed, so 29.5k is only the last observed launch range. directDamage is the launch yield, not impact damage."
+      },
+      "PlaS": {
+        "internal": "plasma",
+        "weaponId": "plasma-s",
+        "verification": "observed-reference",
+        "armCost": 2,
+        "armPerTurn": 2,
+        "armTicks": 2850,
+        "directDamage": 30,
+        "maxRange": 29500,
+        "note": "Launch yield 30. Arm time about 95 s, the middle of 90-100 s. Both tubes together were about 135 s. The cutoff is above 29.5k. directDamage is the launch yield, not impact damage."
+      },
       "PLaF": { "internal": "plasma", "weaponId": "plasma-f", "sameAs": "PlaF", "verification": "to-verify" },
       "PLaG": { "internal": "plasma", "weaponId": "plasma-g", "sameAs": "PlaG", "verification": "to-verify" },
       "PLaR": { "internal": "plasma", "weaponId": "plasma-r", "sameAs": "PlaR", "verification": "to-verify" },
@@ -76,12 +154,67 @@
       "DroA": { "internal": "drone", "weaponId": "drone-a", "reloadCounted": true, "omnidirectional": true, "verification": "to-verify" },
       "DroB": { "internal": "drone", "weaponId": "drone-b", "reloadCounted": true, "omnidirectional": true, "verification": "to-verify" },
       "DroC": { "internal": "drone", "weaponId": "drone-c", "reloadCounted": true, "omnidirectional": true, "verification": "to-verify" },
-      "DroF": { "internal": "drone", "weaponId": "drone-f", "reloadCounted": true, "omnidirectional": true, "verification": "to-verify" },
+      "DroF": {
+        "internal": "drone",
+        "weaponId": "drone-f",
+        "reloadCounted": true,
+        "omnidirectional": true,
+        "verification": "observed-reference",
+        "directDamage": 12,
+        "armTicks": 1320,
+        "maxRange": 33500,
+        "note": "Missile Rack F [H]. 12 per drone from 1k to 33k. Initial arm about 44 s. Reload about 65-68 s is not a separate clock. Max range about 33.5k."
+      },
       "DroG": { "internal": "drone", "weaponId": "drone-g", "reloadCounted": true, "omnidirectional": true, "verification": "to-verify" },
       "ESG": { "internal": "esg", "weaponId": "esg", "verification": "to-verify" },
-      "Fus": { "internal": "fusion", "weaponId": "fusion", "verification": "to-verify" },
-      "HB": { "internal": "hellbore", "weaponId": "hellbore", "verification": "to-verify" },
-      "PPD": { "internal": "ppd", "weaponId": "ppd", "verification": "to-verify" },
+      "Fus": {
+        "internal": "fusion",
+        "weaponId": "fusion",
+        "verification": "observed-reference",
+        "armCost": 4,
+        "armPerTurn": 4,
+        "armTicks": 960,
+        "maxRange": 25000,
+        "note": "Hydran fusion [H]. Arms in about 32 s at 4 energy. Rolls fitted to the expected centers. 0 past about 11k through the 23.5-25k max.",
+        "rangeBands": [
+          { "maxRange": 999, "damageMin": 4, "damageMax": 6 },
+          { "maxRange": 1999, "damageMin": 3, "damageMax": 6 },
+          { "maxRange": 2999, "damageMin": 2, "damageMax": 4 },
+          { "maxRange": 10999, "damageMin": 0, "damageMax": 1 },
+          { "maxRange": 25000, "damageMin": 0, "damageMax": 0 }
+        ]
+      },
+      "HB": {
+        "internal": "hellbore",
+        "weaponId": "hellbore",
+        "verification": "observed-reference",
+        "armTicks": 1965,
+        "maxRange": 21400,
+        "note": "Hydran hellbore [H] through 21.4k. The max range past 21.4k is unmeasured, so there is no band beyond it. Arm time about 65.5 s, the middle of 63-68 s. Energy cost was not read.",
+        "rangeBands": [
+          { "maxRange": 1499, "damageMin": 0, "damageMax": 20 },
+          { "maxRange": 2999, "damageMin": 0, "damageMax": 17 },
+          { "maxRange": 3999, "damageMin": 0, "damageMax": 15 },
+          { "maxRange": 7999, "damageMin": 0, "damageMax": 13 },
+          { "maxRange": 14999, "damageMin": 0, "damageMax": 10 },
+          { "maxRange": 21400, "damageMin": 0, "damageMax": 8 }
+        ]
+      },
+      "PPD": {
+        "internal": "ppd",
+        "weaponId": "ppd",
+        "verification": "observed-reference",
+        "maxRange": 30400,
+        "note": "ISC PPD [H]. 0 under about 4k. Then 6, 5, 4, and after the unsampled 18-25k gap, 3 at about 25.5k and 2 through 30.3k. Nothing past about 30.4k. The gap has no band, so a shot there does not pick a damage.",
+        "rangeBands": [
+          { "maxRange": 3999, "damage": 0 },
+          { "maxRange": 10999, "damage": 6 },
+          { "maxRange": 15999, "damage": 5 },
+          { "maxRange": 17999, "damage": 4 },
+          { "maxRange": 25999, "damage": 3 },
+          { "maxRange": 30400, "damage": 2 }
+        ]
+      },
       "ADD6": { "internal": "add", "weaponId": "add-6", "reloadCounted": true, "omnidirectional": true, "verification": "to-verify", "note": "Observed Arc values are only 1. Whether that number is reloads or rack capacity is TO VERIFY." },
       "ADD12": { "internal": "add", "weaponId": "add-12", "reloadCounted": true, "omnidirectional": true, "verification": "to-verify", "note": "Observed Arc values are only 1. Whether that number is reloads or rack capacity is TO VERIFY." },
       "Ph1": {
@@ -90,15 +223,16 @@
         "verification": "observed-reference",
         "chargeCost": 4,
         "holdCost": 0,
-        "maxRange": 30000,
-        "note": "Federation Phaser-1 [M]. One seeded combat-stream roll per shot, uniform on the inclusive integer band, fitted to the expected damage. 0-1k is 6-7 (mean 6.5). 1-3k is 4-5 (mean 4.5, inside 4.5-5). 3-5k is 4. 5-10k is 1-2. 10-15k is 0-1 (the uniform mean is 0.5, under the 0.7-1.0 center). 15k through 30k is 0-1 (mean 0.5). A shared edge stays on the inner band. Nothing past 30k. The reading puts the cutoff somewhere in 26-30k. Capacitor fill of about 35 s is not a separate clock.",
+        "maxRange": 26400,
+        "note": "Common Phaser-1 uses the Gorn G-DN curve [H]. A shared edge stays on the inner band. 0-2k is 3-6, 2-4k is 2-4, 4-6k is 2-3, 6-9k is 1-2, 9-15k is 0-1, 15-26k is 0-1 (the expected center there is 0.2-0.3). Damage is 0 from 26k through 26.4k. Nothing past 26.4k. ISC runs slightly longer, about 30k [M]; that longer tail is not a second table.",
         "rangeBands": [
-          { "maxRange": 999, "damageMin": 6, "damageMax": 7 },
-          { "maxRange": 2999, "damageMin": 4, "damageMax": 5 },
-          { "maxRange": 4999, "damageMin": 4, "damageMax": 4 },
-          { "maxRange": 9999, "damageMin": 1, "damageMax": 2 },
+          { "maxRange": 1999, "damageMin": 3, "damageMax": 6 },
+          { "maxRange": 3999, "damageMin": 2, "damageMax": 4 },
+          { "maxRange": 5999, "damageMin": 2, "damageMax": 3 },
+          { "maxRange": 8999, "damageMin": 1, "damageMax": 2 },
           { "maxRange": 14999, "damageMin": 0, "damageMax": 1 },
-          { "maxRange": 30000, "damageMin": 0, "damageMax": 1 }
+          { "maxRange": 25999, "damageMin": 0, "damageMax": 1 },
+          { "maxRange": 26400, "damageMin": 0, "damageMax": 0 }
         ]
       },
       "Ph2": {
@@ -126,15 +260,30 @@
         "verification": "observed-reference",
         "chargeCost": 4,
         "holdCost": 0,
-        "maxRange": 10300,
-        "note": "F-FF Phaser-3 [M]. Under 4k the roll is 1-2 (mean 1.5). From 4k through 10.3k the shot is 0. Nothing past 10.3k.",
+        "maxRange": 4200,
+        "note": "Effective Phaser-3 range is about 4.2k from the ISC I-DN [M]. Inside 2k the roll is 1-2. 2-3k is 1-2. 3-4.2k is 0-1. Nothing past 4.2k. The earlier Lyran 16k figure counted a nonzero max and is not the cutoff.",
         "rangeBands": [
-          { "maxRange": 3999, "damageMin": 1, "damageMax": 2 },
-          { "maxRange": 10300, "damageMin": 0, "damageMax": 0 }
+          { "maxRange": 1999, "damageMin": 1, "damageMax": 2 },
+          { "maxRange": 2999, "damageMin": 1, "damageMax": 2 },
+          { "maxRange": 4200, "damageMin": 0, "damageMax": 1 }
         ]
       },
       "Ph4": { "internal": "phaser", "weaponId": "phaser-4", "verification": "to-verify" },
-      "PhG": { "internal": "phaser", "weaponId": "phaser-g", "verification": "to-verify" }
+      "PhG": {
+        "internal": "phaser",
+        "weaponId": "phaser-g",
+        "verification": "observed-reference",
+        "chargeCost": 4,
+        "holdCost": 0,
+        "maxRange": 16000,
+        "note": "Hydran Phaser-G [H]. Rolls fitted to the expected centers. Nothing past about 16k.",
+        "rangeBands": [
+          { "maxRange": 1699, "damageMin": 12, "damageMax": 16 },
+          { "maxRange": 2999, "damageMin": 4, "damageMax": 16 },
+          { "maxRange": 3999, "damageMin": 0, "damageMax": 12 },
+          { "maxRange": 16000, "damageMin": 0, "damageMax": 4 }
+        ]
+      }
     },
     "arcs": {
       "TEST-FA": {

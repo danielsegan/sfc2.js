@@ -526,8 +526,8 @@
       "hull": "R-SNA",
       "speedHundredths": 1000,
       "expect": {
-        "turnRate16PerTick": 44,
-        "delayTicks": 31
+        "turnRate16PerTick": 45,
+        "delayTicks": 33
       }
     },
     {
@@ -544,8 +544,8 @@
       "hull": "L-FF",
       "speedHundredths": 1000,
       "expect": {
-        "turnRate16PerTick": 47,
-        "delayTicks": 44
+        "turnRate16PerTick": 69,
+        "delayTicks": 48
       }
     },
     {
@@ -553,8 +553,8 @@
       "hull": "G-FF",
       "speedHundredths": 500,
       "expect": {
-        "turnRate16PerTick": 83,
-        "delayTicks": 105
+        "turnRate16PerTick": 57,
+        "delayTicks": 39
       }
     },
     {

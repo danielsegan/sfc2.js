@@ -77,6 +77,7 @@ import {
   ENERGY_SCALE,
   FALLBACK_YAW_PER_TICK,
   INTERNAL_DISRUPTOR,
+  INTERNAL_PLASMA,
   INTERNAL_PHASER,
   INTERNAL_PHOTON,
   ROW_BRIDGE,
@@ -236,6 +237,7 @@ const FLAG_FC = 2;
 const FLAG_UNKNOWN = 4;
 /** The speed word is hundredths of a speed point, not whole points. */
 const FLAG_SPEED_100 = 8;
+const FLAG_ALERT_GREEN = 16;
 
 export interface EnergyAsk {
   readonly slot: number;
@@ -471,6 +473,8 @@ export interface EnergyOrder {
   general?: number;
   specific?: readonly number[];
   weapons?: readonly EnergyAsk[];
+  /** Green Alert. Phasers, disruptors, and plasma do not charge. Drones still do. */
+  alertGreen?: boolean;
 }
 
 /** Payload only. The session stamps tick, slot, and seq. */
@@ -487,6 +491,7 @@ export function setEnergyPayload(entity: number, order: EnergyOrder): Uint8Array
   if (order.unknownDraw) flags |= FLAG_UNKNOWN;
   const speedWord = order.speedHundredths !== undefined ? order.speedHundredths : (order.speed ?? 0);
   if (order.speedHundredths !== undefined) flags |= FLAG_SPEED_100;
+  if (order.alertGreen) flags |= FLAG_ALERT_GREEN;
   const weapons = order.weapons ?? [];
   const values = [entity, flags, speedWord, order.general ?? 0, ...specific, weapons.length];
   for (const ask of weapons) values.push(ask.slot, ask.request, ask.mode);
@@ -512,6 +517,11 @@ function splitGeneral(points: number): number[] {
   const out: number[] = [];
   for (let i = 0; i < 6; i++) out.push(base + (i < rem ? 1 : 0));
   return out;
+}
+
+function greenAlertBlocks(alert: number, internal: number): boolean {
+  if (alert !== 1) return false;
+  return internal === INTERNAL_PHASER || internal === INTERNAL_DISRUPTOR || internal === INTERNAL_PLASMA;
 }
 
 function heavyFamily(internal: number): boolean {
@@ -1007,6 +1017,7 @@ function applySetEnergy(world: World, cmd: Command, ctx: TickContext, options: R
   );
   fields[H.speed] = speed;
   fields[H.speedFrac100] = speedFrac;
+  fields[H.alert] = (flags & FLAG_ALERT_GREEN) !== 0 ? 1 : 0;
   fields[H.fcPaid] = fcOn && paid[PAY_FC]! >= desired[PAY_FC]! ? 1 : 0;
   fields[H.battery100] = battery;
   fields[H.capacitor100] = capacitor;
@@ -1035,6 +1046,7 @@ function mountReady(mount: MountMem, def: WeaponDef): boolean {
     if (cost <= 0) return false;
     return mount.charge100 >= scale(cost) && mount.ticksCharging >= ticks;
   }
+  if (def.bands.length > 0 && def.armCost <= 0 && def.chargeCost <= 0) return true;
   return false;
 }
 
@@ -1070,6 +1082,19 @@ function shotDamage(
   }
   if (def.internal === INTERNAL_DISRUPTOR) {
     return disruptorShot(def, mode, dx, dy, ctx.rng.stream('combat'));
+  }
+  if (def.bands.length > 0 && def.internal !== INTERNAL_PHOTON) {
+    if (def.code === 'PPD' && !withinRange(dx, dy, 17999) && withinRange(dx, dy, 25499)) return undefined;
+    for (const band of def.bands) {
+      if (!withinRange(dx, dy, band.maxRange)) continue;
+      const unit = band.hundredths === 1 ? ENERGY_SCALE : 1;
+      if (band.roll === 1) {
+        const span = band.max - band.min + 1;
+        return { amount: band.min + ctx.rng.stream('combat').int(span), unit };
+      }
+      return { amount: band.damage, unit };
+    }
+    return undefined;
   }
   if (def.internal === INTERNAL_PHOTON) {
     if (!withinRange(dx, dy, def.maxRange)) return undefined;
@@ -1306,6 +1331,7 @@ function drip(world: World, options: ResolvedOptions): void {
       const share = tickShare(mount.budget100, index, period);
       const def = weaponDef(mount.weaponId);
       if (!def) continue;
+      if (greenAlertBlocks(fields[H.alert]!, def.internal)) continue;
       if (mount.budget100 > 0) mount.ticksCharging += 1;
       const cost = armCostPoints(def, mount.mode);
       const cost100 = scale(cost);

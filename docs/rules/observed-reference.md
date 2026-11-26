@@ -38,7 +38,7 @@ K-D7 low speed is 0.27 to 0.29. Speed 31 is about 79.6 seconds from rest. The qu
 
 Slowing down is about 1.1 speed per second on every listed hull.
 
-Ordered speed is still what the energy plan pays for. Actual speed, in hundredths, walks toward that order on F-CA, F-FF, F-DN, and K-D7. Other hulls keep the old per-order clamp and read their acceleration from the install as before. Movement energy stays 1 per ordered speed point.
+Ordered speed is still what the energy plan pays for. Actual speed, in hundredths, walks toward that order on the hulls that have an acceleration band, including the checkpoint hulls. Movement energy stays 1 per ordered speed point.
 
 ## Energy
 
@@ -48,18 +48,19 @@ An F-CA-like plant is 34 [H], so weapons see 31.5 / 21.5 / 11.5 / 1.0 at speeds 
 
 ## Phaser-1
 
-Confidence M. Each mount rolls once on the `combat` stream, uniform between the inclusive ends. Ranges are thousands of range units. A shared edge stays on the inner band. Nothing past 30k. The reading puts the cutoff somewhere in 26–30k.
+Confidence H, from the Gorn dreadnought. This is the common table. Each mount rolls once on the `combat` stream, uniform between the inclusive ends. A shared edge stays on the inner band. Nothing past 26.4k. An ISC reading still shows a little damage out to about 30k [M]. That longer tail is not a second table.
 
-| Range | Min–max | Expected |
-| --- | --- | --- |
-| 0–1k | 6–7 | 6.5 |
-| 1–3k | 4–5 | 4.5–5 |
-| 3–5k | 4 | 4.0 |
-| 5–10k | 1–2 | 1–2 |
-| 10–15k | 0–1 | 0.7–1.0 |
-| 15–30k | 0–1 | 0.5 |
+| Range | Min–max |
+| --- | --- |
+| 0–2k | 3–6 |
+| 2–4k | 2–4 |
+| 4–6k | 2–3 |
+| 6–9k | 1–2 |
+| 9–15k | 0–1 |
+| 15–26k | 0–1 |
+| 26.4k | 0 |
 
-The 10–15k uniform mean is 0.5, under the 0.7–1.0 center. The metric passes a sample inside the roll. Capacitor fill of about 35 seconds is not a separate clock.
+Capacitor fill of about 32–35 seconds is not a separate clock.
 
 ## Phaser-2
 
@@ -79,7 +80,7 @@ Nothing past 16k.
 
 ## Phaser-3
 
-Confidence M. F-FF. Under 4k the roll is 1–2, mean about 1.5. From 4k through 10.3k the shot is 0. Nothing past 10.3k.
+Confidence H from the ISC dreadnought, which tightens the earlier F-FF reading. Inside 2k the roll is about 1.5–2. At 2–3k it is about 1–1.5. At 3–4k it is under 0.5. Nothing past 4.2k. An earlier “nonzero max” of about 16k is not the effective range.
 
 ## Photon
 
@@ -92,6 +93,20 @@ A hit is 8 points at every range, stored as hundredths. Chance: 100% at 0–1k, 
 Cost confidence M, time confidence L. It draws 2 per rules-turn, spread across the turn, and is ready after one rules-turn (33 seconds). The same 2 keeps it armed. Overload draws 4 per rules-turn and is ready after that same turn.
 
 Damage on a hit is fixed. A miss deals 0 and does not roll damage. One tenth of a k is 100 range units. A labeled band start belongs to that band, and the range below it stays on the inner band. Normal damage and hit chance: 0–1k is 5 at 100%, 1.1–2k is 5 at 80%, 2.1–3k is 4 at 75%, 3.1–5k is 4 at 62.5% (5/8), 5.1–16k is 3 at 66.7% (stored as 667/1000), and 16.1–31k is 2 at 50%. The check ranges 0, 1, 2, 3, 4, 8, 11, 15, 20, and 25 deal 5, 5, 5, 4, 4, 3, 3, 3, 2, and 2 when the shot hits. Certainty does not draw. The normal cutoff is measured at exactly 31.0k (`DISRUPTOR_MAX_RANGE` is 31000). Overload is unchanged: 0–1k is 10 at 100%, 1.1–2k is 10 at 80%, 2.1–4.9k is 8 at 81%, and 5–9k is 6 at 83%. Past exactly 9.0k an overload shot does nothing. Energy is 2 per mount for normal and 4 per mount for overload.
+
+## Checkpoints 2–5
+
+Motion for K-E4, K-F5, K-C8, R-SNA, R-KRC, R-CON, L-FF, L-CA, L-DN, H-HN, H-RN, H-PAL, G-FF, G-CA, G-DN, I-FF, I-CA, and I-DN is in the turn, HET, and acceleration tables. Each new hull is scored at one measured speed. K-D7 turn, HET, and acceleration stay on the earlier aggregates. A plant that can pay the flown top speed is the probe plant, and weapons at speed 0 are plant minus 2.5. Plants that cannot (POWER 15 or 20, and the R-SNA POWER 7 cap) stay in needs-ce-reading.md, and those probes stay at warp 34 so the turn can be ordered.
+
+Disruptor-1 (E4, F5, and the matching Lyran short mount) cuts off at 16k: 5 inside 1.6k, then 0–4, then 0–3. Disruptor-3 stays the 31k table above. Disruptor-4 (C8) is its own 31k roll: 0–4, 0–3, 0–2, and it arms in 32 seconds. The Lyran close-range 0–5 is not merged into that table.
+
+Plasma tubes store a launch yield and an arm time only. F and G are 20 and arm in 102 seconds. R is 50 and arms in 124 seconds. S is 30 and arms in about 95 seconds. Plasma-D is defensive and has no damage. Those yields are not impact damage. In-flight falloff is unmeasured.
+
+Fusion, hellbore, Phaser-G, and the PPD are range rolls in the weapon table. Hellbore stops at the last measured band, 21.4k. The PPD is 0 under 4k, then 6, 5, 4, an unsampled gap from 18k to 25.5k, then 3 and 2, and nothing past 30.4k. A shot in the gap does not pick a damage. Drone rack F is 12 per drone, arms in 44 seconds, and reaches about 33.5k. ESG contact damage is unmeasured.
+
+## Alert
+
+Phasers, disruptors, and plasma take charge only while the ship is at Red Alert and the weapon is in normal mode. Green Alert does not charge those mounts. Drone racks still can. `setEnergy` flag bit 16 orders Green Alert. The default is Red, so an order that omits the flag keeps charging. The HUD does not send the flag yet.
 
 ## Shields
 

@@ -232,10 +232,10 @@ describe('orderHet (verb 13)', () => {
       ],
     });
     expect(heading(sim, 0)).toBe(318);
-    expect(heading(sim, 1)).toBe(363);
+    expect(heading(sim, 1)).toBe(0);
     expect(heading(sim, 2)).toBe(267);
-    expect(heading(sim, 3)).toBe(307);
-    expect(heading(sim, 4)).toBe(370);
+    expect(heading(sim, 3)).toBe(0);
+    expect(heading(sim, 4)).toBe(355);
     expect(heading(sim, 5)).toBe(285);
   });
 

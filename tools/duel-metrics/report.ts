@@ -84,6 +84,62 @@ function row(
   };
 }
 
+const EXTRA_TURN: Readonly<Record<string, { speed: number; deg: number; delay: number; timeTo10: number; conf: 'H' | 'M' }>> = {
+  'K-E4': { speed: 1000, deg: 10.1, delay: 0.75, timeTo10: 17.9, conf: 'M' },
+  'K-F5': { speed: 1000, deg: 10.4, delay: 1, timeTo10: 25, conf: 'H' },
+  'K-C8': { speed: 1000, deg: 8, delay: 1.1, timeTo10: 28.6, conf: 'H' },
+  'R-SNA': { speed: 1000, deg: 7.35, delay: 1.1, timeTo10: 15.9, conf: 'M' },
+  'R-KRC': { speed: 1000, deg: 10.9, delay: 2.25, timeTo10: 29.4, conf: 'M' },
+  'R-CON': { speed: 1000, deg: 6.5, delay: 0.6, timeTo10: 30.3, conf: 'H' },
+  'L-FF': { speed: 1000, deg: 11.4, delay: 1.6, timeTo10: 12.2, conf: 'M' },
+  'L-CA': { speed: 1000, deg: 7.75, delay: 1.3, timeTo10: 31.3, conf: 'M' },
+  'L-DN': { speed: 1000, deg: 7.5, delay: 1, timeTo10: 35.7, conf: 'M' },
+  'H-HN': { speed: 1000, deg: 9.8, delay: 0.5, timeTo10: 6.5, conf: 'M' },
+  'H-RN': { speed: 1000, deg: 8.7, delay: 1.3, timeTo10: 29.4, conf: 'M' },
+  'H-PAL': { speed: 1000, deg: 7.9, delay: 1.7, timeTo10: 30.3, conf: 'H' },
+  'G-FF': { speed: 2000, deg: 9.4, delay: 1.3, timeTo10: 12.2, conf: 'M' },
+  'G-CA': { speed: 2000, deg: 9.3, delay: 1.3, timeTo10: 25.6, conf: 'M' },
+  'G-DN': { speed: 1500, deg: 7.3, delay: 1.4, timeTo10: 20.8, conf: 'M' },
+  'I-FF': { speed: 500, deg: 5.3, delay: 1, timeTo10: 12.5, conf: 'M' },
+  'I-CA': { speed: 1000, deg: 7.25, delay: 1.95, timeTo10: 26.3, conf: 'M' },
+  'I-DN': { speed: 1000, deg: 6.85, delay: 1.3, timeTo10: 20.8, conf: 'M' },
+};
+
+const PLANT_AT_REST: Readonly<Record<string, { left: number; conf: 'H' | 'M' }>> = {
+  'K-C8': { left: 54.5, conf: 'H' },
+  'R-KRC': { left: 36.5, conf: 'H' },
+  'R-CON': { left: 57.5, conf: 'H' },
+  'L-CA': { left: 34.5, conf: 'H' },
+  'L-DN': { left: 52.5, conf: 'M' },
+  'H-RN': { left: 31.5, conf: 'M' },
+  'H-PAL': { left: 51.5, conf: 'H' },
+  'G-CA': { left: 35.5, conf: 'M' },
+  'G-DN': { left: 55.5, conf: 'M' },
+  'I-CA': { left: 37.5, conf: 'M' },
+  'I-DN': { left: 53.5, conf: 'M' },
+};
+
+const EXTRA_HET: Readonly<Record<string, { deg: number; delay: number; conf: 'H' | 'M' }>> = {
+  'K-E4': { deg: 70, delay: 5.7, conf: 'H' },
+  'K-F5': { deg: 65.7, delay: 5.5, conf: 'H' },
+  'K-C8': { deg: 47, delay: 5.7, conf: 'H' },
+  'R-SNA': { deg: 44, delay: 5.8, conf: 'M' },
+  'R-KRC': { deg: 59, delay: 5.7, conf: 'M' },
+  'R-CON': { deg: 42.5, delay: 5.55, conf: 'H' },
+  'L-FF': { deg: 47.5, delay: 5.75, conf: 'M' },
+  'L-CA': { deg: 50, delay: 6.05, conf: 'M' },
+  'L-DN': { deg: 48, delay: 5.7, conf: 'M' },
+  'H-HN': { deg: 62, delay: 5.8, conf: 'M' },
+  'H-RN': { deg: 48, delay: 5.6, conf: 'M' },
+  'H-PAL': { deg: 45.8, delay: 5.6, conf: 'H' },
+  'G-FF': { deg: 57.5, delay: 6.3, conf: 'M' },
+  'G-CA': { deg: 52, delay: 5.8, conf: 'M' },
+  'G-DN': { deg: 42.4, delay: 6, conf: 'M' },
+  'I-FF': { deg: 58.5, delay: 5.7, conf: 'M' },
+  'I-CA': { deg: 44, delay: 5.7, conf: 'M' },
+  'I-DN': { deg: 39.25, delay: 5.55, conf: 'M' },
+};
+
 function turnRateScore(ship: ShipReport, sample: TurnSample): Scored {
   const ours = degNumber(sample.turnRate16PerTick);
   const speed = sample.speedHundredths;
@@ -106,6 +162,9 @@ function turnRateScore(ship: ShipReport, sample: TurnSample): Scored {
     if (speed === 2000) return scorePoint(ours, 7.4, 'H');
     return scoreNa();
   }
+  const extra = EXTRA_TURN[ship.turnHull];
+  if (extra) return speed === extra.speed ? scorePoint(ours, extra.deg, extra.conf) : scoreNa();
+  if (ship.turnHull !== 'K-D7') return scoreNa();
   if (speed === 500) return scorePoint(ours, 5.4, 'M');
   if (speed === 1000 || speed === 1500 || speed === 2000 || speed === 3100) return scoreRange(ours, 9, 9.4, 'M');
   return scoreNa();
@@ -119,6 +178,9 @@ function hetRateScore(ship: ShipReport, sample: HetSample): Scored {
   }
   if (ship.turnHull === 'F-FF') return scorePoint(ours, 49, 'H');
   if (ship.turnHull === 'F-DN') return scorePoint(ours, 41.7, 'M');
+  const extra = EXTRA_HET[ship.turnHull];
+  if (extra) return scorePoint(ours, extra.deg, extra.conf);
+  if (ship.turnHull !== 'K-D7') return scoreNa();
   return scoreRange(ours, 57.8, 59, 'H');
 }
 
@@ -130,7 +192,12 @@ function timeScore(ship: ShipReport, sample: SpeedSample): Scored {
     'F-DN': { 500: 16.1, 1000: 32.3, 1500: 48.4, 2000: 64.5, 2500: 80.6, 3000: 96.8 },
     'K-D7': { 500: 18, 1000: 30, 1500: 42, 2000: 54, 2500: 66, 3000: 78, 3100: 79.6 },
   };
-  const table = tables[ship.turnHull] ?? {};
+  const table = tables[ship.turnHull];
+  if (!table) {
+    const extra = EXTRA_TURN[ship.turnHull];
+    if (!extra || sample.speedHundredths !== 1000) return scoreNa();
+    return scorePoint(seconds, extra.timeTo10, 'M');
+  }
   const ref = table[sample.speedHundredths];
   if (ref === undefined) return scoreNa();
   return scorePoint(seconds, ref, 'M');
@@ -142,14 +209,13 @@ function phaserScore(ship: ShipReport, probe: PhaserProbe): Scored {
 }
 
 function phaser1Score(probe: PhaserProbe): Scored {
-  if (probe.range === 0) return scoreRoll(probe.damage, 6, 7, 6.5, 'M');
-  if (probe.range === 1 || probe.range === 2) return scoreRoll(probe.damage, 4, 5, 4.5, 'M');
-  if (probe.range === 4) return scorePoint(probe.damage, 4, 'M');
-  if (probe.range === 8) return scoreRoll(probe.damage, 1, 2, 1.5, 'M');
-  if (probe.range === 12 || probe.range === 16 || probe.range === 20 || probe.range === 26) {
-    return scoreRoll(probe.damage, 0, 1, 0.5, 'M');
-  }
-  return scoreNone(probe.damage, 'M');
+  if (probe.range === 0 || probe.range === 1) return scoreRoll(probe.damage, 3, 6, 4.5, 'H');
+  if (probe.range === 2) return scoreRoll(probe.damage, 2, 4, 3, 'H');
+  if (probe.range === 4) return scoreRoll(probe.damage, 2, 3, 2.5, 'H');
+  if (probe.range === 8) return scoreRoll(probe.damage, 1, 2, 1.5, 'H');
+  if (probe.range === 12 || probe.range === 16 || probe.range === 20) return scoreRoll(probe.damage, 0, 1, 0.5, 'H');
+  if (probe.range === 26) return scorePoint(probe.damage, 0, 'H');
+  return scoreNone(probe.damage, 'H');
 }
 
 function phaser2Score(probe: PhaserProbe): Scored {
@@ -163,7 +229,7 @@ function phaser2Score(probe: PhaserProbe): Scored {
 
 function phaser3Score(probe: PhaserProbe): Scored {
   if (probe.range === 0 || probe.range === 2) return scoreRoll(probe.damage, 1, 2, 1.5, 'M');
-  if (probe.range === 4 || probe.range === 8) return scorePoint(probe.damage, 0, 'M');
+  if (probe.range === 4) return scoreRoll(probe.damage, 0, 1, 0.5, 'M');
   return scoreNone(probe.damage, 'M');
 }
 
@@ -240,6 +306,12 @@ function firepowerScore(ship: ShipReport, sample: FirepowerSample): Scored {
     if (sample.speedHundredths === 2000) return scorePoint(ours, 30.5, 'H');
     if (sample.speedHundredths === 3100) return scorePoint(ours, 19.5, 'H');
   }
+  const plant = PLANT_AT_REST[ship.turnHull];
+  if (plant) {
+    if (sample.speedHundredths === 0) return scorePoint(ours, plant.left, plant.conf);
+    return scoreNa();
+  }
+  if (ship.turnHull !== 'K-D7') return scoreNa();
   if (sample.speedHundredths === 0) return scorePoint(ours, 36.5, 'H');
   if (sample.speedHundredths === 1000) return scorePoint(ours, 26.5, 'H');
   if (sample.speedHundredths === 2000) return scorePoint(ours, 16.5, 'H');
@@ -262,13 +334,18 @@ export function tableRows(report: MetricsReport): readonly TableRow[] {
 function pushShip(rows: TableRow[], ship: ShipReport): void {
   for (const sample of ship.turns) {
     const delaySeconds = secondsNumber(sample.delayTicks);
+    const extraTurn = EXTRA_TURN[ship.turnHull];
     const delayJudged = ship.turnHull === 'F-CA'
       ? scoreRange(delaySeconds, 1, 1.9, 'H')
       : ship.turnHull === 'F-FF'
         ? scorePoint(delaySeconds, 1.1, 'H')
         : ship.turnHull === 'F-DN'
           ? scorePoint(delaySeconds, 1.2, 'H')
-          : scoreRange(delaySeconds, 0.7, 1.8, 'M');
+          : extraTurn
+            ? scorePoint(delaySeconds, extraTurn.delay, extraTurn.conf)
+            : ship.turnHull === 'K-D7'
+              ? scoreRange(delaySeconds, 0.7, 1.8, 'M')
+              : scoreNa();
     rows.push(
       row(
         ship.id,
@@ -303,13 +380,18 @@ function pushShip(rows: TableRow[], ship: ShipReport): void {
         : scoreNa();
     rows.push(row(ship.id, 'HET sweep', speedLabel(sample.speedHundredths), `${fixed(sample.sweep16 * 360, 65536, 2)} deg`, sweepScore, 'degrees'));
     const hetDelay = secondsNumber(sample.delayTicks);
+    const extraHet = EXTRA_HET[ship.turnHull];
     const delayScore = ship.turnHull === 'F-CA'
       ? scoreRange(hetDelay, 5.5, 6, 'M')
       : ship.turnHull === 'F-FF'
         ? scorePoint(hetDelay, 5.35, 'H')
         : ship.turnHull === 'F-DN'
           ? scorePoint(hetDelay, 5.6, 'M')
-          : scoreRange(hetDelay, 5.45, 5.93, 'H');
+          : extraHet
+            ? scorePoint(hetDelay, extraHet.delay, extraHet.conf)
+            : ship.turnHull === 'K-D7'
+              ? scoreRange(hetDelay, 5.45, 5.93, 'H')
+              : scoreNa();
     rows.push(
       row(
         ship.id,
@@ -499,14 +581,14 @@ function scenarioText(report: MetricsReport): string {
     `- Tick rate: ${report.tickHz} Hz. One second is ${report.tickHz} ticks. \`step\` has no dt.`,
     `- Rules-turn: ${report.rulesTurnTicks} ticks (${report.rulesTurnTicks / report.tickHz} s), the named \`RULES_TURN_SECONDS\`. A photon is ready after two turns and a disruptor after one.`,
     `- Input delay: ${report.inputDelay}. Seed ${report.seed} (0x${report.seed.toString(16)}).`,
-    '- Hulls: F-CA-like and F-FF-like use warp 34. F-DN-like uses warp 53. K-D7-like uses warp 39. Actual speed ramps on F-CA, F-FF, F-DN, and K-D7. Other hulls still change speed on the order.',
+    '- Hulls: F-CA-like and F-FF-like use warp 34. F-DN-like uses warp 53. K-D7-like uses warp 39. A checkpoint hull uses its measured plant when that plant can pay the flown top speed. K-E4, K-F5, R-SNA, L-FF, H-HN, G-FF, and I-FF stay at warp 34 so the turn is not energy-capped. Each of those hulls has its own acceleration band.',
     '- Systems load when life support and fire control are on: 2.5. Movement stays 1 per ordered speed point. Weapon power is plant minus that load.',
     `- Heading order: verb 12, target ${HEADING_TARGET} (90° clockwise), after actual speed has reached the sample.`,
     '- HET: verb 13, starboard. Delay, rate, and sweep are measured from the sim, not copied off the table.',
     `- deg/s = BAM/tick × 10800 / 65536. A full circle is 65536.`,
-    `- Phaser: \`${PHASER_CODE}\`, one combat-stream roll per shot. Range 0 is grouped with 1–2. A shared edge stays on the inner band. Nothing past 30.`,
+    `- Phaser: \`${PHASER_CODE}\`, one combat-stream roll per shot. Range 0 is grouped with 1–2. A shared edge stays on the inner band. Nothing past 26.4k.`,
     `- Photon: \`${PHOTON_CODE}\` on the F-CA-like hull. Arming accepts 2 per rules-turn and is ready after ${report.rulesTurnTicks * 2} ticks (two rules-turns), then hold is 1. Damage is hundredths of a point by range.`,
-    `- Disruptor: the K-D7-like heavy mount. 2 per rules-turn, ready after ${report.rulesTurnTicks} ticks (one rules-turn), and the same 2 holds it. Overload is 4. Damage is fixed by range. A miss is 0. Normal bands run 0–1, 1.1–2, 2.1–3, 3.1–5, 5.1–16, and 16.1–31k. The cutoff is the measured 31000 range units.`,
+    `- Disruptor: the K-D7-like heavy mount is Dis3. 2 per rules-turn, ready after ${report.rulesTurnTicks} ticks (one rules-turn), and the same 2 holds it. Overload is 4. Damage is fixed by range. A miss is 0. Normal bands run 0–1, 1.1–2, 2.1–3, 3.1–5, 5.1–16, and 16.1–31k. The cutoff is the measured 31000 range units. Dis1 is the shorter E4/F5 mount and is not this probe.`,
     '- Shields: six 60° facings. Bearing 0 is the bow center. The other five bearings are the clockwise bin centers.',
     '',
   ].join('\n');

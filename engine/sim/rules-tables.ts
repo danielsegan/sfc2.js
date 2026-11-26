@@ -66,6 +66,7 @@ export const INTERNAL_PHOTON = 2;
 export const INTERNAL_DRONE = 3;
 export const INTERNAL_OTHER = 4;
 export const INTERNAL_DISRUPTOR = 5;
+export const INTERNAL_PLASMA = 6;
 
 export const MODE_NORMAL = 0;
 export const MODE_OVERLOAD = 1;
@@ -280,11 +281,12 @@ export const DISRUPTOR_MAX_RANGE = 31000;
 /** Overload disruptor cutoff. Past this the overload shot does nothing. */
 export const DISRUPTOR_OVERLOAD_MAX_RANGE = 9000;
 
-/** Photon and Phaser-1 cutoff. The reading puts it somewhere in 26–30k. */
+/** Photon cutoff. The earlier reading puts it somewhere in 26–30k. */
 export const PHOTON_MAX_RANGE = 30000;
-export const PHASER1_MAX_RANGE = 30000;
-/** Phaser-3 cutoff from the F-FF reading. */
-export const PHASER3_MAX_RANGE = 10300;
+/** Phaser-1 cutoff from the Gorn curve. Damage is 0 by 26.4k. */
+export const PHASER1_MAX_RANGE = 26400;
+/** Phaser-3 cutoff from the ISC reading. */
+export const PHASER3_MAX_RANGE = 4200;
 
 export interface ArcDef {
   readonly code: string;
@@ -298,6 +300,7 @@ function internalId(name: string | undefined): number {
   if (name === 'photon') return INTERNAL_PHOTON;
   if (name === 'drone') return INTERNAL_DRONE;
   if (name === 'disruptor') return INTERNAL_DISRUPTOR;
+  if (name === 'plasma') return INTERNAL_PLASMA;
   return INTERNAL_OTHER;
 }
 
@@ -390,12 +393,10 @@ function buildWeapons(): readonly WeaponDef[] {
     if (internal === INTERNAL_PHASER && chargeCost <= 0) throw new Error(`phaser ${code} has no cost`);
     if (internal === INTERNAL_PHOTON && armCost <= 0) throw new Error(`photon ${code} has no cost`);
     if (internal === INTERNAL_DISRUPTOR && armCost <= 0) throw new Error(`disruptor ${code} has no cost`);
-    if (internal === INTERNAL_DISRUPTOR && num(row.maxRange) !== DISRUPTOR_MAX_RANGE) {
-      throw new Error(`disruptor ${code} maxRange`);
-    }
-    if (internal === INTERNAL_DISRUPTOR && bands.length > 0 && bands[bands.length - 1]!.maxRange !== DISRUPTOR_MAX_RANGE) {
+    if (internal === INTERNAL_DISRUPTOR && bands.length > 0 && bands[bands.length - 1]!.maxRange !== num(row.maxRange)) {
       throw new Error(`disruptor ${code} band range`);
     }
+    if (code === 'Dis3' && num(row.maxRange) !== DISRUPTOR_MAX_RANGE) throw new Error('disruptor-3 range');
     if (internal === INTERNAL_DISRUPTOR && overloadBands.length > 0) {
       const last = overloadBands[overloadBands.length - 1]!;
       if (last.maxRange !== DISRUPTOR_OVERLOAD_MAX_RANGE) throw new Error(`disruptor ${code} overload range`);

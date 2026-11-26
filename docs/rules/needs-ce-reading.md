@@ -27,3 +27,23 @@ Placeholder numbers in the Phase 2 duel. Each one stays until a Community Editio
 | Phaser capacitor fill | About 35 s [M]. The capacitor still fills from overflow on the energy plan. | — |
 | Phaser-2 re-arm | About 17–18.5 s [M]. The charge still fills from the energy plan. | `Ph2` |
 | Shield boundary | A hit on a facing boundary can drop both adjacent facings [M–H]. The sim still assigns the clockwise-next facing only. | `facingForRelative` |
+| K-D7 checkpoint 2 | Single-run turn 9.0–9.1 °/s and HET 52–58 °/s. The #161 aggregates stay. POWER 39 [H] matches the probe. | — |
+| K-E4 HET retry | A second HET sample was 50 °/s. The table stores 70 °/s. | `K-E4` HET |
+| Low POWER vs top speed | K-E4, K-F5, L-FF, H-HN, G-FF, and I-FF read POWER 15 or 20 while the top speed is about 31. R-SNA POWER 7 is energy-capped at 22. The probes keep warp 34 so the turn can be ordered. | — |
+| L-CA mis-tag | The live 14.9 °/s with a 5.2 s delay looks like a HET [L]. Ignored. | `L-CA` |
+| L-DN HET outlier | One 19.9 °/s HET reading is ignored. | `L-DN` |
+| L-FF outlier | One 28 °/s run is ignored. Gold hull tracking is poor [M–L]. | `L-FF` |
+| G-FF and I-FF mis-tags | Speed-5 G-FF runs of 14–17 °/s and the I-FF 15.5 °/s at speed 10 look like mis-tagged HETs [L]. Ignored. | — |
+| I-CA mis-tags | 22–25 °/s at speeds 15 and 31 are [L]. Ignored. | `I-CA` |
+| Plasma falloff | HUD readouts stay flat. One ISC Plasma-G volley that read 60 hit for about 19 shield points at 14.4k [L–M]. No in-flight falloff table. | `PlaF` `PlaG` `PlaR` `PlaS` |
+| Plasma-D | Defensive. The HUD read 0. No damage table. | `PlaD` |
+| Plasma both tubes | Plasma-S both tubes together were about 135 s. Each tube is about 95 s. | `PlaS` |
+| ESG damage | The volley HUD reads 0 and each mount draws 3 power continuously. Contact damage is unmeasured, and the 3-power draw is not a sim consumer yet. | `ESG` |
+| Hellbore past 21.4k | Measured bands stop at 21.4k. The real cutoff is farther and unread. | `HB` |
+| PPD 18–25k | The step between 18k and 25.5k was not sampled. A shot in that gap does not pick a damage. | `PPD` |
+| Phaser-1 ISC tail | The ISC curve still does a little damage out to about 30k [M]. The common table uses the Gorn cutoff at 26.4k [H]. | `Ph1` |
+| Phaser-2 Lyran tail | Lyran Phaser-2 expected 0 past 3.3k. The #161 K-D7 curve still has a tail. Not overwritten. | `Ph2` |
+| Disruptor-4 Lyran close range | Lyran Disruptor-4 read 0–5 at 1.4k. The K-C8 table starts at 2.4k. Both are kept as a note, not two codes. | `Dis4` |
+| Phaser capacitor 32–34 s | Klingon about 32 s, Lyran about 32–34 s. Still not a separate clock. | — |
+| Drone reload | Rack F reload is about 65–68 s. Initial arm is 44 s. Reload is not a second clock. | `DroF` |
+| Red Alert charge | Phasers, disruptors, and plasma charge only at Red Alert in NORMAL. Green Alert leaves drone racks able to charge. `setEnergy` flag bit 16 orders Green. The HUD does not send it yet. | `H.alert` |
