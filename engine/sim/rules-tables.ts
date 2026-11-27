@@ -22,8 +22,9 @@ export const TURN_H = 3;
 export const TURN_UNVERIFIED = 4;
 
 /**
- * Yaw cap for a letter that has no measured rate.
- * Read from turn-modes.json. It is not a measured Community Edition rate.
+ * Yaw cap for a hull that has no turn curve.
+ * Read from turn-modes.json. It is the default curve's rate at speed 15,
+ * not a per-letter measurement and not the TEST-C fixture rate.
  */
 export const FALLBACK_YAW_PER_TICK = requireYaw(turns.fallbackMaxYawPerTick, 'fallback yaw');
 

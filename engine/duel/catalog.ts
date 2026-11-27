@@ -27,6 +27,8 @@ export interface SkirmishClass {
   readonly warp: number;
   readonly shields: readonly [number, number, number, number, number, number];
   readonly photon: boolean;
+  /** Row in the measured turn curves. Cruiser is F-CA; the D7-shaped frigate is K-D7. */
+  readonly turnHull: string;
 }
 
 export const SKIRMISH_EMPIRES: readonly SkirmishEmpire[] = [
@@ -49,6 +51,7 @@ export const SKIRMISH_CLASSES: readonly SkirmishClass[] = [
     warp: 20,
     shields: [12, 10, 8, 8, 8, 10],
     photon: true,
+    turnHull: 'F-CA',
   },
   {
     id: 'frigate',
@@ -57,6 +60,7 @@ export const SKIRMISH_CLASSES: readonly SkirmishClass[] = [
     warp: 16,
     shields: [8, 8, 10, 8, 10, 8],
     photon: false,
+    turnHull: 'K-D7',
   },
 ];
 
@@ -108,6 +112,7 @@ export function syntheticSetup(classId: string): ShipSetup {
     turnMode: TURN_TEST_C,
     acceleration: 8,
     speed: 0,
+    turnHull: hull.turnHull,
     shields,
     shieldsMax: shields.slice(),
     crew: 4,

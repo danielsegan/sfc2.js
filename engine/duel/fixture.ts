@@ -31,7 +31,7 @@ export interface SpawnPoint {
   readonly heading: number;
 }
 
-function hull(mounts: ShipSetup['mounts']): ShipSetup {
+function hull(mounts: ShipSetup['mounts'], turnHull: string): ShipSetup {
   return {
     classCode: CLASS_SHIP,
     warp: 20,
@@ -43,6 +43,7 @@ function hull(mounts: ShipSetup['mounts']): ShipSetup {
     turnMode: TURN_TEST_C,
     acceleration: 8,
     speed: 0,
+    turnHull,
     shields: [12, 10, 8, 8, 8, 10],
     shieldsMax: [12, 10, 8, 8, 8, 10],
     crew: 4,
@@ -105,8 +106,8 @@ function pf(): ShipSetup {
 
 export function syntheticSetups(): readonly ShipSetup[] {
   return [
-    hull([phaser, photon]),
-    hull([phaser]),
+    hull([phaser, photon], 'F-CA'),
+    hull([phaser], 'K-D7'),
     pf(),
   ];
 }

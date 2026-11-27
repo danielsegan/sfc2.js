@@ -10,13 +10,24 @@ import {
   VERB_ORDER_HEADING,
   headingPayload,
 } from '../sim/heading.ts';
-import { createDuelMatch, createSyntheticDuel } from './match.ts';
+import type { ShipSetup } from '../sim/bind-shiplist.ts';
+import { createDuelMatch } from './match.ts';
 
 const TICK = 1000 / 30;
 const CAP = turnYawCap(TURN_TEST_C);
 
+/** Drop the measured curve so these cases still lock the TEST-C letter cap. */
+function letterOnly(setup: ShipSetup): ShipSetup {
+  const next = { ...setup };
+  delete next.turnHull;
+  return next;
+}
+
 function boot() {
-  return createSyntheticDuel({
+  return createDuelMatch({
+    seed: 0x0d0e1,
+    setups: syntheticSetups().map(letterOnly),
+    spawns: SYNTHETIC_SPAWNS,
     rulesTurnTicks: 4,
     renew: false,
     timeScale: 1,

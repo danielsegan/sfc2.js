@@ -301,7 +301,7 @@ describe('shiplist binding', () => {
       endFactor: 3,
       pairing: { front: [0], forwardSide: [1], aftSide: [2, 4], rear: [3, 5] },
     })).toEqual([30, 8, 6, 12, 6, 12]);
-    expect(classifyTurnLetter('C', {})).toEqual({ id: TURN_UNVERIFIED, yaw: 2000, unverified: 1 });
+    expect(classifyTurnLetter('C', {})).toEqual({ id: TURN_UNVERIFIED, yaw: FALLBACK_YAW_PER_TICK, unverified: 1 });
     expect(classifyTurnLetter('C', { C: 1800 })).toEqual({ id: 8, yaw: 1800, unverified: 0 });
     expect(classifyTurnLetter('A', { C: 1800 }).unverified).toBe(1);
     expect(ship.classCode).toBe(CLASS_SHIP);
@@ -335,7 +335,8 @@ describe('shiplist binding', () => {
     expect(ship.warp).toBe(13);
     expect(ship.crew).toBe(12);
     expect(ship.turnMode).toBe(TURN_UNVERIFIED);
-    expect(ship.turnHull).toBe('TEST-CE-CA');
+    // TEST-CE-CA is not a measured curve key, so the binder stores default.
+    expect(ship.turnHull).toBe('default');
   });
 
   it('keeps every shield cell on its own facing with four distinct values in any column order', () => {

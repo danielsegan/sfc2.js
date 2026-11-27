@@ -3,11 +3,12 @@
  * This handler is registered beside them. The payload is entity and yaw
  * only. The session stamps tick, slot, and seq.
  *
- * Caps come from the synthetic turn-mode table. An unverified letter
- * uses the documented fallback cap and still turns. With the turnCurve
- * table a hull that names a turn hull is capped by its measured normal-turn
- * rate instead (still bounded by the letter cap). The hull's last-verb
- * fields are left to the combat verbs.
+ * Caps come from the turn-mode table. An unverified letter with no curve
+ * uses the documented fallback and still turns. With the turnCurve table
+ * a hull that names a turn hull is capped by its measured normal-turn
+ * rate. A measured letter cap, or a TEST-* / H row, can still bound that
+ * rate. The shared fallback does not. The hull's last-verb fields are
+ * left to the combat verbs.
  */
 import { angle16, shortestArc } from '../core/angle.ts';
 import { asEntityId } from '../core/brands.ts';

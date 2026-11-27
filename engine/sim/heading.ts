@@ -8,8 +8,9 @@
  * Sims that do not register the table keep yaw-only helm.
  *
  * With the turnCurve table (turn-curve.ts) a hull that names a turn hull
- * steers at its measured normal-turn rate, bounded by the letter cap, and a
- * fresh order waits out the curve's start delay before the first step.
+ * steers at its measured normal-turn rate. A measured letter cap, or a
+ * TEST-* / H row, can still bound that rate. The shared fallback does not.
+ * A fresh order waits out the curve's start delay before the first step.
  * Without that table the letter cap is used unchanged.
  */
 import { angle16, shortestArc } from '../core/angle.ts';
