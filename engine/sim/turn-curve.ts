@@ -18,7 +18,7 @@ import type { EntityId } from '../core/brands.ts';
 import type { TableSpec, World, WorldSnap } from './world.ts';
 import { H } from './hull.ts';
 import { rulesDiv } from './rules-div.ts';
-import { turnYawCap } from './rules-tables.ts';
+import { TURN_UNVERIFIED, turnYawCap } from './rules-tables.ts';
 
 export const TURN_CURVE = 'turnCurve';
 
@@ -140,6 +140,34 @@ export function curveId(table: CurveTable, key: string): number {
   return table.defaultId;
 }
 
+function sameHullKey(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    let ca = a.charCodeAt(i);
+    let cb = b.charCodeAt(i);
+    if (ca >= 65 && ca <= 90) ca += 32;
+    if (cb >= 65 && cb <= 90) cb += 32;
+    if (ca !== cb) return false;
+  }
+  return true;
+}
+
+/**
+ * Curve key for a shiplist class code. A code in the normal-turn table
+ * (any letter case) keeps that row's canonical key. Anything else is
+ * `default`, which still turns on the curve. An omitted turn hull is the
+ * only way to stay on the letter cap.
+ */
+export function turnHullKey(classCode: string): string {
+  for (const row of NORMAL_CURVE.rows) {
+    if (row.key === classCode) return row.key;
+  }
+  for (const row of NORMAL_CURVE.rows) {
+    if (row.key !== 'default' && sameHullKey(row.key, classCode)) return row.key;
+  }
+  return 'default';
+}
+
 /** Same rounding as docs/rules/het.md §4: symmetric nearest, via rulesDiv. */
 export function interpInt(s: number, s0: number, y0: number, s1: number, y1: number): number {
   const dx = s1 - s0;
@@ -185,14 +213,18 @@ export function speedKey(fields: readonly number[]): number {
 }
 
 /**
- * Normal-turn rate cap for a hull row. The curve supplies the rate and the
- * turn letter's cap stays an upper bound, so the lower of the two wins.
- * Without a curve row the letter cap is returned unchanged.
+ * Normal-turn rate cap for a hull row. The curve supplies the rate. A
+ * measured letter cap, and the TEST-* / H rows, stay an upper bound, so
+ * the lower of the two wins. The shared unverified fallback is not that
+ * kind of cap: it applies only when the hull has no curve. Without a
+ * curve row the letter cap is returned unchanged.
  */
 export function rateFromRow(row: readonly number[] | null, fields: readonly number[]): number {
-  const cap = turnYawCap(fields[H.turnMode]!);
+  const mode = fields[H.turnMode]!;
+  const cap = turnYawCap(mode);
   if (!row || row[TC.enabled] !== 1) return cap;
   const rate = curvePoint(NORMAL_CURVE, row[TC.normal]!, speedKey(fields)).rate;
+  if (mode === TURN_UNVERIFIED) return rate;
   return cap >= 0 && cap < rate ? cap : rate;
 }
 

@@ -41,11 +41,10 @@ import {
   CLASS_FIGHTER,
   CLASS_PF,
   FALLBACK_YAW_PER_TICK,
-  TURN_H,
   TURN_TEST_A,
-  TURN_TEST_C,
   TURN_UNVERIFIED,
   arcId,
+  turnYawCap,
   weaponId,
 } from './rules-tables.ts';
 import type { CommandHandler, SimSystem, TickContext } from './sim.ts';
@@ -397,13 +396,6 @@ function setSpeed(world: World, id: EntityId, speed: number): void {
   const fields = readHull(world, id);
   fields[H.speed] = speed;
   writeHull(world, id, fields);
-}
-
-function yawCap(mode: number): number {
-  if (mode === TURN_TEST_A) return 8000;
-  if (mode === TURN_H) return 0;
-  if (mode === TURN_TEST_C || mode === TURN_UNVERIFIED) return FALLBACK_YAW_PER_TICK;
-  return FALLBACK_YAW_PER_TICK;
 }
 
 function steer(world: World, id: EntityId, targetX: Fx, targetY: Fx, speed: number, cap: number): void {
@@ -929,7 +921,7 @@ function guidePf(world: World, id: EntityId): void {
     setSpeed(world, id, 0);
     return;
   }
-  const cap = yawCap(readHull(world, id)[H.turnMode]!);
+  const cap = turnYawCap(readHull(world, id)[H.turnMode]!);
   steer(world, id, home.x, home.y, PF_RECOVER_SPEED, cap);
 }
 

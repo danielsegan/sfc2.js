@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { VERB_FIRE, firePayload } from '../sim/combat.ts';
 import { FALLBACK_YAW_PER_TICK, TURN_H, TURN_TEST_A, TURN_TEST_C, TURN_UNVERIFIED, turnYawCap } from '../sim/rules-tables.ts';
+import { NORMAL_CURVE, curveId, curvePoint } from '../sim/turn-curve.ts';
 import { syntheticSetups, SYNTHETIC_SPAWNS } from './fixture.ts';
 import { clampSpeed, createDuelMatch, createSyntheticDuel } from './match.ts';
 
@@ -65,7 +66,22 @@ describe('duel match', () => {
   });
 
   it('moves on the stored speed and blends only the pose', () => {
-    const match = boot({ plan: { speed: 4, lifeSupport: true, fireControl: true, general: 0, weaponRequest: null } });
+    // The playable CA names F-CA, so its actual speed ramps. This case drops
+    // that key so the view blend stays on the ordered speed.
+    const setups = syntheticSetups().map((setup) => {
+      const next = { ...setup };
+      delete next.turnHull;
+      return next;
+    });
+    const match = createDuelMatch({
+      seed: 0x0d0e1,
+      setups,
+      spawns: SYNTHETIC_SPAWNS,
+      rulesTurnTicks: 4,
+      renew: false,
+      timeScale: 1,
+      plan: { speed: 4, lifeSupport: true, fireControl: true, general: 0, weaponRequest: null },
+    });
     match.frame(TICK);
     match.frame(TICK);
     match.frame(TICK / 2);
@@ -82,9 +98,11 @@ describe('duel match', () => {
   it('keeps an unverified turn mode moving and warns once', () => {
     const player = syntheticSetups()[0]!;
     const opponent = syntheticSetups()[1]!;
+    const uncurved = { ...player, turnMode: TURN_UNVERIFIED };
+    delete uncurved.turnHull;
     const match = createDuelMatch({
       seed: 1,
-      setups: [{ ...player, turnMode: TURN_UNVERIFIED }, opponent],
+      setups: [uncurved, opponent],
       spawns: SYNTHETIC_SPAWNS,
       rulesTurnTicks: 2,
       renew: true,
@@ -118,8 +136,10 @@ describe('duel match', () => {
     expect(helm?.payload.length).toBe(8);
     match.frame(TICK);
     const vm = match.view();
-    expect(vm.self?.heading16).toBe(2000);
-    expect(vm.events.some((event) => event.kind === 'alert' && event.id === 'yawClamped' && event.amount === 2000)).toBe(true);
+    // The synthetic CA is on the F-CA curve. At speed 0 that rate, not TEST-C, is the clamp.
+    const rate = curvePoint(NORMAL_CURVE, curveId(NORMAL_CURVE, 'F-CA'), 0).rate;
+    expect(vm.self?.heading16).toBe(rate);
+    expect(vm.events.some((event) => event.kind === 'alert' && event.id === 'yawClamped' && event.amount === rate)).toBe(true);
   });
 
   it('launches a fighter from the synthetic bay', () => {

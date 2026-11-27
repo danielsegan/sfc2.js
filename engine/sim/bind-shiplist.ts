@@ -17,6 +17,7 @@ import {
   turnModeId,
   weaponId,
 } from './rules-tables.ts';
+import { turnHullKey } from './turn-curve.ts';
 
 export interface MountSetup {
   slotIndex: number;
@@ -70,8 +71,8 @@ export interface ShipSetup {
   systems?: ShipSystemsSetup;
   /**
    * Row key in docs/rules/data/turn-normal.json and het.json (the class name,
-   * e.g. `F-CA`). A key with no row uses `default`. Omitted means the hull
-   * keeps its turn-letter cap and the HET default row.
+   * e.g. `F-CA`). A class the table does not list is `default`, which still
+   * turns on that curve. Omitted means the hull keeps its turn-letter cap.
    */
   turnHull?: string;
   mounts: readonly MountSetup[];
@@ -331,7 +332,7 @@ export function bindShiplistRow(
     systems: {
       sensors: wholeCell(columns, raw, ['sensors'], 0),
     },
-    turnHull: classNameOf(row.spawnKey),
+    turnHull: turnHullKey(classNameOf(row.spawnKey)),
     mounts,
   };
 }

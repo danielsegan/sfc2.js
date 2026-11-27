@@ -181,6 +181,13 @@ describe('turn curve tables', () => {
     expect(classNameOf('F-CA')).toBe('F-CA');
   });
 
+  it('derives the uncurved fallback from the default curve at speed 15', () => {
+    const at15 = curvePoint(NORMAL_CURVE, NORMAL_CURVE.defaultId, 1500).rate;
+    expect(FALLBACK_YAW_PER_TICK).toBe(at15);
+    expect(at15).toBe(46);
+    expect(turnYawCap(TURN_TEST_C)).toBe(2000);
+  });
+
   it('sends an unknown hull to the default row', () => {
     expect(curveId(NORMAL_CURVE, 'no-such-hull')).toBe(NORMAL_CURVE.defaultId);
     expect(curvePoint(NORMAL_CURVE, curveId(NORMAL_CURVE, 'X-YZ'), q(8)).rate).toBe(42);

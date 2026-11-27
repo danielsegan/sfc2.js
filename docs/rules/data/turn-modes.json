@@ -1,8 +1,8 @@
 {
-  "status": "placeholder",
-  "note": "TEST-* rows exist so fixtures can move. Letters AA and A–G are recognised because docs/formats/shiplist.md already names them. Their per-letter rates stay unverified until playtest against Community Edition 2.670 (issue #37). Movement does not wait on that playtest: an unverified letter, and any other token that is not H or a TEST-* row, uses fallbackMaxYawPerTick. The sim emits turnModeUnverified once when that hull is spawned, then keeps speed and yaw. H is the stationary token from the format spec.",
-  "fallbackMaxYawPerTick": 2000,
-  "fallbackNote": "Placeholder yaw per tick, the same integer as TEST-C. Not a measured CE rate. One value for every unverified letter until a letter is set under measured.json turnYaw.measuredMaxYawPerTick.",
+  "status": "partial",
+  "note": "TEST-A and TEST-C exist so fixtures can move. They are test-only rates and are not the uncurved fallback. Letters AA and A–G are recognised because docs/formats/shiplist.md already names them. Their per-letter rates stay unverified until playtest against Community Edition 2.670 (issue #37). A hull with no turn curve uses fallbackMaxYawPerTick. The sim emits turnModeUnverified once when that hull is spawned, then keeps speed and yaw. A hull that names a turn curve turns at that curve, and this fallback does not slow it down. H is the stationary token from the format spec.",
+  "fallbackMaxYawPerTick": 46,
+  "fallbackNote": "Uncurved yaw per tick, taken from the measured default row in turn-normal.json at speed 15. That row copies the F-CA points, and speed 15 is 46 angle units per tick (about 7.6 degrees per second). One value for every hull that has no curve, until a letter is set under measured.json turnYaw.measuredMaxYawPerTick. TEST-C stays 2000 and is not this number.",
   "modes": {
     "TEST-A": { "maxYawPerTick": 8000, "immobile": false },
     "TEST-C": { "maxYawPerTick": 2000, "immobile": false },
